@@ -38,6 +38,9 @@
         "noExplicitAny": "error",
         "noConsole": { "level": "warn", "options": { "allow": ["warn", "error"] } }
       },
+      "complexity": {
+        "useLiteralKeys": "off"
+      },
       "correctness": {
         "noUnusedImports": "error",
         "noUnusedVariables": "error"

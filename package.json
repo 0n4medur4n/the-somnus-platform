@@ -18,6 +18,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:packages": "pnpm -r --filter \"./packages/*\" run test:run",
     "build": "tsc -p tsconfig.build.json",
     "ci": "pnpm run lint && pnpm run typecheck && pnpm run test:run && pnpm run build"
   },
