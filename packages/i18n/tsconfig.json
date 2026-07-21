@@ -1,0 +1,5 @@
+{
+  "extends": "@somnus/tsconfig/library.json",
+  "include": ["src/**/*.ts", "locales/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}
