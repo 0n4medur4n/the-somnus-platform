@@ -1,0 +1,65 @@
+# Local development stack for The Somnus platform.
+# See THE_SOMNUS_PLATFORM_BUILD_PLAN.md §3.8 and §3.9.
+#
+# Two services only at this checkpoint:
+#   - mysql:      MySQL 8 acting as a TiDB Cloud stand-in (build plan §3.9).
+#                 Logical databases are created by the per-service migrations
+#                 in later phases; here we only need an empty MySQL 8.
+#   - firebase:   Firebase emulators (Auth + Firestore + Storage) used by the
+#                 edge API (Phase 8) and frontends (Phase 9). At Phase 1.1
+#                 we only require the container to come up; no code calls it yet.
+#
+# Region / cost notes: min-instances=0 is for Cloud Run (build plan §2),
+# not for this docker-compose. Everything here is local-only.
+name: somnus-dev
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: somnus-dev-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: somnus_identity
+      TZ: Europe/Madrid
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpw"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  firebase:
+    image: ghcr.io/firebase/firebase-tools:15.15.0
+    container_name: somnus-dev-firebase
+    restart: unless-stopped
+    working_dir: /srv
+    command:
+      - emulators:start
+      - --only
+      - auth,firestore,storage
+      - --project
+      - somnus-dev
+      - --config
+      - /srv/firebase.json
+    ports:
+      - "4000:4000"   # emulator UI
+      - "4400:4400"   # auth
+      - "4500:4500"   # firestore
+      - "9150:9150"   # storage
+      - "5000:5000"   # functions (unused at Phase 1.1)
+      - "5001:5001"   # functions alt
+    volumes:
+      - ./.firebase/firebase.json:/srv/firebase.json:ro
+
+volumes:
+  mysql_data:
+    driver: local

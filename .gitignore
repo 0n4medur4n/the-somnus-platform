@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Test artifacts
+.jest-cache/
+.vitest-cache/
+
+# Environment
+.env
+.env.*
+!.env.example
+.envrc
+
+# Secrets
+*.pem
+*.key
+*.p12
+*.pfx
+service-account*.json
+gha-creds-*.json
+firebase-adminsdk-*.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Editor / OS
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Terraform
+infrastructure/terraform/**/.terraform/
+infrastructure/terraform/**/*.tfstate
+infrastructure/terraform/**/*.tfstate.*
+infrastructure/terraform/**/*.tfplan
+infrastructure/terraform/**/terraform.tfvars
+!infrastructure/terraform/**/terraform.tfvars.example
+infrastructure/terraform/**/.terraform.lock.hcl.local
+
+# Firebase
+.firebase/cache/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*-debug.log
+
+# Local services
+.localstack/
+.pgdata/
+
+# Generated
+schemas/openapi/**
+!schemas/openapi/.gitkeep
+*.gen.ts
+*.gen.json
