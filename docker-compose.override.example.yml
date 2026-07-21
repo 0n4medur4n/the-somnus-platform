@@ -1,0 +1,12 @@
+# Local-only overrides for docker-compose.dev.yml.
+# Copy to docker-compose.override.yml to enable and customize.
+#
+# Example: pin a different MySQL root password or expose the MySQL port
+# to a non-default host port when 3306 is already taken.
+services:
+  mysql:
+    ports:
+      - "3307:3306"
+  firebase:
+    environment:
+      - FIREBASE_EMULATOR_HUB=0.0.0.0

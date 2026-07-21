@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same ref so PRs don't queue.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "24"
+  PNPM_VERSION: "11.5.0"
+
+jobs:
+  quality-gate:
+    name: Quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check (biome)
+        run: pnpm run format:check
+
+      - name: Lint (biome)
+        run: pnpm run lint
+
+      - name: Typecheck (tsc --noEmit)
+        run: pnpm run typecheck
+
+      - name: Test (vitest run)
+        run: pnpm run test:run
+
+      - name: Build (tsc)
+        run: pnpm run build
+
+      - name: Verify ADRs present
+        run: |
+          set -euo pipefail
+          for f in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012; do
+            test -f "docs/adr/${f}-"*.md || { echo "Missing ADR ${f}"; exit 1; }
+          done
+          echo "All 12 ADRs present."
