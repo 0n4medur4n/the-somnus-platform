@@ -1,11 +1,11 @@
 import { ErrorCode, type ErrorCodeType } from "./codes.js";
 
 export class SomnusError extends Error {
-  public readonly name = "SomnusError" as const;
+  public override readonly name = "SomnusError" as const;
   public readonly code: ErrorCodeType;
   public readonly correlationId: string;
   public readonly details: Readonly<Record<string, unknown>>;
-  public readonly cause?: unknown;
+  public override readonly cause?: unknown;
 
   constructor(
     code: ErrorCodeType,

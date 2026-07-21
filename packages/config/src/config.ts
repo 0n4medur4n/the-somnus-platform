@@ -8,7 +8,7 @@ export interface LoadOptions {
 }
 
 export type SomnusConfig = {
-  readonly raw: Readonly<Record<string, string>>;
+  readonly raw: Readonly<Record<string, string | undefined>>;
   readonly public: Readonly<Record<string, unknown>>;
   readonly private: Readonly<Record<string, unknown>>;
   readonly service: { name: string; env: string; version: string; commit: string };
@@ -40,14 +40,20 @@ export const PublicConfigSchema = z.object({
   APP_BASE_URL: z.string().url().optional(),
 });
 
-export function validateConfig(env: NodeJS.ProcessEnv): z.ZodSafeParseResult<{
+export type ValidatedConfig = {
   base: z.infer<typeof SomnusConfigSchema>;
   public: z.infer<typeof PublicConfigSchema>;
-}> {
+};
+
+export function validateConfig(env: NodeJS.ProcessEnv): z.ZodSafeParseResult<ValidatedConfig> {
   const baseResult = SomnusConfigSchema.safeParse(env);
+  if (!baseResult.success) {
+    return baseResult as unknown as z.ZodSafeParseResult<ValidatedConfig>;
+  }
   const publicResult = PublicConfigSchema.safeParse(env);
-  if (!baseResult.success) return baseResult;
-  if (!publicResult.success) return publicResult;
+  if (!publicResult.success) {
+    return publicResult as unknown as z.ZodSafeParseResult<ValidatedConfig>;
+  }
   return {
     success: true,
     data: {

@@ -202,10 +202,14 @@ describe("createCloudRunClient", () => {
             return;
           }
           const t = setTimeout(resolve, 50);
-          init.signal.addEventListener("abort", () => {
-            clearTimeout(t);
-            reject(new DOMException("Aborted", "AbortError"));
-          }, { once: true });
+          init.signal.addEventListener(
+            "abort",
+            () => {
+              clearTimeout(t);
+              reject(new DOMException("Aborted", "AbortError"));
+            },
+            { once: true },
+          );
         });
         return { status: 200, headers: {}, body: "{}" };
       },
@@ -229,10 +233,14 @@ describe("createCloudRunClient", () => {
             return;
           }
           const t = setTimeout(resolve, 100);
-          init.signal.addEventListener("abort", () => {
-            clearTimeout(t);
-            reject(new DOMException("Timeout", "TimeoutError"));
-          }, { once: true });
+          init.signal.addEventListener(
+            "abort",
+            () => {
+              clearTimeout(t);
+              reject(new DOMException("Timeout", "TimeoutError"));
+            },
+            { once: true },
+          );
         });
         return { status: 200, headers: {}, body: "{}" };
       },

@@ -60,7 +60,7 @@ function buildLine(
     level: LogLevel;
     format: "json" | "text";
     write: (line: string) => void;
-    redaction?: RedactionOptions;
+    redaction: RedactionOptions | undefined;
     bindings: LogContext;
   },
 ): LogLine {
@@ -125,7 +125,7 @@ export function createLogger(options: LoggerOptions): Logger {
   const level = options.level ?? "info";
   const format = options.format ?? "json";
   const write = options.write ?? defaultWrite;
-  const redaction = options.redaction;
+  const redaction: RedactionOptions | undefined = options.redaction;
   const bindings = options.bindings ?? {};
   const fixedService = options.service;
   const fixedCorrelationId = options.correlationId;
@@ -157,8 +157,8 @@ export function createLogger(options: LoggerOptions): Logger {
         level,
         format,
         write,
-        redaction,
         bindings: { ...fixedBindings, ...extra },
+        ...(redaction ? { redaction } : {}),
       });
     },
     withCorrelationId(c: string): Logger {
@@ -168,8 +168,8 @@ export function createLogger(options: LoggerOptions): Logger {
         level,
         format,
         write,
-        redaction,
         bindings: fixedBindings,
+        ...(redaction ? { redaction } : {}),
       });
     },
   };

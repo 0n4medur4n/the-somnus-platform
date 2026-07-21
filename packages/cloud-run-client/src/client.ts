@@ -112,7 +112,8 @@ export function createCloudRunClient(options: ClientOptions): CloudRunClient {
         const shouldRetry =
           !req.skipRetry && attempt < retry.maxAttempts - 1 && isRetriableNetworkError(err);
         if (!shouldRetry) {
-          const isAbort = err instanceof Error && (err.name === "AbortError" || err.name === "TimeoutError");
+          const isAbort =
+            err instanceof Error && (err.name === "AbortError" || err.name === "TimeoutError");
           const isUserAbort = req.signal?.aborted === true;
           if (isAbort && isUserAbort) {
             // User cancelled the request; propagate the original DOMException
