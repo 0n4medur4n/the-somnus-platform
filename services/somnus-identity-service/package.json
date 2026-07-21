@@ -1,0 +1,43 @@
+{
+  "name": "@somnus/identity-service",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Somnus identity service. Cloud Run, NestJS 11 + Fastify 5. Template for all other NestJS services.",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "start:dev": "nest start --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate:openapi": "tsx scripts/generate-openapi.ts"
+  },
+  "dependencies": {
+    "@fastify/helmet": "13.1.0",
+    "@fastify/static": "10.1.0",
+    "@nestjs/common": "11.1.28",
+    "@nestjs/core": "11.1.28",
+    "@nestjs/platform-fastify": "11.1.28",
+    "@nestjs/swagger": "11.4.6",
+    "@somnus/api-contracts": "workspace:*",
+    "@somnus/config": "workspace:*",
+    "@somnus/errors": "workspace:*",
+    "@somnus/observability": "workspace:*",
+    "@somnus/test-utils": "workspace:*",
+    "fastify": "5.10.0",
+    "nestjs-zod": "5.4.0",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "11.0.24",
+    "@nestjs/testing": "11.1.28",
+    "@somnus/tsconfig": "workspace:*",
+    "@types/node": "24.10.1",
+    "tsx": "4.23.1",
+    "unplugin-swc": "1.5.9",
+    "vitest": "4.1.10"
+  }
+}

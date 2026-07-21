@@ -12,10 +12,10 @@ export type Tracer = {
 };
 
 const NOOP_SPAN = {
-  setAttribute: () => {
+  setAttribute: (_k: string, _v: string | number | boolean) => {
     /* no-op */
   },
-  recordException: () => {
+  recordException: (_e: Error) => {
     /* no-op */
   },
   end: () => {
