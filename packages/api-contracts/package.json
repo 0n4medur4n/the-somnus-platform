@@ -1,0 +1,23 @@
+{
+  "name": "@somnus/api-contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@somnus/errors": "workspace:*",
+    "uuid": "14.0.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@somnus/tsconfig": "workspace:*",
+    "vitest": "4.1.10"
+  }
+}

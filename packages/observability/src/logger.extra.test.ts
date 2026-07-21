@@ -26,7 +26,11 @@ describe("createLogger — extra coverage", () => {
       error: { code: "INTERNAL", message: "boom", details: { token: "leaky" } },
     });
     const parsed = JSON.parse(writer.mock.calls[0]?.[0] as string);
-    expect(parsed.error).toEqual({ code: "INTERNAL", message: "boom", details: { token: REDACTED } });
+    expect(parsed.error).toEqual({
+      code: "INTERNAL",
+      message: "boom",
+      details: { token: REDACTED },
+    });
   });
 
   it("withCorrelationId replaces the correlationId on the returned logger", () => {
