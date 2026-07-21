@@ -1,1 +1,0 @@
-{"version":3,"file":"fake-timers.d.ts","sourceRoot":"","sources":["fake-timers.ts"],"names":[],"mappings":"AAAA,MAAM,MAAM,eAAe,GAAG;IAC5B,OAAO,CAAC,EAAE,EAAE,MAAM,GAAG,IAAI,CAAC;IAC1B,OAAO,IAAI,IAAI,CAAC;IAChB,GAAG,IAAI,MAAM,CAAC;CACf,CAAC;AAEF,wBAAgB,cAAc,CAAC,OAAO,CAAC,EAAE,IAAI,GAAG,eAAe,CAmB9D"}
