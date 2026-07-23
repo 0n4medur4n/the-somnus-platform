@@ -54,6 +54,13 @@ jobs:
       - name: Typecheck (tsc --noEmit)
         run: pnpm run typecheck
 
+      # Package tests (packages/*/src/**/*.test.ts) import their sibling
+      # workspace packages (e.g. @somnus/api-contracts) through each
+      # package.json's "main", which points at dist/, not src/ -- so
+      # those packages must be built before vitest can resolve them.
+      - name: Build shared packages
+        run: pnpm --if-present -r --filter "./packages/*" run build
+
       - name: Test (vitest run)
         run: pnpm run test:run
 
@@ -110,6 +117,13 @@ jobs:
       # packages (each package.json's "main" points at dist/, not src/).
       - name: Build shared packages
         run: pnpm --if-present -r --filter "./packages/*" run build
+
+      # schemas/openapi/identity-service.json is a generated artifact
+      # (gitignored, build plan §3.4: generated from Zod, never
+      # hand-written) that test/contract/openapi.contract.test.ts reads
+      # from disk -- it must exist before the test step runs.
+      - name: Generate OpenAPI document
+        run: pnpm --filter @somnus/identity-service generate:openapi
 
       # Includes the immutable negative-authorization suite (build plan
       # §20 Checkpoint 6.3) and enforces coverage thresholds.
