@@ -20,16 +20,23 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpw
-      MYSQL_DATABASE: somnus_identity
       TZ: Europe/Madrid
     command:
-      - --default-authentication-plugin=mysql_native_password
+      # mysql:8.4 removed --default-authentication-plugin (mysql_native_password
+      # is deprecated/no longer selectable that way); caching_sha2_password is
+      # already the server default, so we no longer pass this flag. PyMySQL
+      # authenticates against it via the `cryptography` package (see
+      # services/morpheo-service dependencies).
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_0900_ai_ci
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      # Logical databases (build plan §3.9) are created once, on first
+      # boot against an empty volume. Added to as each service reaches
+      # the checkpoint that first needs its database.
+      - ./scripts/dev-mysql-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpw"]
       interval: 10s
@@ -58,7 +65,7 @@ services:
       - "5000:5000"   # functions (unused at Phase 1.1)
       - "5001:5001"   # functions alt
     volumes:
-      - ./.firebase/firebase.json:/srv/firebase.json:ro
+      - ./firebase.json:/srv/firebase.json:ro
 
 volumes:
   mysql_data:

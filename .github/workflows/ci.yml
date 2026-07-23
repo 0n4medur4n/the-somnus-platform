@@ -67,3 +67,51 @@ jobs:
             test -f "docs/adr/${f}-"*.md || { echo "Missing ADR ${f}"; exit 1; }
           done
           echo "All 12 ADRs present."
+
+  identity-service:
+    name: Identity service (TiDB dev cluster)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # A dedicated, ref-independent group: this job hits a single shared
+    # external TiDB Cloud dev cluster (no per-run namespace), so two PRs'
+    # runs must queue rather than race -- resetTables() in the test
+    # suite would otherwise let one run truncate another's in-flight data.
+    # Distinct from the workflow-level concurrency group above, which
+    # only cancels older runs on the SAME ref.
+    concurrency:
+      group: identity-service-tidb-dev
+      cancel-in-progress: false
+    env:
+      DATABASE_URL: ${{ secrets.TIDB_DEV_DATABASE_URL }}
+      DB_SSL: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # identity-service depends on the built dist/ of these workspace
+      # packages (each package.json's "main" points at dist/, not src/).
+      - name: Build shared packages
+        run: pnpm --if-present -r --filter "./packages/*" run build
+
+      # Includes the immutable negative-authorization suite (build plan
+      # §20 Checkpoint 6.3) and enforces coverage thresholds.
+      - name: Test identity-service
+        run: pnpm --filter @somnus/identity-service test:coverage

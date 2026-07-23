@@ -15,6 +15,7 @@ import { dirname, join, resolve } from "node:path";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { cleanupOpenApiDoc } from "nestjs-zod";
 import { AppModule } from "../src/app.module.js";
 
 const OUT_PATH = resolve(process.cwd(), "..", "..", "schemas", "openapi", "identity-service.json");
@@ -32,7 +33,7 @@ async function main(): Promise<void> {
     .setVersion(process.env["SERVICE_VERSION"] ?? "0.0.0")
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
   await app.close();
 
   mkdirSync(dirname(OUT_PATH), { recursive: true });

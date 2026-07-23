@@ -12,9 +12,17 @@ or AI training knowledge conflicts with it, the build plan wins.
 | Phase | Checkpoint | State |
 |-------|------------|-------|
 | 0     | 0.1 Environment baseline | **DONE** (see [`docs/environment-baseline.md`](./docs/environment-baseline.md)) |
-| 1     | 1.1 Workspace and quality gate | **IN PROGRESS** (this checkpoint) |
-| 1     | 1.2 ADRs and CI | pending |
-| 2+    | shared packages, services, frontends, infrastructure | pending |
+| 1     | 1.1 Workspace and quality gate | **DONE** |
+| 1     | 1.2 ADRs and CI | **DONE** |
+| 2     | 2.1 config, errors, observability | **DONE** |
+| 2     | 2.2 api-contracts, cloud-run-client, i18n, design-system | **DONE** |
+| 3     | 3.1 NestJS template (identity shell) | **DONE** (see [`services/somnus-identity-service`](./services/somnus-identity-service)) |
+| 4     | 4.1 Python template (Morpheo shell) | **DONE** (see [`services/morpheo-service`](./services/morpheo-service)) |
+| 5     | 5.1 Terraform dev | **DONE** (see [`docs/runbooks/deploy-dev.md`](./docs/runbooks/deploy-dev.md)) |
+| 6     | 6.1 Identity data layer | **DONE** (Drizzle schema, repositories, tenant-scope guard) |
+| 6     | 6.2 Identity domain and API | **DONE** (contracts, authorization engine, endpoints; `sessions` stubbed until Phase 8) |
+| 6     | 6.3 Negative authorization suite | **DONE** (10/10 scenarios green, marked immutable; CI wiring to the TiDB dev cluster still open, see [`services/somnus-identity-service` README](./services/somnus-identity-service/README.md#negative-authorization-suite-phase-63-immutable)) |
+| 7+    | consent, edge API, frontends, Morpheo domain, report, worker, hardening | pending |
 
 ## Repository layout (per build plan §6)
 
@@ -76,8 +84,17 @@ pnpm run build
 ```
 
 Biome handles formatting and linting. TypeScript strict mode is never
-weakened. Vitest is the test runner for TypeScript code; pytest is used
-in Python services (introduced in Phase 4).
+weakened. Vitest is the test runner for TypeScript code.
+
+Python services (starting with `morpheo-service`, Phase 4) run their
+own gate with `uv`, from the service directory:
+
+```bash
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy src
+uv run pytest
+```
 
 ## Conventions
 
