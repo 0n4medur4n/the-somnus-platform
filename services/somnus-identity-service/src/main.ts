@@ -5,6 +5,7 @@ import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fa
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { loadConfig } from "@somnus/config";
 import { createLogger } from "@somnus/observability";
+import { cleanupOpenApiDoc } from "nestjs-zod";
 import { AppModule } from "./app.module.js";
 import { SomnusLogger } from "./infrastructure/logger/somnus.logger.js";
 
@@ -35,7 +36,9 @@ async function bootstrap(): Promise<void> {
     .setVersion("0.0.0")
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  // cleanupOpenApiDoc is required for nestjs-zod's createZodDto classes
+  // to produce correct request/response schemas (build plan §3.4).
+  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, swaggerConfig));
   SwaggerModule.setup("/docs", app, document);
 
   const port = (config.private["PORT"] as number | undefined) ?? 8080;

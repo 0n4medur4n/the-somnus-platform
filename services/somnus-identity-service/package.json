@@ -9,9 +9,12 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "generate:openapi": "tsx scripts/generate-openapi.ts"
+    "test": "vitest run --config test/vitest.config.ts",
+    "test:watch": "vitest --config test/vitest.config.ts",
+    "test:coverage": "vitest run --config test/vitest.config.ts --coverage",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "generate:openapi": "node --import @swc-node/register/esm-register scripts/generate-openapi.ts"
   },
   "dependencies": {
     "@fastify/helmet": "13.1.0",
@@ -25,7 +28,9 @@
     "@somnus/errors": "workspace:*",
     "@somnus/observability": "workspace:*",
     "@somnus/test-utils": "workspace:*",
+    "drizzle-orm": "0.45.2",
     "fastify": "5.10.0",
+    "mysql2": "3.23.1",
     "nestjs-zod": "5.4.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
@@ -35,8 +40,12 @@
     "@nestjs/cli": "11.0.24",
     "@nestjs/testing": "11.1.28",
     "@somnus/tsconfig": "workspace:*",
+    "@swc-node/register": "1.12.1",
     "@types/node": "24.10.1",
+    "@vitest/coverage-v8": "4.1.10",
+    "drizzle-kit": "0.31.10",
     "tsx": "4.23.1",
+    "typescript": "6.0.3",
     "unplugin-swc": "1.5.9",
     "vitest": "4.1.10"
   }
