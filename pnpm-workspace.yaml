@@ -7,3 +7,7 @@ allowBuilds:
   esbuild: true
   '@swc/core': true
   protobufjs: true
+  # swagger-ui-dist's telemetry beacon (scarf.sh) -- denied, not required
+  # for swagger-ui-dist to function, and this is a privacy-sensitive
+  # healthcare platform (build plan §15/§21).
+  '@scarf/scarf': false
