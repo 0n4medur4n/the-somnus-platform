@@ -157,7 +157,124 @@ secret and sets `DB_SSL=true` so `db.client.ts` negotiates TLS (see
 `DbConfigSchema`'s `DB_SSL` field, off by default for local dev, since
 docker-compose MySQL doesn't speak TLS at all) -- this only becomes a
 live required check once that secret is present in the repo's Actions
-secrets (Settings -> Secrets and variables -> Actions).
+secrets (Settings -> Secrets and variables -> Actions). `CONSENT_DATABASE_URL`/`CONSENT_DB_SSL`
+for the consent module (Phase 7.1) are derived from that same secret
+in the workflow (same cluster/user, `/somnus_identity` swapped for
+`/somnus_consent`) rather than needing a second one -- see that
+section's "Local dev vs. production" note for why this is a dev/CI-only
+simplification.
+
+Two lockfile/CI incidents worth knowing about if `pnpm install
+--frozen-lockfile` ever starts failing in this repo again: (1) `pnpm`
+resolves workspace members from the filesystem, not git tracking state
+-- a committed lockfile generated against a local working tree with
+uncommitted package.json changes or untracked packages will silently
+include them, then fail `--frozen-lockfile` in CI where those files
+don't exist. Regenerate from a clean `git worktree` of the actual
+commit, never from your working directory, if this happens. (2) Any
+test that publishes new reference-data rows (e.g. a new
+`legal_document_versions` row) against this persistent, never-wiped-
+between-CI-runs cluster must compute the next value relative to
+whatever's already there (`(await repo.findLatest…()) ?? 0) + 1`), not
+a hardcoded number -- a hardcoded version will collide with a
+unique-constraint on the *second* CI run against the same cluster,
+not the first.
+
+## Consent module (Phase 7.1, fully isolated)
+
+`src/modules/consent/` is the platform's first isolated module (build
+plan §5.4 / ADR 0010): its own logical database (`somnus_consent`),
+own migrations, own repositories, own DB connection -- identity code
+reaches it only through `ConsentService`, the module's public
+interface.
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/v1/legal-documents/current` | Current published version of every purpose's document. Unauthenticated -- no `@CurrentActorId()` (real signup flows need to read this before an account exists). |
+| POST | `/v1/consents` | Record consent for one purpose, against its current document version. |
+| GET | `/v1/consents/current` | The actor's current standing for every purpose (`consented`, `current`, `withdrawn`). |
+| POST | `/v1/consents/:receiptId/withdraw` | Withdraw a previously granted consent. Immediately effective. |
+| POST | `/internal/v1/consents/check` | The internal check `AuthorizationService` calls to resolve `DENIED_CONSENT_WITHDRAWN`. |
+
+### Isolation, enforced twice
+
+1. **Data layer**: `src/modules/consent/db/` has its own
+   `ConsentDbConfigSchema` (`CONSENT_DATABASE_URL`), its own connection
+   pool, its own Drizzle schema and migrations folder
+   (`src/modules/consent/migrations/`) -- completely separate from
+   identity's `DbModule`/`migrations/`. `ConsentDbModule` is not
+   `@Global()`; only `ConsentModule` imports it.
+2. **Code boundary**: `.dependency-cruiser.cjs` is a whitelist by
+   construction -- any file outside `src/modules/consent/` may import
+   `consent.service.ts` (the public interface) or `consent.module.ts`
+   (NestJS DI wiring, re-exports nothing else) and nothing else under
+   that folder, no matter what new subfolders get added later.
+   Verified by `test/architecture/consent-isolation.test.ts`, which
+   includes a meta-test proving the rule isn't accidentally a no-op --
+   dependency-cruiser's `cruise()` silently skips running the rules
+   entirely unless `validate: true` is passed, a real footgun caught
+   while building this (the first version of this test passed with
+   zero violations even with a deliberately-planted forbidden import
+   in place).
+
+**Local dev vs. production**: dev and this repo's current CI point
+`CONSENT_DATABASE_URL` at the same TiDB cluster/user as identity's,
+differing only in database name -- a cost/setup simplification, not
+the production shape. Build plan §8 requires `somnus_consent` to have
+its own database user and password in every real environment,
+provisioned independently of identity's.
+
+### Consent purposes and version supersession
+
+Six purposes (build plan §13, never combined into one checkbox):
+`terms_acceptance`, `privacy_policy_acknowledgement`,
+`health_data_processing`, `professional_sharing`, `marketing`,
+`research_participation`. Seeded via
+`migrations/0001_seed_consent_purposes.sql` alongside one
+`legal_documents` catalog entry and one placeholder v1
+`legal_document_versions` row per purpose (the real legal copy is a
+separate content workstream, out of scope here).
+
+Every receipt (`consent_receipts`) references a specific
+`legal_document_versions` row. Publishing a newer version does not
+retroactively withdraw existing consent -- it just stops counting as
+`current` (`GET /v1/consents/current`'s `current` field per purpose).
+Withdrawal (`consent_withdrawals`, a separate table, not a column) is
+the only thing `authorization.service.ts`'s `DENIED_CONSENT_WITHDRAWN`
+check consults: **absence of consent is never treated as withdrawn** --
+a user who has never interacted with consent at all must not be newly
+blocked from a path (self-access, an existing access grant) that
+predates this module. That was a deliberate design constraint, not an
+afterthought: it is exactly what keeps Checkpoint 6.3's immutable
+negative-authorization suite green, unmodified, once this module wires
+into `authorization.service.ts`.
+
+### Events (interim: logged, not published)
+
+`consent.receipt.recorded.v1` / `consent.receipt.withdrawn.v1` (build
+plan §17 envelope, `@somnus/api-contracts`'s `makeEvent()`) are
+constructed and handed to `EventPublisher`
+(`src/modules/consent/events/event-publisher.ts`) at the right call
+sites. No real Pub/Sub topic exists anywhere in this platform yet
+(`infrastructure/terraform/modules/pubsub-topic` is scaffolded but
+never instantiated by any environment) -- building a real publisher
+now would be future-phase work the build plan doesn't ask for yet.
+`LoggingEventPublisher` is the interim adapter: it structured-logs the
+full envelope through the same redaction pipeline every other log line
+in this service goes through. Swapping in a real Pub/Sub-backed
+adapter later touches only this one file, never `ConsentService`.
+
+### No caching, by design
+
+`ConsentService` never caches: every method reads straight from the
+repositories on every call. This is why withdrawal takes effect
+immediately -- proven by
+`test/integration/consent/consent-service.test.ts`'s "withdrawal is
+immediately visible to check()" test and
+`test/integration/consent-http-endpoints.integration.test.ts`'s
+cross-module test (withdraw via HTTP, then immediately re-check
+`/internal/v1/authorization/check` in the same test, no delay, no
+retry).
 
 ## Data layer (Phase 6.1)
 
@@ -271,6 +388,16 @@ The test suite includes:
   present with the right method and request-schema reference, and every
   request DTO's generated JSON Schema is checked to accept/reject the
   same payloads as its source-of-truth Zod schema.
+- Consent module tests (`test/integration/consent/`,
+  `test/integration/consent-http-endpoints.integration.test.ts`):
+  repositories, `ConsentService` (record/withdraw/check, version
+  supersession, the immediate-withdrawal time-sensitive case), all 5
+  HTTP endpoints, and the cross-module case (withdraw via HTTP,
+  authorization's `/internal/v1/authorization/check` reflects
+  `DENIED_CONSENT_WITHDRAWN` on the very next call).
+- The consent isolation test
+  (`test/architecture/consent-isolation.test.ts`), backed by
+  `dependency-cruiser` -- see the Consent module section above.
 
 A global vitest setup (`test/global-setup.ts`) applies migrations once
 before the suite runs; `fileParallelism: false` keeps the migration
@@ -314,6 +441,8 @@ To create a new service from this one (e.g. `somnus-worker`):
 ## Build plan
 
 Implements build plan §20 Phase 3 / Checkpoint 3.1 (service shell),
-Phase 6 / Checkpoint 6.1 (identity data layer), and Phase 6 /
-Checkpoint 6.2 (identity domain and API: contracts, the authorization
-engine, and every endpoint except `sessions`, stubbed until Phase 8).
+Phase 6 / Checkpoint 6.1 (identity data layer), Phase 6 / Checkpoint
+6.2 (identity domain and API: contracts, the authorization engine, and
+every endpoint except `sessions`, stubbed until Phase 8), Phase 6 /
+Checkpoint 6.3 (the immutable negative-authorization suite), and Phase
+7 / Checkpoint 7.1 (the consent module, fully isolated).

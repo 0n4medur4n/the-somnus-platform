@@ -10,6 +10,7 @@ import {
 import { DbModule } from "./infrastructure/db/db.module.js";
 import { AccessGrantsModule } from "./modules/access-grants/access-grants.module.js";
 import { AuthorizationModule } from "./modules/authorization/authorization.module.js";
+import { ConsentModule } from "./modules/consent/consent.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
 import { InvitationsModule } from "./modules/invitations/invitations.module.js";
 import { MeModule } from "./modules/me/me.module.js";
@@ -34,6 +35,7 @@ export const ROOT_LOGGER: Logger = createLogger({
     DbModule,
     HealthModule,
     VersionModule,
+    ConsentModule,
     AuthorizationModule,
     MeModule,
     OrganizationsModule,
