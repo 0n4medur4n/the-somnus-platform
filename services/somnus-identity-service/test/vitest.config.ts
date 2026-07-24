@@ -19,7 +19,20 @@ export default defineConfig({
     include: ["test/**/*.test.ts"],
     setupFiles: ["test/setup.ts"],
     globalSetup: ["test/global-setup.ts"],
-    testTimeout: 20_000,
+    // These integration tests run against a real MySQL/TiDB instance.
+    // Locally that's docker-compose on localhost; in CI it's the TiDB
+    // Cloud dev cluster in AWS eu-central-1, reached over the public
+    // internet from a GitHub-hosted runner. That path adds real
+    // round-trip latency, and TiDB Serverless scales to zero when idle
+    // -- the first queries of a run pay a cold-start resume cost. A
+    // multi-step test (the negative-auth org lifecycle, the HTTP
+    // endpoint flows) does many sequential round-trips and can exceed
+    // the 20s/10s defaults on a cold remote cluster even though every
+    // assertion is correct. These generous ceilings are about the
+    // network, not the logic; they never mask a hang, since a genuinely
+    // stuck test still fails, just later.
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
     pool: "forks",
     // Integration tests share one real MySQL instance (build plan §19);
     // running files in parallel would let the migration up/down test's
