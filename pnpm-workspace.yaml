@@ -11,3 +11,7 @@ allowBuilds:
   # for swagger-ui-dist to function, and this is a privacy-sensitive
   # healthcare platform (build plan §15/§21).
   '@scarf/scarf': false
+  # @firebase/util's postinstall only writes a client-webapp auto-init
+  # config when FIREBASE_WEBAPP_CONFIG is set -- irrelevant to server-side
+  # firebase-admin (edge-api never sets it), and a no-op otherwise. Denied.
+  '@firebase/util': false

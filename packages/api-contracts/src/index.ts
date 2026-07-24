@@ -15,4 +15,5 @@ export {
   type PaginationQuery,
   PaginationQuerySchema,
 } from "./pagination.js";
+export * from "./session/index.js";
 export { isUUIDv7, opaqueId, opaqueIdSchema, parseOpaqueId, UUIDv7, UUIDv7Schema } from "./uuid.js";

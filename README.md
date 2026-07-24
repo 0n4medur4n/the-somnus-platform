@@ -23,7 +23,9 @@ or AI training knowledge conflicts with it, the build plan wins.
 | 6     | 6.2 Identity domain and API | **DONE** (contracts, authorization engine, endpoints; `sessions` stubbed until Phase 8) |
 | 6     | 6.3 Negative authorization suite | **DONE** (10/10 scenarios green, marked immutable, CI-enforced against the real TiDB dev cluster; see [`services/somnus-identity-service` README](./services/somnus-identity-service/README.md#negative-authorization-suite-phase-63-immutable)) |
 | 7     | 7.1 Consent module | **DONE** (fully isolated: own database, own migrations, own repositories; identity reaches it only through `ConsentService`; see [`services/somnus-identity-service` README](./services/somnus-identity-service/README.md#consent-module-phase-71-fully-isolated)) |
-| 8+    | edge API, frontends, Morpheo domain, report, worker, hardening | pending |
+| 8     | 8.1 Edge API sessions and hardening | **DONE** (Firebase token verification, Firestore-backed server-side sessions, CSRF, strict CORS, rate limiting, size limits; negative tests green against the emulators; see [`services/somnus-edge-api`](./services/somnus-edge-api)) |
+| 8     | 8.2 Edge API composition | pending |
+| 9+    | frontends, Morpheo domain, report, worker, hardening | pending |
 
 ## Repository layout (per build plan §6)
 
