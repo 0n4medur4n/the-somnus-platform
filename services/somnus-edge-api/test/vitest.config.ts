@@ -1,0 +1,49 @@
+import swc from "unplugin-swc";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  plugins: [
+    swc.vite({
+      module: { type: "es6" },
+      jsc: {
+        target: "es2022",
+        parser: { syntax: "typescript", decorators: true, dynamicImport: true },
+        transform: { legacyDecorator: true, decoratorMetadata: true },
+        keepClassNames: true,
+      },
+    }),
+  ],
+  test: {
+    globals: false,
+    environment: "node",
+    include: ["test/**/*.test.ts"],
+    setupFiles: ["test/setup.ts"],
+    // These integration tests run against the Firebase Auth + Firestore
+    // emulators (build plan §10 / §9). Reaching them, plus firebase-admin
+    // app init, is slower than an in-process unit test; the generous
+    // ceilings are about that latency, not the logic. A genuinely stuck
+    // test still fails, just later.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+    pool: "forks",
+    // The Firestore session store is shared state across test files;
+    // sequential execution keeps one file's revocation test from racing
+    // another's session reads.
+    fileParallelism: false,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "json-summary"],
+      include: ["src/modules/sessions/**/*.ts", "src/infrastructure/firebase/**/*.ts"],
+      exclude: ["**/index.ts", "**/*.dto.ts", "**/*.decorator.ts"],
+      thresholds: {
+        // The session store + guard are edge-api's security core.
+        "src/modules/sessions/**": {
+          lines: 85,
+          functions: 85,
+          statements: 85,
+          branches: 75,
+        },
+      },
+    },
+  },
+});
