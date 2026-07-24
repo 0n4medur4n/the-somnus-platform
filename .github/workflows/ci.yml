@@ -209,14 +209,14 @@ jobs:
       # the test process, runs the suite, and tears the emulators down.
       # The project id must match the tests' FIREBASE_PROJECT_ID
       # (somnus-dev-test) so verifyIdToken's aud/iss checks line up.
-      # firebase-tools is the root devDependency installed above.
+      # firebase-tools is the root devDependency installed above, so
+      # `pnpm exec firebase` resolves from the workspace root.
       #
-      # NOTE: temporarily running `test` (no coverage) rather than
-      # `test:coverage`. A coverage-threshold miss exits 1 with no
-      # per-test annotation, indistinguishable from an emulator problem;
-      # plain `test` surfaces any real test failure as an annotated
-      # file:line. Restored to test:coverage once the emulator job is
-      # confirmed stable on the runner.
+      # The wrapper echoes the error-relevant tail as a `::error::`
+      # annotation on failure -- the annotations API is the only view of
+      # this step available without raw-log access, and neither a
+      # coverage-threshold miss nor an emulator problem produces a
+      # per-test annotation on its own.
       - name: Test edge-api (against Auth + Firestore emulators)
         run: |
           set +e
@@ -224,13 +224,11 @@ jobs:
             --only auth,firestore \
             --project somnus-dev-test \
             --config services/somnus-edge-api/test/firebase.emulators.json \
-            "pnpm --filter @somnus/edge-api test" 2>&1)
+            "pnpm --filter @somnus/edge-api test:coverage" 2>&1)
           CODE=$?
           echo "$OUTPUT"
           if [ "$CODE" -ne 0 ]; then
-            # Surface the tail as a GitHub error annotation so the cause
-            # is visible without raw-log access (temporary diagnostic).
-            TAIL=$(echo "$OUTPUT" | grep -iE "error|fail|exception|emulator|not found|refused|timed out|cannot|ENOENT|java" | tail -25 | tr '\n' '~' | cut -c1-1500)
+            TAIL=$(echo "$OUTPUT" | grep -iE "error|fail|exception|emulator|not found|refused|timed out|cannot|ENOENT|java|coverage|threshold" | tail -25 | tr '\n' '~' | cut -c1-1500)
             echo "::error::edge-api exit ${CODE}: ${TAIL}"
           fi
           exit "$CODE"
