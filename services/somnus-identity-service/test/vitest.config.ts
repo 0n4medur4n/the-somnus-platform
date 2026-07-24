@@ -30,9 +30,12 @@ export default defineConfig({
     // the 20s/10s defaults on a cold remote cluster even though every
     // assertion is correct. These generous ceilings are about the
     // network, not the logic; they never mask a hang, since a genuinely
-    // stuck test still fails, just later.
-    testTimeout: 60_000,
-    hookTimeout: 60_000,
+    // stuck test still fails, just later. Raised to 120s after a 60s
+    // timeout still tripped on an unusually cold cluster resume (TiDB
+    // Serverless documents resume-from-idle taking up to ~a minute, and
+    // a multi-step test spends that on top of its own round-trips).
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
     pool: "forks",
     // Integration tests share one real MySQL instance (build plan §19);
     // running files in parallel would let the migration up/down test's
