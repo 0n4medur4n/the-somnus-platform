@@ -179,18 +179,30 @@ jobs:
       - name: Build shared packages
         run: pnpm --if-present -r --filter "./packages/*" run build
 
-      # The Firestore emulator JAR (~60MB) is downloaded on first use.
-      # Cache it so it isn't re-fetched every run, and download it in a
-      # dedicated step so a download problem shows up here rather than
-      # masquerading as a test failure inside emulators:exec.
+      # Pre-place the Firestore emulator JAR (~138MB) that emulators:exec
+      # needs, into the cache dir where the firebase CLI looks for it.
+      # We fetch it directly from Google's official storage rather than
+      # via `firebase setup:emulators:firestore`, whose downloader fails
+      # non-interactively on the runner. The pinned version tracks
+      # firebase-tools (pinned in the root devDependencies); bump both
+      # together. Cached across runs so it downloads at most once.
       - name: Cache Firebase emulators
         uses: actions/cache@v4
         with:
           path: ~/.cache/firebase/emulators
-          key: firebase-emulators-${{ runner.os }}
+          key: firebase-emulators-${{ runner.os }}-firestore-v1.21.0
 
-      - name: Pre-download Firestore emulator
-        run: pnpm exec firebase setup:emulators:firestore
+      - name: Ensure Firestore emulator JAR present
+        run: |
+          set -euo pipefail
+          JAR_DIR="$HOME/.cache/firebase/emulators"
+          JAR="$JAR_DIR/cloud-firestore-emulator-v1.21.0.jar"
+          if [ ! -f "$JAR" ]; then
+            mkdir -p "$JAR_DIR"
+            curl -fSL --retry 3 --retry-delay 2 -o "$JAR" \
+              "https://storage.googleapis.com/firebase-preview-drop/emulator/cloud-firestore-emulator-v1.21.0.jar"
+          fi
+          ls -la "$JAR"
 
       # firebase emulators:exec starts the Auth + Firestore emulators,
       # exports FIREBASE_AUTH_EMULATOR_HOST / FIRESTORE_EMULATOR_HOST into
