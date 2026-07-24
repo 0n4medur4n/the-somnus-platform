@@ -10,6 +10,8 @@ import {
   RolesRepository,
   UsersRepository,
 } from "../../infrastructure/db/repositories/index.js";
+// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
+import { ConsentService } from "../../modules/consent/consent.service.js";
 import { evaluateAccess } from "./authorization-policy.js";
 
 /**
@@ -27,6 +29,7 @@ export class AuthorizationService {
     private readonly memberships: OrganizationMembershipsRepository,
     private readonly professionalProfiles: ProfessionalProfilesRepository,
     private readonly accessGrants: AccessGrantsRepository,
+    private readonly consentService: ConsentService,
   ) {}
 
   async check(request: AuthorizationCheckRequest): Promise<AuthorizationCheckResponse> {
@@ -86,6 +89,24 @@ export class AuthorizationService {
       }
     }
 
+    // Only read_clinical_data ever consults consentWithdrawn (see
+    // authorization-policy.ts) -- skip the call for every other
+    // action. The subject is the person whose data would be
+    // processed, so their consent is what's checked, never the
+    // actor's. ConsentService.check() reflects an explicit withdrawal
+    // only (build plan §20 Checkpoint 7.1): a subject who has never
+    // interacted with consent at all is not "withdrawn", so this
+    // cannot newly deny any pre-existing self-access or access-grant
+    // path that predates the consent module.
+    let consentWithdrawn = false;
+    if (request.action === "read_clinical_data") {
+      const consentStatus = await this.consentService.check({
+        userId: request.subjectUserId,
+        purposeKey: "health_data_processing",
+      });
+      consentWithdrawn = consentStatus.withdrawn;
+    }
+
     const decision = evaluateAccess({
       now: new Date(),
       actorUserId: request.actorUserId,
@@ -97,9 +118,7 @@ export class AuthorizationService {
       ...(actorMembership ? { actorMembership } : {}),
       ...(verificationStatus ? { actorProfessionalVerificationStatus: verificationStatus } : {}),
       ...(accessGrant ? { accessGrant } : {}),
-      // Build plan Phase 7 (Consent module) supplies the real value
-      // through its public interface; no consent data exists yet.
-      consentWithdrawn: false,
+      consentWithdrawn,
     });
 
     return {

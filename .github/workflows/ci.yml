@@ -113,6 +113,18 @@ jobs:
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
+      # Consent (build plan §13 / ADR 0010) is a genuinely separate
+      # logical database, but in dev/CI it lives on the same TiDB
+      # cluster/user as identity's -- only the database name differs.
+      # Derived here (never echoed) rather than a second GitHub
+      # secret, since it's the same credential with one path segment
+      # changed; production provisions a real, independent user for
+      # somnus_consent (build plan §8), not this derivation.
+      - name: Derive CONSENT_DATABASE_URL
+        run: |
+          echo "CONSENT_DATABASE_URL=$(echo "$DATABASE_URL" | sed 's#/somnus_identity#/somnus_consent#')" >> "$GITHUB_ENV"
+          echo "CONSENT_DB_SSL=true" >> "$GITHUB_ENV"
+
       # identity-service depends on the built dist/ of these workspace
       # packages (each package.json's "main" points at dist/, not src/).
       - name: Build shared packages

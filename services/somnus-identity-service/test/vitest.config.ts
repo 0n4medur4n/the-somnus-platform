@@ -30,7 +30,12 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json-summary"],
-      include: ["src/infrastructure/db/repositories/**/*.ts", "src/domain/**/*.ts"],
+      include: [
+        "src/infrastructure/db/repositories/**/*.ts",
+        "src/domain/**/*.ts",
+        "src/modules/consent/db/repositories/**/*.ts",
+        "src/modules/consent/consent.service.ts",
+      ],
       exclude: ["**/index.ts"],
       thresholds: {
         // Build plan §20 Checkpoint 6.1: ≥80% on repositories.
@@ -42,6 +47,23 @@ export default defineConfig({
         },
         // Build plan §20 Checkpoint 6.2: ≥90% on authorization domain code.
         "src/domain/**": {
+          lines: 90,
+          functions: 90,
+          statements: 90,
+          branches: 90,
+        },
+        // Consent's repositories held to the same bar as identity's
+        // (build plan §20 Checkpoint 6.1 precedent).
+        "src/modules/consent/db/repositories/**": {
+          lines: 80,
+          functions: 80,
+          statements: 80,
+          branches: 70,
+        },
+        // consent.service.ts is the module's entire public interface
+        // (build plan ADR 0010) -- held to the same bar as the
+        // authorization domain it feeds into.
+        "src/modules/consent/consent.service.ts": {
           lines: 90,
           functions: 90,
           statements: 90,

@@ -1,7 +1,8 @@
 /**
  * Contract tests against the generated OpenAPI document (build plan §20
  * Checkpoint 6.2 exit criterion: "contract tests against the generated
- * OpenAPI"). These do NOT re-derive the document -- they load the file
+ * OpenAPI"; extended in Checkpoint 7.1 to cover the consent module's
+ * routes and DTOs too). These do NOT re-derive the document -- they load the file
  * `generate:openapi` already wrote (schemas/openapi/identity-service.json,
  * build plan §3.4: generated from Zod, never hand-written) and assert two
  * things a route/schema change could silently break:
@@ -29,6 +30,9 @@ import { fileURLToPath } from "node:url";
 import {
   AccessGrantCreateRequestSchema,
   AuthorizationCheckRequestSchema,
+  ConsentCheckRequestSchema,
+  ConsentCreateRequestSchema,
+  ConsentWithdrawRequestSchema,
   InvitationAcceptRequestSchema,
   InvitationCreateRequestSchema,
   MembershipPatchRequestSchema,
@@ -232,6 +236,40 @@ const REQUEST_DTOS: Array<{
       },
     ],
   },
+  {
+    schemaName: "ConsentCreateDto",
+    zodSchema: ConsentCreateRequestSchema,
+    valid: { purposeKey: "marketing" },
+    invalid: [
+      { label: "missing required purposeKey", payload: {} },
+      { label: "invalid purposeKey enum value", payload: { purposeKey: "newsletter" } },
+      {
+        label: "unknown additional property (strict)",
+        payload: { purposeKey: "marketing", token: "x" },
+      },
+    ],
+  },
+  {
+    schemaName: "ConsentWithdrawDto",
+    zodSchema: ConsentWithdrawRequestSchema,
+    valid: {},
+    invalid: [
+      { label: "reason below minLength", payload: { reason: "" } },
+      { label: "unknown additional property (strict)", payload: { force: true } },
+    ],
+  },
+  {
+    schemaName: "ConsentCheckDto",
+    zodSchema: ConsentCheckRequestSchema,
+    valid: { userId: "019893d1-2b8e-7c3a-8f1a-000000000004", purposeKey: "health_data_processing" },
+    invalid: [
+      { label: "missing required userId", payload: { purposeKey: "health_data_processing" } },
+      {
+        label: "invalid purposeKey enum value",
+        payload: { userId: "019893d1-2b8e-7c3a-8f1a-000000000004", purposeKey: "newsletter" },
+      },
+    ],
+  },
 ];
 
 describe("OpenAPI document structure", () => {
@@ -256,6 +294,11 @@ describe("OpenAPI document structure", () => {
     ["/v1/me/access-grants", "post", "AccessGrantCreateDto"],
     ["/v1/me/access-grants", "get", undefined],
     ["/v1/me/access-grants/{grantId}/revoke", "post", undefined],
+    ["/v1/legal-documents/current", "get", undefined],
+    ["/v1/consents", "post", "ConsentCreateDto"],
+    ["/v1/consents/current", "get", undefined],
+    ["/v1/consents/{receiptId}/withdraw", "post", "ConsentWithdrawDto"],
+    ["/internal/v1/consents/check", "post", "ConsentCheckDto"],
   ] as const)("documents %s %s with request schema %s", (path, method, expectedSchemaRef) => {
     const operation = document.paths[path]?.[method];
     expect(

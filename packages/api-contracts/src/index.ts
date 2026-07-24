@@ -1,7 +1,14 @@
+export * from "./consent/index.js";
 export { type ApiErrorResponse, ApiErrorResponseSchema } from "./error.js";
 export { type EventEnvelope, EventEnvelopeSchema, type EventType, makeEvent } from "./events.js";
 export * from "./identity/index.js";
-export { DEFAULT_LOCALE, isSupportedLocale, LocaleSchema, SUPPORTED_LOCALES } from "./locale.js";
+export {
+  DEFAULT_LOCALE,
+  isSupportedLocale,
+  LocaleSchema,
+  SUPPORTED_LOCALES,
+  type SupportedLocale,
+} from "./locale.js";
 export {
   type PageInfo,
   PageInfoSchema,
