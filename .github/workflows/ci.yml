@@ -210,10 +210,17 @@ jobs:
       # The project id must match the tests' FIREBASE_PROJECT_ID
       # (somnus-dev-test) so verifyIdToken's aud/iss checks line up.
       # firebase-tools is the root devDependency installed above.
+      #
+      # NOTE: temporarily running `test` (no coverage) rather than
+      # `test:coverage`. A coverage-threshold miss exits 1 with no
+      # per-test annotation, indistinguishable from an emulator problem;
+      # plain `test` surfaces any real test failure as an annotated
+      # file:line. Restored to test:coverage once the emulator job is
+      # confirmed stable on the runner.
       - name: Test edge-api (against Auth + Firestore emulators)
         run: >
           pnpm exec firebase emulators:exec
           --only auth,firestore
           --project somnus-dev-test
           --config services/somnus-edge-api/test/firebase.emulators.json
-          "pnpm --filter @somnus/edge-api test:coverage"
+          "pnpm --filter @somnus/edge-api test"
