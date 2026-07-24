@@ -218,9 +218,19 @@ jobs:
       # file:line. Restored to test:coverage once the emulator job is
       # confirmed stable on the runner.
       - name: Test edge-api (against Auth + Firestore emulators)
-        run: >
-          pnpm exec firebase emulators:exec
-          --only auth,firestore
-          --project somnus-dev-test
-          --config services/somnus-edge-api/test/firebase.emulators.json
-          "pnpm --filter @somnus/edge-api test"
+        run: |
+          set +e
+          OUTPUT=$(pnpm exec firebase emulators:exec \
+            --only auth,firestore \
+            --project somnus-dev-test \
+            --config services/somnus-edge-api/test/firebase.emulators.json \
+            "pnpm --filter @somnus/edge-api test" 2>&1)
+          CODE=$?
+          echo "$OUTPUT"
+          if [ "$CODE" -ne 0 ]; then
+            # Surface the tail as a GitHub error annotation so the cause
+            # is visible without raw-log access (temporary diagnostic).
+            TAIL=$(echo "$OUTPUT" | grep -iE "error|fail|exception|emulator|not found|refused|timed out|cannot|ENOENT|java" | tail -25 | tr '\n' '~' | cut -c1-1500)
+            echo "::error::edge-api exit ${CODE}: ${TAIL}"
+          fi
+          exit "$CODE"
