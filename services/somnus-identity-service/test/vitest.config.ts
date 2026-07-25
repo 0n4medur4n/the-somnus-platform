@@ -36,6 +36,16 @@ export default defineConfig({
     // a multi-step test spends that on top of its own round-trips).
     testTimeout: 120_000,
     hookTimeout: 120_000,
+    // Retry an integration test that fails against the remote cluster.
+    // These tests are deterministic locally (docker-compose MySQL); the
+    // flakiness is entirely the shared TiDB Serverless dev cluster
+    // reached over the public internet from CI -- occasional connection
+    // handshakes, throttling, and resume stalls that surface as a
+    // timeout or a transient query error. A retry re-runs beforeEach
+    // (resetTables) then the test, so it is idempotent; a genuine bug
+    // still fails all attempts (and would fail locally too), so this
+    // hides latency, never a real regression.
+    retry: 2,
     pool: "forks",
     // Integration tests share one real MySQL instance (build plan §19);
     // running files in parallel would let the migration up/down test's
