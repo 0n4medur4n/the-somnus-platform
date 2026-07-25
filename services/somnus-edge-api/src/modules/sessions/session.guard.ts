@@ -2,7 +2,6 @@ import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/com
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import { loadEdgeConfig } from "../../config/edge-config.js";
 import type { RequestWithSession } from "./current-session.decorator.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { SessionService } from "./session.service.js";
 
 /**

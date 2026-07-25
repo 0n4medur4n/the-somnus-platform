@@ -4,13 +4,10 @@ import type { SessionResponse } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import type { FastifyReply } from "fastify";
 import { type EdgeConfig, loadEdgeConfig } from "../../config/edge-config.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { FirebaseService } from "../../infrastructure/firebase/firebase.service.js";
 import { CurrentSession } from "./current-session.decorator.js";
-// biome-ignore lint/style/useImportType: used as a @Body() parameter type -- nestjs-zod's global ZodValidationPipe needs a real import to recognize and validate this DTO class at runtime.
 import { SessionCreateDto } from "./session.dto.js";
 import { SessionGuard } from "./session.guard.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { type SessionRecord, SessionService } from "./session.service.js";
 
 /** Readable (non-HttpOnly) cookie carrying the CSRF token for the SPA to echo in a header (double-submit). */

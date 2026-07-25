@@ -1,11 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import type { MeResponse, ProfilePatchRequest, UUIDv7 } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { IndividualProfilesRepository } from "../../infrastructure/db/repositories/individual-profiles.repository.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { ProfessionalProfilesRepository } from "../../infrastructure/db/repositories/professional-profiles.repository.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { UsersRepository } from "../../infrastructure/db/repositories/users.repository.js";
 
 @Injectable()

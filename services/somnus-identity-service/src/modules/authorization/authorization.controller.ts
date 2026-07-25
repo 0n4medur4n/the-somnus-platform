@@ -1,9 +1,7 @@
 import { Body, Controller, HttpCode, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { AuthorizationCheckResponse } from "@somnus/api-contracts";
-// biome-ignore lint/style/useImportType: used as a @Body() parameter type -- nestjs-zod's global ZodValidationPipe needs a real import to recognize and validate this DTO class at runtime.
 import { AuthorizationCheckDto } from "../../common/dto/identity.dto.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { AuthorizationService } from "../../domain/authorization/authorization.service.js";
 
 /**

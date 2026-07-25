@@ -5,7 +5,6 @@ import {
   DEFAULT_LOCALE,
   isSupportedLocale,
 } from "@somnus/api-contracts";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { ConsentService } from "./consent.service.js";
 
 /**

@@ -1,9 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { Membership, MembershipPatchRequest, UUIDv7 } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { AuthorizationService } from "../../domain/authorization/authorization.service.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { OrganizationMembershipsRepository } from "../../infrastructure/db/repositories/organization-memberships.repository.js";
 
 @Injectable()

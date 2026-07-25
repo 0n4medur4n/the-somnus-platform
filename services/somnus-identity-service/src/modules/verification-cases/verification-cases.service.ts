@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { UUIDv7, VerificationCase } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { ProfessionalProfilesRepository } from "../../infrastructure/db/repositories/professional-profiles.repository.js";
 
 @Injectable()

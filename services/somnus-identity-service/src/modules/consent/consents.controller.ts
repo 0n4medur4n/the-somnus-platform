@@ -3,9 +3,7 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { ConsentReceipt, ConsentStatusListResponse } from "@somnus/api-contracts";
 import { CurrentActorId } from "../../common/decorators/current-actor.decorator.js";
 import { CorrelationId } from "../../common/interceptors/correlation-id.decorator.js";
-// biome-ignore lint/style/useImportType: used as @Body() parameter types -- nestjs-zod's global ZodValidationPipe needs a real import to recognize and validate these DTO classes at runtime.
 import { ConsentCreateDto, ConsentWithdrawDto } from "./consent.dto.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { ConsentService } from "./consent.service.js";
 
 @ApiTags("consent")
