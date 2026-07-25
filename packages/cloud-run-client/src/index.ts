@@ -4,7 +4,8 @@ export {
   createCloudRunClient,
   type TokenProvider,
 } from "./client.js";
-export { mapHttpErrorToSomnusError, type UpstreamErrorContext } from "./error-mapping.js";
+export { mapHttpErrorToSomnusError } from "./error-mapping.js";
+export type { UpstreamErrorContext } from "./error-mapping-types.js";
 export {
   createGoogleTokenProvider,
   GoogleIdTokenTokenProvider,

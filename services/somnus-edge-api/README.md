@@ -6,15 +6,16 @@ verifies Firebase ID tokens, issues and revokes server-side session
 cookies, and applies the §21 security baseline (CSRF, strict CORS, rate
 limiting, request-size limits, secure cookies). It is **not** a
 business-domain service: it holds no domain logic, **never connects to
-TiDB**, and reaches the private services only over authenticated
-internal calls (that composition lands in Checkpoint 8.2).
+TiDB** (enforced by an architectural test), and reaches the private
+services only over authenticated internal calls via
+`@somnus/cloud-run-client` (OIDC identity tokens).
 
 Cloned from the `somnus-identity-service` NestJS template (Fastify +
 helmet, structured JSON logging, correlation IDs, the §16 error shape,
 the `SomnusExceptionFilter`, the OpenAPI generator, a multi-stage
 non-root Dockerfile).
 
-## Endpoints (Phase 8.1)
+## Endpoints
 
 | Method | Path | Description |
 |---|---|---|
@@ -24,6 +25,40 @@ non-root Dockerfile).
 | GET | `/docs` | Swagger UI for the generated OpenAPI doc. |
 | POST | `/v1/sessions` | Exchange a Firebase ID token for a session cookie (login). |
 | DELETE | `/v1/sessions/current` | Revoke the current session and clear its cookies (logout). |
+| GET | `/v1/me` | Current actor's user + profiles, composed from identity (8.2). |
+| PATCH | `/v1/me/profile` | Patch the individual profile via identity (8.2). |
+| GET | `/v1/legal-documents/current` | Public: current legal documents, proxied from consent (8.2). |
+| GET | `/v1/consents/current` | Actor's consent standing, proxied from consent (8.2). |
+| POST | `/v1/consents` | Record consent, proxied from consent (8.2). |
+| POST | `/v1/consents/:id/withdraw` | Withdraw consent, proxied from consent (8.2). |
+
+## Composition (build plan §20 Checkpoint 8.2)
+
+edge-api is a BFF: `/v1/me` and the consent routes are **proxied** to
+the private `somnus-identity-service` (which hosts the consent module);
+edge-api re-implements none of that logic. Internal calls go through
+`@somnus/cloud-run-client`, which attaches a Google OIDC identity token
+scoped to the downstream service's audience (Cloud Run IAM verifies
+it), forwards the correlation id, and retries idempotent failures.
+
+**Actor resolution.** The session (§10) carries only the Firebase uid.
+Private services expect the internal Somnus user id in the
+`x-somnus-actor-id` header, so on the first composed request edge-api
+calls identity's internal `POST /internal/v1/users/resolve`
+(Firebase-uid → Somnus user id) and **memoizes** the result on the
+session document — every session pays that lookup at most once. A
+Firebase user with no linked Somnus account surfaces as a clean `404`
+(registration/provisioning is a separate flow, not this read path).
+
+**Error normalization.** Downstream error bodies are mapped back to
+`SomnusError` (`@somnus/cloud-run-client`) and rendered in the §16
+error shape by the shared exception filter; a downstream timeout
+becomes `UPSTREAM_UNAVAILABLE`.
+
+Internal-call config: `IDENTITY_BASE_URL`, `IDENTITY_AUDIENCE` (OIDC
+audience; defaults to the base URL), `INTERNAL_AUTH_MODE`
+(`gcp` in production / `insecure-dev` for local/docker/tests, where
+there is no metadata server), and `INTERNAL_TIMEOUT_MS`.
 
 ## Session flow (build plan §10)
 
@@ -38,8 +73,9 @@ non-root Dockerfile).
 5. `DELETE /v1/sessions/current` revokes the session server-side and
    clears the cookies.
 
-The session in 8.1 identifies the user by their **Firebase uid**;
-mapping that to a Somnus user and composing `/v1/me` is Checkpoint 8.2.
+The session identifies the user by their **Firebase uid**; the mapping
+to an internal Somnus user id is resolved lazily and memoized on the
+session (see **Composition** above).
 
 ## Why a server-side (Firestore) session store
 
@@ -160,7 +196,8 @@ Multi-stage, non-root `somnus` user, `node:24-alpine`.
 
 ## Build plan
 
-Implements build plan §20 Phase 8 / Checkpoint 8.1 (sessions and
-hardening). Composition (internal OIDC clients, `/v1/me`, consent
-proxying, the "no TiDB connection" architectural test) is Checkpoint
-8.2.
+Implements build plan §20 Phase 8 — Checkpoint 8.1 (sessions and
+hardening) and Checkpoint 8.2 (composition: internal OIDC clients via
+`@somnus/cloud-run-client`, `/v1/me`, consent proxying, downstream
+error normalization, and the `no-tidb.arch` test proving this service
+holds no database connection).

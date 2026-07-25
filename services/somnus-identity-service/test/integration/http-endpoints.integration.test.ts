@@ -231,6 +231,39 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     });
   });
 
+  describe("POST /internal/v1/users/resolve (build plan §20 Checkpoint 8.2)", () => {
+    it("resolves a linked provider id to the internal Somnus user", async () => {
+      const userId = await users.create({ email: "linked@example.com" });
+      await users.linkIdentity({ userId, providerUserId: "firebase-uid-abc" });
+
+      const res = await inject(server, "POST", "/internal/v1/users/resolve", {
+        payload: { providerUserId: "firebase-uid-abc" },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toMatchObject({
+        userId,
+        email: "linked@example.com",
+        locale: "es",
+        status: "active",
+      });
+    });
+
+    it("404s for a provider id with no linked Somnus account", async () => {
+      const res = await inject(server, "POST", "/internal/v1/users/resolve", {
+        payload: { providerUserId: "firebase-uid-unknown" },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it("400s on a malformed body (empty providerUserId)", async () => {
+      const res = await inject(server, "POST", "/internal/v1/users/resolve", {
+        payload: { providerUserId: "" },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+  });
+
   describe("access grants (self-service)", () => {
     it("creates a grant, lists it, then revoking removes it from the active list", async () => {
       const subject = await users.create({ email: "grantor@example.com" });

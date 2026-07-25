@@ -14,7 +14,13 @@ import {
 import { MembershipPatchRequestSchema, MembershipSchema } from "./membership.js";
 import { OrganizationCreateRequestSchema, OrganizationSchema } from "./organization.js";
 import { RoleKeySchema } from "./roles.js";
-import { MeResponseSchema, ProfilePatchRequestSchema, UserSchema } from "./user.js";
+import {
+  MeResponseSchema,
+  ProfilePatchRequestSchema,
+  UserResolveRequestSchema,
+  UserResolveResponseSchema,
+  UserSchema,
+} from "./user.js";
 import { VerificationCaseSchema } from "./verification-case.js";
 
 describe("UserSchema", () => {
@@ -196,6 +202,44 @@ describe("Authorization contracts", () => {
       });
       expect(r.success, `reasonCode ${reasonCode} failed to parse`).toBe(true);
     }
+  });
+});
+
+describe("UserResolveRequestSchema / UserResolveResponseSchema", () => {
+  it("accepts a valid resolve request", () => {
+    expect(UserResolveRequestSchema.safeParse({ providerUserId: "firebase-uid-123" }).success).toBe(
+      true,
+    );
+  });
+
+  it("rejects an empty providerUserId", () => {
+    expect(UserResolveRequestSchema.safeParse({ providerUserId: "" }).success).toBe(false);
+  });
+
+  it("rejects unknown keys (strict)", () => {
+    expect(UserResolveRequestSchema.safeParse({ providerUserId: "x", extra: 1 }).success).toBe(
+      false,
+    );
+  });
+
+  it("accepts a valid resolve response", () => {
+    const r = UserResolveResponseSchema.safeParse({
+      userId: UUIDv7(),
+      email: "a@example.com",
+      locale: "es",
+      status: "active",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects a response missing status", () => {
+    expect(
+      UserResolveResponseSchema.safeParse({
+        userId: UUIDv7(),
+        email: "a@example.com",
+        locale: "es",
+      }).success,
+    ).toBe(false);
   });
 });
 

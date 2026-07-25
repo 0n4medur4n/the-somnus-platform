@@ -33,8 +33,17 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json-summary"],
-      include: ["src/modules/sessions/**/*.ts", "src/infrastructure/firebase/**/*.ts"],
-      exclude: ["**/index.ts", "**/*.dto.ts", "**/*.decorator.ts"],
+      include: [
+        "src/modules/sessions/**/*.ts",
+        "src/infrastructure/firebase/**/*.ts",
+        "src/modules/me/**/*.ts",
+        "src/modules/consent/**/*.ts",
+        "src/infrastructure/internal-clients/**/*.ts",
+        "src/common/composition.util.ts",
+      ],
+      // Module files are declarative DI wiring, exercised implicitly by
+      // the integration boot; they carry no branch logic worth a bar.
+      exclude: ["**/index.ts", "**/*.dto.ts", "**/*.decorator.ts", "**/*.module.ts"],
       thresholds: {
         // The session store + guard are edge-api's security core.
         // Local run: 100% stmts/funcs/lines, ~80% branches. The branch
@@ -45,6 +54,15 @@ export default defineConfig({
           functions: 85,
           statements: 85,
           branches: 70,
+        },
+        // The composition layer (BFF proxy + actor resolution).
+        "src/modules/me/**": { lines: 85, functions: 85, statements: 85, branches: 70 },
+        "src/modules/consent/**": { lines: 85, functions: 85, statements: 85, branches: 70 },
+        "src/infrastructure/internal-clients/**": {
+          lines: 80,
+          functions: 80,
+          statements: 80,
+          branches: 60,
         },
       },
     },

@@ -1,6 +1,6 @@
 import { ApiErrorResponseSchema } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
-import type { UpstreamErrorContext } from "./error-mapping.js";
+import type { UpstreamErrorContext } from "./error-mapping-types.js";
 
 export function mapHttpErrorToSomnusError(
   status: number,

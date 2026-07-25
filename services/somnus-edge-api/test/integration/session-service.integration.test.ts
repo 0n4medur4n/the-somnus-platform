@@ -59,4 +59,22 @@ describe("SessionService (Firestore-backed session store)", () => {
     // Never existed -- no-op, no throw.
     await expect(sessions.revoke(UUIDv7())).resolves.toBeUndefined();
   });
+
+  it("create() starts with a null somnusUserId until it is resolved", async () => {
+    const created = await sessions.create({ firebaseUid: "user-5", email: null, ttlSeconds: 3600 });
+    expect(created.somnusUserId).toBeNull();
+    const found = await sessions.validate(created.sessionId);
+    expect(found?.somnusUserId).toBeNull();
+  });
+
+  it("setSomnusUserId() memoizes the resolved id, readable on the next validate()", async () => {
+    const created = await sessions.create({ firebaseUid: "user-6", email: null, ttlSeconds: 3600 });
+    await sessions.setSomnusUserId(created.sessionId, "018f0000-0000-7000-8000-0000000000aa");
+    const found = await sessions.validate(created.sessionId);
+    expect(found?.somnusUserId).toBe("018f0000-0000-7000-8000-0000000000aa");
+  });
+
+  it("setSomnusUserId() is a no-op for a session that does not exist", async () => {
+    await expect(sessions.setSomnusUserId(UUIDv7(), "x")).resolves.toBeUndefined();
+  });
 });

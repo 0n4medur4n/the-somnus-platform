@@ -63,6 +63,22 @@ export const EdgeConfigSchema = z.object({
     .int()
     .min(1024)
     .default(64 * 1024),
+
+  // Internal composition target: the private identity service (build
+  // plan §5.3 / §20 Checkpoint 8.2). edge-api reaches it over HTTP with
+  // an OIDC identity token; there is no database connection here.
+  IDENTITY_BASE_URL: z.string().url().default("http://127.0.0.1:3001"),
+  // The OIDC audience for identity's Cloud Run URL. In `gcp` auth mode a
+  // Google-signed identity token with this audience is minted per call;
+  // Cloud Run IAM verifies it. Defaults to IDENTITY_BASE_URL when unset.
+  IDENTITY_AUDIENCE: z.string().min(1).optional(),
+  // How internal calls are authenticated. `gcp`: mint a real Google
+  // OIDC identity token (production on Cloud Run). `insecure-dev`: send
+  // a fixed dev token -- for local/docker/tests where there is no GCP
+  // metadata server and identity is not behind Cloud Run IAM.
+  INTERNAL_AUTH_MODE: z.enum(["gcp", "insecure-dev"]).default("insecure-dev"),
+  // Per-call timeout for internal composition requests (ms).
+  INTERNAL_TIMEOUT_MS: z.coerce.number().int().min(100).default(5_000),
 });
 
 export type EdgeConfig = z.infer<typeof EdgeConfigSchema>;
