@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import type { AccessGrant, AccessGrantCreateRequest, UUIDv7 } from "@somnus/api-contracts";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { AccessGrantsRepository } from "../../infrastructure/db/repositories/access-grants.repository.js";
 
 /** Self-service: the actor is always the subject granting access over their own data (build plan §11). */

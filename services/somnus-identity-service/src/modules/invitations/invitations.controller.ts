@@ -2,9 +2,7 @@ import { Body, Controller, Param, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Invitation, InvitationCreateResponse } from "@somnus/api-contracts";
 import { CurrentActorId } from "../../common/decorators/current-actor.decorator.js";
-// biome-ignore lint/style/useImportType: used as @Body() parameter types -- nestjs-zod's global ZodValidationPipe needs a real import to recognize and validate these DTO classes at runtime.
 import { InvitationAcceptDto, InvitationCreateDto } from "../../common/dto/identity.dto.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { InvitationsService } from "./invitations.service.js";
 
 @ApiTags("invitations")

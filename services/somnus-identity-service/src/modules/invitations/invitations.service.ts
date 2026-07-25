@@ -7,15 +7,10 @@ import {
   type UUIDv7,
 } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { AuthorizationService } from "../../domain/authorization/authorization.service.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { OrganizationInvitationsRepository } from "../../infrastructure/db/repositories/organization-invitations.repository.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { OrganizationMembershipsRepository } from "../../infrastructure/db/repositories/organization-memberships.repository.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { RoleAssignmentsRepository } from "../../infrastructure/db/repositories/role-assignments.repository.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { RolesRepository } from "../../infrastructure/db/repositories/roles.repository.js";
 
 const INVITATION_TTL_MS = 72 * 60 * 60 * 1000; // 72h, matching the build plan §14 claim-token convention.

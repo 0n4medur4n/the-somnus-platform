@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { AuthorizationCheckRequest, AuthorizationCheckResponse } from "@somnus/api-contracts";
 import { UUIDv7 } from "@somnus/api-contracts";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import {
   AccessGrantsRepository,
   OrganizationMembershipsRepository,
@@ -10,7 +9,6 @@ import {
   RolesRepository,
   UsersRepository,
 } from "../../infrastructure/db/repositories/index.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { ConsentService } from "../../modules/consent/consent.service.js";
 import { evaluateAccess } from "./authorization-policy.js";
 

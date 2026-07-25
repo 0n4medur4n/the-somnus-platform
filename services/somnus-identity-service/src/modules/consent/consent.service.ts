@@ -14,13 +14,9 @@ import {
   type UUIDv7,
 } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { ConsentAuditRepository } from "./db/repositories/consent-audit.repository.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { ConsentReceiptsRepository } from "./db/repositories/consent-receipts.repository.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { ConsentWithdrawalsRepository } from "./db/repositories/consent-withdrawals.repository.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve these as DI tokens; a type-only import erases the reference and breaks injection.
 import { LegalDocumentsRepository } from "./db/repositories/legal-documents.repository.js";
 import { EVENT_PUBLISHER, type EventPublisher } from "./events/event-publisher.js";
 

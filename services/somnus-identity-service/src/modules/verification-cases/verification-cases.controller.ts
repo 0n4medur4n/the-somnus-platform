@@ -2,7 +2,6 @@ import { Controller, Get, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { VerificationCase } from "@somnus/api-contracts";
 import { CurrentActorId } from "../../common/decorators/current-actor.decorator.js";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { VerificationCasesService } from "./verification-cases.service.js";
 
 @ApiTags("verification-cases")

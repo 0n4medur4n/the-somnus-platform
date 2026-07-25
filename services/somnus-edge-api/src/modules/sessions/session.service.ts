@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { UUIDv7 } from "@somnus/api-contracts";
 import { Timestamp } from "firebase-admin/firestore";
-// biome-ignore lint/style/useImportType: constructor-injected -- Nest reflects design:paramtypes at runtime to resolve this as a DI token; a type-only import erases the reference and breaks injection.
 import { FirebaseService } from "../../infrastructure/firebase/firebase.service.js";
 
 /** Firestore collection holding server-side sessions (build plan §9: short-lived session lookup). */
