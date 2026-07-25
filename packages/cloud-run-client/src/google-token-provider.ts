@@ -19,8 +19,10 @@ export class GoogleIdTokenTokenProvider implements TokenProvider {
 
   async getIdToken(): Promise<string> {
     const client = await this.auth.getIdTokenClient(this.audience);
+    // google-auth-library returns a web `Headers` object; read the
+    // (case-insensitive) Authorization header via its accessor.
     const headers = await client.getRequestHeaders();
-    const auth = headers["Authorization"] ?? headers["authorization"];
+    const auth = headers.get("authorization");
     if (typeof auth !== "string" || !auth.startsWith("Bearer ")) {
       throw new Error("google-auth-library did not return a Bearer token");
     }

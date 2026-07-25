@@ -26,6 +26,7 @@
     "@nestjs/platform-fastify": "11.1.28",
     "@nestjs/swagger": "11.4.6",
     "@somnus/api-contracts": "workspace:*",
+    "@somnus/cloud-run-client": "workspace:*",
     "@somnus/config": "workspace:*",
     "@somnus/errors": "workspace:*",
     "@somnus/observability": "workspace:*",

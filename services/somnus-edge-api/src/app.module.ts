@@ -8,7 +8,10 @@ import {
   CorrelationInterceptor,
 } from "./common/interceptors/correlation.interceptor.js";
 import { FirebaseModule } from "./infrastructure/firebase/firebase.module.js";
+import { InternalClientsModule } from "./infrastructure/internal-clients/internal-clients.module.js";
+import { ConsentModule } from "./modules/consent/consent.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
+import { MeModule } from "./modules/me/me.module.js";
 import { SessionsModule } from "./modules/sessions/sessions.module.js";
 import { VersionModule } from "./modules/version/version.module.js";
 
@@ -24,7 +27,15 @@ export const ROOT_LOGGER: Logger = createLogger({
 });
 
 @Module({
-  imports: [FirebaseModule, HealthModule, VersionModule, SessionsModule],
+  imports: [
+    FirebaseModule,
+    InternalClientsModule,
+    HealthModule,
+    VersionModule,
+    SessionsModule,
+    MeModule,
+    ConsentModule,
+  ],
   providers: [
     { provide: APP_FILTER, useClass: SomnusExceptionFilter },
     { provide: CORRELATION_LOGGER, useValue: ROOT_LOGGER },

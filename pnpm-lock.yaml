@@ -198,6 +198,9 @@ importers:
       '@somnus/api-contracts':
         specifier: workspace:*
         version: link:../../packages/api-contracts
+      '@somnus/cloud-run-client':
+        specifier: workspace:*
+        version: link:../../packages/cloud-run-client
       '@somnus/config':
         specifier: workspace:*
         version: link:../../packages/config

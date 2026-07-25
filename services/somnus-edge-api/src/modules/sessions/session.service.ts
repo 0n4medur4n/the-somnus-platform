@@ -13,6 +13,11 @@ export type SessionRecord = {
   createdAt: Date;
   expiresAt: Date;
   revokedAt: Date | null;
+  // The resolved internal Somnus user id, memoized on first composition
+  // request (build plan §20 Checkpoint 8.2). Null until resolved -- a
+  // brand-new session has only the Firebase identity; edge-api asks
+  // identity for the Somnus id once and caches it here.
+  somnusUserId: string | null;
 };
 
 type SessionDoc = {
@@ -21,6 +26,7 @@ type SessionDoc = {
   createdAt: Timestamp;
   expiresAt: Timestamp;
   revokedAt: Timestamp | null;
+  somnusUserId?: string | null;
 };
 
 /**
@@ -65,6 +71,7 @@ export class SessionService {
       createdAt: Timestamp.fromDate(now),
       expiresAt: Timestamp.fromDate(expiresAt),
       revokedAt: null,
+      somnusUserId: null,
     };
     await this.collection.doc(sessionId).set(doc);
     return {
@@ -74,7 +81,20 @@ export class SessionService {
       createdAt: now,
       expiresAt,
       revokedAt: null,
+      somnusUserId: null,
     };
+  }
+
+  /**
+   * Memoize the resolved internal Somnus user id on the session
+   * (build plan §20 Checkpoint 8.2). Idempotent: writing the same id
+   * again is harmless. A no-op if the session no longer exists.
+   */
+  async setSomnusUserId(sessionId: string, somnusUserId: string): Promise<void> {
+    const ref = this.collection.doc(sessionId);
+    const snapshot = await ref.get();
+    if (!snapshot.exists) return;
+    await ref.update({ somnusUserId });
   }
 
   /**
@@ -96,6 +116,7 @@ export class SessionService {
       createdAt: data.createdAt.toDate(),
       expiresAt,
       revokedAt: null,
+      somnusUserId: data.somnusUserId ?? null,
     };
   }
 

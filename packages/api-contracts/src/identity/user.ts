@@ -63,3 +63,29 @@ export const ProfilePatchRequestSchema = z
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: "At least one field is required." });
 export type ProfilePatchRequest = z.infer<typeof ProfilePatchRequestSchema>;
+
+/**
+ * `POST /internal/v1/users/resolve` (build plan §20 Checkpoint 8.2):
+ * edge-api authenticates the Firebase session, then resolves the
+ * external provider user id (the Firebase UID) into the internal Somnus
+ * user id it must forward as `x-somnus-actor-id`. Internal-only, like
+ * the consent check. Resolve-only: a Firebase user with no linked
+ * Somnus account is a 404, not an auto-provision (registration is a
+ * separate flow), so this never creates identity state.
+ */
+export const UserResolveRequestSchema = z
+  .object({
+    providerUserId: z.string().min(1).max(128),
+  })
+  .strict();
+export type UserResolveRequest = z.infer<typeof UserResolveRequestSchema>;
+
+export const UserResolveResponseSchema = z
+  .object({
+    userId: opaqueIdSchema,
+    email: z.string().email(),
+    locale: LocaleSchema,
+    status: UserStatusSchema,
+  })
+  .strict();
+export type UserResolveResponse = z.infer<typeof UserResolveResponseSchema>;

@@ -16,6 +16,7 @@ import { InvitationsModule } from "./modules/invitations/invitations.module.js";
 import { MeModule } from "./modules/me/me.module.js";
 import { MembershipsModule } from "./modules/memberships/memberships.module.js";
 import { OrganizationsModule } from "./modules/organizations/organizations.module.js";
+import { UsersModule } from "./modules/users/users.module.js";
 import { VerificationCasesModule } from "./modules/verification-cases/verification-cases.module.js";
 import { VersionModule } from "./modules/version/version.module.js";
 
@@ -38,6 +39,7 @@ export const ROOT_LOGGER: Logger = createLogger({
     ConsentModule,
     AuthorizationModule,
     MeModule,
+    UsersModule,
     OrganizationsModule,
     MembershipsModule,
     InvitationsModule,

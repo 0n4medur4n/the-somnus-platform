@@ -66,6 +66,10 @@ export {
   type ProfilePatchRequest,
   ProfilePatchRequestSchema,
   type User,
+  type UserResolveRequest,
+  UserResolveRequestSchema,
+  type UserResolveResponse,
+  UserResolveResponseSchema,
   UserSchema,
   UserStatusSchema,
 } from "./user.js";
