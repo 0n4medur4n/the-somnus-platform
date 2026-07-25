@@ -137,6 +137,14 @@ jobs:
       - name: Generate OpenAPI document
         run: pnpm --filter @somnus/identity-service generate:openapi
 
+      # TiDB Serverless scales to zero when idle; the first query pays a
+      # resume cost that intermittently exceeded even a 120s per-test
+      # timeout. Resume the cluster with a retried SELECT 1 first, so the
+      # suite starts warm (the cluster resume is cluster-wide, so this
+      # warms the consent database on the same cluster too).
+      - name: Warm up TiDB (resume the serverless cluster)
+        run: pnpm --filter @somnus/identity-service exec node scripts/warmup-db.mjs
+
       # Includes the immutable negative-authorization suite (build plan
       # §20 Checkpoint 6.3) and enforces coverage thresholds.
       - name: Test identity-service
