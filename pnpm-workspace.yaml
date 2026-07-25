@@ -15,3 +15,9 @@ allowBuilds:
   # config when FIREBASE_WEBAPP_CONFIG is set -- irrelevant to server-side
   # firebase-admin (edge-api never sets it), and a no-op otherwise. Denied.
   '@firebase/util': false
+  # re2 is a native RE2 regex binding pulled in transitively by
+  # firebase-tools (the dev/CI-only Firebase CLI). Its install script
+  # fetches a prebuilt binary (falling back to a node-gyp build), which
+  # firebase-tools needs to run. Allowed so a fresh install doesn't fail
+  # ERR_PNPM_IGNORED_BUILDS on CI.
+  re2: true
