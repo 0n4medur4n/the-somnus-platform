@@ -38,6 +38,8 @@ export default defineConfig({
         "src/infrastructure/firebase/**/*.ts",
         "src/modules/me/**/*.ts",
         "src/modules/consent/**/*.ts",
+        "src/modules/registration/**/*.ts",
+        "src/modules/organizations/**/*.ts",
         "src/infrastructure/internal-clients/**/*.ts",
         "src/common/composition.util.ts",
       ],
@@ -58,6 +60,8 @@ export default defineConfig({
         // The composition layer (BFF proxy + actor resolution).
         "src/modules/me/**": { lines: 85, functions: 85, statements: 85, branches: 70 },
         "src/modules/consent/**": { lines: 85, functions: 85, statements: 85, branches: 70 },
+        "src/modules/registration/**": { lines: 85, functions: 85, statements: 85, branches: 70 },
+        "src/modules/organizations/**": { lines: 85, functions: 85, statements: 85, branches: 70 },
         "src/infrastructure/internal-clients/**": {
           lines: 80,
           functions: 80,

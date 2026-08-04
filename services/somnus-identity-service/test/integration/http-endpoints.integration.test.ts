@@ -264,6 +264,56 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     });
   });
 
+  describe("POST /internal/v1/users/provision (build plan §20 Checkpoint 9.1)", () => {
+    it("creates the user, links the identity, and creates the individual profile", async () => {
+      const res = await inject(server, "POST", "/internal/v1/users/provision", {
+        payload: {
+          providerUserId: "firebase-new-1",
+          email: "new@example.com",
+          firstName: "Ada",
+          lastName: "Lovelace",
+          locale: "ca",
+        },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const provisioned = res.body as { userId: string; locale: string; status: string };
+      expect(provisioned).toMatchObject({ locale: "ca", status: "active" });
+
+      // The identity is now linked and the profile exists: /v1/me composes it.
+      const me = await inject(server, "GET", "/v1/me", { actorId: provisioned.userId });
+      expect(me.statusCode).toBe(200);
+      expect(me.body).toMatchObject({
+        user: { email: "new@example.com", locale: "ca" },
+        individualProfile: { firstName: "Ada", lastName: "Lovelace" },
+      });
+    });
+
+    it("is idempotent: provisioning the same provider id returns the same user", async () => {
+      const first = await inject(server, "POST", "/internal/v1/users/provision", {
+        payload: {
+          providerUserId: "firebase-dup-1",
+          email: "dup@example.com",
+          firstName: "Grace",
+          lastName: "Hopper",
+        },
+      });
+      const second = await inject(server, "POST", "/internal/v1/users/provision", {
+        payload: {
+          providerUserId: "firebase-dup-1",
+          email: "dup@example.com",
+          firstName: "Grace",
+          lastName: "Hopper",
+        },
+      });
+      expect(first.statusCode).toBe(200);
+      expect(second.statusCode).toBe(200);
+      expect((second.body as { userId: string }).userId).toBe(
+        (first.body as { userId: string }).userId,
+      );
+    });
+  });
+
   describe("access grants (self-service)", () => {
     it("creates a grant, lists it, then revoking removes it from the active list", async () => {
       const subject = await users.create({ email: "grantor@example.com" });

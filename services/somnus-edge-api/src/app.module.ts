@@ -12,6 +12,8 @@ import { InternalClientsModule } from "./infrastructure/internal-clients/interna
 import { ConsentModule } from "./modules/consent/consent.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
 import { MeModule } from "./modules/me/me.module.js";
+import { OrganizationsModule } from "./modules/organizations/organizations.module.js";
+import { RegistrationModule } from "./modules/registration/registration.module.js";
 import { SessionsModule } from "./modules/sessions/sessions.module.js";
 import { VersionModule } from "./modules/version/version.module.js";
 
@@ -35,6 +37,8 @@ export const ROOT_LOGGER: Logger = createLogger({
     SessionsModule,
     MeModule,
     ConsentModule,
+    RegistrationModule,
+    OrganizationsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: SomnusExceptionFilter },
