@@ -4,6 +4,11 @@ import { ConsentsController } from "../../src/modules/consent/consents.controlle
 import { LegalDocumentsController } from "../../src/modules/consent/legal-documents.controller.js";
 import { MeController } from "../../src/modules/me/me.controller.js";
 import type { MeService } from "../../src/modules/me/me.service.js";
+import { InvitationsController } from "../../src/modules/organizations/invitations.controller.js";
+import { OrganizationsController } from "../../src/modules/organizations/organizations.controller.js";
+import type { OrganizationsProxyService } from "../../src/modules/organizations/organizations.service.js";
+import { RegistrationController } from "../../src/modules/registration/registration.controller.js";
+import type { RegistrationService } from "../../src/modules/registration/registration.service.js";
 import type { SessionRecord } from "../../src/modules/sessions/session.service.js";
 
 const SESSION = {
@@ -69,5 +74,60 @@ describe("LegalDocumentsController delegation", () => {
     const controller = new LegalDocumentsController(s as unknown as ConsentProxyService);
     await controller.current("ca", "c");
     expect(s.getLegalDocuments).toHaveBeenCalledWith("ca", "c");
+  });
+});
+
+describe("RegistrationController delegation", () => {
+  it("register delegates to RegistrationService with session and body", async () => {
+    const s = { register: vi.fn().mockResolvedValue({ user: {} }) };
+    const controller = new RegistrationController(s as unknown as RegistrationService);
+    await controller.register(SESSION, { firstName: "Ada", lastName: "L" }, "c");
+    expect(s.register).toHaveBeenCalledWith(SESSION, { firstName: "Ada", lastName: "L" }, "c");
+  });
+});
+
+describe("OrganizationsController delegation", () => {
+  const service = () => ({
+    create: vi.fn().mockResolvedValue({ id: "o1" }),
+    getById: vi.fn().mockResolvedValue({ id: "o1" }),
+    listMembers: vi.fn().mockResolvedValue([]),
+    invite: vi.fn().mockResolvedValue({ token: "t" }),
+  });
+
+  it("create delegates", async () => {
+    const s = service();
+    const c = new OrganizationsController(s as unknown as OrganizationsProxyService);
+    await c.create(SESSION, { name: "Acme" }, "c");
+    expect(s.create).toHaveBeenCalledWith(SESSION, { name: "Acme" }, "c");
+  });
+
+  it("getById delegates with the org id", async () => {
+    const s = service();
+    const c = new OrganizationsController(s as unknown as OrganizationsProxyService);
+    await c.getById(SESSION, "org-1", "c");
+    expect(s.getById).toHaveBeenCalledWith(SESSION, "org-1", "c");
+  });
+
+  it("listMembers delegates with the org id", async () => {
+    const s = service();
+    const c = new OrganizationsController(s as unknown as OrganizationsProxyService);
+    await c.listMembers(SESSION, "org-1", "c");
+    expect(s.listMembers).toHaveBeenCalledWith(SESSION, "org-1", "c");
+  });
+
+  it("invite delegates with the org id and body", async () => {
+    const s = service();
+    const c = new OrganizationsController(s as unknown as OrganizationsProxyService);
+    await c.invite(SESSION, "org-1", { email: "i@example.com" }, "c");
+    expect(s.invite).toHaveBeenCalledWith(SESSION, "org-1", { email: "i@example.com" }, "c");
+  });
+});
+
+describe("InvitationsController delegation", () => {
+  it("accept delegates with the token body", async () => {
+    const s = { acceptInvitation: vi.fn().mockResolvedValue({ status: "accepted" }) };
+    const c = new InvitationsController(s as unknown as OrganizationsProxyService);
+    await c.accept(SESSION, { token: "tok" }, "c");
+    expect(s.acceptInvitation).toHaveBeenCalledWith(SESSION, { token: "tok" }, "c");
   });
 });

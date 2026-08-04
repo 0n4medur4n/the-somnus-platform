@@ -89,3 +89,37 @@ export const UserResolveResponseSchema = z
   })
   .strict();
 export type UserResolveResponse = z.infer<typeof UserResolveResponseSchema>;
+
+/**
+ * `POST /v1/registration` (build plan §20 Checkpoint 9.1): the SPA's
+ * registration call. The Firebase identity (provider id + email) comes
+ * from the verified session server-side, so the client only supplies
+ * the individual-profile fields. edge-api forwards these plus the
+ * session identity to identity's internal provision endpoint.
+ */
+export const RegistrationRequestSchema = z
+  .object({
+    firstName: z.string().min(1).max(120),
+    lastName: z.string().min(1).max(120),
+    locale: LocaleSchema.optional(),
+  })
+  .strict();
+export type RegistrationRequest = z.infer<typeof RegistrationRequestSchema>;
+
+/**
+ * `POST /internal/v1/users/provision` (build plan §20 Checkpoint 9.1):
+ * find-or-create the Somnus user for a Firebase identity and create its
+ * individual profile. Idempotent -- provisioning an already-linked
+ * provider id returns the existing user unchanged (re-registration is
+ * not an error). Internal-only, like resolve.
+ */
+export const UserProvisionRequestSchema = z
+  .object({
+    providerUserId: z.string().min(1).max(128),
+    email: z.string().email(),
+    firstName: z.string().min(1).max(120),
+    lastName: z.string().min(1).max(120),
+    locale: LocaleSchema.optional(),
+  })
+  .strict();
+export type UserProvisionRequest = z.infer<typeof UserProvisionRequestSchema>;

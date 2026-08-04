@@ -17,6 +17,8 @@ import { RoleKeySchema } from "./roles.js";
 import {
   MeResponseSchema,
   ProfilePatchRequestSchema,
+  RegistrationRequestSchema,
+  UserProvisionRequestSchema,
   UserResolveRequestSchema,
   UserResolveResponseSchema,
   UserSchema,
@@ -238,6 +240,55 @@ describe("UserResolveRequestSchema / UserResolveResponseSchema", () => {
         userId: UUIDv7(),
         email: "a@example.com",
         locale: "es",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("RegistrationRequestSchema", () => {
+  it("accepts profile fields only (identity comes from the session)", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({ firstName: "Ada", lastName: "Lovelace" }).success,
+    ).toBe(true);
+    expect(
+      RegistrationRequestSchema.safeParse({ firstName: "Ada", lastName: "Lovelace", locale: "ca" })
+        .success,
+    ).toBe(true);
+  });
+
+  it("rejects a client-supplied providerUserId or email (strict)", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        email: "a@b.com",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects missing names", () => {
+    expect(RegistrationRequestSchema.safeParse({ firstName: "Ada" }).success).toBe(false);
+  });
+});
+
+describe("UserProvisionRequestSchema", () => {
+  it("accepts a full provision request", () => {
+    expect(
+      UserProvisionRequestSchema.safeParse({
+        providerUserId: "firebase-uid-1",
+        email: "a@example.com",
+        firstName: "Ada",
+        lastName: "Lovelace",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects a missing provider id or email", () => {
+    expect(
+      UserProvisionRequestSchema.safeParse({
+        email: "a@example.com",
+        firstName: "Ada",
+        lastName: "Lovelace",
       }).success,
     ).toBe(false);
   });
