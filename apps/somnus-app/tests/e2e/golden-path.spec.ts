@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import ca from "../../src/i18n/locales/ca.json";
-import es from "../../src/i18n/locales/es.json";
+import ca from "../../src/i18n/locales/ca.json" with { type: "json" };
+import es from "../../src/i18n/locales/es.json" with { type: "json" };
 import { getSignInLink, uniqueEmail } from "./support/emulator.js";
 
 type Dict = typeof es;
@@ -25,16 +25,17 @@ async function signInAndRegister(
   lastName: string,
 ): Promise<void> {
   await page.goto(`/login?lng=${locale}`);
-  await page.getByLabel(t.login.emailLabel).fill(email);
+  await page.getByLabel(t.login.emailLabel, { exact: true }).fill(email);
   await page.getByRole("button", { name: t.login.sendLink }).click();
   await expect(page.getByRole("status")).toContainText(email);
 
   const link = await getSignInLink(email);
   await page.goto(link);
 
-  // New account -> the callback shows the registration form.
-  await page.getByLabel(t.callback.firstName).fill(firstName);
-  await page.getByLabel(t.callback.lastName).fill(lastName);
+  // New account -> the callback shows the registration form. Labels are
+  // matched exactly: "Nom" (ca) is a substring of "Cognoms".
+  await page.getByLabel(t.callback.firstName, { exact: true }).fill(firstName);
+  await page.getByLabel(t.callback.lastName, { exact: true }).fill(lastName);
   await page.getByRole("button", { name: t.callback.completeRegistration }).click();
 
   await page.waitForURL("**/app");
@@ -81,19 +82,19 @@ for (const locale of ["es", "ca"] as const) {
     await owner.goto(`/app/profile?lng=${locale}`);
     const profileA11y = await new AxeBuilder({ page: owner }).analyze();
     expect(profileA11y.violations).toEqual([]);
-    await owner.getByLabel(t.profile.firstName).fill("Augusta");
+    await owner.getByLabel(t.profile.firstName, { exact: true }).fill("Augusta");
     await owner.getByRole("button", { name: t.common.save }).click();
     await expect(owner.getByText(t.profile.saved)).toBeVisible();
 
     // Create an organization.
     await owner.goto(`/organization?lng=${locale}`);
-    await owner.getByLabel(t.organization.nameLabel).fill("Acme Health");
+    await owner.getByLabel(t.organization.nameLabel, { exact: true }).fill("Acme Health");
     await owner.getByRole("button", { name: t.organization.create }).click();
     await expect(owner.getByText("Acme Health", { exact: false })).toBeVisible();
 
     // Invite the second user and capture the invitation token.
     await owner.goto(`/organization/invitations?lng=${locale}`);
-    await owner.getByLabel(t.organization.inviteEmailLabel).fill(inviteeEmail);
+    await owner.getByLabel(t.organization.inviteEmailLabel, { exact: true }).fill(inviteeEmail);
     await owner.getByRole("button", { name: t.organization.invite }).click();
     const token = (await owner.getByTestId("invite-token").textContent())?.trim() ?? "";
     expect(token.length).toBeGreaterThan(0);
@@ -104,7 +105,7 @@ for (const locale of ["es", "ca"] as const) {
     await signInAndRegister(invitee, t, locale, inviteeEmail, "Grace", "Hopper");
 
     await invitee.goto(`/organization/invitations?lng=${locale}`);
-    await invitee.getByLabel(t.organization.tokenLabel).fill(token);
+    await invitee.getByLabel(t.organization.tokenLabel, { exact: true }).fill(token);
     await invitee.getByRole("button", { name: t.organization.accept }).click();
     await expect(invitee.getByText(t.organization.accepted)).toBeVisible();
 

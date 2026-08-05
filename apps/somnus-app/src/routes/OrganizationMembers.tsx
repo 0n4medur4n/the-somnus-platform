@@ -21,13 +21,13 @@ export function OrganizationMembers() {
       </h1>
 
       {activeOrg === null ? (
-        <p className="text-somnus-muted">
+        <p className="text-somnus-subtle">
           <Link to="/organization" className="text-somnus-primary underline">
             {t("organization.title")}
           </Link>
         </p>
       ) : membersQuery.isLoading ? (
-        <p role="status" aria-live="polite" className="text-somnus-muted">
+        <p role="status" aria-live="polite" className="text-somnus-subtle">
           {t("common.loading")}
         </p>
       ) : membersQuery.data && membersQuery.data.length > 0 ? (
@@ -39,7 +39,7 @@ export function OrganizationMembers() {
           ))}
         </ul>
       ) : (
-        <p className="text-somnus-muted">{t("organization.membersEmpty")}</p>
+        <p className="text-somnus-subtle">{t("organization.membersEmpty")}</p>
       )}
     </section>
   );

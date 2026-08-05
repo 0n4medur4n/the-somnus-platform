@@ -24,7 +24,7 @@ export function LanguageSwitcher() {
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor={id} className="text-sm text-somnus-muted">
+      <label htmlFor={id} className="text-sm text-somnus-subtle">
         {t("common.language")}
       </label>
       <select

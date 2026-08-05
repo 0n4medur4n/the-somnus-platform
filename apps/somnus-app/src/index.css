@@ -9,6 +9,11 @@
   --color-somnus-primary-strong: #2f6ae0;
   --color-somnus-text: #e2e8f0;
   --color-somnus-muted: #64748b;
+  /* Secondary/muted TEXT: a lighter slate than the brand --somnus-muted
+     (#64748b), which fails WCAG AA (~3.9:1) on the near-black background.
+     This clears 4.5:1 so the a11y baseline (build plan §20 9.1) holds;
+     #64748b stays the token for borders/decoration. */
+  --color-somnus-subtle: #9fb0c3;
   --color-somnus-danger: #f87171;
   --color-somnus-success: #4ade80;
   --font-sans:

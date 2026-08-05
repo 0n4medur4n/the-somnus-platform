@@ -41,7 +41,7 @@ export function Login() {
   return (
     <AuthLayout>
       <h1 className="text-2xl font-semibold">{t("login.title")}</h1>
-      <p className="text-somnus-muted">{t("login.intro")}</p>
+      <p className="text-somnus-subtle">{t("login.intro")}</p>
       {sentTo ? (
         <p
           role="status"

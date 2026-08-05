@@ -4,6 +4,7 @@ import {
   signInWithEmailLink,
   signOut,
 } from "firebase/auth";
+import i18n from "../i18n/index.js";
 import { getFirebaseAuth } from "../lib/firebase.js";
 
 /**
@@ -15,7 +16,12 @@ import { getFirebaseAuth } from "../lib/firebase.js";
 const EMAIL_KEY = "somnus_email_for_signin";
 
 function callbackUrl(): string {
-  return `${window.location.origin}/auth/callback`;
+  // Carry the active language through the email link so the callback
+  // (a fresh page load, opened from the user's inbox) renders in the
+  // same locale the user started in, rather than the browser default.
+  const lng = i18n.resolvedLanguage;
+  const suffix = lng ? `?lng=${encodeURIComponent(lng)}` : "";
+  return `${window.location.origin}/auth/callback${suffix}`;
 }
 
 export async function sendLoginLink(email: string): Promise<void> {

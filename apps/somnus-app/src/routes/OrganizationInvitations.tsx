@@ -76,7 +76,7 @@ export function OrganizationInvitations() {
           {t("organization.invitationsTitle")}
         </h1>
         {activeOrg === null ? (
-          <p className="text-somnus-muted">
+          <p className="text-somnus-subtle">
             <Link to="/organization" className="text-somnus-primary underline">
               {t("organization.title")}
             </Link>

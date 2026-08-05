@@ -11,5 +11,5 @@ export {
   GoogleIdTokenTokenProvider,
   type GoogleTokenProviderOptions,
 } from "./google-token-provider.js";
-export { defaultRetryPolicy, isRetriableHttpStatus, RetryPolicy } from "./retry.js";
+export { defaultRetryPolicy, isRetriableHttpStatus, type RetryPolicy } from "./retry.js";
 export type { HttpResponse, RequestOptions } from "./types.js";

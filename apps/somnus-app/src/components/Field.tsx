@@ -29,7 +29,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="text-sm text-somnus-muted">
+        <p id={hintId} className="text-sm text-somnus-subtle">
           {hint}
         </p>
       ) : null}
@@ -40,7 +40,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
         aria-describedby={describedBy}
         className={
           className ??
-          "rounded-md border border-somnus-muted/40 bg-somnus-surface px-3 py-2 text-somnus-text placeholder:text-somnus-muted focus:border-somnus-primary"
+          "rounded-md border border-somnus-muted/40 bg-somnus-surface px-3 py-2 text-somnus-text placeholder:text-somnus-subtle focus:border-somnus-primary"
         }
         {...inputProps}
       />
