@@ -1,0 +1,94 @@
+{
+  "common": {
+    "appName": "The Somnus",
+    "loading": "Carregant…",
+    "save": "Desa",
+    "cancel": "Cancel·la",
+    "submit": "Envia",
+    "signOut": "Tanca la sessió",
+    "skipToContent": "Vés al contingut",
+    "language": "Idioma",
+    "menu": "Menú principal"
+  },
+  "nav": {
+    "home": "Inici",
+    "profile": "Perfil",
+    "security": "Seguretat",
+    "professional": "Portal professional",
+    "organization": "Organització",
+    "members": "Membres",
+    "invitations": "Invitacions"
+  },
+  "login": {
+    "title": "Inicia la sessió",
+    "intro": "Introdueix el teu correu i t'enviarem un enllaç d'accés segur.",
+    "emailLabel": "Adreça electrònica",
+    "emailHint": "T'enviarem un enllaç d'un sol ús. No fem servir contrasenyes.",
+    "sendLink": "Envia l'enllaç d'accés",
+    "linkSent": "T'hem enviat un enllaç d'accés a {{email}}. Revisa el correu.",
+    "error": "No hem pogut enviar l'enllaç. Torna-ho a provar."
+  },
+  "callback": {
+    "title": "Completant l'accés",
+    "verifying": "Verificant el teu enllaç d'accés…",
+    "error": "L'enllaç no és vàlid o ha caducat. Torna a sol·licitar-ne un.",
+    "registerTitle": "Completa el teu registre",
+    "registerIntro": "Només necessitem el teu nom per crear el compte.",
+    "firstName": "Nom",
+    "lastName": "Cognoms",
+    "completeRegistration": "Crea el meu compte"
+  },
+  "app": {
+    "homeTitle": "Inici",
+    "welcome": "Benvinguda, {{name}}",
+    "welcomeNoName": "Benvinguda"
+  },
+  "profile": {
+    "title": "El teu perfil",
+    "firstName": "Nom",
+    "lastName": "Cognoms",
+    "phone": "Telèfon",
+    "saved": "Perfil actualitzat correctament.",
+    "error": "No hem pogut desar els canvis."
+  },
+  "security": {
+    "title": "Seguretat",
+    "description": "Aquí podràs revisar les teves sessions actives i tancar la sessió a tots els dispositius. Disponible properament."
+  },
+  "professional": {
+    "title": "Portal professional",
+    "description": "Un espai per a professionals verificats. Disponible properament.",
+    "profileTitle": "Perfil professional",
+    "profileDescription": "Gestiona la teva especialitat i la verificació professional. Disponible properament."
+  },
+  "organization": {
+    "title": "Crea una organització",
+    "nameLabel": "Nom de l'organització",
+    "create": "Crea l'organització",
+    "created": "Organització «{{name}}» creada.",
+    "error": "No hem pogut crear l'organització.",
+    "membersTitle": "Membres",
+    "membersEmpty": "Encara no hi ha membres.",
+    "invitationsTitle": "Invitacions",
+    "inviteEmailLabel": "Correu de la persona convidada",
+    "invite": "Envia la invitació",
+    "invited": "Invitació enviada a {{email}}.",
+    "inviteError": "No hem pogut enviar la invitació.",
+    "acceptTitle": "Accepta una invitació",
+    "tokenLabel": "Codi d'invitació",
+    "accept": "Accepta la invitació",
+    "accepted": "Invitació acceptada.",
+    "acceptError": "No hem pogut acceptar la invitació."
+  },
+  "errors": {
+    "required": "Aquest camp és obligatori.",
+    "invalidEmail": "Introdueix un correu vàlid.",
+    "generic": "Hi ha hagut un problema. Torna-ho a provar.",
+    "summaryTitle": "Corregeix els errors següents"
+  },
+  "notFound": {
+    "title": "Pàgina no trobada",
+    "description": "La pàgina que busques no existeix.",
+    "back": "Torna a l'inici"
+  }
+}
