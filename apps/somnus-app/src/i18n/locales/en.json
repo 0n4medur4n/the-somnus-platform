@@ -1,0 +1,94 @@
+{
+  "common": {
+    "appName": "The Somnus",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "signOut": "Sign out",
+    "skipToContent": "Skip to content",
+    "language": "Language",
+    "menu": "Main menu"
+  },
+  "nav": {
+    "home": "Home",
+    "profile": "Profile",
+    "security": "Security",
+    "professional": "Professional portal",
+    "organization": "Organization",
+    "members": "Members",
+    "invitations": "Invitations"
+  },
+  "login": {
+    "title": "Sign in",
+    "intro": "Enter your email and we'll send you a secure sign-in link.",
+    "emailLabel": "Email address",
+    "emailHint": "We'll send you a single-use link. We don't use passwords.",
+    "sendLink": "Send sign-in link",
+    "linkSent": "We've sent a sign-in link to {{email}}. Check your inbox.",
+    "error": "We couldn't send the link. Please try again."
+  },
+  "callback": {
+    "title": "Completing sign-in",
+    "verifying": "Verifying your sign-in link…",
+    "error": "The link is invalid or has expired. Please request a new one.",
+    "registerTitle": "Complete your registration",
+    "registerIntro": "We just need your name to create your account.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "completeRegistration": "Create my account"
+  },
+  "app": {
+    "homeTitle": "Home",
+    "welcome": "Welcome, {{name}}",
+    "welcomeNoName": "Welcome"
+  },
+  "profile": {
+    "title": "Your profile",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "saved": "Profile updated successfully.",
+    "error": "We couldn't save your changes."
+  },
+  "security": {
+    "title": "Security",
+    "description": "Here you'll be able to review your active sessions and sign out everywhere. Coming soon."
+  },
+  "professional": {
+    "title": "Professional portal",
+    "description": "A space for verified professionals. Coming soon.",
+    "profileTitle": "Professional profile",
+    "profileDescription": "Manage your specialty and professional verification. Coming soon."
+  },
+  "organization": {
+    "title": "Create organization",
+    "nameLabel": "Organization name",
+    "create": "Create organization",
+    "created": "Organization “{{name}}” created.",
+    "error": "We couldn't create the organization.",
+    "membersTitle": "Members",
+    "membersEmpty": "No members yet.",
+    "invitationsTitle": "Invitations",
+    "inviteEmailLabel": "Invitee email",
+    "invite": "Send invitation",
+    "invited": "Invitation sent to {{email}}.",
+    "inviteError": "We couldn't send the invitation.",
+    "acceptTitle": "Accept an invitation",
+    "tokenLabel": "Invitation code",
+    "accept": "Accept invitation",
+    "accepted": "Invitation accepted.",
+    "acceptError": "We couldn't accept the invitation."
+  },
+  "errors": {
+    "required": "This field is required.",
+    "invalidEmail": "Enter a valid email address.",
+    "generic": "Something went wrong. Please try again.",
+    "summaryTitle": "Please fix the following errors"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist.",
+    "back": "Back to home"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "common": {
+    "appName": "The Somnus",
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "submit": "Enviar",
+    "signOut": "Cerrar sesión",
+    "skipToContent": "Saltar al contenido",
+    "language": "Idioma",
+    "menu": "Menú principal"
+  },
+  "nav": {
+    "home": "Inicio",
+    "profile": "Perfil",
+    "security": "Seguridad",
+    "professional": "Portal profesional",
+    "organization": "Organización",
+    "members": "Miembros",
+    "invitations": "Invitaciones"
+  },
+  "login": {
+    "title": "Iniciar sesión",
+    "intro": "Introduce tu correo y te enviaremos un enlace de acceso seguro.",
+    "emailLabel": "Correo electrónico",
+    "emailHint": "Te enviaremos un enlace de un solo uso. No usamos contraseñas.",
+    "sendLink": "Enviar enlace de acceso",
+    "linkSent": "Te hemos enviado un enlace de acceso a {{email}}. Revisa tu correo.",
+    "error": "No hemos podido enviar el enlace. Inténtalo de nuevo."
+  },
+  "callback": {
+    "title": "Completando el acceso",
+    "verifying": "Verificando tu enlace de acceso…",
+    "error": "El enlace no es válido o ha caducado. Vuelve a solicitar uno.",
+    "registerTitle": "Completa tu registro",
+    "registerIntro": "Solo necesitamos tu nombre para crear tu cuenta.",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "completeRegistration": "Crear mi cuenta"
+  },
+  "app": {
+    "homeTitle": "Inicio",
+    "welcome": "Bienvenida, {{name}}",
+    "welcomeNoName": "Bienvenida"
+  },
+  "profile": {
+    "title": "Tu perfil",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "phone": "Teléfono",
+    "saved": "Perfil actualizado correctamente.",
+    "error": "No hemos podido guardar los cambios."
+  },
+  "security": {
+    "title": "Seguridad",
+    "description": "Aquí podrás revisar tus sesiones activas y cerrar sesión en todos los dispositivos. Disponible próximamente."
+  },
+  "professional": {
+    "title": "Portal profesional",
+    "description": "Espacio para profesionales verificados. Disponible próximamente.",
+    "profileTitle": "Perfil profesional",
+    "profileDescription": "Gestiona tu especialidad y tu verificación profesional. Disponible próximamente."
+  },
+  "organization": {
+    "title": "Crear organización",
+    "nameLabel": "Nombre de la organización",
+    "create": "Crear organización",
+    "created": "Organización «{{name}}» creada.",
+    "error": "No hemos podido crear la organización.",
+    "membersTitle": "Miembros",
+    "membersEmpty": "Todavía no hay miembros.",
+    "invitationsTitle": "Invitaciones",
+    "inviteEmailLabel": "Correo del invitado",
+    "invite": "Enviar invitación",
+    "invited": "Invitación enviada a {{email}}.",
+    "inviteError": "No hemos podido enviar la invitación.",
+    "acceptTitle": "Aceptar una invitación",
+    "tokenLabel": "Código de invitación",
+    "accept": "Aceptar invitación",
+    "accepted": "Invitación aceptada.",
+    "acceptError": "No hemos podido aceptar la invitación."
+  },
+  "errors": {
+    "required": "Este campo es obligatorio.",
+    "invalidEmail": "Introduce un correo válido.",
+    "generic": "Algo ha salido mal. Inténtalo de nuevo.",
+    "summaryTitle": "Corrige los siguientes errores"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe.",
+    "back": "Volver al inicio"
+  }
+}
