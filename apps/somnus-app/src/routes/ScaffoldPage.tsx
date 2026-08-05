@@ -19,7 +19,7 @@ export function ScaffoldPage({
       <h1 id="scaffold-heading" className="text-2xl font-semibold">
         {t(titleKey)}
       </h1>
-      <p className="text-somnus-muted">{t(descriptionKey)}</p>
+      <p className="text-somnus-subtle">{t(descriptionKey)}</p>
     </section>
   );
 }

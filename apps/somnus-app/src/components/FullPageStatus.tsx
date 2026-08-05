@@ -6,7 +6,7 @@
 export function FullPageStatus({ message }: { message: string }) {
   return (
     <div className="flex min-h-dvh items-center justify-center p-6">
-      <p role="status" aria-live="polite" className="text-somnus-muted">
+      <p role="status" aria-live="polite" className="text-somnus-subtle">
         {message}
       </p>
     </div>

@@ -20,12 +20,23 @@ just the SPA:
 
 ## Run
 
+`scripts/e2e-stack.mjs` starts the compiled identity (:3001) and edge-api
+(:8090, to dodge a common local Apache on 8080) against the emulators + docker
+MySQL, waits for health, then runs Playwright (which serves the SPA on :5173).
+
 ```bash
-just dev-up                                   # MySQL + emulators
+just dev-up                                   # MySQL (somnus_identity + somnus_consent, migrated)
 pnpm --filter @somnus/app e2e:install         # Playwright Chromium (first time)
-# start identity (:3001) and edge-api (:8080) against the emulators, then:
-pnpm --filter @somnus/app e2e
+pnpm -r --filter "./packages/*" build
+pnpm --filter @somnus/identity-service --filter @somnus/edge-api build
+pnpm exec firebase emulators:exec --only auth,firestore \
+  --project somnus-dev-test \
+  --config services/somnus-edge-api/test/firebase.emulators.json \
+  "node scripts/e2e-stack.mjs"
 ```
+
+Set `PW_GREP="es:"` to run a single locale. Verified green locally in `es`
+and `ca`.
 
 The Auth emulator sends no real mail; the sign-in link is read back from its
 REST API (`tests/e2e/support/emulator.ts`), which stands in for the inbox.

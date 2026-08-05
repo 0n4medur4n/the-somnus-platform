@@ -112,7 +112,7 @@ function RegistrationForm({
   return (
     <AuthLayout>
       <h1 className="text-2xl font-semibold">{t("callback.registerTitle")}</h1>
-      <p className="text-somnus-muted">{t("callback.registerIntro")}</p>
+      <p className="text-somnus-subtle">{t("callback.registerIntro")}</p>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <ErrorSummary errors={summary} />
         <Field
