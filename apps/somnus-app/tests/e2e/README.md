@@ -25,8 +25,9 @@ just the SPA:
 MySQL, waits for health, then runs Playwright (which serves the SPA on :5173).
 
 ```bash
-just dev-up                                   # MySQL (somnus_identity + somnus_consent, migrated)
-pnpm --filter @somnus/app e2e:install         # Playwright Chromium (first time)
+just dev-up                                          # MySQL (creates the logical databases)
+pnpm --filter @somnus/identity-service db:migrate    # migrate somnus_identity + somnus_consent
+pnpm --filter @somnus/app e2e:install                # Playwright Chromium (first time)
 pnpm -r --filter "./packages/*" build
 pnpm --filter @somnus/identity-service --filter @somnus/edge-api build
 pnpm exec firebase emulators:exec --only auth,firestore \
@@ -35,8 +36,8 @@ pnpm exec firebase emulators:exec --only auth,firestore \
   "node scripts/e2e-stack.mjs"
 ```
 
-Set `PW_GREP="es:"` to run a single locale. Verified green locally in `es`
-and `ca`.
+Set `PW_GREP="es:"` to run a single locale. CI runs exactly this in the
+**App SPA E2E (full stack)** job; verified green in `es` and `ca`.
 
 The Auth emulator sends no real mail; the sign-in link is read back from its
 REST API (`tests/e2e/support/emulator.ts`), which stands in for the inbox.
