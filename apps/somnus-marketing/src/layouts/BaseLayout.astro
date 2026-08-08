@@ -1,0 +1,75 @@
+---
+import "../styles/global.css";
+import { DEFAULT, LOCALE_HREFLANG, LOCALES, localizedPath, t } from "../i18n/ui";
+import Footer from "../components/Footer.astro";
+import GlobalLoader from "../components/GlobalLoader.astro";
+import Navbar from "../components/Navbar.astro";
+
+export interface Props {
+  locale: "es" | "en" | "ca" | "fr";
+  path: string;
+  title: string;
+  description: string;
+  fullWidth?: boolean;
+  showFooter?: boolean;
+}
+
+const { locale, path, title, description, fullWidth = false, showFooter = true } = Astro.props;
+const canonical = new URL(localizedPath(locale, path), Astro.site).href;
+const siteName = t(locale, "site.name");
+const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
+const loaderBrand = path === "/morpheo" ? "morpheo" : "somnus";
+const loaderPlayMode = path === "/morpheo" ? "always" : "once-per-session";
+---
+
+<!doctype html>
+<html lang={LOCALE_HREFLANG[locale]} dir="ltr" class="is-loading">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      (function () {
+        // Lock the page as early as possible to prevent a visible flash
+        // before the loader script initializes. The loader removes this
+        // class when the animation completes or fails.
+        document.documentElement.classList.add("is-loading");
+        if (document.body) {
+          document.body.setAttribute("aria-busy", "true");
+        }
+      })();
+    </script>
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16" />
+    <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#090d1a" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    {
+      LOCALES.map((loc) => (
+        <link rel="alternate" hreflang={LOCALE_HREFLANG[loc]} href={new URL(localizedPath(loc, path), Astro.site).href} />
+      ))
+    }
+    <link rel="alternate" hreflang="x-default" href={new URL(localizedPath(DEFAULT, path), Astro.site).href} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content={LOCALE_HREFLANG[locale]} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <GlobalLoader locale={locale} playMode={loaderPlayMode} brand={loaderBrand} />
+    <a class="skip-link" href="#main">{t(locale, "nav.home")}</a>
+    <Navbar locale={locale} path={path} />
+    <main id="main" class:list={{ "mx-auto w-full max-w-5xl px-4": !fullWidth }}>
+      <slot />
+    </main>
+    {showFooter && <Footer locale={locale} />}
+  </body>
+</html>

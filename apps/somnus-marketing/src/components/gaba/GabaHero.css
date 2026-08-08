@@ -1,0 +1,211 @@
+.gaba-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100svh;
+  min-height: 0;
+  margin: 0;
+  overflow: clip;
+  background: transparent;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.gaba-background__wash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(96vw, 64rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(67 126 247 / 11%), transparent 68%);
+  filter: blur(26px);
+  translate: -50% -50%;
+}
+
+.gaba-background__molecule {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(88%, 56rem);
+  opacity: 0.16;
+  translate: -50% -50%;
+  transform-origin: 50% 50%;
+  will-change: filter, opacity, transform;
+}
+
+.gaba-molecule {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.gaba-molecule__ambient {
+  fill: rgb(67 126 247 / 14%);
+  filter: url(#gaba-soft-glow);
+}
+
+.gaba-molecule__ambient--two {
+  fill: rgb(111 128 238 / 11%);
+}
+
+.gaba-molecule__formula {
+  fill: #91a7cc;
+  font-family: var(--somnus-font-stack, sans-serif);
+  font-size: 11px;
+  font-weight: 680;
+  letter-spacing: 0.16em;
+  text-anchor: middle;
+}
+
+.gaba-molecule__ground-shadow {
+  fill: rgb(0 2 10 / 42%);
+  filter: url(#gaba-soft-glow);
+}
+
+.bond__base,
+.bond__core,
+.bond__highlight {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.bond__base {
+  stroke: #111a2e;
+  stroke-width: 17;
+}
+
+.bond__core {
+  stroke: url(#gaba-bond-fill);
+  stroke-width: 9;
+}
+
+.bond__highlight {
+  stroke: rgb(224 237 255 / 78%);
+  stroke-dasharray: 10 18;
+  stroke-dashoffset: 0;
+  stroke-width: 3;
+}
+
+.bond--active {
+  filter: url(#gaba-bond-glow);
+}
+
+.atom,
+.atom__assembly,
+.atom__depth {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.atom__glow {
+  fill: #5f91f5;
+  filter: url(#gaba-soft-glow);
+  opacity: 0.08;
+}
+
+.atom--n .atom__sphere {
+  fill: url(#gaba-nitrogen-fill);
+}
+
+.atom--c .atom__sphere {
+  fill: url(#gaba-carbon-fill);
+}
+
+.atom--o .atom__sphere {
+  fill: url(#gaba-oxygen-fill);
+}
+
+.atom--n .atom__glow {
+  fill: #5f9cff;
+}
+
+.atom--c .atom__glow {
+  fill: #8293b2;
+}
+
+.atom--o .atom__glow {
+  fill: #8099ff;
+}
+
+.atom__shade {
+  fill: rgb(1 5 17 / 22%);
+}
+
+.atom__rim {
+  fill: none;
+  stroke: rgb(255 255 255 / 20%);
+  stroke-width: 1.2;
+}
+
+.atom__symbol {
+  fill: #f7faff;
+  font-family: var(--somnus-font-stack, sans-serif);
+  font-size: 20px;
+  font-weight: 780;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgb(0 0 0 / 45%);
+}
+
+.atom__symbol--group {
+  font-size: 14px;
+  letter-spacing: -0.02em;
+}
+
+.atom__specular {
+  fill: rgb(255 255 255 / 25%);
+  pointer-events: none;
+}
+
+.atom__specular--c {
+  fill: rgb(255 255 255 / 15%);
+}
+
+.signal-node {
+  fill: #81aaff;
+  filter: url(#gaba-bond-glow);
+}
+
+.signal-node__ring {
+  fill: none;
+  stroke: rgb(120 168 255 / 28%);
+  stroke-width: 1;
+}
+
+.signal-label {
+  fill: #91a2c0;
+  font-family: var(--somnus-font-stack, sans-serif);
+  font-size: 9px;
+  font-weight: 640;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 56.25rem) {
+  .gaba-background__wash {
+    width: 132%;
+  }
+
+  .gaba-background__molecule {
+    width: 118%;
+  }
+}
+
+@media (max-width: 37.5rem) {
+  .gaba-background__molecule {
+    width: 100%;
+  }
+
+  .signal-label,
+  .gaba-molecule__formula {
+    font-size: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaba-background,
+  .gaba-background * {
+    transition-duration: 0.01ms;
+  }
+}

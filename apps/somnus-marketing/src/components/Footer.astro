@@ -1,0 +1,36 @@
+---
+import { localizedPath, t } from "../i18n/ui";
+
+export interface Props {
+  locale: "es" | "en" | "ca" | "fr";
+}
+
+const { locale } = Astro.props;
+const year = new Date().getFullYear();
+const appName = "https://the-somnus-app.web.app/";
+---
+
+<footer class="mt-16 border-t border-white/5 bg-surface/40">
+  <div class="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10 sm:flex-row sm:justify-between">
+    <div class="space-y-1">
+      <p class="text-base font-semibold text-text">{t(locale, "site.name")}</p>
+      <p class="text-sm text-muted">{t(locale, "footer.tagline")}</p>
+    </div>
+
+    <nav aria-label={t(locale, "footer.terms")} class="flex flex-wrap gap-4 text-sm text-muted">
+      <a href={localizedPath(locale, "/legal/terms")} class="hover:text-text">
+        {t(locale, "footer.terms")}
+      </a>
+      <a href={localizedPath(locale, "/legal/privacy")} class="hover:text-text">
+        {t(locale, "footer.privacy")}
+      </a>
+      <a href={appName} class="hover:text-text">{t(locale, "footer.accessApp")}</a>
+    </nav>
+  </div>
+
+  <div class="border-t border-white/5">
+    <div class="mx-auto w-full max-w-5xl px-4 py-4">
+      <p class="text-xs text-muted">{t(locale, "footer.copyright", { year })}</p>
+    </div>
+  </div>
+</footer>

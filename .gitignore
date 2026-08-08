@@ -17,6 +17,18 @@ coverage/
 .jest-cache/
 .vitest-cache/
 
+# Python (services/morpheo-service and future Python services)
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+
 # Environment
 .env
 .env.*
@@ -61,7 +73,7 @@ infrastructure/terraform/**/terraform.tfvars
 infrastructure/terraform/**/.terraform.lock.hcl.local
 
 # Firebase
-.firebase/cache/
+.firebase/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log

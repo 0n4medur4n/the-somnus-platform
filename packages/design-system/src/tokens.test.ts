@@ -11,8 +11,10 @@ describe("BRAND_TOKENS (build plan §4)", () => {
   });
 
   it("exposes a documented font fallback stack", () => {
-    expect(BRAND_TOKENS.font.stack).toContain("Inter");
+    expect(BRAND_TOKENS.font.stack).toContain("Satoshi");
     expect(BRAND_TOKENS.font.stack).toContain("system-ui");
+    expect(BRAND_TOKENS.font.display).toContain("Okine");
+    expect(BRAND_TOKENS.font.display).toContain("Satoshi");
   });
 
   it("is fully frozen (no mutation possible at runtime)", () => {
@@ -41,6 +43,7 @@ describe("tokensAsJson", () => {
   it("returns a JSON string that round-trips to the same structure", () => {
     const j = JSON.parse(tokensAsJson());
     expect(j.color.background).toBe("#090d1a");
-    expect(j.font.stack).toContain("Inter");
+    expect(j.font.stack).toContain("Satoshi");
+    expect(j.font.display).toContain("Okine");
   });
 });

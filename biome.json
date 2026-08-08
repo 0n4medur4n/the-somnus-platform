@@ -19,7 +19,8 @@
       "!**/.terraform",
       "!**/*.gen.ts",
       "!**/schemas/openapi",
-      "!**/*.astro"
+      "!**/*.astro",
+      "!apps/somnus-marketing"
     ]
   },
   "formatter": {

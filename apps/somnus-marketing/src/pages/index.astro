@@ -1,0 +1,61 @@
+---
+import { DEFAULT, LOCALE_STORAGE_KEY, LOCALES } from "../i18n/ui";
+
+/**
+ * Root `/` — automatic language detection (build plan §3.3 / ADR 0012).
+ *
+ * Serves a tiny HTML shell that:
+ *  - for no-JS clients: redirects to the default locale via meta refresh;
+ *  - for JS clients: picks a locale from localStorage, then from
+ *    navigator.languages (Accept-Language), and redirects to /{locale}/.
+ *  - never sets the locale cookie on the marketing site (§5.1: no cookies
+ *    beyond consent-compliant analytics, and none configured yet).
+ */
+const fallback = `/${DEFAULT}/`;
+---
+
+<!doctype html>
+<html lang="x-default" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`0; url=${fallback}`} />
+    <title>The Somnus</title>
+    <script
+      is:inline
+      define:vars={{ LOCALES, DEFAULT, LOCALE_STORAGE_KEY }}
+    >{
+      (function () {
+        try {
+          var stored = window.localStorage && localStorage.getItem(LOCALE_STORAGE_KEY);
+          var nav = (navigator.languages || [navigator.language || ""]).map(function (l) {
+            return String(l).toLowerCase();
+          });
+          function pick() {
+            if (stored && LOCALES.indexOf(stored) !== -1) return stored;
+            for (var i = 0; i < nav.length; i++) {
+              var n = nav[i].split("-")[0];
+              if (LOCALES.indexOf(n) !== -1) return n;
+            }
+            return DEFAULT;
+          }
+          var target = pick();
+          try {
+            localStorage.setItem(LOCALE_STORAGE_KEY, target);
+          } catch (_err) {
+            // Private mode: ignore — we still navigate once.
+          }
+          var desired = "/" + target + "/";
+          if (location.pathname !== desired) {
+            location.replace(desired);
+          } else {
+            // Already there but served through `/`: replace to canonical.
+            location.replace(desired);
+          }
+        } catch (_err) {
+          location.replace("/" + DEFAULT + "/");
+        }
+      })();
+    }</script>
+  </head>
+  <body></body>
+</html>

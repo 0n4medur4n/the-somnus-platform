@@ -1,0 +1,16 @@
+# Astro / Vite
+.astro/
+dist/
+.astro/cache/
+
+# Local env
+.env
+.env.*
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

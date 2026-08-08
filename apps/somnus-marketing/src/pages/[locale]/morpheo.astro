@@ -1,0 +1,800 @@
+---
+import logo from "../../assets/logo/LogoMorpheo.png";
+import CtaButton from "../../components/CtaButton";
+import SleepCartography from "../../components/morpheo/SleepCartography.astro";
+import { SectionIndex } from "../../components/SectionIndex";
+import { FocusText } from "../../components/ui/focus-text";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { LOCALES, localizedPath, t } from "../../i18n/ui";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+type Locale = (typeof LOCALES)[number];
+const { locale } = Astro.params as { locale: Locale };
+const APP_URL = "https://the-somnus-app.web.app/";
+const problemItems = ["1", "2", "3", "4"] as const;
+const receiveItems = ["1", "2", "3", "4", "5", "6"] as const;
+const transformationItems = ["1", "2", "3", "4"] as const;
+const stepItems = ["1", "2", "3"] as const;
+const trustItems = ["1", "2", "3", "4"] as const;
+const interfaceItems = ["1", "2", "3", "4", "5", "6"] as const;
+const faqItems = ["1", "2", "3", "4"] as const;
+const receiveIconPaths = [
+  "M6 5.5h12M6 10h12M6 14.5h8M4 3h16v18H4z",
+  "M4 17V9m5 8V5m5 12v-6m5 6V3",
+  "M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z",
+  "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-12v4m0 3h.01",
+  "M7 4h10v3H7zM5 7h14v14H5zM8 11h8m-8 4h6",
+  "M4 5h16v12H8l-4 4V5Zm4 4h8m-8 4h5",
+] as const;
+const sectionIndexItems = [
+  { id: "problem", label: t(locale, "story.index.recognition") },
+  { id: "how", label: t(locale, "morpheo.nav.how") },
+  { id: "receive", label: t(locale, "morpheo.nav.receive") },
+  { id: "transformation", label: t(locale, "story.index.transformation") },
+  { id: "steps", label: t(locale, "story.index.steps") },
+  { id: "trust", label: t(locale, "story.index.trust") },
+  { id: "professionals", label: t(locale, "morpheo.nav.professionals") },
+  { id: "faq", label: t(locale, "morpheo.nav.faq") },
+  { id: "final", label: t(locale, "story.index.final") },
+];
+---
+
+<BaseLayout
+  locale={locale}
+  path="/morpheo"
+  title={t(locale, "morpheo.meta.title")}
+  description={t(locale, "morpheo.meta.description")}
+  fullWidth
+  showFooter={false}
+>
+  <SectionIndex client:load ariaLabel={t(locale, "story.index.navigation")} items={sectionIndexItems} />
+  <div class="morpheo-page">
+    <section class="morpheo-hero" data-morpheo-hero>
+      <div class="morpheo-hero__ambient" aria-hidden="true"></div>
+      <div class="morpheo-hero__inner">
+        <div class="morpheo-hero__copy">
+          <span class="morpheo-hero__product-logo">
+            <img src={logo.src} width="2000" height="2000" alt="Morpheo" />
+          </span>
+          <p class="morpheo-eyebrow">
+            <span aria-hidden="true"></span>
+            {t(locale, "morpheo.hero.eyebrow")}
+          </p>
+          <FocusText client:load as="h1">{t(locale, "morpheo.hero.title")}</FocusText>
+          <div class="morpheo-hero__body">
+            <FocusText client:load as="p">{t(locale, "morpheo.hero.body1")}</FocusText>
+            <FocusText client:load as="p" delay={0.08}>{t(locale, "morpheo.hero.body2")}</FocusText>
+          </div>
+          <div class="morpheo-actions">
+            <CtaButton client:load href={APP_URL} label={t(locale, "morpheo.hero.primaryCta")} />
+            <a class="morpheo-button morpheo-button--secondary" href="#professionals">
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 17v-2.2A3.8 3.8 0 0 1 8.8 11h2.4a3.8 3.8 0 0 1 3.8 3.8V17M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm5-1h4m-2-2v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>{t(locale, "morpheo.hero.secondaryCta")}</span>
+            </a>
+          </div>
+          <p class="morpheo-microcopy">{t(locale, "morpheo.hero.microcopy")}</p>
+        </div>
+
+        <div class="morpheo-hero__map">
+          <SleepCartography locale={locale} />
+        </div>
+      </div>
+    </section>
+
+    <section id="problem" class="morpheo-section morpheo-problem" aria-labelledby="morpheo-problem-title">
+      <div class="morpheo-section__intro">
+        <FocusText client:load as="span" className="morpheo-section__number">01</FocusText>
+        <FocusText client:load as="h2" id="morpheo-problem-title">{t(locale, "morpheo.problem.title")}</FocusText>
+        <FocusText client:load as="p">{t(locale, "morpheo.problem.body1")}</FocusText>
+        <FocusText client:load as="p" delay={0.08}>{t(locale, "morpheo.problem.body2")}</FocusText>
+      </div>
+      <div class="morpheo-problem__grid">
+        {problemItems.map((item, index) => (
+          <article class="morpheo-signal-card" data-reveal style={`--delay: ${index * 70}ms`}>
+            <span class="morpheo-signal-card__index">0{index + 1}</span>
+            <p>{t(locale, `morpheo.problem.item${item}`)}</p>
+          </article>
+        ))}
+      </div>
+      <div class="morpheo-section__closing" data-reveal>
+        <span aria-hidden="true"></span>
+        <p>{t(locale, "morpheo.problem.closing")}</p>
+        <span aria-hidden="true"></span>
+      </div>
+      <div class="morpheo-section__action" data-reveal>
+        <CtaButton client:load href={APP_URL} label={t(locale, "morpheo.problem.cta")} />
+      </div>
+    </section>
+
+    <section id="how" class="morpheo-section morpheo-organize" aria-labelledby="morpheo-organize-title">
+      <div class="morpheo-section__intro morpheo-section__intro--center">
+        <FocusText client:load as="span" className="morpheo-section__number">02</FocusText>
+        <FocusText client:load as="h2" id="morpheo-organize-title">{t(locale, "morpheo.organize.title")}</FocusText>
+        <FocusText client:load as="p">{t(locale, "morpheo.organize.body1")}</FocusText>
+        <FocusText client:load as="p" delay={0.08}>{t(locale, "morpheo.organize.body2")}</FocusText>
+      </div>
+      <div class="morpheo-pipeline" data-reveal>
+        {["1", "2", "3"].map((item, index) => (
+          <>
+            <article class="morpheo-pipeline__step">
+              <span>0{index + 1}</span>
+              <h3>{t(locale, `morpheo.organize.stage${item}`)}</h3>
+            </article>
+            {index < 2 && (
+              <svg class="morpheo-pipeline__arrow" viewBox="0 0 44 20" fill="none" aria-hidden="true">
+                <path d="M2 10h36m-7-7 7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            )}
+          </>
+        ))}
+      </div>
+      <div class="morpheo-disclaimer" data-reveal>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-12v4m0 3h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <p>{t(locale, "morpheo.organize.disclaimer")}</p>
+      </div>
+      <div class="morpheo-section__action" data-reveal>
+        <CtaButton client:load href={APP_URL} label={t(locale, "morpheo.organize.cta")} />
+      </div>
+    </section>
+
+    <section id="receive" class="morpheo-section morpheo-receive" aria-labelledby="morpheo-receive-title">
+      <div class="morpheo-section__intro">
+        <FocusText client:load as="span" className="morpheo-section__number">03</FocusText>
+        <FocusText client:load as="h2" id="morpheo-receive-title">{t(locale, "morpheo.receive.title")}</FocusText>
+      </div>
+      <div class="morpheo-card-grid morpheo-card-grid--six">
+        {receiveItems.map((item, index) => (
+          <article class="morpheo-feature-card" data-reveal style={`--delay: ${(index % 3) * 70}ms`}>
+            <span class="morpheo-feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d={receiveIconPaths[index]} stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+            <h3>{t(locale, `morpheo.receive.card${item}`)}</h3>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section id="transformation" class="morpheo-section morpheo-transformation" aria-labelledby="morpheo-transformation-title">
+      <div class="morpheo-section__intro">
+        <FocusText client:load as="span" className="morpheo-section__number">04</FocusText>
+        <FocusText client:load as="h2" id="morpheo-transformation-title">{t(locale, "morpheo.transform.title")}</FocusText>
+      </div>
+      <div class="morpheo-transformation__grid">
+        <article class="morpheo-state-card morpheo-state-card--before" data-reveal>
+          <span class="morpheo-state-card__label">{t(locale, "morpheo.transform.beforeTitle")}</span>
+          <ul>
+            {transformationItems.map((item) => (
+              <li><span aria-hidden="true"></span>{t(locale, `morpheo.transform.before${item}`)}</li>
+            ))}
+          </ul>
+        </article>
+        <div class="morpheo-transformation__arrow" aria-hidden="true">
+          <svg viewBox="0 0 44 44" fill="none"><path d="M6 22h30m-9-9 9 9-9 9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </div>
+        <article class="morpheo-state-card morpheo-state-card--after" data-reveal>
+          <span class="morpheo-state-card__label">{t(locale, "morpheo.transform.afterTitle")}</span>
+          <ul>
+            {transformationItems.map((item) => (
+              <li>
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4 10 3.2 3.2L16 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                {t(locale, `morpheo.transform.after${item}`)}
+              </li>
+            ))}
+          </ul>
+        </article>
+      </div>
+      <blockquote data-reveal>{t(locale, "morpheo.transform.closing")}</blockquote>
+      <div class="morpheo-section__action" data-reveal>
+        <CtaButton client:load href={APP_URL} label={t(locale, "morpheo.transform.cta")} />
+      </div>
+    </section>
+
+    <section id="steps" class="morpheo-section morpheo-steps" aria-labelledby="morpheo-steps-title">
+      <div class="morpheo-section__intro">
+        <FocusText client:load as="span" className="morpheo-section__number">05</FocusText>
+        <FocusText client:load as="h2" id="morpheo-steps-title">{t(locale, "morpheo.steps.title")}</FocusText>
+        <FocusText client:load as="p">{t(locale, "morpheo.steps.subtitle")}</FocusText>
+      </div>
+      <div class="morpheo-card-grid morpheo-card-grid--three">
+        {stepItems.map((item, index) => (
+          <article class="morpheo-step-card" data-reveal style={`--delay: ${index * 80}ms`}>
+            <div class="morpheo-step-card__top">
+              <span>0{index + 1}</span>
+              <span class="morpheo-step-card__node" aria-hidden="true"></span>
+            </div>
+            <h3>{t(locale, `morpheo.steps.step${item}Title`)}</h3>
+            <p>{t(locale, `morpheo.steps.step${item}Body`)}</p>
+          </article>
+        ))}
+      </div>
+      <div class="morpheo-section__action" data-reveal>
+        <CtaButton client:load href={APP_URL} label={t(locale, "morpheo.steps.cta")} />
+      </div>
+    </section>
+
+    <section id="trust" class="morpheo-section morpheo-trust" aria-labelledby="morpheo-trust-title">
+      <div class="morpheo-section__intro">
+        <FocusText client:load as="span" className="morpheo-section__number">06</FocusText>
+        <FocusText client:load as="h2" id="morpheo-trust-title">{t(locale, "morpheo.trust.title")}</FocusText>
+      </div>
+      <div class="morpheo-card-grid morpheo-card-grid--four">
+        {trustItems.map((item, index) => (
+          <article class="morpheo-trust-card" data-reveal style={`--delay: ${(index % 4) * 65}ms`}>
+            <span class="morpheo-trust-card__index">0{index + 1}</span>
+            <h3>{t(locale, `morpheo.trust.card${item}Title`)}</h3>
+            <p>{t(locale, `morpheo.trust.card${item}Body`)}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section id="professionals" class="morpheo-section morpheo-professional" aria-labelledby="morpheo-professional-title">
+      <div class="morpheo-professional__copy" data-reveal>
+        <p class="morpheo-eyebrow"><span aria-hidden="true"></span>{t(locale, "morpheo.professional.eyebrow")}</p>
+        <h2 id="morpheo-professional-title">{t(locale, "morpheo.professional.title")}</h2>
+        <p>{t(locale, "morpheo.professional.body")}</p>
+        <p class="morpheo-microcopy">{t(locale, "morpheo.professional.disclaimer")}</p>
+        <a class="morpheo-button morpheo-button--secondary" href={APP_URL}>
+          {t(locale, "morpheo.professional.cta")}
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h11M11 6l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </a>
+      </div>
+      <div class="morpheo-interface" data-reveal aria-label={t(locale, "morpheo.professional.interfaceLabel")}>
+        <div class="morpheo-interface__topbar">
+          <span>{t(locale, "morpheo.professional.interfaceTitle")}</span>
+          <span class="morpheo-interface__status"><i aria-hidden="true"></i>{t(locale, "morpheo.professional.interfaceStatus")}</span>
+        </div>
+        <div class="morpheo-interface__content">
+          {interfaceItems.map((item, index) => (
+            <div class:list={["morpheo-interface__row", { "morpheo-interface__row--active": index === 1 }]}>
+              <span class="morpheo-interface__row-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none"><path d="M4 5h12M4 10h12M4 15h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+              </span>
+              <span>{t(locale, `morpheo.professional.interface${item}`)}</span>
+              <span class="morpheo-interface__row-line" aria-hidden="true"></span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="faq" class="morpheo-section morpheo-faq" aria-labelledby="morpheo-faq-title">
+      <div class="morpheo-section__intro morpheo-section__intro--center">
+        <FocusText client:load as="span" className="morpheo-section__number">FAQ</FocusText>
+        <FocusText client:load as="h2" id="morpheo-faq-title">{t(locale, "morpheo.faq.title")}</FocusText>
+      </div>
+      <div class="morpheo-faq__list">
+        {faqItems.map((item) => (
+          <details data-reveal>
+            <summary>
+              <span>{t(locale, `morpheo.faq.q${item}`)}</span>
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12M10 4v12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
+            </summary>
+            <p>{t(locale, `morpheo.faq.a${item}`)}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <section id="final" class="morpheo-final" aria-labelledby="morpheo-final-title" data-reveal>
+      <div class="morpheo-final__map" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="morpheo-final__content">
+        <h2 id="morpheo-final-title">{t(locale, "morpheo.final.title")}</h2>
+        <p>{t(locale, "morpheo.final.body")}</p>
+        <CtaButton client:load href={APP_URL} label={t(locale, "morpheo.final.cta")} />
+        <div class="morpheo-final__microcopy">
+          <span>{t(locale, "morpheo.final.microcopy1")}</span>
+          <i aria-hidden="true"></i>
+          <span>{t(locale, "morpheo.final.microcopy2")}</span>
+        </div>
+      </div>
+    </section>
+
+    <footer class="morpheo-footer">
+      <div class="morpheo-footer__inner">
+        <div class="morpheo-footer__brand">
+          <span class="morpheo-footer__logo" aria-hidden="true"><img src={logo.src} width="2000" height="2000" alt="" /></span>
+          <p>{t(locale, "morpheo.footer.productOf")}</p>
+        </div>
+        <nav aria-label={t(locale, "morpheo.footer.navigation")}>
+          <a href={localizedPath(locale, "/legal/terms")}>{t(locale, "morpheo.footer.legal")}</a>
+          <a href={localizedPath(locale, "/legal/privacy")}>{t(locale, "morpheo.footer.privacy")}</a>
+          <a href={`${localizedPath(locale, "/legal/privacy")}#cookies`}>{t(locale, "morpheo.footer.cookies")}</a>
+          <a href="#faq">{t(locale, "morpheo.footer.contact")}</a>
+          <a href="#professionals">{t(locale, "morpheo.footer.professionals")}</a>
+        </nav>
+      </div>
+      <div class="morpheo-footer__bottom">
+        <p>{t(locale, "morpheo.footer.disclaimer")}</p>
+        <p>{t(locale, "morpheo.footer.copyright", { year: new Date().getFullYear() })}</p>
+      </div>
+    </footer>
+  </div>
+</BaseLayout>
+
+<script>
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const revealItems = document.querySelectorAll<HTMLElement>("[data-reveal]");
+
+  if (reducedMotion || !("IntersectionObserver" in window)) {
+    revealItems.forEach((item) => item.classList.add("is-visible"));
+  } else {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        entry.target.classList.toggle("is-visible", entry.isIntersecting);
+      });
+    }, { threshold: 0.28, rootMargin: "0px 0px -5%" });
+
+    revealItems.forEach((item) => observer.observe(item));
+    document.addEventListener("astro:before-swap", () => observer.disconnect(), { once: true });
+  }
+</script>
+
+<style>
+  .morpheo-page {
+    --morpheo-bg: #090d1a;
+    --morpheo-surface: #141c33;
+    --morpheo-surface-deep: #0f1629;
+    --morpheo-primary: #437ef7;
+    --morpheo-text: #e2e8f0;
+    --morpheo-muted: #8391a8;
+    position: relative;
+    min-width: 0;
+    overflow: clip;
+    background:
+      radial-gradient(circle at 13% 18%, rgba(43, 76, 145, 0.12), transparent 28rem),
+      radial-gradient(circle at 87% 51%, rgba(35, 63, 121, 0.1), transparent 32rem),
+      var(--morpheo-bg);
+    color: var(--morpheo-text);
+  }
+
+  .morpheo-page :global(*) { box-sizing: border-box; }
+  .morpheo-page :global(a) { text-underline-offset: 0.2em; }
+
+  :global(.section-index) {
+    position: fixed;
+    z-index: 20;
+    top: 50dvh;
+    left: max(1.25rem, calc((100vw - 80rem) / 2 - 8.5rem));
+    display: none;
+    max-height: calc(100dvh - 8rem);
+    transform: translate3d(0, -50%, 0);
+  }
+
+  :global(.section-index nav) {
+    max-width: 9rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid rgba(111, 159, 255, 0.13);
+    border-radius: 1rem;
+    background: rgba(9, 13, 26, 0.76);
+    box-shadow: 8px 8px 18px rgba(0, 0, 0, 0.27), -4px -4px 12px rgba(255, 255, 255, 0.018), inset 1px 1px 0 rgba(255, 255, 255, 0.035);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  :global(.section-index nav ul) {
+    max-height: calc(100dvh - 10rem);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  :global(.section-index nav ul::-webkit-scrollbar) { display: none; }
+
+  [data-reveal] {
+    opacity: 0;
+    filter: blur(12px);
+    transition: opacity 1s cubic-bezier(0.55, 0.085, 0.68, 0.53) var(--delay, 0ms), filter 1s cubic-bezier(0.55, 0.085, 0.68, 0.53) var(--delay, 0ms);
+  }
+
+  [data-reveal].is-visible { opacity: 1; filter: blur(0); }
+
+  .morpheo-hero {
+    position: relative;
+    min-height: calc(112svh - 5rem);
+    padding: clamp(2rem, 5vw, 5.5rem) clamp(1rem, 4vw, 3rem) 5rem;
+  }
+
+  .morpheo-hero__ambient {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 73% 38%, rgba(42, 75, 145, 0.16), transparent 30%),
+      linear-gradient(rgba(62, 91, 148, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(62, 91, 148, 0.025) 1px, transparent 1px);
+    background-size: auto, 68px 68px, 68px 68px;
+    mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
+  }
+
+  .morpheo-hero__inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(26rem, 1.08fr);
+    align-items: center;
+    gap: clamp(2rem, 5vw, 5rem);
+    width: min(100%, 78rem);
+    min-height: calc(100svh - 10rem);
+    margin: 0 auto;
+  }
+
+  .morpheo-hero__copy { max-width: 39rem; }
+
+  .morpheo-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0 0 1.4rem;
+    color: #99b9fa;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .morpheo-hero__product-logo {
+    position: relative;
+    display: block;
+    width: clamp(9.5rem, 18vw, 12rem);
+    height: 2.4rem;
+    margin-bottom: 1.4rem;
+    overflow: hidden;
+  }
+
+  .morpheo-hero__product-logo img {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    transform: translateY(-50%);
+  }
+
+  .morpheo-eyebrow > span {
+    width: 0.52rem;
+    height: 0.52rem;
+    border-radius: 50%;
+    background: #78a2ff;
+    box-shadow: 0 0 0 0.32rem rgba(67, 126, 247, 0.1), 0 0 1rem rgba(67, 126, 247, 0.58);
+  }
+
+  .morpheo-hero h1 {
+    max-width: 11.5ch;
+    color: var(--morpheo-text);
+    font-family: var(--somnus-font-display);
+    font-size: clamp(3rem, 6.2vw, 5.6rem);
+    font-weight: 900;
+    letter-spacing: 0.005em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .morpheo-hero__body { display: grid; gap: 0.9rem; max-width: 39rem; margin-top: 2rem; }
+  .morpheo-hero__body p,
+  .morpheo-section__intro > p,
+  .morpheo-professional__copy > p,
+  .morpheo-final__content > p {
+    margin: 0;
+    color: var(--morpheo-muted);
+    font-size: clamp(1rem, 1.55vw, 1.13rem);
+    line-height: 1.75;
+  }
+
+  .morpheo-actions { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 2rem; }
+
+  .morpheo-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 3.25rem;
+    padding: 0.72rem 1.18rem;
+    border: 1px solid transparent;
+    border-radius: 1rem;
+    font-size: 0.9rem;
+    font-weight: 780;
+    text-decoration: none;
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  }
+
+  .morpheo-button svg { width: 1.1rem; height: 1.1rem; flex: 0 0 auto; }
+  .morpheo-button:hover { transform: translateY(-2px); }
+
+  .morpheo-button--secondary {
+    min-height: 2.9rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--somnus-color-text);
+    box-shadow: none;
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .morpheo-button--secondary:hover { color: #aecaff; transform: none; }
+  .morpheo-microcopy { margin: 1.05rem 0 0; color: #64748b; font-size: 0.78rem; line-height: 1.55; }
+  .morpheo-hero__map {
+    position: sticky;
+    top: 5.5rem;
+    align-self: start;
+    justify-self: end;
+    width: min(100%, 34rem);
+  }
+
+  .morpheo-section {
+    position: relative;
+    width: min(calc(100% - 2rem), 74rem);
+    margin: 0 auto;
+    padding: clamp(5rem, 10vw, 8.5rem) 0;
+    scroll-margin-top: 7rem;
+  }
+
+  .morpheo-section__intro { max-width: 48rem; }
+  .morpheo-section__intro--center { margin-right: auto; margin-left: auto; text-align: center; }
+
+  .morpheo-section__number,
+  .morpheo-signal-card__index,
+  .morpheo-trust-card__index {
+    display: inline-block;
+    margin-bottom: 1.1rem;
+    color: #6f9cff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+  }
+
+  .morpheo-section h2,
+  .morpheo-professional h2,
+  .morpheo-final h2 {
+    color: var(--morpheo-text);
+    font-family: var(--somnus-font-display);
+    font-size: clamp(2.15rem, 4.3vw, 4rem);
+    font-weight: 850;
+    letter-spacing: 0.005em;
+    line-height: 1.06;
+    text-wrap: balance;
+  }
+
+  .morpheo-section__intro > p { max-width: 47rem; margin-top: 1rem; }
+  .morpheo-section__intro--center > p { margin-right: auto; margin-left: auto; }
+
+  .morpheo-problem__grid,
+  .morpheo-card-grid { display: grid; gap: 1rem; margin-top: 3rem; }
+  .morpheo-problem__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .morpheo-signal-card,
+  .morpheo-feature-card,
+  .morpheo-step-card,
+  .morpheo-trust-card,
+  .morpheo-state-card,
+  .morpheo-interface,
+  .morpheo-faq details {
+    border: 1px solid rgba(148, 163, 184, 0.075);
+    background: var(--morpheo-surface);
+    box-shadow: 12px 12px 28px rgba(0, 0, 0, 0.32), -7px -7px 18px rgba(72, 91, 130, 0.055), inset 1px 1px 0 rgba(255, 255, 255, 0.03), inset -2px -2px 6px rgba(0, 0, 0, 0.18);
+  }
+
+  .morpheo-signal-card { display: flex; align-items: center; gap: 1.25rem; min-height: 6.3rem; padding: 1.25rem 1.4rem; border-radius: 1.2rem; }
+  .morpheo-signal-card__index { margin: 0; color: #536784; }
+  .morpheo-signal-card p { margin: 0; color: #bec9d9; font-size: 0.96rem; line-height: 1.55; }
+
+  .morpheo-section__closing { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1.5rem; margin: 3rem auto 0; }
+  .morpheo-section__closing span { height: 1px; background: linear-gradient(90deg, transparent, rgba(67, 126, 247, 0.36)); }
+  .morpheo-section__closing span:last-child { transform: scaleX(-1); }
+  .morpheo-section__closing p { max-width: 54rem; margin: 0; color: #cbd5e1; font-size: 1rem; font-weight: 750; text-align: center; }
+  .morpheo-section__action { display: flex; justify-content: center; margin-top: 2.2rem; }
+
+  .morpheo-organize::before {
+    position: absolute;
+    inset: 8% 15%;
+    z-index: -1;
+    background: radial-gradient(circle, rgba(38, 69, 135, 0.13), transparent 66%);
+    filter: blur(35px);
+    content: "";
+  }
+
+  .morpheo-pipeline {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 3rem;
+    padding: 1.15rem;
+    border: 1px solid rgba(148, 163, 184, 0.065);
+    border-radius: 1.55rem;
+    background: #0f1629;
+    box-shadow: inset 7px 7px 18px rgba(0, 0, 0, 0.35), inset -4px -4px 12px rgba(72, 91, 130, 0.04);
+  }
+
+  .morpheo-pipeline__step { min-height: 9rem; padding: 1.35rem; border-radius: 1rem; background: #141c33; box-shadow: 7px 7px 16px rgba(0, 0, 0, 0.32), -4px -4px 10px rgba(72, 91, 130, 0.055), inset 1px 1px 0 rgba(255, 255, 255, 0.03); }
+  .morpheo-pipeline__step span { color: #6f9cff; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; }
+  .morpheo-pipeline__step h3 { margin-top: 1.4rem; color: #dbe5f4; font-size: 1.05rem; line-height: 1.35; }
+  .morpheo-pipeline__arrow { width: 2.3rem; color: #437ef7; }
+
+  .morpheo-disclaimer { display: flex; gap: 0.85rem; width: min(100%, 50rem); margin: 2rem auto 0; padding: 1rem 1.15rem; border-radius: 1rem; background: #0f1629; color: #8391a8; box-shadow: inset 4px 4px 10px rgba(0, 0, 0, 0.3), inset -2px -2px 6px rgba(72, 91, 130, 0.035); }
+  .morpheo-disclaimer svg { width: 1.2rem; height: 1.2rem; flex: 0 0 auto; margin-top: 0.16rem; color: #6f9cff; }
+  .morpheo-disclaimer p { margin: 0; font-size: 0.85rem; line-height: 1.6; }
+
+  .morpheo-card-grid--six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .morpheo-feature-card { min-height: 12.5rem; padding: 1.5rem; border-radius: 1.25rem; }
+  .morpheo-feature-card__icon { display: grid; place-items: center; width: 2.8rem; height: 2.8rem; border-radius: 0.85rem; background: #111a30; color: #7ca5ff; box-shadow: 5px 5px 11px rgba(0, 0, 0, 0.34), -3px -3px 8px rgba(72, 91, 130, 0.07), inset 1px 1px 0 rgba(255, 255, 255, 0.03); }
+  .morpheo-feature-card__icon svg { width: 1.35rem; height: 1.35rem; }
+  .morpheo-feature-card h3 { margin-top: 2rem; color: #dce5f2; font-size: 1.03rem; line-height: 1.42; }
+
+  .morpheo-transformation__grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 1rem; margin-top: 3rem; }
+  .morpheo-state-card { padding: 2rem; border-radius: 1.35rem; }
+  .morpheo-state-card--before { background: #11192d; box-shadow: inset 6px 6px 14px rgba(0, 0, 0, 0.28), inset -3px -3px 9px rgba(72, 91, 130, 0.035); }
+  .morpheo-state-card--after { border-color: rgba(67, 126, 247, 0.24); background: #172546; }
+  .morpheo-state-card__label { color: #9bacbe; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+  .morpheo-state-card ul { display: grid; gap: 1rem; margin: 1.7rem 0 0; padding: 0; list-style: none; }
+  .morpheo-state-card li { display: flex; gap: 0.75rem; align-items: flex-start; color: #bdc9d9; font-size: 0.95rem; line-height: 1.5; }
+  .morpheo-state-card li > span { width: 0.45rem; height: 1px; flex: 0 0 auto; margin-top: 0.75rem; background: #52627a; }
+  .morpheo-state-card li svg { width: 1rem; height: 1rem; flex: 0 0 auto; margin-top: 0.15rem; color: #75a0ff; }
+  .morpheo-transformation__arrow { display: grid; place-items: center; color: #568cf8; }
+  .morpheo-transformation__arrow svg { width: 2.7rem; height: 2.7rem; }
+  .morpheo-transformation blockquote { margin: 2.2rem auto 0; color: #c9d5e5; font-size: 1rem; font-weight: 700; text-align: center; }
+
+  .morpheo-card-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .morpheo-step-card { min-height: 19rem; padding: 1.7rem; border-radius: 1.3rem; }
+  .morpheo-step-card__top { display: flex; align-items: center; justify-content: space-between; color: #6f9cff; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; }
+  .morpheo-step-card__node { width: 0.65rem; height: 0.65rem; border-radius: 50%; background: #78a2ff; box-shadow: 0 0 0 0.4rem rgba(67, 126, 247, 0.08), 0 0 1rem rgba(67, 126, 247, 0.45); }
+  .morpheo-step-card h3 { margin-top: 4rem; color: #dce5f2; font-size: 1.35rem; line-height: 1.25; }
+  .morpheo-step-card p { margin: 1rem 0 0; color: #8391a8; font-size: 0.93rem; line-height: 1.65; }
+
+  .morpheo-card-grid--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .morpheo-trust-card { min-height: 18rem; padding: 1.5rem; border-radius: 1.2rem; }
+  .morpheo-trust-card__index { margin: 0; }
+  .morpheo-trust-card h3 { margin-top: 2.8rem; color: #dce5f2; font-size: 1.18rem; line-height: 1.3; }
+  .morpheo-trust-card p { margin: 0.85rem 0 0; color: #8391a8; font-size: 0.88rem; line-height: 1.65; }
+
+  .morpheo-professional {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(28rem, 1.1fr);
+    align-items: center;
+    gap: clamp(2rem, 5vw, 5rem);
+    width: min(calc(100% - 2rem), 78rem);
+    margin-top: 4rem;
+    padding: clamp(2rem, 5vw, 4.5rem);
+    border: 1px solid rgba(67, 126, 247, 0.17);
+    border-radius: 2rem;
+    background: #111a30;
+    box-shadow: 18px 18px 40px rgba(0, 0, 0, 0.38), -9px -9px 24px rgba(72, 91, 130, 0.06), inset 1px 1px 0 rgba(255, 255, 255, 0.035), inset -3px -3px 10px rgba(0, 0, 0, 0.22);
+  }
+
+  .morpheo-professional__copy > p { margin-top: 1.25rem; }
+  .morpheo-professional__copy .morpheo-microcopy { font-size: 0.78rem; }
+  .morpheo-professional__copy .morpheo-button { margin-top: 1.6rem; }
+
+  .morpheo-interface { overflow: hidden; border-radius: 1.35rem; background: #0e1527; box-shadow: inset 7px 7px 18px rgba(0, 0, 0, 0.36), inset -4px -4px 12px rgba(72, 91, 130, 0.035), 12px 12px 28px rgba(0, 0, 0, 0.28); }
+  .morpheo-interface__topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.15rem; border-bottom: 1px solid rgba(148, 163, 184, 0.07); color: #c8d4e4; font-size: 0.78rem; font-weight: 800; }
+  .morpheo-interface__status { display: inline-flex; align-items: center; gap: 0.4rem; color: #7795c8; font-size: 0.68rem; }
+  .morpheo-interface__status i { width: 0.46rem; height: 0.46rem; border-radius: 50%; background: #78a2ff; box-shadow: 0 0 0.7rem rgba(67, 126, 247, 0.65); }
+  .morpheo-interface__content { display: grid; gap: 0.42rem; padding: 0.8rem; }
+  .morpheo-interface__row { display: grid; grid-template-columns: auto minmax(8rem, auto) 1fr; align-items: center; gap: 0.7rem; min-height: 3.35rem; padding: 0.65rem 0.75rem; border-radius: 0.75rem; color: #8897ae; font-size: 0.78rem; }
+  .morpheo-interface__row--active { background: #172646; color: #cdd9e9; box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.28), -2px -2px 6px rgba(72, 91, 130, 0.05), inset 1px 1px 0 rgba(255, 255, 255, 0.025); }
+  .morpheo-interface__row-icon { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.55rem; background: #111a30; color: #6f9cff; box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3), inset -1px -1px 3px rgba(255, 255, 255, 0.02); }
+  .morpheo-interface__row-icon svg { width: 1rem; height: 1rem; }
+  .morpheo-interface__row-line { height: 0.36rem; border-radius: 99px; background: linear-gradient(90deg, rgba(67, 126, 247, 0.22), rgba(67, 126, 247, 0.03)); }
+
+  .morpheo-faq { width: min(calc(100% - 2rem), 58rem); }
+  .morpheo-faq__list { display: grid; gap: 0.8rem; margin-top: 3rem; }
+  .morpheo-faq details { padding: 0 1.3rem; border-radius: 1rem; }
+  .morpheo-faq summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4.8rem; color: #d5dfed; font-size: 0.96rem; font-weight: 750; cursor: pointer; list-style: none; }
+  .morpheo-faq summary::-webkit-details-marker { display: none; }
+  .morpheo-faq summary svg { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; color: #6f9cff; transition: transform 180ms ease; }
+  .morpheo-faq details[open] summary svg { transform: rotate(45deg); }
+  .morpheo-faq details p { margin: -0.3rem 0 1.25rem; padding-right: 2rem; color: #8391a8; font-size: 0.9rem; line-height: 1.7; }
+
+  .morpheo-final {
+    position: relative;
+    width: min(calc(100% - 2rem), 68rem);
+    margin: 5rem auto 0;
+    padding: clamp(4rem, 8vw, 6.5rem) clamp(1.5rem, 6vw, 5rem);
+    overflow: hidden;
+    border: 1px solid rgba(67, 126, 247, 0.19);
+    border-radius: 2rem;
+    background: #141c33;
+    box-shadow: 18px 18px 40px rgba(0, 0, 0, 0.4), -10px -10px 26px rgba(72, 91, 130, 0.065), inset 1px 1px 0 rgba(255, 255, 255, 0.04), inset -3px -3px 10px rgba(0, 0, 0, 0.22);
+    text-align: center;
+    scroll-margin-top: 7rem;
+  }
+
+  .morpheo-final__content { position: relative; z-index: 2; max-width: 50rem; margin: 0 auto; }
+  .morpheo-final__content > p { margin: 1.25rem auto 0; }
+  .morpheo-final :global(astro-island) { display: inline-flex; margin-top: 2rem; }
+  .morpheo-final__microcopy { display: flex; align-items: center; justify-content: center; gap: 0.65rem; margin-top: 1.1rem; color: #718098; font-size: 0.76rem; }
+  .morpheo-final__microcopy i { width: 0.25rem; height: 0.25rem; border-radius: 50%; background: #4e6383; }
+  .morpheo-final__map { position: absolute; inset: 0; opacity: 0.35; pointer-events: none; }
+  .morpheo-final__map::before,
+  .morpheo-final__map::after { position: absolute; top: 50%; left: 50%; border: 1px solid rgba(67, 126, 247, 0.18); border-radius: 50%; content: ""; transform: translate(-50%, -50%); }
+  .morpheo-final__map::before { width: 40rem; height: 40rem; }
+  .morpheo-final__map::after { width: 25rem; height: 25rem; }
+  .morpheo-final__map span { position: absolute; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #6f9cff; box-shadow: 0 0 1rem rgba(67, 126, 247, 0.6); }
+  .morpheo-final__map span:nth-child(1) { top: 18%; left: 24%; }
+  .morpheo-final__map span:nth-child(2) { top: 30%; right: 18%; }
+  .morpheo-final__map span:nth-child(3) { bottom: 18%; left: 32%; }
+  .morpheo-final__map span:nth-child(4) { right: 29%; bottom: 20%; }
+  .morpheo-final__map span:nth-child(5) { top: 50%; left: 50%; }
+
+  .morpheo-footer { width: min(calc(100% - 2rem), 78rem); margin: 8rem auto 0; padding: 2rem 0 1.5rem; border-top: 1px solid rgba(148, 163, 184, 0.08); }
+  .morpheo-footer__inner { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+  .morpheo-footer__brand { display: flex; align-items: center; gap: 1rem; }
+  .morpheo-footer__brand p { margin: 0; color: #64748b; font-size: 0.8rem; }
+  .morpheo-footer__logo { position: relative; display: block; width: 8.3rem; height: 1.8rem; overflow: hidden; }
+  .morpheo-footer__logo img { position: absolute; top: 50%; left: 0; width: 8.3rem; max-width: none; height: auto; transform: translateY(-50%); }
+  .morpheo-footer nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 1.2rem; }
+  .morpheo-footer nav a { color: #7f8da3; font-size: 0.78rem; text-decoration: none; }
+  .morpheo-footer nav a:hover { color: #d6dfeb; }
+  .morpheo-footer__bottom { display: flex; justify-content: space-between; gap: 2rem; margin-top: 1.5rem; padding-top: 1.2rem; border-top: 1px solid rgba(148, 163, 184, 0.05); }
+  .morpheo-footer__bottom p { max-width: 54rem; margin: 0; color: #56647a; font-size: 0.7rem; line-height: 1.55; }
+
+  @media (max-width: 980px) {
+    .morpheo-hero { min-height: auto; }
+    .morpheo-hero__inner { grid-template-columns: 1fr; min-height: auto; }
+    .morpheo-hero__copy { max-width: 47rem; }
+    .morpheo-hero__map { position: relative; top: auto; width: min(100%, 42rem); margin: 0 auto; }
+    .morpheo-card-grid--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .morpheo-professional { grid-template-columns: 1fr; }
+  }
+
+  @media (min-width: 1640px) {
+    :global(.section-index) {
+      display: block;
+      left: 1.25rem;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .morpheo-page { background: var(--morpheo-bg); }
+    .morpheo-hero { padding-top: 2.5rem; }
+    .morpheo-hero h1 { max-width: 13ch; font-size: clamp(2.65rem, 12vw, 4.3rem); }
+    .morpheo-actions { display: grid; }
+    .morpheo-actions { justify-items: center; }
+    .morpheo-actions .morpheo-button { width: auto; min-height: 3.1rem; }
+    .morpheo-problem__grid,
+    .morpheo-card-grid--six,
+    .morpheo-card-grid--three { grid-template-columns: 1fr; }
+    .morpheo-section__closing { grid-template-columns: 1fr; }
+    .morpheo-section__closing span { display: none; }
+    .morpheo-pipeline { grid-template-columns: 1fr; }
+    .morpheo-pipeline__arrow { margin: 0 auto; transform: rotate(90deg); }
+    .morpheo-pipeline__step { min-height: 8rem; }
+    .morpheo-transformation__grid { grid-template-columns: 1fr; }
+    .morpheo-transformation__arrow { transform: rotate(90deg); }
+    .morpheo-step-card { min-height: 16rem; }
+    .morpheo-professional { width: min(calc(100% - 1.25rem), 78rem); padding: 1.25rem; border-radius: 1.4rem; }
+    .morpheo-interface__row { grid-template-columns: auto 1fr; }
+    .morpheo-interface__row-line { display: none; }
+    .morpheo-final__microcopy { flex-direction: column; }
+    .morpheo-final__microcopy i { display: none; }
+    .morpheo-footer__inner,
+    .morpheo-footer__bottom { align-items: flex-start; flex-direction: column; }
+    .morpheo-footer nav { justify-content: flex-start; }
+  }
+
+  @media (max-width: 520px) {
+    .morpheo-section { width: min(calc(100% - 1.25rem), 74rem); padding-top: 4.5rem; padding-bottom: 4.5rem; }
+    .morpheo-card-grid--four { grid-template-columns: 1fr; }
+    .morpheo-trust-card { min-height: 14rem; }
+    .morpheo-state-card { padding: 1.35rem; }
+    .morpheo-final { width: min(calc(100% - 1.25rem), 68rem); border-radius: 1.4rem; }
+    .morpheo-footer { width: min(calc(100% - 1.25rem), 78rem); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal] { opacity: 1; filter: none; transition: none; }
+    .morpheo-button,
+    .morpheo-faq summary svg { transition: none; }
+  }
+</style>

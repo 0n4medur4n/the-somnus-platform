@@ -1,0 +1,10 @@
+{
+  "extends": "./node_modules/astro/tsconfigs/strictest.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["./.astro/types.d.ts", "./src/**/*", "./src/**/*.json"],
+  "exclude": ["./dist", "./node_modules"]
+}

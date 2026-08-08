@@ -1,0 +1,26 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { LOCALES, t } from "../../../i18n/ui";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+type Locale = (typeof LOCALES)[number];
+const { locale } = Astro.params as { locale: Locale };
+
+const lastUpdated = t(locale, "legal.lastUpdated", { date: "2026-07-21" });
+---
+
+<BaseLayout
+  locale={locale}
+  path="/legal/terms"
+  title={t(locale, "legal.terms.title")}
+  description={t(locale, "legal.terms.body")}
+>
+  <article class="prose prose-invert mx-auto max-w-3xl py-16">
+    <h1 class="font-display text-3xl text-text">{t(locale, "legal.terms.title")}</h1>
+    <p class="mt-2 text-sm text-muted">{lastUpdated}</p>
+    <p class="mt-8 text-muted">{t(locale, "legal.terms.body")}</p>
+  </article>
+</BaseLayout>

@@ -22,6 +22,7 @@ export type BrandTokens = {
   };
   readonly font: {
     readonly stack: string;
+    readonly display: string;
   };
   readonly spacing: {
     readonly xs: string;
@@ -47,7 +48,8 @@ export const BRAND_TOKENS: BrandTokens = Object.freeze({
   }),
   font: Object.freeze({
     stack:
-      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      'Satoshi, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    display: "Okine, Satoshi, ui-sans-serif, system-ui, sans-serif",
   }),
   spacing: Object.freeze({
     xs: "0.25rem",
@@ -71,6 +73,7 @@ export function tokensAsCssVariables(prefix = "somnus"): string {
   lines.push(`  --${prefix}-color-text: ${BRAND_TOKENS.color.text};`);
   lines.push(`  --${prefix}-color-muted: ${BRAND_TOKENS.color.muted};`);
   lines.push(`  --${prefix}-font-stack: ${BRAND_TOKENS.font.stack};`);
+  lines.push(`  --${prefix}-font-display: ${BRAND_TOKENS.font.display};`);
   lines.push(`  --${prefix}-spacing-xs: ${BRAND_TOKENS.spacing.xs};`);
   lines.push(`  --${prefix}-spacing-sm: ${BRAND_TOKENS.spacing.sm};`);
   lines.push(`  --${prefix}-spacing-md: ${BRAND_TOKENS.spacing.md};`);
