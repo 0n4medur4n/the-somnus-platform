@@ -394,3 +394,110 @@ jobs:
           path: apps/somnus-app/playwright-report
           retention-days: 7
           if-no-files-found: ignore
+
+  somnus-marketing:
+    name: Marketing site (build, check, i18n)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # The site imports @somnus/api-contracts through its built dist/.
+      - name: Build shared packages
+        run: pnpm --if-present -r --filter "./packages/*" run build
+
+      - name: Astro check (typecheck)
+        run: pnpm --filter @somnus/marketing check
+
+      # Build before the tests: the link check and hreflang/meta tests
+      # read the generated dist/.
+      - name: Build marketing (astro)
+        run: pnpm --filter @somnus/marketing build
+
+      - name: Test marketing (i18n completeness, link check, hreflang/meta)
+        run: pnpm --filter @somnus/marketing test
+
+  deploy-hosting:
+    name: Deploy frontends to dev Hosting
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [quality-gate, somnus-app, somnus-marketing]
+    # Build plan §20 Checkpoint 9.2 exit: both frontends deploy to dev
+    # Hosting from CI. PRs get a preview channel; main goes live to dev.
+    # Gated on the Firebase service-account secret so the pipeline stays
+    # green until it is configured (see docs/runbooks/deploy-dev.md).
+    env:
+      FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      FIREBASE_PROJECT: the-somnuss
+    steps:
+      - name: Note when credentials are absent
+        if: env.FIREBASE_SA == ''
+        run: echo "::notice::FIREBASE_SERVICE_ACCOUNT not set -- skipping Hosting deploy (see docs/runbooks/deploy-dev.md)."
+
+      - name: Checkout
+        if: env.FIREBASE_SA != ''
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup pnpm
+        if: env.FIREBASE_SA != ''
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        if: env.FIREBASE_SA != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        if: env.FIREBASE_SA != ''
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        if: env.FIREBASE_SA != ''
+        run: pnpm --if-present -r --filter "./packages/*" run build
+
+      - name: Build both frontends
+        if: env.FIREBASE_SA != ''
+        run: |
+          pnpm --filter @somnus/app build
+          pnpm --filter @somnus/marketing build
+
+      - name: Authenticate to Firebase
+        if: env.FIREBASE_SA != ''
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/firebase-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json" >> "$GITHUB_ENV"
+
+      - name: Deploy preview channel (pull request)
+        if: env.FIREBASE_SA != '' && github.event_name == 'pull_request'
+        run: pnpm exec firebase hosting:channel:deploy "pr-${{ github.event.number }}" --project "$FIREBASE_PROJECT" --expires 7d --non-interactive
+
+      - name: Deploy live to dev (push to main)
+        if: env.FIREBASE_SA != '' && github.event_name == 'push'
+        run: pnpm exec firebase deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive

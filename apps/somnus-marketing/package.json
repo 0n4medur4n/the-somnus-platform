@@ -1,0 +1,39 @@
+{
+  "name": "@somnus/marketing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Somnus — static marketing site (Astro). Localized in es/en/ca/fr. Deployed to Firebase Hosting.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "typecheck": "astro check",
+    "test": "vitest run",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@astrojs/react": "6.0.1",
+    "@somnus/api-contracts": "workspace:*",
+    "@somnus/design-system": "workspace:*",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.1.3",
+    "clsx": "2.1.1",
+    "gsap": "3.15.0",
+    "motion": "12.42.2",
+    "ogl": "1.0.11",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwind-merge": "3.6.0",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.9",
+    "@somnus/i18n": "workspace:*",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  }
+}

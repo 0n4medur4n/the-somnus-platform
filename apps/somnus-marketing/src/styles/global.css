@@ -1,0 +1,129 @@
+@import "@somnus/design-system/tokens.css";
+@import "tailwindcss";
+
+/* Brand-token utility mapping. */
+@theme {
+  --color-background: var(--somnus-color-background);
+  --color-surface: var(--somnus-color-surface);
+  --color-primary: var(--somnus-color-primary);
+  --color-text: var(--somnus-color-text);
+  --color-muted: var(--somnus-color-muted);
+  --font-sans: var(--somnus-font-stack);
+  --font-display: var(--somnus-font-display);
+  --radius-sm: var(--somnus-radius-sm);
+  --radius-md: var(--somnus-radius-md);
+  --radius-lg: var(--somnus-radius-lg);
+}
+
+html {
+  color-scheme: dark;
+  overflow-x: clip;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  overflow-x: clip;
+  background-color: var(--somnus-color-background);
+  color: var(--somnus-color-text);
+  font-family: var(--somnus-font-stack);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html.is-loading,
+html.is-loading body {
+  overflow: hidden;
+}
+
+/* Loading state for the cinematic site loader (GlobalLoader.astro). */
+html.is-loading,
+html.is-loading body {
+  overflow: hidden;
+}
+
+html.is-loading body {
+  pointer-events: none;
+}
+
+/* Typography hierarchy */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: 1.2;
+  margin: 0;
+}
+
+h1 {
+  font-family: var(--somnus-font-display);
+  font-weight: 900;
+  font-size: 3.5rem;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-family: var(--somnus-font-stack);
+  font-weight: 700;
+  font-size: 2rem;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--somnus-font-stack);
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+h4 {
+  font-family: var(--somnus-font-stack);
+  font-weight: 500;
+  font-size: 1.25rem;
+}
+
+h5 {
+  font-family: var(--somnus-font-stack);
+  font-weight: 500;
+  font-size: 1.125rem;
+}
+
+h6 {
+  font-family: var(--somnus-font-stack);
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+a {
+  color: var(--somnus-color-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--somnus-color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  left: var(--somnus-spacing-md);
+  top: var(--somnus-spacing-md);
+  background: var(--somnus-color-surface);
+  color: var(--somnus-color-text);
+  padding: var(--somnus-spacing-sm) var(--somnus-spacing-md);
+  border-radius: var(--somnus-radius-md);
+}

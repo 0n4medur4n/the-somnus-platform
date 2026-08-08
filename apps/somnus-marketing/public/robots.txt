@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://the-somnuss.web.app/sitemap.xml

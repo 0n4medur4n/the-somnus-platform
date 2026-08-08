@@ -1,0 +1,793 @@
+---
+/**
+ * Global cinematic website loader for the Astro marketing site.
+ *
+ * Inspired by the pacing of the 2023 Hulu logo animation, but built
+ * around the active brand's transparent logo and brand blue.
+ * No React/Vue/Svelte island is required: it is a plain Astro component
+ * with a client-side GSAP timeline.
+ *
+ * The SVG contains a raster image, so its internal vector paths are not
+ * animatable. The logo is therefore applied through CSS masking (which
+ * preserves transparency and guarantees the exact brand blue), the
+ * progressive left-to-right reveal uses `clip-path`, and a subtle
+ * horizontal scale change simulates internal separation during expansion.
+ */
+import morpheoLogoUrl from "../assets/logo/LogoMorpheoTransparente.png?url";
+import logoUrl from "../assets/logo/LogoTransparente.svg?url";
+import { t, type Locale } from "../i18n/ui";
+
+export interface Props {
+  /** Locale used for the accessibility label. */
+  locale?: Locale;
+  /** How often the full loader should play. */
+  playMode?: "always" | "once-per-session" | "once-ever";
+  /** Force the full animation even if storage says it already played. */
+  forceReplay?: boolean;
+  /** Brand artwork used by the loader. */
+  brand?: "somnus" | "morpheo";
+}
+
+const {
+  locale = "es",
+  playMode = "once-per-session",
+  forceReplay = import.meta.env.DEV,
+  brand = "somnus",
+} = Astro.props;
+
+const loadingText = t(locale, "loader.loading");
+const tagline = t(locale, "loader.tagline");
+const STORAGE_KEY = "astro-global-loader-played";
+const logoInkBounds = brand === "morpheo"
+  ? { x: 164 / 2000, y: 868 / 2000, width: 1704 / 2000, height: 256 / 2000 }
+  : { x: 65 / 1254, y: 554 / 1254, width: 1123 / 1254, height: 127 / 1254 };
+const selectedLogoUrl = brand === "morpheo" ? morpheoLogoUrl : logoUrl;
+const logoMaskStyle = { "--logo-mask": `url(${JSON.stringify(selectedLogoUrl)})` };
+---
+
+<div
+  id="global-loader"
+  class:list={{ "global-loader": true, "global-loader--morpheo": brand === "morpheo" }}
+  role="status"
+  aria-live="polite"
+  aria-label={loadingText}
+  data-play-mode={playMode}
+  data-force-replay={String(forceReplay)}
+  data-storage-key={STORAGE_KEY}
+  data-logo-ink-bounds={JSON.stringify(logoInkBounds)}
+>
+  <script is:inline>
+    (function () {
+      const html = document.documentElement;
+      html.classList.add("is-loading");
+
+      const loader = document.getElementById("global-loader");
+      if (!loader) return;
+
+      const mode = loader.dataset.playMode || "once-per-session";
+      const forceReplay =
+        loader.dataset.forceReplay === "true" ||
+        new URLSearchParams(location.search).get("loader") === "1";
+      const storageKey = loader.dataset.storageKey || "astro-global-loader-played";
+
+      if (!forceReplay && mode !== "always") {
+        try {
+          const played =
+            mode === "once-ever"
+              ? localStorage.getItem(storageKey) === "1"
+              : sessionStorage.getItem(storageKey) === "1";
+          if (played) {
+            html.classList.remove("is-loading");
+            document.body?.removeAttribute("aria-busy");
+            loader.remove();
+            return;
+          }
+        } catch {
+          // Storage can be blocked; continue with the loader.
+        }
+      }
+
+      if (document.body) {
+        document.body.setAttribute("aria-busy", "true");
+      }
+
+    })();
+  </script>
+
+  <noscript>
+    <style is:inline>
+      #global-loader {
+        display: none !important;
+      }
+      html.is-loading,
+      html.is-loading body {
+        overflow: visible !important;
+      }
+    </style>
+  </noscript>
+
+  <div class="loader-ambient" aria-hidden="true"></div>
+  <div class="loader-blue-fill" aria-hidden="true"></div>
+  <div class="loader-blackout" aria-hidden="true"></div>
+
+  <div class="loader-stage">
+    <div class="loader-light-burst" aria-hidden="true"></div>
+
+    <div class="loader-logo-glow" aria-hidden="true">
+      <div class="loader-logo-art" style={logoMaskStyle}></div>
+    </div>
+
+    <div class="loader-logo">
+      <div class="loader-logo-art" style={logoMaskStyle}></div>
+    </div>
+
+    <p class="loader-tagline">{tagline}</p>
+
+    <svg class="loader-frame" aria-hidden="true" width="100%" height="100%" preserveAspectRatio="none">
+      <rect
+        class="loader-frame-rect"
+        fill="#3f7bf7"
+        fill-opacity="0"
+        stroke="#3f7bf7"
+        stroke-width="2"
+        rx="28"
+      ></rect>
+    </svg>
+  </div>
+
+  <span class="sr-only">{loadingText}</span>
+</div>
+
+<script>
+  import { gsap } from "gsap";
+
+  declare global {
+    interface Window {
+      __globalLoaderInitialized?: boolean;
+    }
+  }
+
+  type PlayMode = "always" | "once-per-session" | "once-ever";
+
+  const FINAL_BACKGROUND = "#000000";
+  const STORAGE_KEY = "astro-global-loader-played";
+
+  const CONFIG = {
+    totalDuration: 6,
+    logoStartScale: 1,
+    logoContractedScale: 0.85,
+    logoExpandedScale: 0.95,
+    separationScaleX: 1.04,
+    revealDuration: 1.3,
+    stagger: 0.05,
+    glowBlur: 70,
+    frameRadius: 28,
+    exitDuration: 0.8,
+    maxWaitMs: 10000,
+  } as const;
+
+  // Visible artwork bounds inside the square SVG source (measured from the
+  // embedded 1254 x 1254 logo image). The transparent square must never be
+  // used to size the frame.
+  const DEFAULT_LOGO_INK_BOUNDS = {
+    x: 65 / 1254,
+    y: 554 / 1254,
+    width: 1123 / 1254,
+    height: 127 / 1254,
+  } as const;
+
+  function readLogoInkBounds(value: string | undefined): { x: number; y: number; width: number; height: number } {
+    if (!value) return DEFAULT_LOGO_INK_BOUNDS;
+
+    try {
+      const parsed = JSON.parse(value) as Partial<typeof DEFAULT_LOGO_INK_BOUNDS>;
+      if (
+        typeof parsed.x === "number" &&
+        typeof parsed.y === "number" &&
+        typeof parsed.width === "number" &&
+        typeof parsed.height === "number"
+      ) {
+        return parsed as { x: number; y: number; width: number; height: number };
+      }
+    } catch {
+      // Fall back to the main Somnus logo bounds when data is unavailable.
+    }
+
+    return DEFAULT_LOGO_INK_BOUNDS;
+  }
+
+  const LABELS = {
+    background: 0,
+    logoEnter: 1.0,
+    lightBurst: 1.1,
+    afterglow: 1.2,
+    logoExpand: 3.0,
+    frameDraw: 3.1,
+    screenFill: 4.1,
+    blueToBlack: 5.2,
+    loaderExit: 5.8,
+  } as const;
+
+  function initLoader(): void {
+    if (window.__globalLoaderInitialized) {
+      const existing = document.getElementById("global-loader");
+      if (existing) {
+        existing.style.pointerEvents = "none";
+        existing.remove();
+      }
+      document.documentElement.classList.remove("is-loading");
+      document.body?.removeAttribute("aria-busy");
+      return;
+    }
+    window.__globalLoaderInitialized = true;
+
+    const loader = document.getElementById("global-loader");
+    if (!loader) return;
+    const rootLoader = loader;
+    const logoInkBounds = readLogoInkBounds(loader.dataset.logoInkBounds);
+
+    const playMode = (loader.dataset.playMode ?? "once-per-session") as PlayMode;
+    const forceReplay =
+      loader.dataset.forceReplay === "true" ||
+      new URLSearchParams(window.location.search).get("loader") === "1";
+
+    const alreadyPlayed =
+      !forceReplay &&
+      playMode !== "always" &&
+      (playMode === "once-ever"
+        ? localStorage.getItem(STORAGE_KEY) === "1"
+        : sessionStorage.getItem(STORAGE_KEY) === "1");
+
+    if (alreadyPlayed) {
+      cleanupAndRemove(rootLoader);
+      return;
+    }
+
+    try {
+      if (playMode !== "always") {
+        (playMode === "once-ever" ? localStorage : sessionStorage).setItem(STORAGE_KEY, "1");
+      }
+    } catch {
+      // Storage may be blocked in private browsing; continue gracefully.
+    }
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.classList.add("is-loading");
+    document.body.setAttribute("aria-busy", "true");
+
+    // Keep the rest of the page hidden from assistive technologies while the
+    // loader is active so focus cannot move into invisible content.
+    const siblings = Array.from(document.body.children)
+      .filter((el): el is HTMLElement => el !== loader && el instanceof HTMLElement)
+      .map((el) => {
+        const hadHidden = el.hasAttribute("aria-hidden");
+        el.setAttribute("aria-hidden", "true");
+        return { el, hadHidden };
+      });
+
+    const ambient = loader.querySelector<HTMLElement>(".loader-ambient");
+    const logo = loader.querySelector<HTMLElement>(".loader-logo");
+    const logoArt = loader.querySelector<HTMLElement>(".loader-logo .loader-logo-art");
+    const glow = loader.querySelector<HTMLElement>(".loader-logo-glow");
+    const burst = loader.querySelector<HTMLElement>(".loader-light-burst");
+    const frameEl = loader.querySelector<SVGSVGElement>(".loader-frame");
+    const frameRect = loader.querySelector<SVGRectElement>(".loader-frame-rect");
+    const blueFill = loader.querySelector<HTMLElement>(".loader-blue-fill");
+    const blackout = loader.querySelector<HTMLElement>(".loader-blackout");
+    const tagline = loader.querySelector<HTMLElement>(".loader-tagline");
+
+    if (!ambient || !logo || !logoArt || !glow || !burst || !frameEl || !frameRect || !blueFill || !blackout || !tagline) {
+      cleanupAndRemove(rootLoader);
+      return;
+    }
+
+    const rootLogo = logo;
+    const rootFrameRect = frameRect;
+
+    let tl: gsap.core.Timeline | null = null;
+    let resizeObserver: ResizeObserver | null = null;
+    let failSafeTimer: number | null = null;
+    let frameDrawStarted = false;
+    let screenFillStarted = false;
+    let coverScale = 1;
+    let frameLength = 0;
+    let completed = false;
+
+    function cleanup(): void {
+      tl?.kill();
+      resizeObserver?.disconnect();
+      if (failSafeTimer !== null) window.clearTimeout(failSafeTimer);
+
+      document.documentElement.classList.remove("is-loading");
+      document.body.removeAttribute("aria-busy");
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+
+      for (const { el, hadHidden } of siblings) {
+        if (!hadHidden) el.removeAttribute("aria-hidden");
+      }
+    }
+
+    function cleanupAndRemove(el: HTMLElement): void {
+      cleanup();
+      el.style.pointerEvents = "none";
+      gsap.set(el, { autoAlpha: 0 });
+      el.remove();
+    }
+
+    function finishNow(): void {
+      if (completed) return;
+      completed = true;
+      cleanup();
+      rootLoader.style.pointerEvents = "none";
+      gsap.set(rootLoader, { autoAlpha: 0 });
+      rootLoader.remove();
+    }
+
+    function getVisibleLogoRect() {
+      const logoRect = rootLogo.getBoundingClientRect();
+      return {
+        left: logoRect.left + logoRect.width * logoInkBounds.x,
+        top: logoRect.top + logoRect.height * logoInkBounds.y,
+        width: logoRect.width * logoInkBounds.width,
+        height: logoRect.height * logoInkBounds.height,
+      };
+    }
+
+    function measureFrame(): void {
+      const visibleLogo = getVisibleLogoRect();
+      const padX = Math.max(24, visibleLogo.width * 0.08);
+      const padY = Math.max(16, visibleLogo.height * 0.22);
+      const x = visibleLogo.left - padX;
+      const y = visibleLogo.top - padY;
+      const width = visibleLogo.width + padX * 2;
+      const height = visibleLogo.height + padY * 2;
+
+      rootFrameRect.setAttribute("x", String(x));
+      rootFrameRect.setAttribute("y", String(y));
+      rootFrameRect.setAttribute("width", String(width));
+      rootFrameRect.setAttribute("height", String(height));
+      rootFrameRect.setAttribute("rx", String(CONFIG.frameRadius));
+
+      frameLength = rootFrameRect.getTotalLength();
+      gsap.set(rootFrameRect, { strokeDasharray: frameLength, strokeDashoffset: frameLength });
+      coverScale =
+        Math.max(window.innerWidth / width, window.innerHeight / height) * 1.15;
+    }
+
+    function updateFrameOnResize(): void {
+      if (screenFillStarted) return;
+
+      const visibleLogo = getVisibleLogoRect();
+      const padX = Math.max(24, visibleLogo.width * 0.08);
+      const padY = Math.max(16, visibleLogo.height * 0.22);
+      const x = visibleLogo.left - padX;
+      const y = visibleLogo.top - padY;
+      const width = visibleLogo.width + padX * 2;
+      const height = visibleLogo.height + padY * 2;
+
+      rootFrameRect.setAttribute("x", String(x));
+      rootFrameRect.setAttribute("y", String(y));
+      rootFrameRect.setAttribute("width", String(width));
+      rootFrameRect.setAttribute("height", String(height));
+
+      if (!frameDrawStarted) {
+        frameLength = rootFrameRect.getTotalLength();
+        gsap.set(rootFrameRect, { strokeDasharray: frameLength, strokeDashoffset: frameLength });
+      }
+      coverScale =
+        Math.max(window.innerWidth / width, window.innerHeight / height) * 1.15;
+    }
+
+    failSafeTimer = window.setTimeout(() => {
+      if (!completed) finishNow();
+    }, CONFIG.maxWaitMs);
+
+    resizeObserver = new ResizeObserver(() => {
+      window.requestAnimationFrame(updateFrameOnResize);
+    });
+    resizeObserver.observe(document.body);
+
+    window.addEventListener("beforeunload", () => cleanup(), { once: true });
+    document.addEventListener("astro:before-swap", () => cleanup());
+
+    gsap.set(loader, { autoAlpha: 1, backgroundColor: FINAL_BACKGROUND });
+    gsap.set(ambient, { opacity: 0, scale: 1 });
+    gsap.set(logo, { opacity: 0, "--reveal": "100%", scale: CONFIG.logoStartScale, x: -12 });
+    gsap.set(logoArt, { scaleX: 1 });
+    gsap.set(glow, { opacity: 0, scale: 1.08, "--reveal": "100%" });
+    gsap.set(burst, { opacity: 0, scaleX: 0.2 });
+    gsap.set(frameEl, { opacity: 0, scale: 1 });
+    gsap.set(tagline, { opacity: 0, y: 12 });
+    gsap.set(blueFill, { opacity: 0 });
+    gsap.set(blackout, { opacity: 0 });
+
+    measureFrame();
+
+    if (prefersReducedMotion) {
+      tl = gsap.timeline({
+        onComplete: finishNow,
+      });
+
+      tl.set(logo, { "--reveal": "0%", scale: 0.9 })
+        .to(logo, { opacity: 1, duration: 0.25, ease: "power2.out" })
+        .to(blueFill, { opacity: 1, duration: 0.2, ease: "power2.out" }, "-=0.1")
+        .to(blackout, { opacity: 1, duration: 0.25, ease: "power2.out" });
+      return;
+    }
+
+    const mainTimeline = gsap.timeline();
+    tl = mainTimeline;
+    mainTimeline
+      .addLabel("background", LABELS.background)
+      .addLabel("logoEnter", LABELS.logoEnter)
+      .addLabel("lightBurst", LABELS.lightBurst)
+      .addLabel("afterglow", LABELS.afterglow)
+      .addLabel("logoExpand", LABELS.logoExpand)
+      .addLabel("frameDraw", LABELS.frameDraw)
+      .addLabel("screenFill", LABELS.screenFill)
+      .addLabel("blueToBlack", LABELS.blueToBlack)
+      .addLabel("loaderExit", LABELS.loaderExit);
+
+    // Phase 1: dark background and ambient edge glow.
+    mainTimeline.fromTo(
+      ambient,
+      { opacity: 0, scale: 1 },
+      { opacity: 0.45, scale: 1.08, duration: 1.4, ease: "sine.inOut" },
+      "background",
+    );
+
+    // Phase 2: progressive logo entrance.
+    mainTimeline.fromTo(
+      logo,
+      { opacity: 0, "--reveal": "100%", scale: CONFIG.logoStartScale, x: -12 },
+      {
+        opacity: 1,
+        "--reveal": "0%",
+        scale: CONFIG.logoContractedScale,
+        x: 0,
+        duration: CONFIG.revealDuration,
+        ease: "power3.out",
+      },
+      "logoEnter",
+    );
+
+    // Phase 3: horizontal radial light burst.
+    mainTimeline.fromTo(
+      burst,
+      { opacity: 0, scaleX: 0.2, filter: "blur(16px)" },
+      { opacity: 0.9, scaleX: 1.4, filter: "blur(24px)", duration: 0.5, ease: "expo.out" },
+      "lightBurst",
+    );
+    mainTimeline.to(
+      burst,
+      { opacity: 0, scaleX: 2, duration: 0.6, ease: "power2.out" },
+      "lightBurst+=0.5",
+    );
+
+    // Phase 4: blurred logo afterglow.
+    mainTimeline.fromTo(
+      glow,
+      { opacity: 0, scale: 1.08, "--reveal": "100%" },
+      { opacity: 0.5, scale: 1.12, "--reveal": "0%", duration: 0.8, ease: "power2.out" },
+      "afterglow",
+    );
+    mainTimeline.to(
+      glow,
+      { opacity: 0, scale: 1.16, duration: 0.8, ease: "power2.out" },
+      "afterglow+=0.8",
+    );
+
+    mainTimeline.to(
+      tagline,
+      { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" },
+      "afterglow+=0.22",
+    );
+
+    // Phase 5: logo re-expansion and internal separation.
+    mainTimeline.to(
+      logo,
+      { scale: CONFIG.logoExpandedScale, duration: 1.2, ease: "power3.inOut" },
+      "logoExpand",
+    );
+    mainTimeline.to(
+      logoArt,
+      { scaleX: CONFIG.separationScaleX, duration: 1.2, ease: "power2.inOut" },
+      "logoExpand",
+    );
+
+    // Phase 6: rounded frame drawing.
+    mainTimeline.fromTo(
+      frameRect,
+      { strokeDashoffset: frameLength },
+      {
+        strokeDashoffset: 0,
+        duration: 0.8,
+        ease: "power2.inOut",
+        onStart: () => {
+          frameDrawStarted = true;
+        },
+      },
+      "frameDraw",
+    );
+    mainTimeline.fromTo(
+      frameEl,
+      { opacity: 0, scale: 0.96 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" },
+      "frameDraw",
+    );
+
+    // Phase 7: the logo-sized frame expands quickly into the blue screen.
+    mainTimeline.to(
+      frameEl,
+      {
+        scale: () => coverScale,
+        duration: 1.2,
+        ease: "power4.inOut",
+        onStart: () => {
+          screenFillStarted = true;
+        },
+      },
+      "screenFill",
+    );
+    mainTimeline.to(
+      frameRect,
+      { fillOpacity: 1, strokeWidth: 4, duration: 0.9, ease: "power2.inOut" },
+      "screenFill+=0.12",
+    );
+    mainTimeline.to(
+      blueFill,
+      { opacity: 1, duration: 0.8, ease: "power2.inOut" },
+      "screenFill+=0.28",
+    );
+    mainTimeline.to(
+      logoArt,
+      { backgroundColor: "#ffffff", duration: 0.45, ease: "power2.inOut" },
+      "screenFill+=0.2",
+    );
+
+    // Phase 8: fade the complete lockup from blue to black.
+    mainTimeline.to(blueFill, { opacity: 0, duration: 0.9, ease: "power2.inOut" }, "blueToBlack");
+    mainTimeline.to(blackout, { opacity: 1, duration: 0.9, ease: "power2.inOut" }, "blueToBlack");
+    mainTimeline.to(
+      logoArt,
+      { backgroundColor: "#3f7bf7", duration: 0.6, ease: "power2.inOut" },
+      "blueToBlack",
+    );
+
+    // Phase 9: reveal the Astro page.
+    mainTimeline.to(
+      loader,
+      { autoAlpha: 0, duration: CONFIG.exitDuration, ease: "power2.out" },
+      "loaderExit",
+    );
+    mainTimeline.call(() => {
+      finishNow();
+    }, undefined, "loaderExit+=0.8");
+
+    mainTimeline.eventCallback("onComplete", () => {
+      const animated = [ambient, burst, glow, logo, logoArt, tagline, frameEl, frameRect, blueFill, blackout];
+      for (const el of animated) {
+        if (el) el.style.removeProperty("will-change");
+      }
+    });
+  }
+
+  try {
+    initLoader();
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn("[GlobalLoader] initialization failed:", error);
+    }
+    const loader = document.getElementById("global-loader");
+    if (loader) {
+      loader.style.pointerEvents = "none";
+      loader.remove();
+    }
+    document.documentElement.classList.remove("is-loading");
+    document.body?.removeAttribute("aria-busy");
+  }
+</script>
+
+<style>
+  :global(html.is-loading),
+  :global(html.is-loading body) {
+    overflow: hidden;
+  }
+
+  :global(html.is-loading body > :not(.global-loader)) {
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  .global-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #000000;
+    isolation: isolate;
+    pointer-events: auto;
+    visibility: visible;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .loader-ambient {
+    position: absolute;
+    inset: -10%;
+    z-index: 1;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(63, 123, 247, 0.22) 0%, transparent 45%),
+      radial-gradient(circle at 80% 80%, rgba(63, 123, 247, 0.18) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(63, 123, 247, 0.06) 0%, transparent 60%),
+      linear-gradient(135deg, rgba(63, 123, 247, 0.04) 0%, transparent 50%, rgba(63, 123, 247, 0.04) 100%);
+    filter: blur(60px);
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  .loader-blue-fill {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: #3f7bf7;
+    opacity: 0;
+    will-change: opacity;
+  }
+
+  .loader-blackout {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: #000000;
+    opacity: 0;
+    will-change: opacity;
+  }
+
+  .loader-stage {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .loader-light-burst {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    width: min(70vw, 900px);
+    height: 22px;
+    transform: translate(-50%, -50%) scaleX(0.2);
+    transform-origin: center center;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(63, 123, 247, 0.2) 20%,
+      rgba(255, 255, 255, 0.95) 50%,
+      rgba(63, 123, 247, 0.2) 80%,
+      transparent 100%
+    );
+    filter: blur(18px);
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  .loader-logo,
+  .loader-logo-glow {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    width: clamp(180px, 34vw, 600px);
+    max-width: calc(100vw - 48px);
+    aspect-ratio: 1 / 1;
+  }
+
+  .loader-logo {
+    z-index: 5;
+    clip-path: inset(0 var(--reveal) 0 0);
+    will-change: transform, opacity, clip-path;
+  }
+
+  .loader-logo-glow {
+    z-index: 1;
+    width: clamp(200px, 38vw, 680px);
+    filter: blur(70px);
+    opacity: 0;
+    clip-path: inset(0 var(--reveal) 0 0);
+    will-change: transform, opacity;
+  }
+
+  .loader-logo-art {
+    position: absolute;
+    inset: 0;
+    background-color: #3f7bf7;
+    -webkit-mask-image: var(--logo-mask);
+    mask-image: var(--logo-mask);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    will-change: transform, background-color;
+  }
+
+  .loader-tagline {
+    position: absolute;
+    top: calc(50% + clamp(5.5rem, 10vw, 10rem));
+    left: 50%;
+    z-index: 5;
+    width: max-content;
+    max-width: calc(100vw - 3rem);
+    margin: 0;
+    color: rgb(226 232 240 / 88%);
+    font-size: clamp(0.78rem, 1.4vw, 1rem);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-align: center;
+    text-transform: uppercase;
+    transform: translateX(-50%);
+    will-change: transform, opacity;
+  }
+
+  .loader-frame {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    transform-origin: center center;
+    will-change: transform;
+  }
+
+  .loader-frame-rect {
+    will-change: stroke-dashoffset, stroke-width, fill-opacity;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loader-ambient,
+    .loader-light-burst,
+    .loader-logo-glow {
+      opacity: 0 !important;
+      animation: none !important;
+    }
+
+    .loader-logo,
+    .loader-frame,
+    .loader-blue-fill,
+    .loader-blackout,
+    .global-loader {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+</style>

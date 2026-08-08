@@ -1,0 +1,276 @@
+---
+import { t, type Locale } from "../../i18n/ui";
+
+export interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const signals = [
+  { x: 138, y: 194, tx: 74, ty: 159, key: "morpheo.map.schedule", dx: -48, dy: -30 },
+  { x: 367, y: 103, tx: 367, ty: 58, key: "morpheo.map.awakenings", dx: 22, dy: -42 },
+  { x: 596, y: 190, tx: 605, ty: 149, key: "morpheo.map.unrested", dx: 52, dy: -25 },
+  { x: 646, y: 390, tx: 640, ty: 443, key: "morpheo.map.daytime", dx: 54, dy: 18 },
+  { x: 492, y: 557, tx: 495, ty: 616, key: "morpheo.map.sleepiness", dx: 25, dy: 46 },
+  { x: 235, y: 557, tx: 170, ty: 615, key: "morpheo.map.breathing", dx: -22, dy: 48 },
+  { x: 96, y: 390, tx: 50, ty: 445, key: "morpheo.map.habits", dx: -54, dy: 20 },
+] as const;
+---
+
+<figure class="sleep-cartography" data-sleep-cartography aria-labelledby="sleep-map-title sleep-map-description">
+  <svg class="sleep-map" viewBox="0 0 740 680" role="img" aria-hidden="true">
+    <defs>
+      <radialGradient id="morpheo-node" cx="32%" cy="24%" r="80%">
+        <stop offset="0" stop-color="#d9e6ff" stop-opacity="0.86" />
+        <stop offset="0.18" stop-color="#7aa4ff" stop-opacity="0.78" />
+        <stop offset="0.58" stop-color="#437ef7" stop-opacity="0.38" />
+        <stop offset="1" stop-color="#1a2d5c" stop-opacity="0.12" />
+      </radialGradient>
+      <radialGradient id="morpheo-core" cx="35%" cy="28%" r="78%">
+        <stop offset="0" stop-color="#cbdcff" />
+        <stop offset="0.2" stop-color="#6f9cff" />
+        <stop offset="0.72" stop-color="#315fc5" />
+        <stop offset="1" stop-color="#15234a" />
+      </radialGradient>
+      <linearGradient id="morpheo-line" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#2e559c" stop-opacity="0.18" />
+        <stop offset="0.5" stop-color="#6f9cff" stop-opacity="0.75" />
+        <stop offset="1" stop-color="#437ef7" stop-opacity="0.22" />
+      </linearGradient>
+      <filter id="morpheo-glow" x="-100%" y="-100%" width="300%" height="300%">
+        <feGaussianBlur stdDeviation="8" result="blur" />
+        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+      </filter>
+    </defs>
+
+    <g class="sleep-map__orbits">
+      <circle cx="370" cy="350" r="282" pathLength="1" data-map-line />
+      <circle cx="370" cy="350" r="203" pathLength="1" data-map-line />
+      <path d="M91 350C151 209 232 139 370 103c139 37 228 114 279 247-55 145-151 223-279 267C236 576 143 487 91 350Z" pathLength="1" data-map-line />
+    </g>
+
+    <g class="sleep-map__connections">
+      <path d="M138 194 370 350" pathLength="1" data-map-line />
+      <path d="M367 103 370 350" pathLength="1" data-map-line />
+      <path d="M596 190 370 350" pathLength="1" data-map-line />
+      <path d="M646 390 370 350" pathLength="1" data-map-line />
+      <path d="M492 557 370 350" pathLength="1" data-map-line />
+      <path d="M235 557 370 350" pathLength="1" data-map-line />
+      <path d="M96 390 370 350" pathLength="1" data-map-line />
+      <path d="M138 194Q248 82 367 103T596 190" pathLength="1" data-map-line />
+      <path d="M646 390Q608 524 492 557T235 557Q129 512 96 390" pathLength="1" data-map-line />
+    </g>
+
+    <g class="sleep-map__core" data-map-core>
+      <circle class="sleep-map__core-halo" cx="370" cy="350" r="76" />
+      <circle class="sleep-map__core-ring" cx="370" cy="350" r="52" />
+      <circle class="sleep-map__core-node" cx="370" cy="350" r="12" />
+      <path d="M345 349h50M370 324v50" />
+    </g>
+
+    {signals.map((signal, index) => (
+      <g
+        class="sleep-map__signal"
+        data-map-node
+        data-index={index}
+        data-offset-x={signal.dx}
+        data-offset-y={signal.dy}
+      >
+        <circle class="sleep-map__signal-halo" cx={signal.x} cy={signal.y} r="27" />
+        <circle class="sleep-map__signal-ring" cx={signal.x} cy={signal.y} r="14" />
+        <circle class="sleep-map__signal-dot" cx={signal.x} cy={signal.y} r="5.5" />
+      </g>
+    ))}
+
+    <g class="sleep-map__labels">
+      {signals.map((signal, index) => (
+        <text
+          x={signal.tx}
+          y={signal.ty}
+          text-anchor={index === 0 || index === 5 || index === 6 ? "start" : index === 2 || index === 3 ? "end" : "middle"}
+          data-map-label
+          data-index={index}
+        >
+          {t(locale, signal.key)}
+        </text>
+      ))}
+    </g>
+  </svg>
+
+  <figcaption class="sleep-cartography__caption">
+    <span class="sleep-cartography__caption-dot" aria-hidden="true"></span>
+    <span id="sleep-map-title">{t(locale, "morpheo.map.statement")}</span>
+    <span id="sleep-map-description" class="sr-only">{t(locale, "morpheo.map.description")}</span>
+  </figcaption>
+</figure>
+
+<script>
+  import { gsap } from "gsap";
+
+  document.querySelectorAll<HTMLElement>("[data-sleep-cartography]").forEach((root) => {
+    if (root.dataset.initialized === "true") return;
+    root.dataset.initialized = "true";
+
+    const lines = root.querySelectorAll<SVGPathElement | SVGCircleElement>("[data-map-line]");
+    const nodes = root.querySelectorAll<SVGGElement>("[data-map-node]");
+    const labels = root.querySelectorAll<SVGTextElement>("[data-map-label]");
+    const core = root.querySelector<SVGGElement>("[data-map-core]");
+    const caption = root.querySelector<HTMLElement>(".sleep-cartography__caption");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (!core || !caption) return;
+
+    gsap.set(lines, { strokeDasharray: 1, strokeDashoffset: 1, opacity: 0.2 });
+    nodes.forEach((node) => {
+      gsap.set(node, {
+        x: Number(node.dataset.offsetX ?? 0),
+        y: Number(node.dataset.offsetY ?? 0),
+        opacity: 0.16,
+        scale: 0.72,
+        transformOrigin: "center center",
+        filter: "blur(8px)",
+      });
+    });
+    gsap.set(labels, { opacity: 0, y: 8 });
+    gsap.set(core, { opacity: 0.2, scale: 0.72, transformOrigin: "center center" });
+    gsap.set(caption, { opacity: 0, y: 12 });
+
+    const timeline = gsap.timeline({ paused: true });
+    timeline
+      .to(nodes, {
+        x: 0,
+        y: 0,
+        opacity: 1,
+        scale: 1,
+        filter: "blur(0px)",
+        duration: 0.52,
+        stagger: 0.035,
+        ease: "power2.out",
+      }, 0)
+      .to(lines, {
+        strokeDashoffset: 0,
+        opacity: 0.8,
+        duration: 0.65,
+        stagger: 0.025,
+        ease: "power2.inOut",
+      }, 0.18)
+      .to(core, { opacity: 1, scale: 1, duration: 0.48, ease: "power2.out" }, 0.42)
+      .to(labels, { opacity: 1, y: 0, duration: 0.32, stagger: 0.045, ease: "power2.out" }, 0.5)
+      .to(caption, { opacity: 1, y: 0, duration: 0.36, ease: "power2.out" }, 0.72);
+
+    if (reducedMotion) {
+      timeline.progress(1);
+      return;
+    }
+
+    timeline.play(0);
+    document.addEventListener("astro:before-swap", () => {
+      timeline.kill();
+    }, { once: true });
+  });
+</script>
+
+<style>
+  .sleep-cartography {
+    position: relative;
+    width: min(100%, 42rem);
+    margin: 0 auto;
+    isolation: isolate;
+  }
+
+  .sleep-cartography::before {
+    position: absolute;
+    inset: 10% 8% 18%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(50, 87, 164, 0.2), rgba(19, 32, 64, 0.08) 50%, transparent 72%);
+    filter: blur(28px);
+    content: "";
+  }
+
+  .sleep-map { display: block; width: 100%; height: auto; overflow: visible; }
+  .sleep-map__orbits circle,
+  .sleep-map__orbits path {
+    fill: none;
+    stroke: rgba(91, 130, 210, 0.22);
+    stroke-width: 1;
+  }
+
+  .sleep-map__connections path {
+    fill: none;
+    stroke: url(#morpheo-line);
+    stroke-width: 1.35;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .sleep-map__signal-halo { fill: rgba(67, 126, 247, 0.055); stroke: rgba(85, 133, 232, 0.12); stroke-width: 1; }
+  .sleep-map__signal-ring { fill: #141c33; stroke: rgba(111, 156, 255, 0.5); stroke-width: 1.2; }
+  .sleep-map__signal-dot { fill: url(#morpheo-node); filter: url(#morpheo-glow); }
+  .sleep-map__core-halo { fill: rgba(38, 70, 138, 0.18); stroke: rgba(91, 137, 229, 0.3); stroke-width: 1; }
+  .sleep-map__core-ring { fill: #101a31; stroke: rgba(111, 156, 255, 0.75); stroke-width: 1.5; }
+  .sleep-map__core-node { fill: url(#morpheo-core); filter: url(#morpheo-glow); }
+  .sleep-map__core path { fill: none; stroke: rgba(172, 200, 255, 0.42); stroke-width: 1; stroke-linecap: round; }
+
+  .sleep-map__labels text {
+    fill: #7f8da5;
+    font-family: var(--somnus-font-stack);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .sleep-cartography__caption {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: min(90%, 32rem);
+    min-height: 4rem;
+    margin: -1rem auto 0;
+    padding: 0.8rem 1.15rem;
+    border: 1px solid rgba(95, 141, 235, 0.18);
+    border-radius: 1.2rem;
+    background: #111a30;
+    color: #b9c7dc;
+    box-shadow: 9px 9px 20px rgba(0, 0, 0, 0.34), -5px -5px 14px rgba(73, 94, 137, 0.07), inset 2px 2px 5px rgba(255, 255, 255, 0.025), inset -3px -3px 8px rgba(0, 0, 0, 0.2);
+    font-size: clamp(0.78rem, 1.35vw, 0.92rem);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .sleep-cartography__caption-dot {
+    width: 0.58rem;
+    height: 0.58rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: #78a2ff;
+    box-shadow: 0 0 0 0.35rem rgba(67, 126, 247, 0.1), 0 0 1rem rgba(67, 126, 247, 0.65);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 620px) {
+    .sleep-map__labels text { font-size: 13px; }
+    .sleep-cartography__caption { margin-top: -0.5rem; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sleep-map__core-node { animation: morpheo-core-pulse 4.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  }
+
+  @keyframes morpheo-core-pulse {
+    0%, 100% { opacity: 0.74; transform: scale(0.92); }
+    50% { opacity: 1; transform: scale(1.08); }
+  }
+</style>

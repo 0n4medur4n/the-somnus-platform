@@ -1,0 +1,47 @@
+---
+import { DEFAULT, LOCALE_STORAGE_KEY, LOCALES } from "../i18n/ui";
+
+const fallback = `/${DEFAULT}/`;
+---
+
+<!doctype html>
+<html lang="x-default" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Somnus · 404</title>
+    <meta http-equiv="refresh" content={`0; url=${fallback}`} />
+  </head>
+  <body>
+    <main style="font-family: system-ui, sans-serif; color: #e2e8f0; background: #090d1a; min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 2rem;">
+      <div>
+        <p style="font-size: 1.25rem; font-weight: 600;">The Somnus</p>
+        <p style="margin-top: 0.5rem; color: #64748b;">404 — redirecting…</p>
+        <a href={fallback} style="margin-top: 1rem; display: inline-block; color: #437ef7;">The Somnus</a>
+      </div>
+    </main>
+    <script is:inline define:vars={{ LOCALES, DEFAULT, LOCALE_STORAGE_KEY }}>
+      {
+        (function () {
+          try {
+            var stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+            var nav = (navigator.languages || [navigator.language || ""]).map(function (l) {
+              return String(l).toLowerCase();
+            });
+            function pick() {
+              if (stored && LOCALES.indexOf(stored) !== -1) return stored;
+              for (var i = 0; i < nav.length; i++) {
+                var n = nav[i].split("-")[0];
+                if (LOCALES.indexOf(n) !== -1) return n;
+              }
+              return DEFAULT;
+            }
+            location.replace("/" + pick() + "/");
+          } catch (_err) {
+            location.replace("/" + DEFAULT + "/");
+          }
+        })();
+      }
+    </script>
+  </body>
+</html>

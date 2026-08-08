@@ -1,0 +1,75 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { LOCALES, t } from "../../i18n/ui";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+type Locale = (typeof LOCALES)[number];
+const { locale } = Astro.params as { locale: Locale };
+
+const APP_URL = "https://the-somnus-app.web.app/";
+const freeFeatures = ["pricing.free.f1", "pricing.free.f2"] as const;
+const proFeatures = ["pricing.pro.f1", "pricing.pro.f2", "pricing.pro.f3"] as const;
+---
+
+<BaseLayout
+  locale={locale}
+  path="/pricing"
+  title={t(locale, "pricing.title")}
+  description={t(locale, "pricing.subtitle")}
+>
+  <section class="py-16">
+    <div class="mb-10 text-center">
+      <h1 class="font-display text-3xl text-text sm:text-4xl">{t(locale, "pricing.title")}</h1>
+      <p class="mt-2 text-muted">{t(locale, "pricing.subtitle")}</p>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+      <article class="rounded-lg border border-white/10 bg-surface/50 p-8">
+        <h2 class="text-lg font-semibold text-text">{t(locale, "pricing.free.name")}</h2>
+        <p class="mt-1 text-sm text-muted">{t(locale, "pricing.free.desc")}</p>
+        <p class="mt-6 text-3xl font-bold text-text">{t(locale, "pricing.free.price")}</p>
+        <ul class="mt-6 space-y-2 text-sm text-muted">
+          {
+            freeFeatures.map((f) => (
+              <li class="flex items-start gap-2">
+                <span aria-hidden="true" class="text-primary">✓</span>
+                <span>{t(locale, f)}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <a
+          href={APP_URL}
+          class="mt-8 inline-block w-full rounded-md border border-white/15 px-4 py-2.5 text-center text-sm font-semibold text-text hover:bg-white/5"
+        >
+          {t(locale, "hero.cta")}
+        </a>
+      </article>
+
+      <article class="rounded-lg border border-primary/40 bg-surface/60 p-8">
+        <h2 class="text-lg font-semibold text-text">{t(locale, "pricing.pro.name")}</h2>
+        <p class="mt-1 text-sm text-muted">{t(locale, "pricing.pro.desc")}</p>
+        <p class="mt-6 text-3xl font-bold text-text">{t(locale, "pricing.pro.price")}</p>
+        <ul class="mt-6 space-y-2 text-sm text-muted">
+          {
+            proFeatures.map((f) => (
+              <li class="flex items-start gap-2">
+                <span aria-hidden="true" class="text-primary">✓</span>
+                <span>{t(locale, f)}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <a
+          href={APP_URL}
+          class="mt-8 inline-block w-full rounded-md bg-primary px-4 py-2.5 text-center text-sm font-semibold text-background hover:opacity-90"
+        >
+          {t(locale, "pricing.cta")}
+        </a>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

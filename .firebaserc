@@ -1,0 +1,16 @@
+{
+  "projects": {
+    "default": "the-somnuss",
+    "dev": "the-somnuss",
+    "staging": "the-somnuss",
+    "prod": "the-somnuss"
+  },
+  "targets": {
+    "the-somnuss": {
+      "hosting": {
+        "marketing": ["the-somnuss"],
+        "app": ["the-somnus-app"]
+      }
+    }
+  }
+}

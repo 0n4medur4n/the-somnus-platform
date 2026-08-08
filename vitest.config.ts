@@ -10,10 +10,11 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["tests/**/*.test.ts", "packages/*/src/**/*.test.ts", "apps/*/src/**/*.test.ts"],
-    // apps/somnus-app is a jsdom React app with its own vitest config and
-    // CI job (setup files, jsdom environment); the node-environment root
-    // runner must not sweep its browser-oriented tests.
-    exclude: ["**/node_modules/**", "**/dist/**", "apps/somnus-app/**"],
+    // The two frontend apps each have their own vitest config and CI job;
+    // the node-environment root runner must not sweep their tests
+    // (somnus-app is jsdom; somnus-marketing runs astro check + its own
+    // suite, and its source is intentionally not touched by the root gate).
+    exclude: ["**/node_modules/**", "**/dist/**", "apps/somnus-app/**", "apps/somnus-marketing/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json-summary"],

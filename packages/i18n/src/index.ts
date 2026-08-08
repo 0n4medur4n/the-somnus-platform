@@ -3,6 +3,7 @@ export {
   type CompletenessOptions,
   type CompletenessResult,
   checkCompleteness,
+  formatCompletenessReport,
 } from "./completeness.js";
 export { type LoadOptions, type LocaleBundle, loadLocaleBundles } from "./loader.js";
 export type { I18nKey, LocaleDictionary } from "./types.js";
