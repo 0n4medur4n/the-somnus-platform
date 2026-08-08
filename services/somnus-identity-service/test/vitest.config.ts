@@ -44,8 +44,12 @@ export default defineConfig({
     // timeout or a transient query error. A retry re-runs beforeEach
     // (resetTables) then the test, so it is idempotent; a genuine bug
     // still fails all attempts (and would fail locally too), so this
-    // hides latency, never a real regression.
-    retry: 2,
+    // hides latency, never a real regression. Bumped 2 -> 3 after a run
+    // where the consent database happened to be mid-scale-down for the
+    // whole window of the first three attempts (a delete in resetTables
+    // dropped, then two hook timeouts); a fourth attempt lands after the
+    // serverless resume completes.
+    retry: 3,
     pool: "forks",
     // Integration tests share one real MySQL instance (build plan §19);
     // running files in parallel would let the migration up/down test's
