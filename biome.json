@@ -20,7 +20,8 @@
       "!**/*.gen.ts",
       "!**/schemas/openapi",
       "!**/*.astro",
-      "!apps/somnus-marketing"
+      "!apps/somnus-marketing",
+      "!services/morpheo-service"
     ]
   },
   "formatter": {
