@@ -1,0 +1,867 @@
+{
+  "meta": {
+    "product": "Morpheo",
+    "portfolio": "The Somnus",
+    "version": "1.0",
+    "date": "2026-07-19",
+    "language": "es",
+    "scope": "Orientación clínica inicial antes de una clínica o unidad especializada de sueño.",
+    "not_intended_for": [
+      "Diagnóstico definitivo.",
+      "Exclusión de enfermedad.",
+      "Prescripción o ajuste de tratamiento.",
+      "Decisión autónoma de prueba diagnóstica o derivación.",
+      "Interacción directa con menores de 18 años."
+    ]
+  },
+  "roles": [
+    {
+      "id": "adult",
+      "label": "Paciente adulto",
+      "eligibility": "age >= 18",
+      "output_language": "Segunda persona, descriptivo y no diagnóstico."
+    },
+    {
+      "id": "parent",
+      "label": "Padre, madre o tutor de un menor",
+      "eligibility": "adult_confirms_parent_or_guardian AND minor_age < 18",
+      "output_language": "Dirigido al adulto; el menor nunca conversa directamente.",
+      "age_bands": [
+        "0-3m",
+        "4-11m",
+        "1-2y",
+        "3-5y",
+        "6-12y",
+        "13-17y"
+      ]
+    },
+    {
+      "id": "professional",
+      "label": "Profesional sanitario",
+      "eligibility": "professional_confirmation",
+      "output_language": "Resumen clínico, diferencial revisable y fuentes; sin decisión final."
+    }
+  ],
+  "state_machine": [
+    {
+      "state": "START",
+      "next": "ROLE_SELECTED"
+    },
+    {
+      "state": "ROLE_SELECTED",
+      "next": "CONSENT_OK",
+      "guard": "role-specific consent/eligibility"
+    },
+    {
+      "state": "CONSENT_OK",
+      "next": "SAFETY_GATE"
+    },
+    {
+      "state": "SAFETY_GATE",
+      "next": "ESCALATED",
+      "guard": "L0 or stop=true"
+    },
+    {
+      "state": "SAFETY_GATE",
+      "next": "CORE_PROFILE",
+      "guard": "no stop rule"
+    },
+    {
+      "state": "CORE_PROFILE",
+      "next": "COMPLAINT_ROUTER",
+      "guard": "minimum dataset complete"
+    },
+    {
+      "state": "COMPLAINT_ROUTER",
+      "next": "MODULES",
+      "guard": "one or more routes; multi-label allowed"
+    },
+    {
+      "state": "MODULES",
+      "next": "CROSS_CHECK"
+    },
+    {
+      "state": "CROSS_CHECK",
+      "next": "SAFETY_GATE",
+      "guard": "new safety answer"
+    },
+    {
+      "state": "CROSS_CHECK",
+      "next": "OUTPUT_READY",
+      "guard": "no new escalation"
+    },
+    {
+      "state": "OUTPUT_READY",
+      "next": "END"
+    }
+  ],
+  "rule_priority": [
+    "Safety and safeguarding override.",
+    "Role, age and consent eligibility.",
+    "Minimum dataset completeness.",
+    "Multi-label clinical routing.",
+    "Cross-checks and conflicts.",
+    "Output wording and education."
+  ],
+  "core_questions": [
+    {
+      "id": "CORE-01",
+      "field": "role",
+      "required": true
+    },
+    {
+      "id": "CORE-02",
+      "field": "age_or_age_band",
+      "required": true
+    },
+    {
+      "id": "CORE-03",
+      "field": "main_concern",
+      "required": true,
+      "multi_select": true
+    },
+    {
+      "id": "CORE-04",
+      "field": "onset_duration_frequency",
+      "required": true
+    },
+    {
+      "id": "CORE-05",
+      "field": "daytime_impact",
+      "required": true
+    },
+    {
+      "id": "CORE-06",
+      "field": "sleep_opportunity_schedule",
+      "required": true
+    },
+    {
+      "id": "CORE-07",
+      "field": "medications_substances",
+      "required": true,
+      "allow_unknown": true
+    },
+    {
+      "id": "CORE-08",
+      "field": "medical_mental_health_context",
+      "required": true,
+      "allow_unknown": true
+    },
+    {
+      "id": "CORE-09",
+      "field": "breathing_sleepiness_movement_behavior_crosscheck",
+      "required": true,
+      "allow_unknown": true
+    }
+  ],
+  "safety_levels": [
+    {
+      "id": "L0",
+      "name": "Emergencia actual",
+      "color": "red",
+      "examples": [
+        "Dificultad respiratoria intensa presente, coloración azulada, pérdida de respuesta o crisis convulsiva en curso.",
+        "Riesgo inmediato de autolesión o de dañar a otra persona.",
+        "En un menor: pausas respiratorias acompañadas de coloración azulada, gran esfuerzo respiratorio o mala respuesta."
+      ],
+      "action": "Interrumpir el flujo ordinario. Indicar atención de emergencia local ahora y no mostrar hipótesis tranquilizadoras."
+    },
+    {
+      "id": "L1",
+      "name": "Valoración urgente / mismo día",
+      "color": "orange",
+      "examples": [
+        "Primer episodio compatible con crisis nocturna ya finalizada o nuevo déficit neurológico.",
+        "Somnolencia que ha provocado quedarse dormido al volante, accidente o casi accidente.",
+        "Conducta nocturna violenta o lesiva reciente con riesgo de repetición.",
+        "Pausas respiratorias repetidas con somnolencia marcada o deterioro clínico relevante."
+      ],
+      "action": "Recomendar no conducir ni realizar tareas de riesgo y buscar valoración clínica urgente según el contexto local."
+    },
+    {
+      "id": "L2",
+      "name": "Consulta prioritaria",
+      "color": "amber",
+      "examples": [
+        "Ronquido habitual con pausas, jadeos o somnolencia diurna.",
+        "Somnolencia excesiva persistente o sospecha de cataplejía/narcolepsia.",
+        "Parasomnia compleja, de nueva aparición en adulto, con salidas del domicilio o lesiones.",
+        "Menor con ronquido habitual y signos respiratorios, conductuales, escolares o de crecimiento preocupantes."
+      ],
+      "action": "Preparar una consulta prioritaria en Atención Primaria/Pediatría, que decidirá pruebas o derivación."
+    },
+    {
+      "id": "L3",
+      "name": "Consulta programada",
+      "color": "teal",
+      "examples": [
+        "Síntomas persistentes, repetidos o con repercusión diurna sin señales de urgencia.",
+        "Dificultad de sueño de tres meses o más, o varios problemas coexistentes.",
+        "Necesidad de revisar medicación, sustancias, salud mental o enfermedades asociadas."
+      ],
+      "action": "Preparar una consulta programada con un resumen, diario de sueño y lista de medicación/sustancias."
+    },
+    {
+      "id": "L4",
+      "name": "Información y observación",
+      "color": "blue",
+      "examples": [
+        "Molestia leve, reciente, sin deterioro funcional ni señales de alarma."
+      ],
+      "action": "Ofrecer educación general y observación limitada; explicar qué cambios justificarían consulta."
+    }
+  ],
+  "safety_rules": [
+    {
+      "id": "SAFE-001",
+      "priority": 1000,
+      "when": "current_severe_breathing_problem OR cyanosis OR unresponsive OR seizure_in_progress",
+      "level": "L0",
+      "message": "Busca atención de emergencia local ahora. Morpheo no continuará con una orientación ordinaria.",
+      "stop": true,
+      "sources": [
+        "SRC-05",
+        "SRC-10"
+      ]
+    },
+    {
+      "id": "SAFE-002",
+      "priority": 1000,
+      "when": "immediate_self_harm_or_harm_to_others",
+      "level": "L0",
+      "message": "Busca ayuda de emergencia local ahora y permanece acompañado si es posible.",
+      "stop": true,
+      "sources": [
+        "SRC-15"
+      ]
+    },
+    {
+      "id": "SAFE-003",
+      "priority": 950,
+      "when": "fell_asleep_driving OR sleepiness_accident OR sleepiness_near_miss",
+      "level": "L1",
+      "message": "No conduzcas ni realices tareas de riesgo. Solicita valoración clínica urgente.",
+      "stop": true,
+      "sources": [
+        "SRC-03",
+        "SRC-04",
+        "SRC-15"
+      ]
+    },
+    {
+      "id": "SAFE-004",
+      "priority": 940,
+      "when": "first_suspected_nocturnal_seizure OR new_neurological_deficit",
+      "level": "L1",
+      "message": "Este episodio necesita valoración médica urgente; si reaparece o hay falta de respuesta, usa emergencias.",
+      "stop": true,
+      "sources": [
+        "SRC-04",
+        "SRC-10"
+      ]
+    },
+    {
+      "id": "SAFE-005",
+      "priority": 930,
+      "when": "recent_violent_or_injurious_sleep_behavior",
+      "level": "L1",
+      "message": "Reduce el riesgo ambiental y solicita valoración clínica urgente.",
+      "stop": false,
+      "sources": [
+        "SRC-04",
+        "SRC-10",
+        "SRC-15"
+      ]
+    },
+    {
+      "id": "SAFE-006",
+      "priority": 900,
+      "when": "witnessed_apneas AND (marked_sleepiness OR significant_deterioration)",
+      "level": "L1",
+      "message": "Las pausas respiratorias con deterioro marcado requieren valoración clínica urgente.",
+      "stop": false,
+      "sources": [
+        "SRC-02",
+        "SRC-03",
+        "SRC-05"
+      ]
+    },
+    {
+      "id": "SAFE-007",
+      "priority": 850,
+      "when": "possible_cataplexy OR persistent_irresistible_sleep_attacks",
+      "level": "L2",
+      "message": "Solicita una consulta prioritaria para valorar una causa de hipersomnolencia.",
+      "stop": false,
+      "sources": [
+        "SRC-04",
+        "SRC-09"
+      ]
+    },
+    {
+      "id": "SAFE-008",
+      "priority": 840,
+      "when": "minor_habitual_snoring AND (witnessed_apneas OR gasping OR labored_breathing OR daytime_behavior_learning_growth_concern)",
+      "level": "L2",
+      "message": "Solicita valoración pediátrica prioritaria; el profesional decidirá si son necesarias pruebas.",
+      "stop": false,
+      "sources": [
+        "SRC-05"
+      ]
+    },
+    {
+      "id": "SAFE-009",
+      "priority": 830,
+      "when": "sedative_medication_or_substance AND breathing_concern",
+      "level": "L2",
+      "message": "No cambies la medicación por tu cuenta; solicita revisión clínica prioritaria.",
+      "stop": false,
+      "sources": [
+        "SRC-15"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "id": "INS",
+      "name": "Dificultad para dormir",
+      "entry": [
+        "dificultad para conciliar",
+        "despertares",
+        "despertar precoz",
+        "sueño no reparador"
+      ],
+      "minimum_questions": [
+        "¿Qué ocurre exactamente: inicio, mantenimiento, despertar precoz o sueño no reparador?",
+        "¿Desde cuándo, cuántas noches por semana y con qué variación?",
+        "¿Existe oportunidad y condiciones suficientes para dormir?",
+        "¿Qué repercusión diurna tiene?",
+        "¿Cuáles son los horarios en días laborales y libres, siestas y tiempo en cama?",
+        "¿Hay ronquido/pausas, piernas inquietas, dolor, síntomas afectivos, sustancias o medicación relacionados?"
+      ],
+      "rules": [
+        "Usar duración ≥3 meses y frecuencia ≥3 noches/semana solo como marcadores de cronicidad para revisión clínica, nunca como diagnóstico automático.",
+        "Si hay somnolencia marcada, ronquido/pausas, movimientos o conductas, activar también el módulo correspondiente.",
+        "No recomendar iniciar, suspender o ajustar hipnóticos, benzodiacepinas, fármacos Z, melatonina u otros medicamentos."
+      ],
+      "output": "«Has comunicado un patrón de dificultad para dormir con [repercusión]. Conviene valorar factores que lo mantienen y descartar otros problemas coexistentes.»",
+      "sources": [
+        "SRC-01",
+        "SRC-14"
+      ]
+    },
+    {
+      "id": "BRE",
+      "name": "Respiración durante el sueño",
+      "entry": [
+        "ronquido",
+        "pausas presenciadas",
+        "jadeos/ahogos",
+        "sueño no reparador",
+        "cefalea matutina"
+      ],
+      "minimum_questions": [
+        "¿Hay ronquido habitual y pausas, jadeos o ahogos presenciados?",
+        "¿Existe sueño no reparador, cefalea matutina, nocturia, fragmentación o somnolencia?",
+        "En adultos: ¿hay obesidad, hipertensión resistente, diabetes tipo 2, fibrilación auricular, ictus/AIT o insuficiencia cardiaca?",
+        "En menores: ¿hay esfuerzo respiratorio, respiración oral, postura extraña, hiperactividad, dificultad escolar o problemas de crecimiento?"
+      ],
+      "rules": [
+        "En adultos, dos o más características clínicas de NICE justifican elevar la sospecha y recomendar evaluación; no equivalen a diagnóstico.",
+        "Epworth estima somnolencia y STOP-Bang cribado de AOS; ninguno confirma ni excluye AOS.",
+        "En menores, ronquido habitual más síntomas o signos requiere valoración pediátrica; la prueba diagnóstica la decide el clínico."
+      ],
+      "output": "«Las señales respiratorias que describes justifican una valoración clínica para decidir si son necesarias pruebas de sueño.»",
+      "sources": [
+        "SRC-02",
+        "SRC-03",
+        "SRC-05",
+        "SRC-11",
+        "SRC-12"
+      ]
+    },
+    {
+      "id": "SLP",
+      "name": "Somnolencia diurna",
+      "entry": [
+        "quedarse dormido",
+        "cabeceos",
+        "necesidad irresistible de dormir",
+        "somnolencia al volante"
+      ],
+      "minimum_questions": [
+        "¿Es somnolencia (posibilidad de dormirse) o cansancio sin sueño?",
+        "¿Cuánto tiempo real se duerme y hay privación, turnos o horarios irregulares?",
+        "¿Hay episodios al conducir, trabajar en altura o manejar maquinaria?",
+        "¿Hay ronquido/pausas, medicación sedante, alcohol u otras sustancias?",
+        "¿Hay debilidad muscular breve con emociones, parálisis del sueño o alucinaciones al dormir/despertar?"
+      ],
+      "rules": [
+        "Cualquier riesgo de conducción activa una salida de seguridad antes del resto.",
+        "La somnolencia es un síntoma; Morpheo no atribuye automáticamente la causa.",
+        "Somnolencia persistente con cataplejía posible u otros rasgos de narcolepsia requiere evaluación especializada."
+      ],
+      "output": "«Has comunicado somnolencia diurna. Es importante distinguir su gravedad, la oportunidad de sueño y posibles causas respiratorias, farmacológicas o neurológicas.»",
+      "sources": [
+        "SRC-03",
+        "SRC-04",
+        "SRC-09",
+        "SRC-11"
+      ]
+    },
+    {
+      "id": "CIR",
+      "name": "Horario y ritmo sueño-vigilia",
+      "entry": [
+        "dormirse muy tarde",
+        "despertarse muy pronto",
+        "turnos",
+        "jet lag",
+        "horario irregular"
+      ],
+      "minimum_questions": [
+        "¿A qué hora aparece el sueño y a qué hora se duerme/despierta en días laborales y libres?",
+        "¿Se duerme bien cuando se permite seguir el horario preferido?",
+        "¿Hay turnos, viajes, obligaciones escolares/laborales o exposición nocturna a luz/pantallas?",
+        "¿Durante cuánto tiempo se mantiene el patrón y qué impacto tiene?"
+      ],
+      "rules": [
+        "Solicitar un diario de sueño de 14 días cuando sea viable.",
+        "La actigrafía puede apoyar la evaluación profesional; Morpheo no interpreta un wearable como diagnóstico.",
+        "Diferenciar tiempo insuficiente para dormir de un posible desajuste circadiano."
+      ],
+      "output": "«El horario comunicado podría reflejar un desajuste entre el reloj biológico y las obligaciones; un diario permite comprobar el patrón.»",
+      "sources": [
+        "SRC-01",
+        "SRC-07"
+      ]
+    },
+    {
+      "id": "RLS",
+      "name": "Sensaciones y movimiento de piernas",
+      "entry": [
+        "necesidad de mover las piernas",
+        "sensación desagradable",
+        "empeora en reposo",
+        "alivio al moverse"
+      ],
+      "minimum_questions": [
+        "¿Hay una necesidad de mover las piernas acompañada de sensaciones desagradables?",
+        "¿Empieza o empeora en reposo, mejora con movimiento y es peor por la tarde/noche?",
+        "¿Podría explicarse por calambres, dolor articular, neuropatía, edema, postura u otra causa?",
+        "¿Hay embarazo, ferropenia conocida, enfermedad renal o medicación asociada?"
+      ],
+      "rules": [
+        "Solo si aparecen las características cardinales y no hay un imitador evidente se muestra «rasgos compatibles».",
+        "No indicar hierro, dosis ni cambios farmacológicos; sugerir revisión clínica de causas."
+      ],
+      "output": "«Las características descritas son compatibles con un patrón de piernas inquietas, pero existen imitadores y causas tratables que debe revisar un profesional.»",
+      "sources": [
+        "SRC-08"
+      ]
+    },
+    {
+      "id": "PAR",
+      "name": "Conductas o episodios nocturnos",
+      "entry": [
+        "sonambulismo",
+        "terrores",
+        "gritos",
+        "golpes",
+        "actuar sueños",
+        "episodios estereotipados"
+      ],
+      "minimum_questions": [
+        "¿Qué observa otra persona, cuándo ocurre y cuánto dura?",
+        "¿Hay recuerdo, confusión, movimientos estereotipados o lesión?",
+        "¿Es de nueva aparición, aumenta o se asocia a fiebre, alcohol, sustancias o medicación?",
+        "¿Ha habido violencia, salidas del domicilio, peligro o señales compatibles con crisis?"
+      ],
+      "rules": [
+        "Crisis en curso o falta de respuesta: emergencia. Primer episodio compatible con crisis ya finalizado: valoración urgente.",
+        "Violencia, lesiones, conductas complejas o aparición nueva en adulto elevan prioridad.",
+        "No etiquetar un episodio como parasomnia si puede ser crisis, trastorno respiratorio o efecto de sustancias."
+      ],
+      "output": "«El episodio nocturno necesita describirse con detalle porque diferentes problemas pueden parecerse; el riesgo de lesión y los rasgos neurológicos determinan la prioridad.»",
+      "sources": [
+        "SRC-04",
+        "SRC-10"
+      ]
+    }
+  ],
+  "output_contract": {
+    "patient_parent": [
+      "Resumen de lo comunicado.",
+      "Nivel de atención y acción concreta.",
+      "Hasta tres patrones que conviene valorar, con hechos que los activaron.",
+      "Información que falta o permanece desconocida.",
+      "Qué preparar para la consulta.",
+      "Límites: no diagnóstico, no exclusión, no tratamiento."
+    ],
+    "professional": [
+      "Resumen estructurado.",
+      "Banderas rojas y regla activada.",
+      "Hipótesis principal orientativa y diferenciales, nunca automáticos.",
+      "Preguntas pendientes.",
+      "Instrumentos que podrían ser útiles, sujetos a licencia y contexto.",
+      "Pruebas/derivación a considerar por el profesional según guía local.",
+      "Fuentes y versión del motor."
+    ],
+    "forbidden_phrases": [
+      "Tienes [diagnóstico].",
+      "No tienes [enfermedad].",
+      "El riesgo bajo descarta...",
+      "Debes iniciar/suspender/cambiar [medicamento].",
+      "Morpheo sustituye una consulta.",
+      "Resultado garantizado o clínicamente probado sin evidencia propia aplicable."
+    ]
+  },
+  "llm_boundaries": {
+    "deterministic": [
+      "Consent and age gates.",
+      "Safety questions and urgency level.",
+      "Module routing.",
+      "Forbidden phrase scanner.",
+      "Required output fields."
+    ],
+    "generative_allowed": [
+      "Paraphrase user-provided facts.",
+      "Create a concise summary from structured fields.",
+      "Explain why a deterministic route fired using approved text blocks."
+    ],
+    "generative_forbidden": [
+      "Invent or infer missing clinical facts.",
+      "Change urgency level.",
+      "Create a new diagnosis or treatment recommendation.",
+      "Override a safety rule."
+    ]
+  },
+  "data_and_audit": {
+    "unknown_policy": "Unknown remains unknown and never defaults to false.",
+    "minimum_log": [
+      "workflow_version",
+      "content_version",
+      "timestamp",
+      "role",
+      "age_band",
+      "answers",
+      "rules_fired",
+      "urgency_level",
+      "output_template",
+      "user_acknowledgement"
+    ],
+    "privacy": "Minimize data. Do not request names, addresses or identifiers in the orientation flow. Professional beta uses simulated or anonymized cases unless an approved lawful workflow exists."
+  },
+  "claims_registry": [
+    {
+      "id": "CLM-001",
+      "claim": "Morpheo ayuda a ordenar la información sobre el sueño y a preparar una consulta.",
+      "audience": "Todos",
+      "channel": "Web, producto y materiales",
+      "status": "APROBABLE",
+      "reason": "Describe una función organizativa y educativa sin atribuir diagnóstico ni resultado clínico.",
+      "evidence": "Demostración funcional y test de usabilidad.",
+      "replacement": "",
+      "owner": "Producto + Clínica"
+    },
+    {
+      "id": "CLM-002",
+      "claim": "Morpheo reconoce señales comunicadas por el usuario que aconsejan atención urgente.",
+      "audience": "Todos",
+      "channel": "Web y producto",
+      "status": "CONDICIONAL",
+      "reason": "Es un claim de seguridad medible. Debe limitarse a la lista validada y no prometer detección completa.",
+      "evidence": "Banco de casos, sensibilidad por bandera roja, análisis de falsos negativos y control de versión.",
+      "replacement": "Morpheo pregunta por señales de alarma predefinidas y, si aparecen, muestra una recomendación de atención prioritaria.",
+      "owner": "Seguridad clínica"
+    },
+    {
+      "id": "CLM-003",
+      "claim": "Orientación sobre patrones de sueño, sin diagnóstico.",
+      "audience": "Adultos y padres/tutores",
+      "channel": "Web, SEO y producto",
+      "status": "APROBABLE",
+      "reason": "Adecuado si el output permanece descriptivo, explicable y no dirige tratamiento.",
+      "evidence": "Revisión clínica de plantillas y pruebas de comprensión.",
+      "replacement": "",
+      "owner": "Clínica + Contenidos"
+    },
+    {
+      "id": "CLM-004",
+      "claim": "Cribado de apnea del sueño.",
+      "audience": "Adultos",
+      "channel": "Web y campañas",
+      "status": "CONDICIONAL",
+      "reason": "Puede interpretarse como finalidad médica; el alcance, evidencia y regulación deben definirse.",
+      "evidence": "Evaluación regulatoria, validación de rendimiento y trazabilidad del instrumento utilizado.",
+      "replacement": "Ayuda a reconocer síntomas respiratorios que conviene comentar con un profesional.",
+      "owner": "Regulatorio + Clínica"
+    },
+    {
+      "id": "CLM-005",
+      "claim": "Morpheo apoya el razonamiento diagnóstico del profesional.",
+      "audience": "Profesionales",
+      "channel": "Web profesional y producto",
+      "status": "CONDICIONAL",
+      "reason": "La información usada para decisiones diagnósticas puede situar el software dentro del marco de MDSW.",
+      "evidence": "Propósito previsto formal, evaluación regulatoria y validación clínica por uso profesional.",
+      "replacement": "Estructura la anamnesis y genera un resumen revisable por el profesional.",
+      "owner": "Regulatorio + Dirección clínica"
+    },
+    {
+      "id": "CLM-006",
+      "claim": "Morpheo diagnostica insomnio, apnea, narcolepsia u otros trastornos del sueño.",
+      "audience": "Todos",
+      "channel": "Cualquier canal",
+      "status": "BLOQUEAR",
+      "reason": "Atribuye diagnóstico a una herramienta que no dispone de pruebas confirmatorias ni autorización para ese propósito.",
+      "evidence": "No aplicable en la versión actual.",
+      "replacement": "Morpheo organiza los síntomas y propone qué conviene valorar con un profesional.",
+      "owner": "Comité de claims"
+    },
+    {
+      "id": "CLM-007",
+      "claim": "Morpheo descarta apnea del sueño si el riesgo es bajo.",
+      "audience": "Todos",
+      "channel": "Cualquier canal",
+      "status": "BLOQUEAR",
+      "reason": "Un cuestionario o una conversación no excluyen AOS; podría retrasar pruebas necesarias.",
+      "evidence": "Contradice la guía diagnóstica AASM.",
+      "replacement": "Un resultado orientativo bajo no descarta un trastorno; consulta si los síntomas persisten o preocupan.",
+      "owner": "Seguridad clínica"
+    },
+    {
+      "id": "CLM-008",
+      "claim": "Recomendaciones de tratamiento personalizadas.",
+      "audience": "Pacientes y familias",
+      "channel": "Web y producto",
+      "status": "BLOQUEAR",
+      "reason": "Implica una decisión terapéutica individual y eleva el riesgo clínico y regulatorio.",
+      "evidence": "No aplicable en Morpheo orientativo.",
+      "replacement": "Información general y preguntas para comentar con tu profesional.",
+      "owner": "Regulatorio + Clínica"
+    },
+    {
+      "id": "CLM-009",
+      "claim": "Morpheo está clínicamente validado.",
+      "audience": "Todos",
+      "channel": "Web, prensa, inversión y producto",
+      "status": "BLOQUEAR",
+      "reason": "El protocolo o un objetivo de rendimiento no son resultados; el claim requiere evidencia propia concluida y aplicable a la versión comercial.",
+      "evidence": "Estudio completado, resultados publicados/revisados y control de equivalencia de versión.",
+      "replacement": "Morpheo está en proceso de validación clínica [solo mientras sea cierto y se explique el alcance].",
+      "owner": "Ciencia + Claims"
+    },
+    {
+      "id": "CLM-010",
+      "claim": "Morpheo detecta al menos el 90% de las banderas rojas.",
+      "audience": "Profesionales e inversores",
+      "channel": "Web, dossier y presentaciones",
+      "status": "BLOQUEAR",
+      "reason": "Es un objetivo del protocolo, no un resultado. Además necesita intervalo de confianza y definición cerrada de bandera roja.",
+      "evidence": "Resultados de validación por versión, conjunto de casos, prevalencia, IC95% y análisis de errores.",
+      "replacement": "El estudio de validación evaluará la detección de banderas rojas con un objetivo predefinido.",
+      "owner": "Ciencia + Estadística"
+    },
+    {
+      "id": "CLM-011",
+      "claim": "Morpheo sustituye una consulta médica o pediátrica.",
+      "audience": "Todos",
+      "channel": "Cualquier canal",
+      "status": "BLOQUEAR",
+      "reason": "Es contrario al propósito orientativo y puede retrasar asistencia.",
+      "evidence": "No aplicable.",
+      "replacement": "Morpheo no sustituye a un profesional y ayuda a preparar el siguiente paso.",
+      "owner": "Comité de claims"
+    },
+    {
+      "id": "CLM-012",
+      "claim": "Morpheo adapta sus preguntas al rol del usuario y a la edad comunicada.",
+      "audience": "Todos",
+      "channel": "Web y producto",
+      "status": "APROBABLE",
+      "reason": "Claim funcional comprobable si existe una matriz de contenidos por rol y edad.",
+      "evidence": "Pruebas funcionales y revisión pediátrica de rutas.",
+      "replacement": "",
+      "owner": "Producto + Pediatría"
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "T-01",
+      "scenario": "Adulto con insomnio reciente, sin deterioro",
+      "expected_route": "INS",
+      "expected_level": "L4 o L3 según repercusión",
+      "acceptance": "No diagnosticar; explicar observación/consulta."
+    },
+    {
+      "id": "T-02",
+      "scenario": "Adulto con despertares + ronquido + pausas",
+      "expected_route": "INS + BRE",
+      "expected_level": "L2; L1 si deterioro marcado",
+      "acceptance": "No reducirlo a insomnio ni usar score para descartar AOS."
+    },
+    {
+      "id": "T-03",
+      "scenario": "Somnolencia con casi accidente al volante",
+      "expected_route": "SLP",
+      "expected_level": "L1 y parada",
+      "acceptance": "Mostrar no conducir + valoración urgente antes de otras hipótesis."
+    },
+    {
+      "id": "T-04",
+      "scenario": "Debilidad al reír + ataques de sueño",
+      "expected_route": "SLP",
+      "expected_level": "L2",
+      "acceptance": "Usar «posible cataplejía» y recomendar evaluación especializada."
+    },
+    {
+      "id": "T-05",
+      "scenario": "Menor de 8 años con ronquido habitual y jadeos",
+      "expected_route": "BRE parental",
+      "expected_level": "L2",
+      "acceptance": "Usuario adulto; valoración pediátrica; no STOP-Bang."
+    },
+    {
+      "id": "T-06",
+      "scenario": "Lactante con pausa, coloración azulada y mala respuesta",
+      "expected_route": "Seguridad parental",
+      "expected_level": "L0 y parada",
+      "acceptance": "Emergencia; no continuar anamnesis."
+    },
+    {
+      "id": "T-07",
+      "scenario": "Adolescente con horario muy tardío y sueño normal en vacaciones",
+      "expected_route": "CIR parental",
+      "expected_level": "L3",
+      "acceptance": "Diario 14 días; no diagnosticar retraso de fase."
+    },
+    {
+      "id": "T-08",
+      "scenario": "Necesidad de mover piernas nocturna, alivia al caminar",
+      "expected_route": "RLS",
+      "expected_level": "L3",
+      "acceptance": "Comprobar cinco rasgos y imitadores; no pautar hierro."
+    },
+    {
+      "id": "T-09",
+      "scenario": "Adulto con episodio violento y lesión",
+      "expected_route": "PAR",
+      "expected_level": "L1",
+      "acceptance": "Seguridad ambiental y valoración urgente."
+    },
+    {
+      "id": "T-10",
+      "scenario": "Primer episodio nocturno estereotipado con desconexión",
+      "expected_route": "PAR",
+      "expected_level": "L1",
+      "acceptance": "Posible crisis; no etiquetar como parasomnia."
+    },
+    {
+      "id": "T-11",
+      "scenario": "Usuario desconoce si hay apneas",
+      "expected_route": "BRE",
+      "expected_level": "Según resto",
+      "acceptance": "«Desconocido» no equivale a «no»."
+    },
+    {
+      "id": "T-12",
+      "scenario": "Profesional introduce datos identificables",
+      "expected_route": "Profesional",
+      "expected_level": "Bloqueo privacidad",
+      "acceptance": "Solicitar anonimización; no procesar en beta sin base autorizada."
+    }
+  ],
+  "sources": [
+    {
+      "id": "SRC-01",
+      "citation": "Riemann D, et al. The European Insomnia Guideline: an update on the diagnosis and treatment of insomnia 2023. J Sleep Res. 2023.",
+      "url": "https://onlinelibrary.wiley.com/doi/full/10.1111/jsr.14035",
+      "use": "Anamnesis, diario de sueño, cronicidad, repercusión diurna y diagnóstico diferencial del insomnio."
+    },
+    {
+      "id": "SRC-02",
+      "citation": "Kapur VK, et al. Clinical Practice Guideline for Diagnostic Testing for Adult Obstructive Sleep Apnea. AASM. 2017.",
+      "url": "https://www.aasm.org/resources/clinicalguidelines/diagnostic-testing-osa.pdf",
+      "use": "La sospecha de AOS requiere evaluación clínica integral; los cuestionarios no establecen el diagnóstico."
+    },
+    {
+      "id": "SRC-03",
+      "citation": "NICE NG202. Obstructive sleep apnoea/hypopnoea syndrome and obesity hypoventilation syndrome in over 16s. 2021.",
+      "url": "https://www.nice.org.uk/guidance/ng202/chapter/1-obstructive-sleep-apnoeahypopnoea-syndrome",
+      "use": "Conjunto de síntomas y condiciones asociadas que justifican sospecha y evaluación de AOS en adultos."
+    },
+    {
+      "id": "SRC-04",
+      "citation": "NICE NG127. Suspected neurological conditions: recognition and referral. Adults aged over 16. Actualización vigente.",
+      "url": "https://www.nice.org.uk/guidance/ng127/chapter/Recommendations-for-adults-aged-over-16",
+      "use": "Derivación ante narcolepsia/cataplejía, crisis nocturnas de nueva aparición y conductas de sueño complejas o graves."
+    },
+    {
+      "id": "SRC-05",
+      "citation": "Marcus CL, et al. Diagnosis and Management of Childhood Obstructive Sleep Apnea Syndrome. AAP. Pediatrics. 2012.",
+      "url": "https://publications.aap.org/pediatrics/article/130/3/576/30284/Diagnosis-and-Management-of-Childhood-Obstructive",
+      "use": "Cribado de ronquido y evaluación pediátrica cuando hay ronquido más síntomas o signos de AOS."
+    },
+    {
+      "id": "SRC-06",
+      "citation": "Paruthi S, et al. Recommended Amount of Sleep for Pediatric Populations. AASM consensus recommendations. 2016.",
+      "url": "https://aasm.org/resources/pdf/pediatricsleepdurationconsensus.pdf",
+      "use": "Rangos orientativos de duración de sueño por edad entre 4 meses y 18 años."
+    },
+    {
+      "id": "SRC-07",
+      "citation": "Smith MT, et al. Use of Actigraphy for the Evaluation of Sleep Disorders and Circadian Rhythm Sleep-Wake Disorders. AASM. 2018.",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6040807/",
+      "use": "Diario y actigrafía como apoyo a la evaluación de patrones circadianos en adultos y población pediátrica."
+    },
+    {
+      "id": "SRC-08",
+      "citation": "Allen RP, et al. Restless legs syndrome/Willis-Ekbom disease diagnostic criteria. IRLSSG. Sleep Med. 2014.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25023924/",
+      "use": "Características cardinales de piernas inquietas y necesidad de excluir imitadores."
+    },
+    {
+      "id": "SRC-09",
+      "citation": "Bassetti CLA, et al. European guideline and expert statements on the management of narcolepsy in adults and children. 2021.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34173695/",
+      "use": "Marco clínico de narcolepsia en adultos y menores; la sospecha requiere evaluación especializada."
+    },
+    {
+      "id": "SRC-10",
+      "citation": "AASM. Practice Parameters for the Indications for Polysomnography and Related Procedures.",
+      "url": "https://aasm.org/resources/practiceparameters/pp_polysomnography.pdf",
+      "use": "Evaluación de conductas nocturnas atípicas, violentas, lesivas o potencialmente epilépticas."
+    },
+    {
+      "id": "SRC-11",
+      "citation": "Johns MW. A new method for measuring daytime sleepiness: the Epworth sleepiness scale. Sleep. 1991.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/1798888/",
+      "use": "La escala mide propensión subjetiva al sueño; no diagnostica por sí sola la causa."
+    },
+    {
+      "id": "SRC-12",
+      "citation": "Chung F, et al. High STOP-Bang score indicates a high probability of obstructive sleep apnoea. Br J Anaesth. 2012.",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3325050/",
+      "use": "STOP-Bang es un instrumento de cribado, no una prueba diagnóstica."
+    },
+    {
+      "id": "SRC-13",
+      "citation": "MDCG 2019-11 rev.1. Guidance on Qualification and Classification of Software under MDR/IVDR. Comisión Europea. 2025.",
+      "url": "https://health.ec.europa.eu/document/download/b45335c5-1679-4c71-a91c-fc7a4d37f12b_en?filename=mdcg_2019_11_en.pdf",
+      "use": "El propósito previsto, los claims y las decisiones que informa el software condicionan la cualificación y clasificación."
+    },
+    {
+      "id": "SRC-14",
+      "citation": "Grupo de Trabajo de Insomnio de la Sociedad Española de Sueño. Recomendaciones de valoración clínica y tratamiento inicial del insomnio en Atención Primaria.",
+      "url": "Documento aportado por The Somnus.",
+      "use": "Valoración inicial del insomnio, diagnóstico diferencial y prudencia terapéutica en Atención Primaria."
+    },
+    {
+      "id": "SRC-15",
+      "citation": "Morpheo. Protocolo de validación clínica con casos simulados, versión aportada por The Somnus.",
+      "url": "Documento aportado por The Somnus.",
+      "use": "Banderas rojas, estructura de respuesta profesional, métricas de seguridad y plan de validación."
+    }
+  ]
+}
