@@ -13,7 +13,18 @@ next stage.
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
+from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from morpheo.infrastructure.db import Base
@@ -148,3 +159,92 @@ class ForbiddenPhrase(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     phrase: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+# --- Transactional tables (Stage B): the anonymous assessment flow (§14). ---
+# No names, addresses, or identifiers ever land here (§14 privacy in the flow):
+# a session holds only the role, the minor's age band where relevant, and the
+# structured answers/results.
+
+
+class AssessmentSession(Base):
+    __tablename__ = "assessment_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    role: Mapped[str] = mapped_column(_ID, nullable=False)
+    age_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    guardianship_confirmed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    professional_confirmed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    base_orientation: Mapped[str] = mapped_column(_ID, nullable=False)
+    consent_given: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)  # open | claimed
+    workflow_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+
+    answers: Mapped[list[AssessmentAnswer]] = relationship(
+        back_populates="session", cascade="all, delete-orphan"
+    )
+
+
+class AssessmentAnswer(Base):
+    __tablename__ = "assessment_answers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("assessment_sessions.id"), nullable=False
+    )
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)  # complaint | signal
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    value: Mapped[str | None] = mapped_column(String(16), nullable=True)  # true|false|unknown
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+
+    session: Mapped[AssessmentSession] = relationship(back_populates="answers")
+
+
+class AssessmentClaimToken(Base):
+    __tablename__ = "assessment_claim_tokens"
+
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("assessment_sessions.id"), nullable=False, unique=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    claimed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+
+
+class AssessmentSnapshot(Base):
+    """Immutable frozen result, written exactly once at claim. Never updated."""
+
+    __tablename__ = "assessment_snapshots"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("assessment_sessions.id"), nullable=False, unique=True
+    )
+    claimed_by: Mapped[str] = mapped_column(String(36), nullable=False)
+    result_json: Mapped[str] = mapped_column(Text, nullable=False)
+    workflow_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    content_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+
+
+class MorpheoAuditEvent(Base):
+    __tablename__ = "morpheo_audit_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
