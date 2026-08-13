@@ -131,6 +131,9 @@ class AssessmentFlow:
         self._repo.add_answer(session_id, "signal", name, encoded)
         return self.summary(session_id)
 
+    def has_session(self, session_id: str) -> bool:
+        return self._repo.get_session(session_id) is not None
+
     def summary(self, session_id: str) -> AssessmentResult | None:
         session = self._repo.get_session(session_id)
         if session is None:

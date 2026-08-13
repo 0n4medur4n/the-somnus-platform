@@ -5,6 +5,8 @@ export {
   AssessmentClaimRequestSchema,
   type AssessmentClaimResponse,
   AssessmentClaimResponseSchema,
+  type AssessmentClaimTokenResponse,
+  AssessmentClaimTokenResponseSchema,
   type AssessmentCreateRequest,
   AssessmentCreateRequestSchema,
   type AssessmentCreateResponse,

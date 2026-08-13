@@ -19,6 +19,7 @@ import {
   AnswerSubmitRequestSchema,
   AssessmentClaimRequestSchema,
   AssessmentClaimResponseSchema,
+  AssessmentClaimTokenResponseSchema,
   AssessmentCreateRequestSchema,
   AssessmentCreateResponseSchema,
   AssessmentResultSchema,
@@ -182,6 +183,15 @@ describe("claim + snapshot responses", () => {
       AssessmentClaimResponseSchema.safeParse({ success: false, snapshotId: null, reason: "nope" })
         .success,
     ).toBe(false);
+  });
+
+  it("accepts a minted claim token and rejects an over-long one", () => {
+    expect(AssessmentClaimTokenResponseSchema.safeParse({ token: "a".repeat(32) }).success).toBe(
+      true,
+    );
+    expect(AssessmentClaimTokenResponseSchema.safeParse({ token: "a".repeat(65) }).success).toBe(
+      false,
+    );
   });
 });
 
