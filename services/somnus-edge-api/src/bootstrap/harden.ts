@@ -20,6 +20,20 @@ const STATE_CHANGING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const CSRF_EXEMPT = new Set(["/v1/sessions"]);
 
 /**
+ * CSRF applies to state-changing routes that ride the authenticated session
+ * cookie. The anonymous assessment routes (create, submit answer, mint a
+ * claim token) carry no such cookie — exactly the `POST /v1/sessions`
+ * rationale — so a forged cross-site request gains nothing. The authenticated
+ * claim (`/v1/assessments/claim`) DOES ride the session cookie and stays
+ * protected.
+ */
+function isCsrfExempt(path: string): boolean {
+  if (CSRF_EXEMPT.has(path)) return true;
+  if (path === "/v1/assessments") return true;
+  return path.startsWith("/v1/assessments/") && path !== "/v1/assessments/claim";
+}
+
+/**
  * Applies build plan §21's security baseline to the Fastify instance:
  * helmet, strict CORS for the two Hosting origins, signed cookies,
  * rate limiting, request-size limits (set on the adapter, see main.ts),
@@ -73,7 +87,7 @@ export async function applyHardening(
   const fastify = app.getHttpAdapter().getInstance();
   fastify.addHook("preHandler", (req: FastifyRequest, reply: FastifyReply, done: () => void) => {
     const path = req.url.split("?")[0] ?? req.url;
-    if (STATE_CHANGING.has(req.method) && !CSRF_EXEMPT.has(path)) {
+    if (STATE_CHANGING.has(req.method) && !isCsrfExempt(path)) {
       fastify.csrfProtection(req, reply, done);
       return;
     }

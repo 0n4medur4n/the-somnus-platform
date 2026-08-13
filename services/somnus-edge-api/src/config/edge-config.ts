@@ -72,6 +72,12 @@ export const EdgeConfigSchema = z.object({
   // Google-signed identity token with this audience is minted per call;
   // Cloud Run IAM verifies it. Defaults to IDENTITY_BASE_URL when unset.
   IDENTITY_AUDIENCE: z.string().min(1).optional(),
+  // The private morpheo service (build plan §5.5 / §20 Checkpoint 10.3).
+  // edge-api proxies the anonymous assessment flow to it over HTTP with an
+  // OIDC identity token; there is no morpheo database connection here.
+  MORPHEO_BASE_URL: z.string().url().default("http://127.0.0.1:8080"),
+  // OIDC audience for morpheo's Cloud Run URL; defaults to MORPHEO_BASE_URL.
+  MORPHEO_AUDIENCE: z.string().min(1).optional(),
   // How internal calls are authenticated. `gcp`: mint a real Google
   // OIDC identity token (production on Cloud Run). `insecure-dev`: send
   // a fixed dev token -- for local/docker/tests where there is no GCP
