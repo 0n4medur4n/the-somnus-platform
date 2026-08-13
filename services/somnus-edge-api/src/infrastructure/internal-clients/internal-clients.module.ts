@@ -24,6 +24,26 @@ async function buildIdentityClient(config: EdgeConfig): Promise<CloudRunClient> 
 }
 
 /**
+ * DI token for the morpheo-service client. edge-api proxies the anonymous
+ * assessment flow through this client (build plan §20 Checkpoint 10.3); it
+ * is the ONLY way this service reaches morpheo, and it carries an OIDC
+ * identity token, not a database connection (build plan §5.5).
+ */
+export const MORPHEO_CLIENT = Symbol("MORPHEO_CLIENT");
+export type MorpheoClient = CloudRunClient;
+
+async function buildMorpheoClient(config: EdgeConfig): Promise<CloudRunClient> {
+  const audience = config.MORPHEO_AUDIENCE ?? config.MORPHEO_BASE_URL;
+  const tokenProvider = await createInternalTokenProvider(config, audience);
+  return createCloudRunClient({
+    baseUrl: config.MORPHEO_BASE_URL,
+    tokenProvider,
+    defaultTimeoutMs: config.INTERNAL_TIMEOUT_MS,
+    serviceName: "somnus-edge-api",
+  });
+}
+
+/**
  * Global so any composing module (`me`, `consent`, and the actor
  * resolver) can inject the identity client. Built once at bootstrap
  * from validated config.
@@ -35,7 +55,11 @@ async function buildIdentityClient(config: EdgeConfig): Promise<CloudRunClient> 
       provide: IDENTITY_CLIENT,
       useFactory: (): Promise<CloudRunClient> => buildIdentityClient(loadEdgeConfig(process.env)),
     },
+    {
+      provide: MORPHEO_CLIENT,
+      useFactory: (): Promise<CloudRunClient> => buildMorpheoClient(loadEdgeConfig(process.env)),
+    },
   ],
-  exports: [IDENTITY_CLIENT],
+  exports: [IDENTITY_CLIENT, MORPHEO_CLIENT],
 })
 export class InternalClientsModule {}
