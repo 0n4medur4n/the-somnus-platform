@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "adult",
+        "parent",
+        "professional"
+      ]
+    },
+    "consentGiven": {
+      "type": "boolean"
+    },
+    "ageYears": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "guardianshipConfirmed": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "professionalConfirmed": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "containsIdentifiableData": {
+      "type": "boolean"
+    },
+    "baseOrientation": {
+      "type": "string",
+      "enum": [
+        "L2",
+        "L3",
+        "L4"
+      ]
+    }
+  },
+  "required": [
+    "role",
+    "consentGiven"
+  ],
+  "additionalProperties": false
+}

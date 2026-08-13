@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "generate:json-schema": "tsx scripts/generate-json-schema.ts",
     "test": "vitest run"
   },
   "dependencies": {

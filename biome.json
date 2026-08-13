@@ -19,6 +19,7 @@
       "!**/.terraform",
       "!**/*.gen.ts",
       "!**/schemas/openapi",
+      "!**/schemas/json-schema",
       "!**/*.astro",
       "!apps/somnus-marketing",
       "!services/morpheo-service"
