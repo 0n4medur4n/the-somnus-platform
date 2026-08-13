@@ -507,8 +507,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # The Python clinical service (build plan §3.5): uv + Ruff + strict mypy +
-    # pytest. Checkpoint 10.0 loads and validates the versioned clinical
-    # artifacts; the coverage gate (pyproject) enforces >= 80%.
+    # pytest. Checkpoint 10.2 adds Alembic migrations + integration tests
+    # against a MySQL 8 stand-in (build plan §3.9 / §19); the coverage gate
+    # (pyproject) enforces >= 80%.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpw"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
     defaults:
       run:
         working-directory: services/morpheo-service
@@ -529,6 +542,13 @@ jobs:
 
       - name: Install (locked)
         run: uv sync --frozen
+
+      # The morpheo logical database (build plan §3.9). docker exec into the
+      # service to create it (the image ships the mysql client).
+      - name: Create morpheo database
+        run: |
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -prootpw -e \
+            "CREATE DATABASE IF NOT EXISTS somnus_morpheo CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
       - name: Ruff lint
         run: uv run ruff check .
