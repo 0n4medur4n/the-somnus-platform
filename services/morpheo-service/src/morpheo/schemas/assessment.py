@@ -89,6 +89,10 @@ class AssessmentClaimRequestDTO(_ContractModel):
     token: str
 
 
+class AssessmentClaimTokenResponseDTO(_ContractModel):
+    token: str
+
+
 class AssessmentClaimResponseDTO(_ContractModel):
     success: bool
     snapshot_id: str | None

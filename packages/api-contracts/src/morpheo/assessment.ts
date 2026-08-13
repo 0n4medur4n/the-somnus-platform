@@ -87,6 +87,18 @@ export const AssessmentClaimRequestSchema = z
   .strict();
 export type AssessmentClaimRequest = z.infer<typeof AssessmentClaimRequestSchema>;
 
+/**
+ * morpheo -> edge: a freshly minted single-use claim token (72 h). The edge
+ * requests one when the anonymous user chooses to save a result, then carries
+ * it through the authentication handoff so the authenticated user can claim.
+ */
+export const AssessmentClaimTokenResponseSchema = z
+  .object({
+    token: z.string().min(1).max(64),
+  })
+  .strict();
+export type AssessmentClaimTokenResponse = z.infer<typeof AssessmentClaimTokenResponseSchema>;
+
 /** morpheo -> edge: the frozen snapshot id, or the rejection reason. */
 export const AssessmentClaimResponseSchema = z
   .object({
@@ -120,6 +132,7 @@ export const MORPHEO_CONTRACT_SCHEMAS = {
   AnswerSubmitRequest: AnswerSubmitRequestSchema,
   AssessmentResult: AssessmentResultSchema,
   AssessmentClaimRequest: AssessmentClaimRequestSchema,
+  AssessmentClaimTokenResponse: AssessmentClaimTokenResponseSchema,
   AssessmentClaimResponse: AssessmentClaimResponseSchema,
   AssessmentSnapshotResponse: AssessmentSnapshotResponseSchema,
 } as const;
