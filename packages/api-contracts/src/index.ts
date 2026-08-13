@@ -9,6 +9,7 @@ export {
   SUPPORTED_LOCALES,
   type SupportedLocale,
 } from "./locale.js";
+export * from "./morpheo/index.js";
 export {
   type PageInfo,
   PageInfoSchema,

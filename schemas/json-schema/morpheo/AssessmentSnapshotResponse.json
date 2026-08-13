@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "snapshotId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sessionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "result": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "adult",
+            "parent",
+            "professional"
+          ]
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "L0",
+                "L1",
+                "L2",
+                "L3",
+                "L4"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "stop": {
+          "type": "boolean"
+        },
+        "privacyBlock": {
+          "type": "boolean"
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "INS",
+              "BRE",
+              "SLP",
+              "CIR",
+              "RLS",
+              "PAR"
+            ]
+          }
+        },
+        "triggeredRules": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "workflowVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "role",
+        "level",
+        "stop",
+        "privacyBlock",
+        "routes",
+        "triggeredRules",
+        "workflowVersion",
+        "contentVersion"
+      ],
+      "additionalProperties": false
+    },
+    "workflowVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contentVersion": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "snapshotId",
+    "sessionId",
+    "result",
+    "workflowVersion",
+    "contentVersion"
+  ],
+  "additionalProperties": false
+}
