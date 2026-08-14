@@ -14,7 +14,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException, status
 
-from morpheo.api.dependencies import FlowDep
+from morpheo.api.dependencies import BundleDep, FlowDep
 from morpheo.clinical.models import SafetyLevelId
 from morpheo.schemas.assessment import (
     AnswerSubmitRequestDTO,
@@ -26,6 +26,7 @@ from morpheo.schemas.assessment import (
     AssessmentResultDTO,
     AssessmentSnapshotResponseDTO,
 )
+from morpheo.schemas.content import AssessmentContentResponseDTO, build_content_response
 
 router = APIRouter(prefix="/internal/v1/assessments", tags=["assessments"])
 
@@ -34,6 +35,15 @@ _NOT_FOUND = HTTPException(
 )
 
 ActorId = Annotated[str, Header(alias="X-Somnus-Actor-Id")]
+
+
+@router.get(
+    "/content",
+    response_model=AssessmentContentResponseDTO,
+    summary="Localized assessment display content (approved artifact wording).",
+)
+def get_content(bundle: BundleDep) -> AssessmentContentResponseDTO:
+    return build_content_response(bundle)
 
 
 @router.post("", response_model=AssessmentCreateResponseDTO, summary="Open an anonymous session.")

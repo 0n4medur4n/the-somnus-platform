@@ -6,6 +6,8 @@ import {
   AssessmentClaimResponseSchema,
   type AssessmentClaimTokenResponse,
   AssessmentClaimTokenResponseSchema,
+  type AssessmentContentResponse,
+  AssessmentContentResponseSchema,
   type AssessmentCreateRequest,
   type AssessmentCreateResponse,
   AssessmentCreateResponseSchema,
@@ -41,6 +43,12 @@ export class MorpheoProxyService {
     @Inject(MORPHEO_CLIENT) private readonly morpheo: CloudRunClient,
     private readonly actorResolver: ActorResolver,
   ) {}
+
+  async content(rawCorrelationId?: string): Promise<AssessmentContentResponse> {
+    const correlationId = correlationOf(rawCorrelationId);
+    const response = await this.morpheo.get(`${ASSESSMENTS}/content`, { correlationId });
+    return this.parse(AssessmentContentResponseSchema, response.body, correlationId);
+  }
 
   async create(
     body: AssessmentCreateRequest,

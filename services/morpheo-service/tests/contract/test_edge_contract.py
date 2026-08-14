@@ -29,6 +29,7 @@ from morpheo.schemas.assessment import (
     AssessmentResultDTO,
     AssessmentSnapshotResponseDTO,
 )
+from morpheo.schemas.content import build_content_response
 
 SCHEMA_DIR = Path(__file__).resolve().parents[4] / "schemas" / "json-schema" / "morpheo"
 BUNDLE = load_clinical()
@@ -114,6 +115,13 @@ def test_snapshot_response_dto_conforms() -> None:
         content_version="1.0",
     )
     jsonschema.validate(_dump(snapshot), _schema("AssessmentSnapshotResponse"))
+
+
+def test_content_response_from_artifacts_conforms() -> None:
+    payload = _dump(build_content_response(BUNDLE))
+    jsonschema.validate(payload, _schema("AssessmentContentResponse"))
+    assert payload["locale"] == "es"
+    assert len(payload["modules"]) == 6
 
 
 # --- the engine's real output maps to a conforming result DTO ---
