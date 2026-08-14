@@ -142,7 +142,12 @@ export function Assessment() {
   }
 
   return (
-    <section aria-labelledby="assessment-heading" className="flex max-w-2xl flex-col gap-6">
+    // The public route has no app-shell layout, so the page owns its `main`
+    // landmark (a11y baseline: one main landmark per document).
+    <main
+      aria-labelledby="assessment-heading"
+      className="mx-auto flex max-w-2xl flex-col gap-6 p-6"
+    >
       <div>
         <h1 id="assessment-heading" className="text-2xl font-semibold">
           {t("assessment.title")}
@@ -312,6 +317,6 @@ export function Assessment() {
           </div>
         </div>
       ) : null}
-    </section>
+    </main>
   );
 }
