@@ -340,7 +340,8 @@ jobs:
         run: |
           docker exec ${{ job.services.mysql.id }} mysql -uroot -prootpw -e \
             "CREATE DATABASE IF NOT EXISTS somnus_identity CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; \
-             CREATE DATABASE IF NOT EXISTS somnus_consent CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+             CREATE DATABASE IF NOT EXISTS somnus_consent CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; \
+             CREATE DATABASE IF NOT EXISTS somnus_morpheo CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
       - name: Build shared packages
         run: pnpm --if-present -r --filter "./packages/*" run build
@@ -353,6 +354,28 @@ jobs:
       # from source so the .sql folders resolve (not copied to dist).
       - name: Migrate databases
         run: pnpm --filter @somnus/identity-service db:migrate
+
+      # morpheo is the Python service (build plan §5.5): edge-api proxies the
+      # anonymous assessment flow to it (Checkpoint 10.3). Set up uv, install
+      # its deps, and migrate somnus_morpheo so e2e-stack.mjs can run it under
+      # uvicorn alongside identity + edge-api.
+      - name: Setup uv (Python for morpheo)
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.26"
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      - name: Install morpheo dependencies
+        run: uv sync --frozen
+        working-directory: services/morpheo-service
+
+      - name: Migrate morpheo database
+        run: uv run alembic upgrade head
+        working-directory: services/morpheo-service
+        env:
+          DATABASE_URL: mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_morpheo
 
       - name: Install Playwright Chromium
         run: pnpm --filter @somnus/app exec playwright install --with-deps chromium

@@ -24,17 +24,36 @@ import { setTimeout as sleep } from "node:timers/promises";
 const root = process.cwd();
 const procs = [];
 
-function start(name, cwd, extraEnv) {
-  const child = spawn(process.execPath, ["dist/main.js"], {
+function spawnService(name, command, args, cwd, extraEnv, useShell = false) {
+  const child = spawn(command, args, {
     cwd,
     env: { ...process.env, ...extraEnv },
     stdio: ["ignore", "pipe", "pipe"],
+    shell: useShell,
   });
   child.stdout.on("data", (d) => process.stdout.write(`[${name}] ${d}`));
   child.stderr.on("data", (d) => process.stderr.write(`[${name}] ${d}`));
   child.on("exit", (code) => console.log(`[${name}] process exited: ${code}`));
   procs.push(child);
   return child;
+}
+
+function start(name, cwd, extraEnv) {
+  return spawnService(name, process.execPath, ["dist/main.js"], cwd, extraEnv);
+}
+
+// morpheo is the Python service (build plan §5.5); it runs under uvicorn, not
+// `node dist/main.js`, against the docker MySQL `somnus_morpheo` (migrated by
+// `just dev-up` / the CI job).
+function startMorpheo(cwd, extraEnv) {
+  return spawnService(
+    "morpheo",
+    "uv",
+    ["run", "uvicorn", "morpheo.main:app", "--host", "127.0.0.1", "--port", "8080"],
+    cwd,
+    extraEnv,
+    true,
+  );
 }
 
 async function waitHealth(url, name, tries = 90) {
@@ -70,6 +89,10 @@ try {
     SERVICE_NAME: "somnus-identity-service",
     NODE_ENV: "development",
   });
+  startMorpheo(`${root}/services/morpheo-service`, {
+    DATABASE_URL: "mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_morpheo",
+    ENV: "development",
+  });
   start("edge-api", `${root}/services/somnus-edge-api`, {
     PORT: "8090",
     SERVICE_NAME: "somnus-edge-api",
@@ -78,12 +101,14 @@ try {
     FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099",
     FIRESTORE_EMULATOR_HOST: "127.0.0.1:9098",
     IDENTITY_BASE_URL: "http://localhost:3001",
+    MORPHEO_BASE_URL: "http://localhost:8080",
     INTERNAL_AUTH_MODE: "insecure-dev",
     COOKIE_SECURE: "false",
     CORS_ORIGINS: "http://localhost:5173,http://localhost:4173",
   });
 
   await waitHealth("http://localhost:3001/health/live", "identity");
+  await waitHealth("http://localhost:8080/health/live", "morpheo");
   await waitHealth("http://localhost:8090/health/live", "edge-api");
 
   const grep = process.env["PW_GREP"];
