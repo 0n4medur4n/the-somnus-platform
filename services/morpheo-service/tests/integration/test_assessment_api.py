@@ -74,6 +74,23 @@ def test_full_flow_create_answer_summary_claim_snapshot(client: TestClient) -> N
     assert snap_body["result"]["level"] == "L1"
 
 
+def test_content_endpoint_serves_artifact_wording(client: TestClient) -> None:
+    response = client.get(f"{BASE}/content")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["locale"] == "es"
+    assert {module["id"] for module in body["modules"]} == {
+        "INS",
+        "BRE",
+        "SLP",
+        "CIR",
+        "RLS",
+        "PAR",
+    }
+    assert {level["id"] for level in body["safetyLevels"]} == {"L0", "L1", "L2", "L3", "L4"}
+    assert body["outputContract"]["forbiddenPhrases"]
+
+
 def test_create_blocked_on_missing_consent(client: TestClient) -> None:
     response = client.post(BASE, json={"role": "adult", "consentGiven": False, "ageYears": 30})
     assert response.status_code == 200

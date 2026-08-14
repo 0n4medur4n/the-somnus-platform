@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type {
   AssessmentClaimResponse,
   AssessmentClaimTokenResponse,
+  AssessmentContentResponse,
   AssessmentCreateResponse,
   AssessmentResult,
   AssessmentSnapshotResponse,
@@ -24,6 +25,12 @@ import { MorpheoProxyService } from "./morpheo.service.js";
 @Controller({ path: "v1/assessments" })
 export class AssessmentsController {
   constructor(private readonly morpheo: MorpheoProxyService) {}
+
+  @Get("content")
+  @ApiOperation({ summary: "Localized assessment display content (approved wording)." })
+  content(@CorrelationId() correlationId?: string): Promise<AssessmentContentResponse> {
+    return this.morpheo.content(correlationId);
+  }
 
   @Post()
   @ApiOperation({ summary: "Open an anonymous assessment session." })

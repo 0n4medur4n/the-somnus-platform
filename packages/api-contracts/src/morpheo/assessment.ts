@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AssessmentContentResponseSchema } from "./content.js";
 import {
   AnswerKindSchema,
   BaseOrientationSchema,
@@ -127,6 +128,7 @@ export type AssessmentSnapshotResponse = z.infer<typeof AssessmentSnapshotRespon
  * record, so the checked-in files can never silently fall out of sync.
  */
 export const MORPHEO_CONTRACT_SCHEMAS = {
+  AssessmentContentResponse: AssessmentContentResponseSchema,
   AssessmentCreateRequest: AssessmentCreateRequestSchema,
   AssessmentCreateResponse: AssessmentCreateResponseSchema,
   AnswerSubmitRequest: AnswerSubmitRequestSchema,

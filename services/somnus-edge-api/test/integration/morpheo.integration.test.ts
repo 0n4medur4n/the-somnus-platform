@@ -72,6 +72,41 @@ describe("edge-api morpheo proxy (build plan §20 Checkpoint 10.3)", () => {
     await app.close();
   });
 
+  it("proxies the localized assessment content", async () => {
+    respond = (req) => {
+      expect(req.method).toBe("GET");
+      expect(req.path).toBe("/internal/v1/assessments/content");
+      return {
+        status: 200,
+        body: {
+          locale: "es",
+          workflowVersion: "1.0",
+          contentVersion: "1.0",
+          modules: [
+            {
+              id: "INS",
+              name: "Dificultad para dormir",
+              entry: ["despertares"],
+              minimumQuestions: ["¿Desde cuándo?"],
+              output: "…",
+            },
+          ],
+          safetyLevels: [
+            { id: "L0", name: "Emergencia actual", action: "Atención de emergencia." },
+          ],
+          outputContract: {
+            patientParent: ["Resumen."],
+            professional: ["Resumen."],
+            forbiddenPhrases: ["Tienes [x]."],
+          },
+        },
+      };
+    };
+    const res = await server.inject({ method: "GET", url: "/v1/assessments/content" });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().locale).toBe("es");
+  });
+
   it("proxies create to morpheo and returns the outcome", async () => {
     respond = (req) => {
       expect(req.method).toBe("POST");

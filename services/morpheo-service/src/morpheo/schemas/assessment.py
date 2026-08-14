@@ -15,28 +15,15 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
-from pydantic.alias_generators import to_camel
-
 from morpheo.clinical.models import ModuleId, RoleId, SafetyLevelId
 from morpheo.domain.engine import AssessmentResult
+from morpheo.schemas.base import ContractModel as _ContractModel
 
 GateReason = Literal["privacy_block", "consent_required", "ineligible"]
 ClaimRejectReason = Literal["already_claimed_or_expired"]
 AnswerKind = Literal["complaint", "signal"]
 TernaryValue = Literal["true", "false", "unknown"]
 BaseOrientation = Literal["L2", "L3", "L4"]
-
-
-class _ContractModel(BaseModel):
-    """camelCase on the wire, snake_case in Python, and reject unknown fields."""
-
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        extra="forbid",
-        frozen=True,
-    )
 
 
 class AssessmentCreateRequestDTO(_ContractModel):

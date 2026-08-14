@@ -26,6 +26,7 @@ import {
   AssessmentSnapshotResponseSchema,
   MORPHEO_CONTRACT_SCHEMAS,
 } from "./assessment.js";
+import { AssessmentContentResponseSchema } from "./content.js";
 import { MORPHEO_MODULES, MORPHEO_ROLES, MORPHEO_SAFETY_LEVELS } from "./enums.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -192,6 +193,42 @@ describe("claim + snapshot responses", () => {
     expect(AssessmentClaimTokenResponseSchema.safeParse({ token: "a".repeat(65) }).success).toBe(
       false,
     );
+  });
+});
+
+describe("AssessmentContentResponse", () => {
+  const valid = {
+    locale: "es",
+    workflowVersion: "1.0",
+    contentVersion: "1.0",
+    modules: [
+      {
+        id: "INS",
+        name: "Dificultad para dormir",
+        entry: ["despertares"],
+        minimumQuestions: ["¿Desde cuándo?"],
+        output: "…",
+      },
+    ],
+    safetyLevels: [{ id: "L0", name: "Emergencia actual", action: "Atención de emergencia." }],
+    outputContract: {
+      patientParent: ["Resumen."],
+      professional: ["Resumen."],
+      forbiddenPhrases: ["Tienes [x]."],
+    },
+  };
+
+  it("accepts artifact-shaped content and rejects an unknown locale / bad module id", () => {
+    expect(AssessmentContentResponseSchema.safeParse(valid).success).toBe(true);
+    expect(AssessmentContentResponseSchema.safeParse({ ...valid, locale: "de" }).success).toBe(
+      false,
+    );
+    expect(
+      AssessmentContentResponseSchema.safeParse({
+        ...valid,
+        modules: [{ ...valid.modules[0], id: "ZZZ" }],
+      }).success,
+    ).toBe(false);
   });
 });
 
