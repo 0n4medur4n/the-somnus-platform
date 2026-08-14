@@ -1,4 +1,12 @@
 import type {
+  AnswerSubmitRequest,
+  AssessmentClaimResponse,
+  AssessmentClaimTokenResponse,
+  AssessmentContentResponse,
+  AssessmentCreateRequest,
+  AssessmentCreateResponse,
+  AssessmentResult,
+  AssessmentSnapshotResponse,
   Invitation,
   InvitationAcceptRequest,
   InvitationCreateRequest,
@@ -38,4 +46,23 @@ export const edge = {
     api.post<InvitationCreateResponse>(`/v1/organizations/${organizationId}/invitations`, body),
   acceptInvitation: (body: InvitationAcceptRequest): Promise<Invitation> =>
     api.post<Invitation>("/v1/invitations/accept", body),
+
+  // --- Morpheo anonymous assessment (build plan §20 Checkpoint 10.3) ---
+  getAssessmentContent: (): Promise<AssessmentContentResponse> =>
+    api.get<AssessmentContentResponse>("/v1/assessments/content"),
+  createAssessment: (body: AssessmentCreateRequest): Promise<AssessmentCreateResponse> =>
+    api.post<AssessmentCreateResponse>("/v1/assessments", body),
+  submitAssessmentAnswer: (
+    sessionId: string,
+    body: AnswerSubmitRequest,
+  ): Promise<AssessmentResult> =>
+    api.post<AssessmentResult>(`/v1/assessments/${sessionId}/answers`, body),
+  getAssessmentSummary: (sessionId: string): Promise<AssessmentResult> =>
+    api.get<AssessmentResult>(`/v1/assessments/${sessionId}/summary`),
+  requestAssessmentClaimToken: (sessionId: string): Promise<AssessmentClaimTokenResponse> =>
+    api.post<AssessmentClaimTokenResponse>(`/v1/assessments/${sessionId}/claim-token`),
+  claimAssessment: (token: string): Promise<AssessmentClaimResponse> =>
+    api.post<AssessmentClaimResponse>("/v1/assessments/claim", { token }),
+  getAssessmentSnapshot: (sessionId: string): Promise<AssessmentSnapshotResponse> =>
+    api.get<AssessmentSnapshotResponse>(`/v1/assessments/${sessionId}/snapshot`),
 };

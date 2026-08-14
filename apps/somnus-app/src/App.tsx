@@ -5,6 +5,7 @@ import { AuthProvider } from "./auth/AuthProvider.js";
 import { RequireAuth } from "./auth/RequireAuth.js";
 import { OrgProvider } from "./org/OrgContext.js";
 import { AppHome } from "./routes/AppHome.js";
+import { Assessment } from "./routes/Assessment.js";
 import { AuthCallback } from "./routes/AuthCallback.js";
 import { Login } from "./routes/Login.js";
 import { NotFound } from "./routes/NotFound.js";
@@ -21,6 +22,8 @@ const queryClient = new QueryClient({
 const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   { path: "/auth/callback", element: <AuthCallback /> },
+  // Public: the anonymous assessment flow needs no session (build plan §14).
+  { path: "/assessment", element: <Assessment /> },
   {
     element: <RequireAuth />,
     children: [

@@ -80,6 +80,69 @@
     "accepted": "Invitación aceptada.",
     "acceptError": "No hemos podido aceptar la invitación."
   },
+  "assessment": {
+    "title": "Orientación del sueño",
+    "intro": "Responde unas preguntas para recibir una orientación inicial. No es un diagnóstico.",
+    "loadingContent": "Cargando…",
+    "contentError": "No se ha podido cargar el contenido. Inténtalo de nuevo.",
+    "submitError": "No se ha podido procesar la orientación. Inténtalo de nuevo.",
+    "steps": {
+      "role": "Perfil",
+      "consent": "Consentimiento",
+      "concern": "Motivo",
+      "result": "Resultado"
+    },
+    "role": {
+      "legend": "¿Quién realiza la consulta?",
+      "adult": "Adulto, para mí",
+      "parent": "Madre, padre o tutor de un menor",
+      "professional": "Profesional sanitario",
+      "ageAdult": "Tu edad (años)",
+      "ageMinor": "Edad del menor (años)",
+      "guardianship": "Confirmo que soy su tutor legal",
+      "professionalConfirm": "Confirmo mi condición de profesional",
+      "identifiable": "El caso contiene datos identificables del paciente",
+      "professionalNote": "Solo se aceptan casos anonimizados."
+    },
+    "consent": {
+      "legend": "Consentimiento",
+      "label": "He leído y acepto el uso de mis respuestas para esta orientación.",
+      "note": "Puedes retirar el consentimiento en cualquier momento."
+    },
+    "concern": {
+      "legend": "¿Qué te preocupa? Elige lo que corresponda.",
+      "empty": "No hay motivos disponibles."
+    },
+    "actions": {
+      "next": "Continuar",
+      "back": "Atrás",
+      "seeResult": "Ver orientación",
+      "restart": "Empezar de nuevo",
+      "save": "Guardar resultado",
+      "login": "Inicia sesión para guardar"
+    },
+    "result": {
+      "title": "Tu orientación",
+      "summary": "Resumen",
+      "careLevel": "Nivel de atención y acción",
+      "patterns": "Patrones que conviene valorar",
+      "unknown": "Información que falta",
+      "prepare": "Qué preparar para la consulta",
+      "limits": "Límites",
+      "limitsText": "Esto no es un diagnóstico, ni excluye una enfermedad, ni indica un tratamiento.",
+      "framing": "Con la información disponible, y a falta de una valoración presencial:",
+      "unknownDeferred": "En esta versión no se han evaluado señales de seguridad adicionales.",
+      "triggeredBy": "Activado por: {{facts}}",
+      "saved": "Resultado guardado en tu cuenta.",
+      "saveHint": "Guarda este resultado para retomarlo más tarde.",
+      "blockedTitle": "No podemos continuar",
+      "blocked": {
+        "privacy_block": "No se puede continuar con datos identificables. Anonimiza el caso e inténtalo de nuevo.",
+        "consent_required": "Necesitas dar tu consentimiento para continuar.",
+        "ineligible": "No se cumplen los requisitos para esta orientación."
+      }
+    }
+  },
   "errors": {
     "required": "Este campo es obligatorio.",
     "invalidEmail": "Introduce un correo válido.",
