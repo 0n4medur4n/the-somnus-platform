@@ -80,6 +80,69 @@
     "accepted": "Invitació acceptada.",
     "acceptError": "No hem pogut acceptar la invitació."
   },
+  "assessment": {
+    "title": "Orientació del son",
+    "intro": "Respon unes preguntes per rebre una orientació inicial. No és un diagnòstic.",
+    "loadingContent": "S'està carregant…",
+    "contentError": "No s'ha pogut carregar el contingut. Torna-ho a provar.",
+    "submitError": "No s'ha pogut processar l'orientació. Torna-ho a provar.",
+    "steps": {
+      "role": "Perfil",
+      "consent": "Consentiment",
+      "concern": "Motiu",
+      "result": "Resultat"
+    },
+    "role": {
+      "legend": "Qui fa la consulta?",
+      "adult": "Adult, per a mi",
+      "parent": "Mare, pare o tutor d'un menor",
+      "professional": "Professional sanitari",
+      "ageAdult": "La teva edat (anys)",
+      "ageMinor": "Edat del menor (anys)",
+      "guardianship": "Confirmo que en soc el tutor legal",
+      "professionalConfirm": "Confirmo la meva condició de professional",
+      "identifiable": "El cas conté dades identificables del pacient",
+      "professionalNote": "Només s'accepten casos anonimitzats."
+    },
+    "consent": {
+      "legend": "Consentiment",
+      "label": "He llegit i accepto l'ús de les meves respostes per a aquesta orientació.",
+      "note": "Pots retirar el consentiment en qualsevol moment."
+    },
+    "concern": {
+      "legend": "Què et preocupa? Tria el que correspongui.",
+      "empty": "No hi ha motius disponibles."
+    },
+    "actions": {
+      "next": "Continua",
+      "back": "Enrere",
+      "seeResult": "Veure l'orientació",
+      "restart": "Torna a començar",
+      "save": "Desa el resultat",
+      "login": "Inicia la sessió per desar"
+    },
+    "result": {
+      "title": "La teva orientació",
+      "summary": "Resum",
+      "careLevel": "Nivell d'atenció i acció",
+      "patterns": "Patrons que convé valorar",
+      "unknown": "Informació que falta",
+      "prepare": "Què preparar per a la consulta",
+      "limits": "Límits",
+      "limitsText": "Això no és un diagnòstic, ni exclou cap malaltia, ni indica cap tractament.",
+      "framing": "Amb la informació disponible, i a falta d'una valoració presencial:",
+      "unknownDeferred": "En aquesta versió no s'han avaluat senyals de seguretat addicionals.",
+      "triggeredBy": "Activat per: {{facts}}",
+      "saved": "Resultat desat al teu compte.",
+      "saveHint": "Desa aquest resultat per recuperar-lo més tard.",
+      "blockedTitle": "No podem continuar",
+      "blocked": {
+        "privacy_block": "No es pot continuar amb dades identificables. Anonimitza el cas i torna-ho a provar.",
+        "consent_required": "Necessites donar el teu consentiment per continuar.",
+        "ineligible": "No es compleixen els requisits per a aquesta orientació."
+      }
+    }
+  },
   "errors": {
     "required": "Aquest camp és obligatori.",
     "invalidEmail": "Introdueix un correu vàlid.",

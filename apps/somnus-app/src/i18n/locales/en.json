@@ -80,6 +80,69 @@
     "accepted": "Invitation accepted.",
     "acceptError": "We couldn't accept the invitation."
   },
+  "assessment": {
+    "title": "Sleep orientation",
+    "intro": "Answer a few questions to get an initial orientation. This is not a diagnosis.",
+    "loadingContent": "Loading…",
+    "contentError": "Could not load the content. Please try again.",
+    "submitError": "Could not process the orientation. Please try again.",
+    "steps": {
+      "role": "Profile",
+      "consent": "Consent",
+      "concern": "Concern",
+      "result": "Result"
+    },
+    "role": {
+      "legend": "Who is this for?",
+      "adult": "An adult, for myself",
+      "parent": "Parent or legal guardian of a minor",
+      "professional": "Healthcare professional",
+      "ageAdult": "Your age (years)",
+      "ageMinor": "The minor's age (years)",
+      "guardianship": "I confirm I am their legal guardian",
+      "professionalConfirm": "I confirm I am a professional",
+      "identifiable": "The case contains identifiable patient data",
+      "professionalNote": "Only anonymized cases are accepted."
+    },
+    "consent": {
+      "legend": "Consent",
+      "label": "I have read and accept the use of my answers for this orientation.",
+      "note": "You can withdraw your consent at any time."
+    },
+    "concern": {
+      "legend": "What concerns you? Choose all that apply.",
+      "empty": "No concerns available."
+    },
+    "actions": {
+      "next": "Continue",
+      "back": "Back",
+      "seeResult": "See orientation",
+      "restart": "Start over",
+      "save": "Save result",
+      "login": "Log in to save"
+    },
+    "result": {
+      "title": "Your orientation",
+      "summary": "Summary",
+      "careLevel": "Care level and action",
+      "patterns": "Patterns worth assessing",
+      "unknown": "Missing information",
+      "prepare": "What to prepare for the visit",
+      "limits": "Limits",
+      "limitsText": "This is not a diagnosis, does not rule out disease, and does not indicate treatment.",
+      "framing": "With the information available, and pending an in-person assessment:",
+      "unknownDeferred": "No additional safety signals were assessed in this version.",
+      "triggeredBy": "Triggered by: {{facts}}",
+      "saved": "Result saved to your account.",
+      "saveHint": "Save this result to pick it up later.",
+      "blockedTitle": "We can't continue",
+      "blocked": {
+        "privacy_block": "We can't continue with identifiable data. Anonymize the case and try again.",
+        "consent_required": "You need to give your consent to continue.",
+        "ineligible": "The requirements for this orientation are not met."
+      }
+    }
+  },
   "errors": {
     "required": "This field is required.",
     "invalidEmail": "Enter a valid email address.",
