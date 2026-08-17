@@ -35,12 +35,19 @@ class OutputContractContentDTO(ContractModel):
     forbidden_phrases: list[str]
 
 
+class SafetyPromptContentDTO(ContractModel):
+    signal_id: str
+    context: Literal["general", "pediatric"]
+    question: str
+
+
 class AssessmentContentResponseDTO(ContractModel):
     locale: Literal["es", "en", "ca", "fr"]
     workflow_version: str
     content_version: str
     modules: list[AssessmentModuleContentDTO]
     safety_levels: list[SafetyLevelContentDTO]
+    safety_prompts: list[SafetyPromptContentDTO]
     output_contract: OutputContractContentDTO
 
 
@@ -63,6 +70,12 @@ def build_content_response(bundle: ClinicalBundle) -> AssessmentContentResponseD
         safety_levels=[
             SafetyLevelContentDTO(id=level.id, name=level.name, action=level.action)
             for level in workflows.safety_levels
+        ],
+        safety_prompts=[
+            SafetyPromptContentDTO(
+                signal_id=prompt.signal_id, context=prompt.context.value, question=prompt.question
+            )
+            for prompt in bundle.safety_prompts.prompts
         ],
         output_contract=OutputContractContentDTO(
             patient_parent=list(workflows.output_contract.patient_parent),

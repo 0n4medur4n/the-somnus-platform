@@ -211,6 +211,7 @@ describe("AssessmentContentResponse", () => {
       },
     ],
     safetyLevels: [{ id: "L0", name: "Emergencia actual", action: "Atención de emergencia." }],
+    safetyPrompts: [{ signalId: "cyanosis", context: "general", question: "¿Labios azulados?" }],
     outputContract: {
       patientParent: ["Resumen."],
       professional: ["Resumen."],

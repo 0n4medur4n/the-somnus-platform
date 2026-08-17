@@ -52,7 +52,14 @@ def _governing_key(rule: SafetyRule) -> tuple[int, int]:
 
 
 def run_safety_gate(rules: list[SafetyRule], signals: Signals) -> SafetyOutcome:
-    """Return the governing safety outcome for the given signals."""
+    """Return the governing safety outcome for the given signals.
+
+    Contenido clínico pendiente (do NOT change here — see README):
+    - SAFE-004 escalation to L0 for severe seizure/deficit cases is blocked on a
+      new signal from the clinical lead; SAFE-004's level is unchanged.
+    - SAFE-002's human escalation pathway is a product/operations decision, not a
+      rule change (the rule is already L0/priority 1000/stop).
+    """
     triggered = [rule for rule in rules if evaluate_condition(rule.when, signals) is Ternary.TRUE]
     if not triggered:
         return SafetyOutcome(level=None, stop=False, triggered_rule_ids=(), message=None)
