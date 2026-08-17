@@ -50,6 +50,16 @@ def test_emergency_shows_no_reassuring_hypothesis(
     assert 'class="patterns"' not in html
 
 
+def test_emergency_still_stamps_every_version(
+    content: ClinicalContentDTO, make_request: RequestBuilder
+) -> None:
+    # Removing the normal sections must NOT drop the version/immutability stamp:
+    # the meta header is rendered for every level, including L0.
+    html = render_html(make_request(level="L0", routes=(), stop=True), content).html
+    for stamp in (TEMPLATE_VERSION, "1.0", "1.1", "assess-123", "2026-08-17T12:00:00Z"):
+        assert stamp in html
+
+
 def test_clinical_content_is_html_escaped(make_request: RequestBuilder) -> None:
     hostile = ClinicalContentDTO(
         locale="es",
