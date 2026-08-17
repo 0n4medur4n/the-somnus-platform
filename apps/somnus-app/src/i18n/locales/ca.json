@@ -109,6 +109,13 @@
       "label": "He llegit i accepto l'ús de les meves respostes per a aquesta orientació.",
       "note": "Pots retirar el consentiment en qualsevol moment."
     },
+    "safety": {
+      "legend": "Abans de continuar, unes preguntes de seguretat.",
+      "intro": "Respon segons la teva situació. Si no ho saps, tria «No ho sé».",
+      "yes": "Sí",
+      "no": "No",
+      "unknown": "No ho sé"
+    },
     "concern": {
       "legend": "Què et preocupa? Tria el que correspongui.",
       "empty": "No hi ha motius disponibles."

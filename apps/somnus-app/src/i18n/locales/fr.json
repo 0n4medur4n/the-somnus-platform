@@ -109,6 +109,13 @@
       "label": "J'ai lu et j'accepte l'utilisation de mes réponses pour cette orientation.",
       "note": "Vous pouvez retirer votre consentement à tout moment."
     },
+    "safety": {
+      "legend": "D'abord, quelques questions de sécurité.",
+      "intro": "Répondez selon votre situation. Si vous ne savez pas, choisissez « Je ne sais pas ».",
+      "yes": "Oui",
+      "no": "Non",
+      "unknown": "Je ne sais pas"
+    },
     "concern": {
       "legend": "Qu'est-ce qui vous préoccupe ? Choisissez ce qui s'applique.",
       "empty": "Aucun motif disponible."
