@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="{{ request.locale }}">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ strings.title }}</title>
+  </head>
+  <body>
+    <header class="report-header">
+      <h1>{{ strings.title }}</h1>
+      <dl class="report-meta">
+        <dt>{{ strings.assessment }}</dt>
+        <dd class="assessment-id">{{ request.assessment_id }}</dd>
+        <dt>{{ strings.generatedAt }}</dt>
+        <dd class="completed-at">{{ request.completed_at }}</dd>
+        <dt>{{ strings.versions }}</dt>
+        <dd class="versions">{{ template_version }} / {{ request.definition_version }} / {{ request.content_version }}</dd>
+      </dl>
+    </header>
+    {% if is_emergency %}
+    <section class="care-level emergency" role="alert">
+      <h2>{{ strings.careLevel }}</h2>
+      <p class="emergency-note">{{ strings.emergency }}</p>
+      {% if level %}
+      <p class="level-name">{{ level.name }}</p>
+      <p class="level-action">{{ level.action }}</p>
+      {% endif %}
+    </section>
+    {% else %}
+    <section class="summary">
+      <h2>{{ strings.summary }}</h2>
+      <ul>
+        {% for module in routed %}
+        <li>{{ module.output }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% if level %}
+    <section class="care-level">
+      <h2>{{ strings.careLevel }}</h2>
+      {% if show_framing %}
+      <p class="framing">{{ strings.framing }}</p>
+      {% endif %}
+      <p class="level-name">{{ level.name }}</p>
+      <p class="level-action">{{ level.action }}</p>
+    </section>
+    {% endif %}
+    {% if routed %}
+    <section class="patterns">
+      <h2>{{ strings.patterns }}</h2>
+      <ul>
+        {% for module in routed %}
+        <li>{{ module.name }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+    <section class="unknown">
+      <h2>{{ strings.unknown }}</h2>
+      <p>{{ strings.unknownText }}</p>
+    </section>
+    {% if routed %}
+    <section class="prepare">
+      <h2>{{ strings.prepare }}</h2>
+      <ul>
+        {% for module in routed %}
+        {% for question in module.minimum_questions %}
+        <li>{{ question }}</li>
+        {% endfor %}
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+    {% endif %}
+    <section class="limits">
+      <h2>{{ strings.limits }}</h2>
+      <p>{{ strings.limitsText }}</p>
+    </section>
+  </body>
+</html>

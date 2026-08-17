@@ -1,0 +1,16 @@
+{
+  "title": "Informe d'orientació del son",
+  "assessment": "Avaluació",
+  "generatedAt": "Completat",
+  "versions": "Versions (plantilla / definició / contingut)",
+  "summary": "Resum",
+  "careLevel": "Nivell d'atenció i acció",
+  "patterns": "Patrons que convé valorar",
+  "unknown": "Informació que falta",
+  "unknownText": "En aquesta orientació no s'han avaluat senyals de seguretat addicionals.",
+  "prepare": "Què preparar per a la consulta",
+  "limits": "Límits",
+  "limitsText": "Això no és un diagnòstic, ni exclou cap malaltia, ni indica cap tractament.",
+  "framing": "Amb la informació disponible, i a falta d'una valoració presencial:",
+  "emergency": "Situació d'emergència: no s'ofereixen hipòtesis tranquil·litzadores. Seguiu l'acció indicada immediatament."
+}

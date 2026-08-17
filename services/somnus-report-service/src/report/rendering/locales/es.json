@@ -1,0 +1,16 @@
+{
+  "title": "Informe de orientación del sueño",
+  "assessment": "Evaluación",
+  "generatedAt": "Completado",
+  "versions": "Versiones (plantilla / definición / contenido)",
+  "summary": "Resumen",
+  "careLevel": "Nivel de atención y acción",
+  "patterns": "Patrones que conviene valorar",
+  "unknown": "Información que falta",
+  "unknownText": "En esta orientación no se evaluaron señales de seguridad adicionales.",
+  "prepare": "Qué preparar para la consulta",
+  "limits": "Límites",
+  "limitsText": "Esto no es un diagnóstico, ni excluye una enfermedad, ni indica un tratamiento.",
+  "framing": "Con la información disponible, y a falta de una valoración presencial:",
+  "emergency": "Situación de emergencia: no se ofrecen hipótesis tranquilizadoras. Siga la acción indicada de inmediato."
+}
