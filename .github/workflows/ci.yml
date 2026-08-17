@@ -584,3 +584,43 @@ jobs:
 
       - name: Pytest (coverage gate)
         run: uv run pytest -q
+
+  report-service:
+    name: Report service (ruff, mypy, pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The report service (build plan §5.6 / Phase 11): uv + Ruff + strict mypy
+    # + pytest. Checkpoint 11.1 renders deterministic reports from an approved
+    # Morpheo result; no database in this stage. Coverage gate (pyproject) >= 80%.
+    defaults:
+      run:
+        working-directory: services/somnus-report-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.26"
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      - name: Install (locked)
+        run: uv sync --frozen
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Mypy (strict)
+        run: uv run mypy src
+
+      - name: Pytest (coverage gate)
+        run: uv run pytest -q
