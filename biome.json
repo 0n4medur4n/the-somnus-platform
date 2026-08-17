@@ -22,7 +22,8 @@
       "!**/schemas/json-schema",
       "!**/*.astro",
       "!apps/somnus-marketing",
-      "!services/morpheo-service"
+      "!services/morpheo-service",
+      "!services/somnus-report-service"
     ]
   },
   "formatter": {

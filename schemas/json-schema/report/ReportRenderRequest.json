@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "assessmentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "definitionVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contentVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "locale": {
+      "type": "string",
+      "enum": [
+        "es",
+        "en",
+        "ca",
+        "fr"
+      ]
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "adult",
+        "parent",
+        "professional"
+      ]
+    },
+    "level": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "L0",
+            "L1",
+            "L2",
+            "L3",
+            "L4"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "stop": {
+      "type": "boolean"
+    },
+    "triggeredRules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "INS",
+          "BRE",
+          "SLP",
+          "CIR",
+          "RLS",
+          "PAR"
+        ]
+      }
+    },
+    "completedAt": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "assessmentId",
+    "definitionVersion",
+    "contentVersion",
+    "locale",
+    "role",
+    "level",
+    "stop",
+    "triggeredRules",
+    "routes",
+    "completedAt"
+  ],
+  "additionalProperties": false
+}
