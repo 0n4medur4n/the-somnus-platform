@@ -100,6 +100,35 @@
         "additionalProperties": false
       }
     },
+    "safetyPrompts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "signalId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "context": {
+            "type": "string",
+            "enum": [
+              "general",
+              "pediatric"
+            ]
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "signalId",
+          "context",
+          "question"
+        ],
+        "additionalProperties": false
+      }
+    },
     "outputContract": {
       "type": "object",
       "properties": {
@@ -139,6 +168,7 @@
     "contentVersion",
     "modules",
     "safetyLevels",
+    "safetyPrompts",
     "outputContract"
   ],
   "additionalProperties": false

@@ -19,7 +19,12 @@ from morpheo.clinical import (
     load_clinical,
     load_workflows,
 )
-from morpheo.clinical.loader import CLAIMS_CSV_FILE, WORKFLOWS_FILE, clinical_bundle
+from morpheo.clinical.loader import (
+    CLAIMS_CSV_FILE,
+    SAFETY_PROMPTS_FILE,
+    WORKFLOWS_FILE,
+    clinical_bundle,
+)
 from morpheo.clinical.version import CONTENT_VERSION, WORKFLOW_VERSION
 
 
@@ -27,8 +32,18 @@ def _real_json() -> dict[str, Any]:
     return json.loads(WORKFLOWS_FILE.read_text(encoding="utf-8"))
 
 
+def _real_prompts() -> dict[str, Any]:
+    return json.loads(SAFETY_PROMPTS_FILE.read_text(encoding="utf-8"))
+
+
 def _write(tmp_path: Path, data: dict[str, Any]) -> Path:
     target = tmp_path / "morpheo_workflows_mutated.json"
+    target.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    return target
+
+
+def _write_prompts(tmp_path: Path, data: dict[str, Any]) -> Path:
+    target = tmp_path / "morpheo_safety_prompts_mutated.json"
     target.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     return target
 
@@ -64,11 +79,12 @@ def test_twelve_claims_parse_from_json_and_csv_and_agree() -> None:
 
 def test_versions_are_read_from_the_artifact() -> None:
     bundle = load_clinical()
+    # The rule/spec version is unchanged; content_version was bumped when the
+    # safety-signal questions were added (content-only change, §14a).
     assert bundle.workflow_version == "1.0"
-    assert bundle.content_version == "1.0"
-    # The module-level constants stamped on every output bind to the same value.
+    assert bundle.content_version == "1.1"
     assert WORKFLOW_VERSION == "1.0"
-    assert CONTENT_VERSION == "1.0"
+    assert CONTENT_VERSION == "1.1"
 
 
 def test_clinical_bundle_is_cached() -> None:
@@ -136,3 +152,36 @@ def test_rejects_claims_mismatch_between_json_and_csv(tmp_path: Path) -> None:
     data["claims_registry"][0]["id"] = "CLM-999"  # diverge from the CSV
     with pytest.raises(ClinicalArtifactError):
         load_clinical(_write(tmp_path, data), CLAIMS_CSV_FILE)
+
+
+# --- Safety-signal questions: every rule signal has exactly one question ---
+
+
+def test_safety_prompts_cover_every_rule_signal_once() -> None:
+    # load_clinical succeeding already enforces the bijection (prompt ids ==
+    # rule signal atoms); here we pin the count and the pediatric-context set.
+    bundle = load_clinical()
+    prompts = bundle.safety_prompts.prompts
+    assert len(prompts) == 22
+    assert len({p.signal_id for p in prompts}) == 22
+    pediatric = {p.signal_id for p in prompts if p.context.value == "pediatric"}
+    assert pediatric == {
+        "minor_habitual_snoring",
+        "gasping",
+        "labored_breathing",
+        "daytime_behavior_learning_growth_concern",
+    }
+
+
+def test_rejects_missing_safety_prompt(tmp_path: Path) -> None:
+    data = _real_prompts()
+    data["prompts"] = data["prompts"][:-1]  # drop one -> a rule signal has no question
+    with pytest.raises(ClinicalArtifactError):
+        load_clinical(WORKFLOWS_FILE, CLAIMS_CSV_FILE, _write_prompts(tmp_path, data))
+
+
+def test_rejects_safety_prompt_for_unknown_signal(tmp_path: Path) -> None:
+    data = _real_prompts()
+    data["prompts"][0]["signal_id"] = "not_a_real_signal"
+    with pytest.raises(ClinicalArtifactError):
+        load_clinical(WORKFLOWS_FILE, CLAIMS_CSV_FILE, _write_prompts(tmp_path, data))

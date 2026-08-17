@@ -137,6 +137,24 @@ To create a new Python service from this one (e.g.
    fresh, or keep the empty-migration pattern.
 6. Regenerate `uv.lock`: `uv lock`.
 
+## Contenido clínico pendiente
+
+Elementos señalados por el responsable clínico que **no** se implementan aún
+porque dependen de contenido/decisiones nuevas, no de código. No tocar las
+reglas afectadas hasta recibir el contenido aprobado:
+
+- **SAFE-004 — criterios de escalado a L0.** Los casos graves de crisis
+  nocturna o déficit neurológico (crisis > 5 min, crisis repetidas sin
+  recuperación, lesión, o dificultad respiratoria durante el episodio)
+  deberían escalar a L0, pero **no existe todavía una señal para ello**.
+  Bloqueado a la espera de nuevas señales del responsable clínico; no inventar
+  señales ni cambiar el nivel de SAFE-004.
+- **SAFE-002 — vía de escalado humana.** La regla ya es L0 / prioridad 1000 /
+  parada; lo pendiente es una **vía real de escalado a una persona** detrás del
+  mensaje. Es una decisión de producto/operaciones, no un cambio de regla.
+
+Ambos puntos están registrados en `clinical/CHANGELOG.md` (content_version 1.1).
+
 ## Build plan
 
 Implements build plan §20 Phase 4 / Checkpoint 4.1.

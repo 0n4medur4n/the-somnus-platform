@@ -32,6 +32,13 @@ const CONTENT = {
   safetyLevels: [
     { id: "L4", name: "Información y observación", action: "Educación general y observación." },
   ],
+  safetyPrompts: [
+    {
+      signalId: "sleepiness_near_miss",
+      context: "general",
+      question: "¿Casi un accidente por sueño?",
+    },
+  ],
   outputContract: {
     patientParent: ["Resumen."],
     professional: ["Resumen."],

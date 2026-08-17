@@ -62,6 +62,10 @@ class Meta(_Artifact):
     product: str
     portfolio: str
     version: str
+    # Content-only changes (e.g. adding the localized safety-signal questions)
+    # bump content_version while the rule/spec `version` stays fixed (§14a).
+    # Absent in older artifacts, where content_version binds to `version`.
+    content_version: str | None = None
     date: str
     language: str
     scope: str
@@ -168,6 +172,40 @@ class Source(_Artifact):
     citation: str
     url: str
     use: str
+
+
+# --- morpheo_safety_prompts_v1_es.json: the clinically-approved question text
+# for each safety-signal atom (build plan §14a / §20 Checkpoint 10.0). The
+# engine never authors these; it loads them verbatim and the loader verifies
+# they cover exactly the atoms the safety rules use. ---
+
+
+class SafetyPromptContext(StrEnum):
+    GENERAL = "general"
+    # Pediatric questions ("su hijo o hija …") are shown only under the
+    # parent/guardian role — presentation, not a new engine rule.
+    PEDIATRIC = "pediatric"
+
+
+class SafetyPrompt(_Artifact):
+    signal_id: str
+    context: SafetyPromptContext
+    question: str
+
+
+class SafetyPromptsMeta(_Artifact):
+    version: str
+    language: str
+    source: str
+    answer_format: str
+    note: str
+
+
+class SafetyPrompts(_Artifact):
+    """The whole `morpheo_safety_prompts_v1_es.json`."""
+
+    meta: SafetyPromptsMeta
+    prompts: list[SafetyPrompt]
 
 
 class MorpheoWorkflows(_Artifact):

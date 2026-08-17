@@ -19,6 +19,13 @@ const CONTENT = {
   safetyLevels: [
     { id: "L3" as const, name: "Consulta programada", action: "Prepara una consulta programada." },
   ],
+  safetyPrompts: [
+    {
+      signalId: "witnessed_apneas" as const,
+      context: "general" as const,
+      question: "¿Le han visto pausas al respirar?",
+    },
+  ],
   // The real artifact forbidden phrases: none may reach the screen (§20 exit).
   outputContract: {
     patientParent: ["Resumen."],

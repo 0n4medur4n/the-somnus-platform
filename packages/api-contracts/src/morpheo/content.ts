@@ -40,6 +40,25 @@ export const OutputContractContentSchema = z
   .strict();
 export type OutputContractContent = z.infer<typeof OutputContractContentSchema>;
 
+/** Where a safety question is shown; `pediatric` = parent/guardian role only. */
+export const SAFETY_PROMPT_CONTEXTS = ["general", "pediatric"] as const;
+export const SafetyPromptContextSchema = z.enum(SAFETY_PROMPT_CONTEXTS);
+export type SafetyPromptContext = z.infer<typeof SafetyPromptContextSchema>;
+
+/**
+ * The clinically-approved question text for one safety-signal atom. Answered
+ * Sí / No / No lo sé; "No lo sé" maps to unknown, never false (§14 unknown
+ * policy). Approved wording — the client renders it verbatim.
+ */
+export const SafetyPromptContentSchema = z
+  .object({
+    signalId: z.string().min(1),
+    context: SafetyPromptContextSchema,
+    question: z.string().min(1),
+  })
+  .strict();
+export type SafetyPromptContent = z.infer<typeof SafetyPromptContentSchema>;
+
 export const AssessmentContentResponseSchema = z
   .object({
     locale: LocaleSchema,
@@ -47,6 +66,7 @@ export const AssessmentContentResponseSchema = z
     contentVersion: z.string().min(1),
     modules: z.array(AssessmentModuleContentSchema),
     safetyLevels: z.array(SafetyLevelContentSchema),
+    safetyPrompts: z.array(SafetyPromptContentSchema),
     outputContract: OutputContractContentSchema,
   })
   .strict();

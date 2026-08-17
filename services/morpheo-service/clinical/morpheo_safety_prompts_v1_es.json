@@ -1,0 +1,121 @@
+{
+  "meta": {
+    "version": "1.1",
+    "language": "es",
+    "source": "Morpheo_Preguntas_Seguridad_Respondidas.docx",
+    "answer_format": "si_no_unknown",
+    "note": "Cada pregunta se responde Sí / No / No lo sé; «No lo sé» se evalúa como desconocido, nunca como No (política unknown-never-false, §14). Redacción aprobada por el responsable clínico — el código la carga literalmente y no la corrige."
+  },
+  "prompts": [
+    {
+      "signal_id": "cyanosis",
+      "context": "general",
+      "question": "¿Observa usted en este momento que sus labios, su lengua, su cara o su piel están azulados o grisáceos?"
+    },
+    {
+      "signal_id": "unresponsive",
+      "context": "general",
+      "question": "¿En este momento, la persona no responde cuando le habla o la toca, o bien no se despierta al llamarla en voz alta o zarandearla suavemente?"
+    },
+    {
+      "signal_id": "seizure_in_progress",
+      "context": "general",
+      "question": "¿Está teniendo la persona una convulsión en este momento, con sacudidas o rigidez que no cesan?"
+    },
+    {
+      "signal_id": "current_severe_breathing_problem",
+      "context": "general",
+      "question": "¿En este momento le cuesta mucho respirar, respira con gran esfuerzo, se ahoga o no puede pronunciar frases completas?"
+    },
+    {
+      "signal_id": "immediate_self_harm_or_harm_to_others",
+      "context": "general",
+      "question": "¿En este momento está pensando en hacerse daño o en dañar a otra persona, o tiene la intención o un plan para hacerlo?"
+    },
+    {
+      "signal_id": "sleepiness_near_miss",
+      "context": "general",
+      "question": "¿Ha estado a punto de sufrir un accidente mientras conducía porque se adormeció o perdió momentáneamente la atención al quedarse dormirdo?"
+    },
+    {
+      "signal_id": "fell_asleep_driving",
+      "context": "general",
+      "question": "¿Se ha quedado dormido alguna vez mientras conducía, aunque sólo fuera durante unos segundos?"
+    },
+    {
+      "signal_id": "sleepiness_accident",
+      "context": "general",
+      "question": "¿Se ha quedado dormido alguna vez al volante o en plena tarea de riesgo, llegando a sufrir un accidente?"
+    },
+    {
+      "signal_id": "first_suspected_nocturnal_seizure",
+      "context": "general",
+      "question": "¿Le ha ocurrido por primera vez durante el sueño, un episodio de rigidez, sacudidas, pérdida de conocimiento con confusión posterior que pudiera parecer una crisis de convulsiones?"
+    },
+    {
+      "signal_id": "new_neurological_deficit",
+      "context": "general",
+      "question": "¿Ha experimentado de forma súbita alguno de estos síntomas: ¿debilidad o adormecimiento de un lado del cuerpo, desviación de la boca? ¿dificultad para hablar o entender? O bien ¿pérdida de visión o inestabilidad intensa?"
+    },
+    {
+      "signal_id": "recent_violent_or_injurious_sleep_behavior",
+      "context": "general",
+      "question": "¿Durante el sueño ha dado golpes o patadas, se ha caído de la cama o ha realizado conductas que hayan causado o podido causar lesiones a usted o a otra persona, especialmente si estos episodios han ocurrido recientemente?"
+    },
+    {
+      "signal_id": "witnessed_apneas",
+      "context": "general",
+      "question": "¿Alguien de su entorno ha observado que durante el sueño deja de respirar, aunque acto seguido reanude la respiración con un resoplido, un jadeo o un ahogo?"
+    },
+    {
+      "signal_id": "marked_sleepiness",
+      "context": "general",
+      "question": "¿Durante el día se queda dormido involuntariamente o le cuesta mucho mantenerse despierto incluso mientras conversa, come, trabaja o realiza otra actividad?"
+    },
+    {
+      "signal_id": "significant_deterioration",
+      "context": "general",
+      "question": "¿Ha notado, en los últimos días o en las últimas semanas, un empeoramiento claro de la somnolencia, de la respiración nocturna o de su capacidad para realizar las actividades habituales?"
+    },
+    {
+      "signal_id": "possible_cataplexy",
+      "context": "general",
+      "question": "¿Con la risa, la sorpresa o la emoción, sufre episodios breves en los que se le cae la mandíbula o la cabeza, le flaquean las rodillas o pierde fuerza, sin llegar a perder la consciencia?"
+    },
+    {
+      "signal_id": "persistent_irresistible_sleep_attacks",
+      "context": "general",
+      "question": "¿Le ocurren de forma repetida situaciones en las que durante el día se duerma de forma repentina e irresistible, y aunque lo intente no pueda mantenerse despierto?"
+    },
+    {
+      "signal_id": "minor_habitual_snoring",
+      "context": "pediatric",
+      "question": "¿Ha observado si su hijo o hija ronca durante el sueño al menos tres noches por semana?"
+    },
+    {
+      "signal_id": "gasping",
+      "context": "pediatric",
+      "question": "¿Durante el sueño, su hijo o hija jadea o resopla, se atraganta o parece ahogarse?"
+    },
+    {
+      "signal_id": "labored_breathing",
+      "context": "pediatric",
+      "question": "¿Mientras duerme, su hijo o hija respira como si se tuviera que esforzar para hacerlo, por ejemplo hundiendo el pecho o las costillas o moviendo mucho el abdomen?"
+    },
+    {
+      "signal_id": "daytime_behavior_learning_growth_concern",
+      "context": "pediatric",
+      "question": "¿Su hijo o hija presenta problemas persistentes de atención, conducta o aprendizaje, o le preocupa que no esté creciendo al ritmo esperado?"
+    },
+    {
+      "signal_id": "sedative_medication_or_substance",
+      "context": "general",
+      "question": "¿Consume actualmente alguno de estos medicamentos o sustancias que pueden inducir sueño o deprimir la respiración: benzodiazepinas, hipnóticos, opioides, antihistamínicos sedantes, alcohol o cannabis?"
+    },
+    {
+      "signal_id": "breathing_concern",
+      "context": "general",
+      "question": "¿Le preocupa a usted o a alguien cercano que, durante el sueño, su respiración se vuelva muy lenta, superficial o irregular, o que haga pausas, especialmente después de tomar medicamentos o sustancias sedantes?"
+    }
+  ]
+}
