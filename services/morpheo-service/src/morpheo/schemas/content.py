@@ -55,8 +55,8 @@ def build_content_response(bundle: ClinicalBundle) -> AssessmentContentResponseD
     workflows = bundle.workflows
     return AssessmentContentResponseDTO(
         locale="es",
-        workflow_version=workflows.meta.version,
-        content_version=workflows.meta.version,
+        workflow_version=bundle.workflow_version,
+        content_version=bundle.content_version,
         modules=[
             AssessmentModuleContentDTO(
                 id=module.id,

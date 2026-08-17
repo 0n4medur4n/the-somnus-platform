@@ -109,6 +109,13 @@
       "label": "He leído y acepto el uso de mis respuestas para esta orientación.",
       "note": "Puedes retirar el consentimiento en cualquier momento."
     },
+    "safety": {
+      "legend": "Antes de continuar, unas preguntas de seguridad.",
+      "intro": "Responde según tu situación. Si no lo sabes, elige «No lo sé».",
+      "yes": "Sí",
+      "no": "No",
+      "unknown": "No lo sé"
+    },
     "concern": {
       "legend": "¿Qué te preocupa? Elige lo que corresponda.",
       "empty": "No hay motivos disponibles."

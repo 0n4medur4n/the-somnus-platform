@@ -4,16 +4,13 @@ import es from "../../src/i18n/locales/es.json" with { type: "json" };
 
 /**
  * Anonymous assessment golden paths (build plan §20 Checkpoint 10.3), run in
- * `es`. The flow is public: role → consent → concern → the §14b result, served
- * by morpheo through the edge with no session. Interactive safety-signal
- * questioning is deferred (its 22 prompts are not authored yet), so the
- * orientation is the baseline L4 and the L0/L1 emergency paths (T-03/T-06) and
- * the `ca` run follow with that content. Double-claim rejection is proven at the
- * API layer (morpheo single-use token) in the service tests.
+ * `es` against the real edge → morpheo → MySQL stack. The flow is safety-first
+ * (state machine §14a): role → consent → safety questions → (emergency stop) →
+ * concern → the §14b result. `ca` follows when its content is localized.
  */
 const t = es.assessment;
 
-async function chooseRoleAndConsent(
+async function roleConsent(
   page: Page,
   opts: { role: "adult" | "parent" | "professional"; age?: string },
 ): Promise<void> {
@@ -25,15 +22,25 @@ async function chooseRoleAndConsent(
   }
 }
 
-test("adult INS path shows the L4 orientation and passes the a11y baseline", async ({ page }) => {
-  await chooseRoleAndConsent(page, { role: "adult", age: "35" });
+async function passConsent(page: Page): Promise<void> {
+  await page.getByRole("button", { name: t.actions.next }).click(); // -> consent
+  await page.getByLabel(t.consent.label, { exact: true }).check();
+  await page.getByRole("button", { name: t.actions.next }).click(); // -> safety
+}
 
-  // Accessibility on the first assessment screen.
+/** Answer one safety question (identified by a fragment of its text) Sí/No. */
+async function answerSafety(page: Page, question: RegExp, answer: string): Promise<void> {
+  await page.getByRole("group", { name: question }).getByLabel(answer, { exact: true }).check();
+}
+
+test("adult INS path shows the L4 orientation and passes the a11y baseline", async ({ page }) => {
+  await roleConsent(page, { role: "adult", age: "35" });
+
   const roleScan = await new AxeBuilder({ page }).analyze();
   expect(roleScan.violations).toEqual([]);
 
-  await page.getByRole("button", { name: t.actions.next }).click();
-  await page.getByLabel(t.consent.label, { exact: true }).check();
+  await passConsent(page);
+  // No safety signal -> continue to the concern step.
   await page.getByRole("button", { name: t.actions.next }).click();
 
   await page.getByLabel("despertares", { exact: true }).check();
@@ -43,7 +50,6 @@ test("adult INS path shows the L4 orientation and passes the a11y baseline", asy
   await expect(page.getByText("Información y observación")).toBeVisible();
   await expect(page.getByText(t.result.limitsText)).toBeVisible();
 
-  // Accessibility on the result screen.
   const resultScan = await new AxeBuilder({ page }).analyze();
   expect(resultScan.violations).toEqual([]);
 });
@@ -51,31 +57,56 @@ test("adult INS path shows the L4 orientation and passes the a11y baseline", asy
 test("parent BRE path routes to breathing and keeps the output adult-directed", async ({
   page,
 }) => {
-  await chooseRoleAndConsent(page, { role: "parent", age: "8" });
+  await roleConsent(page, { role: "parent", age: "8" });
   await page.getByLabel(t.role.guardianship, { exact: true }).check();
-  await page.getByRole("button", { name: t.actions.next }).click();
-  await page.getByLabel(t.consent.label, { exact: true }).check();
-  await page.getByRole("button", { name: t.actions.next }).click();
+  await passConsent(page);
+  await page.getByRole("button", { name: t.actions.next }).click(); // no safety signal -> concern
 
   await page.getByLabel("ronquido", { exact: true }).check();
   await page.getByRole("button", { name: t.actions.seeResult }).click();
 
   await expect(page.getByRole("heading", { name: t.result.title })).toBeVisible();
-  // Routed to the breathing module; the output speaks to the adult, never the minor.
   await expect(page.getByText("Respiración durante el sueño")).toBeVisible();
-  await expect(page.getByText(t.result.limitsText)).toBeVisible();
+});
+
+test("T-03: adult driving near-miss escalates to L1 and stops before the concern step", async ({
+  page,
+}) => {
+  await roleConsent(page, { role: "adult", age: "35" });
+  await passConsent(page);
+
+  await answerSafety(page, /a punto de sufrir un accidente/, t.safety.yes);
+  await page.getByRole("button", { name: t.actions.next }).click();
+
+  // Emergency stop: straight to the result, no concern step.
+  await expect(page.getByRole("heading", { name: t.result.title })).toBeVisible();
+  await expect(page.getByText(/Valoración urgente/)).toBeVisible();
+  await expect(page.getByRole("button", { name: t.actions.seeResult })).toHaveCount(0);
+});
+
+test("T-06: infant cyanosis + unresponsive is an L0 emergency that stops the flow", async ({
+  page,
+}) => {
+  await roleConsent(page, { role: "parent", age: "0" });
+  await page.getByLabel(t.role.guardianship, { exact: true }).check();
+  await passConsent(page);
+
+  await answerSafety(page, /azulados o grisáceos/, t.safety.yes); // cyanosis
+  await answerSafety(page, /no responde cuando le habla/, t.safety.yes); // unresponsive
+  await page.getByRole("button", { name: t.actions.next }).click();
+
+  await expect(page.getByRole("heading", { name: t.result.title })).toBeVisible();
+  await expect(page.getByText("Emergencia actual")).toBeVisible();
+  await expect(page.getByRole("button", { name: t.actions.seeResult })).toHaveCount(0);
 });
 
 test("professional with identifiable data hits the privacy block", async ({ page }) => {
-  await chooseRoleAndConsent(page, { role: "professional" });
+  await roleConsent(page, { role: "professional" });
   await page.getByLabel(t.role.professionalConfirm, { exact: true }).check();
   await page.getByLabel(t.role.identifiable, { exact: true }).check();
-  await page.getByRole("button", { name: t.actions.next }).click();
+  await page.getByRole("button", { name: t.actions.next }).click(); // -> consent
   await page.getByLabel(t.consent.label, { exact: true }).check();
-  await page.getByRole("button", { name: t.actions.next }).click();
-
-  await page.getByLabel("despertares", { exact: true }).check();
-  await page.getByRole("button", { name: t.actions.seeResult }).click();
+  await page.getByRole("button", { name: t.actions.next }).click(); // create -> blocked
 
   await expect(page.getByText(t.result.blocked.privacy_block)).toBeVisible();
 });

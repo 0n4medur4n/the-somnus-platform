@@ -89,6 +89,8 @@ def test_content_endpoint_serves_artifact_wording(client: TestClient) -> None:
     }
     assert {level["id"] for level in body["safetyLevels"]} == {"L0", "L1", "L2", "L3", "L4"}
     assert body["outputContract"]["forbiddenPhrases"]
+    assert body["contentVersion"] == "1.1"
+    assert len(body["safetyPrompts"]) == 22
 
 
 def test_create_blocked_on_missing_consent(client: TestClient) -> None:

@@ -109,6 +109,13 @@
       "label": "I have read and accept the use of my answers for this orientation.",
       "note": "You can withdraw your consent at any time."
     },
+    "safety": {
+      "legend": "First, a few safety questions.",
+      "intro": "Answer for your situation. If you don't know, choose 'I don't know'.",
+      "yes": "Yes",
+      "no": "No",
+      "unknown": "I don't know"
+    },
     "concern": {
       "legend": "What concerns you? Choose all that apply.",
       "empty": "No concerns available."

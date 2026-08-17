@@ -122,6 +122,10 @@ def test_content_response_from_artifacts_conforms() -> None:
     jsonschema.validate(payload, _schema("AssessmentContentResponse"))
     assert payload["locale"] == "es"
     assert len(payload["modules"]) == 6
+    # The content endpoint reports the bumped content_version, not the rule version.
+    assert payload["workflowVersion"] == "1.0"
+    assert payload["contentVersion"] == "1.1"
+    assert len(payload["safetyPrompts"]) == 22
 
 
 # --- the engine's real output maps to a conforming result DTO ---

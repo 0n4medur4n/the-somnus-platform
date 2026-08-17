@@ -13,16 +13,17 @@ import { useAuth } from "../auth/useAuth.js";
 import { Button } from "../components/Button.js";
 import { edge } from "../lib/edge.js";
 
-type Step = "role" | "consent" | "concern" | "result";
+type Step = "role" | "consent" | "safety" | "concern" | "result";
+type SafetyAnswer = "yes" | "no" | "unknown";
 const ROLES: RoleId[] = ["adult", "parent", "professional"];
+const SAFETY_OPTIONS: SafetyAnswer[] = ["yes", "no", "unknown"];
 
 /**
- * The anonymous assessment flow (build plan §20 Checkpoint 10.3): role →
- * consent → concern → the §14b result. Public (no session): create / answer /
- * summary are anonymous; only saving the result claims it, which needs a login.
- * Interactive safety-signal questioning is deferred until its prompts exist, so
- * the orientation is the baseline information/observation level (L4) and the
- * result states that no additional safety signals were assessed.
+ * The anonymous assessment flow (build plan §20 Checkpoint 10.3, state machine
+ * §14a): role → consent → SAFETY-FIRST questions → (stop on an emergency) →
+ * concern → the §14b result. Public (no session). The safety questions and
+ * every clinical string come from the morpheo content endpoint — the SPA never
+ * authors clinical text. "No lo sé" maps to unknown, never No (§14).
  */
 export function Assessment() {
   const { t } = useTranslation();
@@ -41,6 +42,7 @@ export function Assessment() {
   const [professionalConfirmed, setProfessionalConfirmed] = useState(false);
   const [containsIdentifiableData, setContainsIdentifiableData] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
+  const [safetyAnswers, setSafetyAnswers] = useState<Record<string, SafetyAnswer>>({});
   const [complaints, setComplaints] = useState<string[]>([]);
 
   const [result, setResult] = useState<AssessmentResult | null>(null);
@@ -58,15 +60,27 @@ export function Assessment() {
     [contentQuery.data],
   );
 
+  // Pediatric questions ("su hijo o hija …") show only under the parent role.
+  const safetyPrompts = useMemo(
+    () =>
+      contentQuery.data
+        ? contentQuery.data.safetyPrompts.filter(
+            (prompt) => prompt.context === "general" || role === "parent",
+          )
+        : [],
+    [contentQuery.data, role],
+  );
+
   const roleValid =
     role === "professional"
       ? professionalConfirmed
       : role !== null && ageYears.trim().length > 0 && Number.isFinite(Number(ageYears));
 
-  function toggleComplaint(phrase: string) {
-    setComplaints((current) =>
-      current.includes(phrase) ? current.filter((p) => p !== phrase) : [...current, phrase],
-    );
+  function reset(next: Step) {
+    setStep(next);
+    setResult(null);
+    setBlocked(null);
+    setSubmitError(false);
   }
 
   function restart() {
@@ -77,6 +91,7 @@ export function Assessment() {
     setProfessionalConfirmed(false);
     setContainsIdentifiableData(false);
     setConsentGiven(false);
+    setSafetyAnswers({});
     setComplaints([]);
     setResult(null);
     setBlocked(null);
@@ -85,12 +100,11 @@ export function Assessment() {
     setSaved(false);
   }
 
-  async function runAssessment() {
+  async function startSession() {
     if (role === null) return;
     setSubmitting(true);
     setSubmitError(false);
     setBlocked(null);
-    setResult(null);
     try {
       const payload: AssessmentCreateRequest = {
         role,
@@ -106,10 +120,47 @@ export function Assessment() {
         return;
       }
       setSessionId(created.sessionId);
-      for (const phrase of complaints) {
-        await edge.submitAssessmentAnswer(created.sessionId, { kind: "complaint", name: phrase });
+      setStep("safety");
+    } catch {
+      setSubmitError(true);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function submitSafety() {
+    if (sessionId === null) return;
+    setSubmitting(true);
+    setSubmitError(false);
+    try {
+      for (const [signalId, answer] of Object.entries(safetyAnswers)) {
+        const value = answer === "yes" ? "true" : answer === "no" ? "false" : "unknown";
+        await edge.submitAssessmentAnswer(sessionId, { kind: "signal", name: signalId, value });
       }
-      setResult(await edge.getAssessmentSummary(created.sessionId));
+      const summary = await edge.getAssessmentSummary(sessionId);
+      // Safety-first: an emergency stop short-circuits the rest of the flow.
+      if (summary.stop) {
+        setResult(summary);
+        setStep("result");
+      } else {
+        setStep("concern");
+      }
+    } catch {
+      setSubmitError(true);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function finishWithComplaints() {
+    if (sessionId === null) return;
+    setSubmitting(true);
+    setSubmitError(false);
+    try {
+      for (const phrase of complaints) {
+        await edge.submitAssessmentAnswer(sessionId, { kind: "complaint", name: phrase });
+      }
+      setResult(await edge.getAssessmentSummary(sessionId));
       setStep("result");
     } catch {
       setSubmitError(true);
@@ -221,7 +272,7 @@ export function Assessment() {
           ) : null}
 
           <div className="mt-2">
-            <Button onClick={() => setStep("consent")} disabled={!roleValid}>
+            <Button onClick={() => reset("consent")} disabled={!roleValid}>
               {t("assessment.actions.next")}
             </Button>
           </div>
@@ -244,11 +295,58 @@ export function Assessment() {
             <Button variant="secondary" onClick={() => setStep("role")}>
               {t("assessment.actions.back")}
             </Button>
-            <Button onClick={() => setStep("concern")} disabled={!consentGiven}>
+            <Button onClick={startSession} disabled={!consentGiven || submitting}>
               {t("assessment.actions.next")}
             </Button>
           </div>
+          {submitError ? (
+            <p role="alert" className="text-somnus-danger">
+              {t("assessment.submitError")}
+            </p>
+          ) : null}
         </fieldset>
+      ) : null}
+
+      {step === "safety" ? (
+        <div className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-lg font-medium">{t("assessment.safety.legend")}</h2>
+            <p className="text-sm text-somnus-subtle">{t("assessment.safety.intro")}</p>
+          </div>
+          {safetyPrompts.map((prompt) => (
+            <fieldset key={prompt.signalId} className="flex flex-col gap-1">
+              <legend className="text-sm font-medium">{prompt.question}</legend>
+              <div className="flex gap-4">
+                {SAFETY_OPTIONS.map((option) => (
+                  <label key={option} className="flex items-center gap-1">
+                    <input
+                      type="radio"
+                      name={prompt.signalId}
+                      checked={safetyAnswers[prompt.signalId] === option}
+                      onChange={() =>
+                        setSafetyAnswers((current) => ({ ...current, [prompt.signalId]: option }))
+                      }
+                    />
+                    {t(`assessment.safety.${option}`)}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ))}
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setStep("consent")}>
+              {t("assessment.actions.back")}
+            </Button>
+            <Button onClick={submitSafety} disabled={submitting}>
+              {t("assessment.actions.next")}
+            </Button>
+          </div>
+          {submitError ? (
+            <p role="alert" className="text-somnus-danger">
+              {t("assessment.submitError")}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {step === "concern" ? (
@@ -262,17 +360,23 @@ export function Assessment() {
                 <input
                   type="checkbox"
                   checked={complaints.includes(phrase)}
-                  onChange={() => toggleComplaint(phrase)}
+                  onChange={() =>
+                    setComplaints((current) =>
+                      current.includes(phrase)
+                        ? current.filter((item) => item !== phrase)
+                        : [...current, phrase],
+                    )
+                  }
                 />
                 {phrase}
               </label>
             ))
           )}
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setStep("consent")}>
+            <Button variant="secondary" onClick={() => setStep("safety")}>
               {t("assessment.actions.back")}
             </Button>
-            <Button onClick={runAssessment} disabled={submitting || complaints.length === 0}>
+            <Button onClick={finishWithComplaints} disabled={submitting || complaints.length === 0}>
               {t("assessment.actions.seeResult")}
             </Button>
           </div>
