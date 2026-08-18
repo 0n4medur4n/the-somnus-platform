@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Literal
 
 from morpheo.clinical.loader import ClinicalBundle
-from morpheo.clinical.models import ModuleId, SafetyLevelId
+from morpheo.clinical.models import ClaimStatus, ModuleId, SafetyLevelId
 from morpheo.schemas.base import ContractModel
 
 
@@ -54,6 +54,7 @@ class AssessmentContentResponseDTO(ContractModel):
     safety_levels: list[SafetyLevelContentDTO]
     safety_prompts: list[SafetyPromptContentDTO]
     limits_text: list[str]
+    blocked_claims: list[str]
     output_contract: OutputContractContentDTO
 
 
@@ -61,6 +62,12 @@ def build_content_response(bundle: ClinicalBundle) -> AssessmentContentResponseD
     workflows = bundle.workflows
     claims_by_id = {claim.id: claim for claim in workflows.claims_registry}
     limits_text = [claims_by_id[claim_id].replacement for claim_id in _LIMITS_CLAIM_IDS]
+    # Every BLOQUEAR claim statement, for a consumer's forbidden-phrase scanner (§15).
+    blocked_claims = [
+        claim.claim
+        for claim in sorted(workflows.claims_registry, key=lambda entry: entry.id)
+        if claim.status is ClaimStatus.BLOQUEAR
+    ]
     return AssessmentContentResponseDTO(
         locale="es",
         workflow_version=bundle.workflow_version,
@@ -86,6 +93,7 @@ def build_content_response(bundle: ClinicalBundle) -> AssessmentContentResponseD
             for prompt in bundle.safety_prompts.prompts
         ],
         limits_text=limits_text,
+        blocked_claims=blocked_claims,
         output_contract=OutputContractContentDTO(
             patient_parent=list(workflows.output_contract.patient_parent),
             professional=list(workflows.output_contract.professional),

@@ -4,6 +4,13 @@ Content-version bumps to the versioned artifacts (build plan §14a). The rule/
 spec `workflow_version` changes only when rules, levels, or priorities change;
 content-only additions bump `content_version` (reviewed by the Safety Committee).
 
+## content_version 1.3 — 2026-08-18 (workflow_version 1.0, unchanged)
+
+- Expose `blockedClaims` (every BLOQUEAR claim statement) via the content
+  endpoint so a consumer's forbidden-phrase scanner has the single governed
+  source (build plan §15, Checkpoint 11.2 — controlled AI wording). No new
+  clinical wording; the existing approved claims registry is surfaced as-is.
+
 ## content_version 1.2 — 2026-08-18 (workflow_version 1.0, unchanged)
 
 - Limits section sourced from CLM-006/007/008 approved replacement text; removed

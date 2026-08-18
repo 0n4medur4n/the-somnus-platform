@@ -67,10 +67,14 @@ def _content() -> ClinicalContentDTO:
             ),
             "Información general y preguntas para comentar con tu profesional.",
         ],
+        blocked_claims=[
+            "Morpheo sustituye una consulta médica o pediátrica.",
+            "Morpheo diagnostica insomnio, apnea, narcolepsia u otros trastornos del sueño.",
+        ],
         output_contract=OutputContractContentDTO(
             patient_parent=["Resumen."],
             professional=["Resumen."],
-            forbidden_phrases=["Tienes [diagnóstico]."],
+            forbidden_phrases=["Tienes [diagnóstico].", "No tienes [enfermedad]."],
         ),
     )
 

@@ -96,6 +96,7 @@ def test_clinical_content_is_html_escaped(make_request: RequestBuilder) -> None:
         ],
         safety_levels=[SafetyLevelContentDTO(id="L4", name="Info", action="A")],
         limits_text=["Información general y preguntas para comentar con tu profesional."],
+        blocked_claims=[],
         output_contract=OutputContractContentDTO(
             patient_parent=[], professional=[], forbidden_phrases=[]
         ),

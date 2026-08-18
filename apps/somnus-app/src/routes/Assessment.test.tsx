@@ -41,6 +41,7 @@ const CONTENT = {
     },
   ],
   limitsText: ["No es un diagnóstico."],
+  blockedClaims: ["Morpheo sustituye una consulta."],
   outputContract: {
     patientParent: ["Resumen."],
     professional: ["Resumen."],

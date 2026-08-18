@@ -22,6 +22,7 @@ def test_maps_morpheo_content_to_the_report_subset() -> None:
         "safetyLevels": [{"id": "L4", "name": "Información", "action": "Observa."}],
         "safetyPrompts": [{"signalId": "cyanosis", "context": "general", "question": "¿Azulado?"}],
         "limitsText": ["Límite uno.", "Límite dos.", "Límite tres."],
+        "blockedClaims": ["Morpheo sustituye una consulta."],
         "outputContract": {
             "patientParent": ["Resumen."],
             "professional": ["Resumen."],

@@ -42,6 +42,7 @@ def _to_content(raw: dict[str, Any]) -> ClinicalContentDTO:
             for level in raw["safetyLevels"]
         ],
         limits_text=raw["limitsText"],
+        blocked_claims=raw["blockedClaims"],
         output_contract=OutputContractContentDTO(
             patient_parent=raw["outputContract"]["patientParent"],
             professional=raw["outputContract"]["professional"],

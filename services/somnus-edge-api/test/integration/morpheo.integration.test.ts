@@ -98,6 +98,7 @@ describe("edge-api morpheo proxy (build plan §20 Checkpoint 10.3)", () => {
             { signalId: "cyanosis", context: "general", question: "¿Labios azulados?" },
           ],
           limitsText: ["No es un diagnóstico."],
+          blockedClaims: ["Morpheo sustituye una consulta."],
           outputContract: {
             patientParent: ["Resumen."],
             professional: ["Resumen."],
