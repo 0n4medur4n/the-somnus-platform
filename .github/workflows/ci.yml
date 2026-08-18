@@ -613,6 +613,16 @@ jobs:
       - name: Install (locked)
         run: uv sync --frozen
 
+      # WeasyPrint's native stack (build plan §5.6 PDF via WeasyPrint): Pango /
+      # Cairo / GDK-PixBuf. Present on the Linux runner so the real-PDF test
+      # runs here (it skips on dev boxes without these libraries).
+      - name: Install WeasyPrint system libraries
+        working-directory: ${{ github.workspace }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libgdk-pixbuf-2.0-0 libffi-dev
+
       - name: Ruff lint
         run: uv run ruff check .
 
