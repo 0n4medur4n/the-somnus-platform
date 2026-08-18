@@ -27,6 +27,7 @@ const CONTENT = {
     },
   ],
   limitsText: ["No és un diagnòstic."],
+  blockedClaims: ["Morpheo substitueix una consulta."],
   // The real artifact forbidden phrases: none may reach the screen (§20 exit).
   outputContract: {
     patientParent: ["Resumen."],

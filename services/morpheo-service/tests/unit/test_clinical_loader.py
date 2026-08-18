@@ -82,9 +82,9 @@ def test_versions_are_read_from_the_artifact() -> None:
     # The rule/spec version is unchanged; content_version was bumped when the
     # safety-signal questions were added (content-only change, §14a).
     assert bundle.workflow_version == "1.0"
-    assert bundle.content_version == "1.2"
+    assert bundle.content_version == "1.3"
     assert WORKFLOW_VERSION == "1.0"
-    assert CONTENT_VERSION == "1.2"
+    assert CONTENT_VERSION == "1.3"
 
 
 def test_clinical_bundle_is_cached() -> None:

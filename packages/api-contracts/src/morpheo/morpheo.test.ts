@@ -213,6 +213,7 @@ describe("AssessmentContentResponse", () => {
     safetyLevels: [{ id: "L0", name: "Emergencia actual", action: "Atención de emergencia." }],
     safetyPrompts: [{ signalId: "cyanosis", context: "general", question: "¿Labios azulados?" }],
     limitsText: ["No es un diagnóstico."],
+    blockedClaims: ["Morpheo sustituye una consulta médica o pediátrica."],
     outputContract: {
       patientParent: ["Resumen."],
       professional: ["Resumen."],

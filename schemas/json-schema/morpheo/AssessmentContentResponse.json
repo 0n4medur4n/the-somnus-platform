@@ -136,6 +136,13 @@
         "minLength": 1
       }
     },
+    "blockedClaims": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "outputContract": {
       "type": "object",
       "properties": {
@@ -177,6 +184,7 @@
     "safetyLevels",
     "safetyPrompts",
     "limitsText",
+    "blockedClaims",
     "outputContract"
   ],
   "additionalProperties": false

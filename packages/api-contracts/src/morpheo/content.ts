@@ -71,6 +71,10 @@ export const AssessmentContentResponseSchema = z
     // the approved CLM-006/007/008 replacement text — three separate sentences,
     // never merged. es-only; the single source consumers (report) lay out.
     limitsText: z.array(z.string().min(1)),
+    // The BLOQUEAR claim statements (build plan §15): the single source for a
+    // consumer's forbidden-phrase scanner, so AI-reworded output can never state
+    // a blocked claim even if the model produces it.
+    blockedClaims: z.array(z.string().min(1)),
     outputContract: OutputContractContentSchema,
   })
   .strict();

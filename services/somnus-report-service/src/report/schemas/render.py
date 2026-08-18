@@ -61,6 +61,9 @@ class ClinicalContentDTO(ContractModel):
     # The governed limits statements from Morpheo (CLM-006/007/008 replacement
     # text). The report lays them out verbatim; it never authors this text.
     limits_text: list[str]
+    # Every BLOQUEAR claim statement (§15): feeds the report's forbidden-phrase
+    # scanner so AI-reworded output can never state a blocked claim.
+    blocked_claims: list[str]
     output_contract: OutputContractContentDTO
 
 

@@ -89,9 +89,10 @@ def test_content_endpoint_serves_artifact_wording(client: TestClient) -> None:
     }
     assert {level["id"] for level in body["safetyLevels"]} == {"L0", "L1", "L2", "L3", "L4"}
     assert body["outputContract"]["forbiddenPhrases"]
-    assert body["contentVersion"] == "1.2"
+    assert body["contentVersion"] == "1.3"
     assert len(body["safetyPrompts"]) == 22
     assert body["limitsText"][0].startswith("Morpheo organiza los síntomas")
+    assert len(body["blockedClaims"]) == 6
 
 
 def test_create_blocked_on_missing_consent(client: TestClient) -> None:

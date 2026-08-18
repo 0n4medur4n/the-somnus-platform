@@ -124,8 +124,11 @@ def test_content_response_from_artifacts_conforms() -> None:
     assert len(payload["modules"]) == 6
     # The content endpoint reports the bumped content_version, not the rule version.
     assert payload["workflowVersion"] == "1.0"
-    assert payload["contentVersion"] == "1.2"
+    assert payload["contentVersion"] == "1.3"
     assert len(payload["safetyPrompts"]) == 22
+    # Every BLOQUEAR claim statement is exposed for a consumer's scanner (§15).
+    assert len(payload["blockedClaims"]) == 6
+    assert any("sustituye una consulta" in claim for claim in payload["blockedClaims"])
     # The governed limits statements are the CLM-006/007/008 replacement text,
     # verbatim and in order (build plan §14b / §15).
     assert payload["limitsText"] == [
