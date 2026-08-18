@@ -12,6 +12,7 @@ dependencies = [
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
     "uvicorn[standard]>=0.51.0",
+    "weasyprint>=63.0",
 ]
 
 [build-system]
@@ -50,6 +51,11 @@ strict = true
 mypy_path = "src"
 explicit_package_bases = true
 plugins = ["pydantic.mypy"]
+
+# WeasyPrint ships no type stubs; imported lazily in infrastructure/pdf.py.
+[[tool.mypy.overrides]]
+module = "weasyprint.*"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
