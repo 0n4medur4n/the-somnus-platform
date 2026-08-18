@@ -39,6 +39,15 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default=DEFAULT_LOCAL_DATABASE_URL, min_length=1, alias="DATABASE_URL"
     )
+    # The private morpheo service, source of the approved clinical content (§5.5).
+    morpheo_base_url: str = Field(default="http://127.0.0.1:8080", alias="MORPHEO_BASE_URL")
+    # Where rendered reports are stored + the base for their signed URLs (§9).
+    reports_dir: str = Field(default="./.reports", alias="REPORTS_DIR")
+    report_base_url: str = Field(default="http://127.0.0.1:8081/reports", alias="REPORT_BASE_URL")
+    # Signed-URL lifetime in seconds (short-lived, §9). Default 15 minutes.
+    signed_url_ttl_seconds: int = Field(
+        default=900, ge=60, le=86_400, alias="SIGNED_URL_TTL_SECONDS"
+    )
 
 
 def load_settings() -> Settings:
