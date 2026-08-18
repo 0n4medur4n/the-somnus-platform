@@ -1,10 +1,16 @@
 """Forbidden-phrase scanner (build plan §15 / Checkpoint 11.2).
 
-A deterministic guardrail run on AI-reworded output: it blocks any text that
-states a diagnosis, an exclusion, a medication instruction, or any other blocked
-claim, however it was worded. Built from Morpheo's `forbiddenPhrases` (templates
-with `[placeholder]` slots) + every BLOQUEAR claim statement (`blockedClaims`) —
-the single governed source, fetched from Morpheo. Mirrors morpheo's own scanner.
+A deterministic guardrail run on AI-reworded output. It is LITERAL: it blocks the
+governed phrases and their `[placeholder]` variants (case-insensitive) — Morpheo's
+`forbiddenPhrases` (templates with `[placeholder]` slots that match any run of
+text) + every BLOQUEAR claim statement (`blockedClaims`), the single governed
+source fetched from Morpheo. It mirrors morpheo's own scanner.
+
+Residual risk (accepted): being literal, it does NOT catch an arbitrary PARAPHRASE
+that avoids the exact wording, nor Unicode/whitespace obfuscation. The scanner is a
+backstop; the primary control against paraphrased claims is the `pending_review`
+human gate — AI text is never served until a person approves it. See
+tests/unit/test_rewriter.py::test_residual_risk_a_paraphrased_claim_is_not_caught.
 """
 
 from __future__ import annotations
