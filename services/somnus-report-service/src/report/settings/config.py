@@ -48,6 +48,15 @@ class Settings(BaseSettings):
     signed_url_ttl_seconds: int = Field(
         default=900, ge=60, le=86_400, alias="SIGNED_URL_TTL_SECONDS"
     )
+    # Controlled AI wording (§15). Model / temperature / prompt-template version
+    # are configuration, never hardcoded at call sites (§5.6). The key is a
+    # secret, injected in staging/production; empty locally (adapter is mocked).
+    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    llm_model: str = Field(default="gpt-5.6", min_length=1, alias="LLM_MODEL")
+    llm_temperature: float = Field(default=0.2, ge=0.0, le=2.0, alias="LLM_TEMPERATURE")
+    llm_prompt_template_version: str = Field(
+        default="rewrite_v1", min_length=1, alias="LLM_PROMPT_TEMPLATE_VERSION"
+    )
 
 
 def load_settings() -> Settings:
