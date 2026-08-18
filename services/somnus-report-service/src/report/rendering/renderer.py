@@ -58,7 +58,13 @@ def render_html(
         request=request,
         level=level,
         routed=routed[:_MAX_PATTERNS],
+        # The limits statements come from Morpheo (governed content), never the
+        # report's own locale files.
+        limits_text=content.limits_text,
         show_framing=request.level in ("L3", "L4"),
+        # The emergency notice is triggered EXCLUSIVELY by Morpheo's structured
+        # level being L0 — no other field or heuristic may show it (§14b / §15,
+        # clinical-governance condition; see README).
         is_emergency=request.level == "L0",
         template_version=template_version,
     )

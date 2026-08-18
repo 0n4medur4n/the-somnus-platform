@@ -129,6 +129,13 @@
         "additionalProperties": false
       }
     },
+    "limitsText": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "outputContract": {
       "type": "object",
       "properties": {
@@ -169,6 +176,7 @@
     "modules",
     "safetyLevels",
     "safetyPrompts",
+    "limitsText",
     "outputContract"
   ],
   "additionalProperties": false

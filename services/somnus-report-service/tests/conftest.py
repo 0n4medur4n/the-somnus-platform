@@ -59,6 +59,14 @@ def _content() -> ClinicalContentDTO:
                 action="Educación general y observación limitada.",
             ),
         ],
+        limits_text=[
+            "Morpheo organiza los síntomas y propone qué conviene valorar con un profesional.",
+            (
+                "Un resultado orientativo bajo no descarta un trastorno; "
+                "consulta si los síntomas persisten o preocupan."
+            ),
+            "Información general y preguntas para comentar con tu profesional.",
+        ],
         output_contract=OutputContractContentDTO(
             patient_parent=["Resumen."],
             professional=["Resumen."],
@@ -84,7 +92,7 @@ def make_request() -> RequestBuilder:
         return ReportRenderRequestDTO(
             assessment_id="assess-123",
             definition_version="1.0",
-            content_version="1.1",
+            content_version="1.2",
             locale=locale,
             role="adult",
             level=level,

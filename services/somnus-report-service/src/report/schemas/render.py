@@ -58,6 +58,9 @@ class ClinicalContentDTO(ContractModel):
     content_version: str
     modules: list[ModuleContentDTO]
     safety_levels: list[SafetyLevelContentDTO]
+    # The governed limits statements from Morpheo (CLM-006/007/008 replacement
+    # text). The report lays them out verbatim; it never authors this text.
+    limits_text: list[str]
     output_contract: OutputContractContentDTO
 
 

@@ -4,6 +4,13 @@ Content-version bumps to the versioned artifacts (build plan §14a). The rule/
 spec `workflow_version` changes only when rules, levels, or priorities change;
 content-only additions bump `content_version` (reviewed by the Safety Committee).
 
+## content_version 1.2 — 2026-08-18 (workflow_version 1.0, unchanged)
+
+- Limits section sourced from CLM-006/007/008 approved replacement text; removed
+  duplicate string from report-service locales. The content endpoint now serves
+  `limitsText` (three separate sentences, verbatim, es-only) so the report and
+  any other consumer lay out a single governed source instead of their own copy.
+
 ## content_version 1.1 — 2026-08-17 (workflow_version 1.0, unchanged)
 
 - Added `morpheo_safety_prompts_v1_es.json`: the 22 clinically-approved

@@ -41,6 +41,11 @@ class SafetyPromptContentDTO(ContractModel):
     question: str
 
 
+# The governed limits statements are the approved CLM replacement text, in
+# order, served verbatim as three separate sentences (build plan §14b / §15).
+_LIMITS_CLAIM_IDS = ("CLM-006", "CLM-007", "CLM-008")
+
+
 class AssessmentContentResponseDTO(ContractModel):
     locale: Literal["es", "en", "ca", "fr"]
     workflow_version: str
@@ -48,11 +53,14 @@ class AssessmentContentResponseDTO(ContractModel):
     modules: list[AssessmentModuleContentDTO]
     safety_levels: list[SafetyLevelContentDTO]
     safety_prompts: list[SafetyPromptContentDTO]
+    limits_text: list[str]
     output_contract: OutputContractContentDTO
 
 
 def build_content_response(bundle: ClinicalBundle) -> AssessmentContentResponseDTO:
     workflows = bundle.workflows
+    claims_by_id = {claim.id: claim for claim in workflows.claims_registry}
+    limits_text = [claims_by_id[claim_id].replacement for claim_id in _LIMITS_CLAIM_IDS]
     return AssessmentContentResponseDTO(
         locale="es",
         workflow_version=bundle.workflow_version,
@@ -77,6 +85,7 @@ def build_content_response(bundle: ClinicalBundle) -> AssessmentContentResponseD
             )
             for prompt in bundle.safety_prompts.prompts
         ],
+        limits_text=limits_text,
         output_contract=OutputContractContentDTO(
             patient_parent=list(workflows.output_contract.patient_parent),
             professional=list(workflows.output_contract.professional),
