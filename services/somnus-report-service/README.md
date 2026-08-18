@@ -21,6 +21,17 @@ wording is Morpheo's approved content (§14a); this service only lays it out.
   report no redacta ese texto; lo maqueta verbatim.
 - El marco *"Con la información disponible…"* sí es propio del report (requisito
   de presentación §14b), no contenido clínico por caso.
+- **Reescritura con IA (§15):** el LLM solo reformula prosa ya aprobada; nunca ve
+  ni devuelve el nivel, los flags ni el enrutamiento (`application/rewriter.py`).
+  Toda salida pasa por el escáner de frases prohibidas y queda `pending_review`:
+  no se sirve hasta que una persona la aprueba. **Riesgo residual aceptado:** el
+  escáner es *literal* (frases gobernadas + slots `[placeholder]`, sin distinción
+  de mayúsculas); no atrapa una **paráfrasis** que evite la redacción exacta ni
+  ofuscación Unicode/espacios. El control primario frente a paráfrasis es la
+  puerta de revisión humana (`pending_review`), no el escáner. Documentado y
+  fijado por `tests/unit/test_rewriter.py`
+  (`test_residual_risk_a_paraphrased_claim_is_not_caught...`) y por los cuatro
+  vectores de inyección parametrizados en el mismo archivo.
 
 ## Layout
 

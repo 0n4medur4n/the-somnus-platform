@@ -55,3 +55,44 @@ describe("edge (typed edge-api surface)", () => {
     expect(del).toHaveBeenCalledWith("/v1/sessions/current");
   });
 });
+
+describe("edge (Morpheo anonymous assessment surface)", () => {
+  it("getAssessmentContent gets the content path", () => {
+    void edge.getAssessmentContent();
+    expect(get).toHaveBeenCalledWith("/v1/assessments/content");
+  });
+
+  it("createAssessment posts the role + consent", () => {
+    void edge.createAssessment({ role: "adult", consentGiven: true });
+    expect(post).toHaveBeenCalledWith("/v1/assessments", { role: "adult", consentGiven: true });
+  });
+
+  it("submitAssessmentAnswer posts to the session answers path", () => {
+    void edge.submitAssessmentAnswer("sess-1", { kind: "signal", name: "cyanosis", value: "true" });
+    expect(post).toHaveBeenCalledWith("/v1/assessments/sess-1/answers", {
+      kind: "signal",
+      name: "cyanosis",
+      value: "true",
+    });
+  });
+
+  it("getAssessmentSummary gets the session summary path", () => {
+    void edge.getAssessmentSummary("sess-1");
+    expect(get).toHaveBeenCalledWith("/v1/assessments/sess-1/summary");
+  });
+
+  it("requestAssessmentClaimToken posts to the claim-token path", () => {
+    void edge.requestAssessmentClaimToken("sess-1");
+    expect(post).toHaveBeenCalledWith("/v1/assessments/sess-1/claim-token");
+  });
+
+  it("claimAssessment posts the token", () => {
+    void edge.claimAssessment("tok");
+    expect(post).toHaveBeenCalledWith("/v1/assessments/claim", { token: "tok" });
+  });
+
+  it("getAssessmentSnapshot gets the session snapshot path", () => {
+    void edge.getAssessmentSnapshot("sess-1");
+    expect(get).toHaveBeenCalledWith("/v1/assessments/sess-1/snapshot");
+  });
+});
