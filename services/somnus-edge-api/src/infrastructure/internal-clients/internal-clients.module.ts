@@ -44,6 +44,25 @@ async function buildMorpheoClient(config: EdgeConfig): Promise<CloudRunClient> {
 }
 
 /**
+ * DI token for the report-service client. edge-api renders reports through this
+ * client (build plan §20 Checkpoint 11.1); it carries an OIDC identity token,
+ * not a database connection (build plan §5.6).
+ */
+export const REPORT_CLIENT = Symbol("REPORT_CLIENT");
+export type ReportClient = CloudRunClient;
+
+async function buildReportClient(config: EdgeConfig): Promise<CloudRunClient> {
+  const audience = config.REPORT_AUDIENCE ?? config.REPORT_BASE_URL;
+  const tokenProvider = await createInternalTokenProvider(config, audience);
+  return createCloudRunClient({
+    baseUrl: config.REPORT_BASE_URL,
+    tokenProvider,
+    defaultTimeoutMs: config.INTERNAL_TIMEOUT_MS,
+    serviceName: "somnus-edge-api",
+  });
+}
+
+/**
  * Global so any composing module (`me`, `consent`, and the actor
  * resolver) can inject the identity client. Built once at bootstrap
  * from validated config.
@@ -59,7 +78,11 @@ async function buildMorpheoClient(config: EdgeConfig): Promise<CloudRunClient> {
       provide: MORPHEO_CLIENT,
       useFactory: (): Promise<CloudRunClient> => buildMorpheoClient(loadEdgeConfig(process.env)),
     },
+    {
+      provide: REPORT_CLIENT,
+      useFactory: (): Promise<CloudRunClient> => buildReportClient(loadEdgeConfig(process.env)),
+    },
   ],
-  exports: [IDENTITY_CLIENT, MORPHEO_CLIENT],
+  exports: [IDENTITY_CLIENT, MORPHEO_CLIENT, REPORT_CLIENT],
 })
 export class InternalClientsModule {}
