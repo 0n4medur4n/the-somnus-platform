@@ -97,6 +97,7 @@ describe("edge-api morpheo proxy (build plan §20 Checkpoint 10.3)", () => {
           safetyPrompts: [
             { signalId: "cyanosis", context: "general", question: "¿Labios azulados?" },
           ],
+          limitsText: ["No es un diagnóstico."],
           outputContract: {
             patientParent: ["Resumen."],
             professional: ["Resumen."],

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+import pytest
+
 from report.rendering.renderer import TEMPLATE_VERSION, render_html
 from report.schemas.render import (
     ClinicalContentDTO,
@@ -27,7 +29,7 @@ def test_versions_are_stamped_in_the_output(
 ) -> None:
     result = render_html(make_request(level="L4"), content)
     assert result.template_version == TEMPLATE_VERSION
-    for stamp in (TEMPLATE_VERSION, "1.0", "1.1", "assess-123", "2026-08-17T12:00:00Z"):
+    for stamp in (TEMPLATE_VERSION, "1.0", "1.2", "assess-123", "2026-08-17T12:00:00Z"):
         assert stamp in result.html
 
 
@@ -56,8 +58,31 @@ def test_emergency_still_stamps_every_version(
     # Removing the normal sections must NOT drop the version/immutability stamp:
     # the meta header is rendered for every level, including L0.
     html = render_html(make_request(level="L0", routes=(), stop=True), content).html
-    for stamp in (TEMPLATE_VERSION, "1.0", "1.1", "assess-123", "2026-08-17T12:00:00Z"):
+    for stamp in (TEMPLATE_VERSION, "1.0", "1.2", "assess-123", "2026-08-17T12:00:00Z"):
         assert stamp in html
+
+
+@pytest.mark.parametrize("level", [None, "L1", "L2", "L3", "L4"])
+def test_emergency_notice_never_triggers_below_l0(
+    level: str | None, content: ClinicalContentDTO, make_request: RequestBuilder
+) -> None:
+    # Clinical governance: the emergency notice is triggered EXCLUSIVELY by
+    # Morpheo's structured level == "L0". Even with stop=True and every route,
+    # no other field may surface it.
+    html = render_html(make_request(level=level, stop=True, routes=("INS", "SLP")), content).html
+    assert "care-level emergency" not in html
+    assert 'role="alert"' not in html
+    assert "no se ofrecen hipótesis" not in html
+
+
+def test_emergency_notice_triggers_only_on_l0(
+    content: ClinicalContentDTO, make_request: RequestBuilder
+) -> None:
+    # ...and L0 shows it even with stop=False and routes present: the trigger is
+    # the level alone, not `stop` or any other signal.
+    html = render_html(make_request(level="L0", stop=False, routes=("INS",)), content).html
+    assert "care-level emergency" in html
+    assert 'role="alert"' in html
 
 
 def test_clinical_content_is_html_escaped(make_request: RequestBuilder) -> None:
@@ -70,6 +95,7 @@ def test_clinical_content_is_html_escaped(make_request: RequestBuilder) -> None:
             )
         ],
         safety_levels=[SafetyLevelContentDTO(id="L4", name="Info", action="A")],
+        limits_text=["Información general y preguntas para comentar con tu profesional."],
         output_contract=OutputContractContentDTO(
             patient_parent=[], professional=[], forbidden_phrases=[]
         ),

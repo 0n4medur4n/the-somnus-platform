@@ -40,6 +40,7 @@ const CONTENT = {
       question: "¿Casi un accidente por sueño?",
     },
   ],
+  limitsText: ["No es un diagnóstico."],
   outputContract: {
     patientParent: ["Resumen."],
     professional: ["Resumen."],

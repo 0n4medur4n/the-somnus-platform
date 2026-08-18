@@ -67,6 +67,10 @@ export const AssessmentContentResponseSchema = z
     modules: z.array(AssessmentModuleContentSchema),
     safetyLevels: z.array(SafetyLevelContentSchema),
     safetyPrompts: z.array(SafetyPromptContentSchema),
+    // The governed limits statements (build plan §14b), sourced verbatim from
+    // the approved CLM-006/007/008 replacement text — three separate sentences,
+    // never merged. es-only; the single source consumers (report) lay out.
+    limitsText: z.array(z.string().min(1)),
     outputContract: OutputContractContentSchema,
   })
   .strict();

@@ -26,6 +26,7 @@ const CONTENT = {
       question: "¿Le han visto pausas al respirar?",
     },
   ],
+  limitsText: ["No és un diagnòstic."],
   // The real artifact forbidden phrases: none may reach the screen (§20 exit).
   outputContract: {
     patientParent: ["Resumen."],

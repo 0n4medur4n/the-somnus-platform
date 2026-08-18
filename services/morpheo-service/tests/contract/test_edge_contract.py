@@ -124,8 +124,18 @@ def test_content_response_from_artifacts_conforms() -> None:
     assert len(payload["modules"]) == 6
     # The content endpoint reports the bumped content_version, not the rule version.
     assert payload["workflowVersion"] == "1.0"
-    assert payload["contentVersion"] == "1.1"
+    assert payload["contentVersion"] == "1.2"
     assert len(payload["safetyPrompts"]) == 22
+    # The governed limits statements are the CLM-006/007/008 replacement text,
+    # verbatim and in order (build plan §14b / §15).
+    assert payload["limitsText"] == [
+        "Morpheo organiza los síntomas y propone qué conviene valorar con un profesional.",
+        (
+            "Un resultado orientativo bajo no descarta un trastorno; "
+            "consulta si los síntomas persisten o preocupan."
+        ),
+        "Información general y preguntas para comentar con tu profesional.",
+    ]
 
 
 # --- the engine's real output maps to a conforming result DTO ---

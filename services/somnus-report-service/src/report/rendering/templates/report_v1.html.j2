@@ -73,7 +73,9 @@
     {% endif %}
     <section class="limits">
       <h2>{{ strings.limits }}</h2>
-      <p>{{ strings.limitsText }}</p>
+      {% for sentence in limits_text %}
+      <p>{{ sentence }}</p>
+      {% endfor %}
     </section>
   </body>
 </html>
