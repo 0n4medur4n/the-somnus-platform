@@ -78,6 +78,11 @@ export const EdgeConfigSchema = z.object({
   MORPHEO_BASE_URL: z.string().url().default("http://127.0.0.1:8080"),
   // OIDC audience for morpheo's Cloud Run URL; defaults to MORPHEO_BASE_URL.
   MORPHEO_AUDIENCE: z.string().min(1).optional(),
+  // The private report service (build plan §5.6 / §20 Checkpoint 11.1). edge-api
+  // renders reports through it and returns the short-lived signed URLs (§9).
+  REPORT_BASE_URL: z.string().url().default("http://127.0.0.1:8081"),
+  // OIDC audience for the report service's Cloud Run URL; defaults to REPORT_BASE_URL.
+  REPORT_AUDIENCE: z.string().min(1).optional(),
   // How internal calls are authenticated. `gcp`: mint a real Google
   // OIDC identity token (production on Cloud Run). `insecure-dev`: send
   // a fixed dev token -- for local/docker/tests where there is no GCP
