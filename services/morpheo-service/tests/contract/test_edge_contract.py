@@ -30,6 +30,7 @@ from morpheo.schemas.assessment import (
     AssessmentSnapshotResponseDTO,
 )
 from morpheo.schemas.content import build_content_response
+from morpheo.schemas.sources import build_clinical_sources
 
 SCHEMA_DIR = Path(__file__).resolve().parents[4] / "schemas" / "json-schema" / "morpheo"
 BUNDLE = load_clinical()
@@ -52,6 +53,7 @@ def test_all_schema_artifacts_are_present() -> None:
         "AssessmentClaimRequest",
         "AssessmentClaimResponse",
         "AssessmentSnapshotResponse",
+        "ClinicalSourcesResponse",
     }
     present = {path.stem for path in SCHEMA_DIR.glob("*.json")}
     assert expected <= present
@@ -139,6 +141,17 @@ def test_content_response_from_artifacts_conforms() -> None:
         ),
         "Información general y preguntas para comentar con tu profesional.",
     ]
+
+
+def test_clinical_sources_from_artifacts_conforms() -> None:
+    payload = _dump(build_clinical_sources(BUNDLE))
+    jsonschema.validate(payload, _schema("ClinicalSourcesResponse"))
+    # The fifteen approved clinical sources (SRC-01…SRC-15), for report grounding.
+    assert len(payload["sources"]) == 15
+    ids = {source["id"] for source in payload["sources"]}
+    assert ids == {f"SRC-{n:02d}" for n in range(1, 16)}
+    assert payload["contentVersion"] == "1.3"
+    assert all(source["citation"] and source["use"] for source in payload["sources"])
 
 
 # --- the engine's real output maps to a conforming result DTO ---

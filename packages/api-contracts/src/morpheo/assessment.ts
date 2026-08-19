@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AssessmentContentResponseSchema } from "./content.js";
+import { AssessmentContentResponseSchema, ClinicalSourcesResponseSchema } from "./content.js";
 import {
   AnswerKindSchema,
   BaseOrientationSchema,
@@ -129,6 +129,7 @@ export type AssessmentSnapshotResponse = z.infer<typeof AssessmentSnapshotRespon
  */
 export const MORPHEO_CONTRACT_SCHEMAS = {
   AssessmentContentResponse: AssessmentContentResponseSchema,
+  ClinicalSourcesResponse: ClinicalSourcesResponseSchema,
   AssessmentCreateRequest: AssessmentCreateRequestSchema,
   AssessmentCreateResponse: AssessmentCreateResponseSchema,
   AnswerSubmitRequest: AnswerSubmitRequestSchema,

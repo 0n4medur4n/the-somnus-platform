@@ -18,6 +18,7 @@ from sqlalchemy.orm import sessionmaker
 
 from morpheo.api.assessment import router as assessment_router
 from morpheo.api.health import router as health_router
+from morpheo.api.sources import router as sources_router
 from morpheo.api.version import router as version_router
 from morpheo.infrastructure.correlation import CorrelationIdMiddleware
 from morpheo.infrastructure.db import create_engine_from_url
@@ -56,6 +57,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(version_router)
     app.include_router(assessment_router)
+    app.include_router(sources_router)
 
     return app
 
