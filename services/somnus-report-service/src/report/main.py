@@ -9,6 +9,7 @@ propagation, no production stack traces.
 
 from __future__ import annotations
 
+import json
 from datetime import timedelta
 from pathlib import Path
 
@@ -19,13 +20,17 @@ from report.api.health import router as health_router
 from report.api.reports import router as reports_router
 from report.api.version import router as version_router
 from report.application.render_service import RenderService
+from report.application.retrieval import SourceRetriever, VectorStoreRetriever
 from report.infrastructure.correlation import CorrelationIdMiddleware
 from report.infrastructure.db import create_engine_from_url
 from report.infrastructure.errors import register_exception_handlers
+from report.infrastructure.llm.openai_embedding_adapter import OpenAiEmbeddingAdapter
 from report.infrastructure.logging import configure_logging
 from report.infrastructure.morpheo_client import MorpheoContentClient
 from report.infrastructure.pdf import WeasyPrintPdfRenderer
 from report.infrastructure.storage import LocalStorageBackend
+from report.repositories.sources_repository import SourcesRepository
+from report.schemas.retrieval import CorpusEntry
 from report.settings.config import Settings, load_settings
 
 
@@ -52,7 +57,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # is opened until a query runs, so the render endpoint still boots without a DB.
     engine = create_engine_from_url(settings.database_url)
     app.state.engine = engine
-    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.session_factory = session_factory
+
+    # Clinical grounding (§3.6b), explanation-only and optional: wired only when an
+    # embedding key is configured. It attaches citations to the professional output
+    # and can never affect the level or routing (guarded in RenderService). No key
+    # -> no retriever -> reports render deterministically with no citations.
+    retriever: SourceRetriever | None = None
+    if settings.openai_api_key:
+
+        def _corpus_loader(content_version: str) -> list[CorpusEntry]:
+            with session_factory() as session:
+                rows = SourcesRepository(session).list_version(content_version)
+                return [
+                    CorpusEntry(
+                        source_id=row.source_id,
+                        citation=row.citation,
+                        url=row.url,
+                        vector=json.loads(row.embedding),
+                    )
+                    for row in rows
+                    if row.embedding
+                ]
+
+        retriever = VectorStoreRetriever(
+            OpenAiEmbeddingAdapter(settings.openai_api_key),
+            _corpus_loader,
+            model=settings.embedding_model,
+            dimensions=settings.embedding_dimensions,
+        )
 
     # The render pipeline. WeasyPrint + the morpheo client are lazy (no native
     # libs loaded, no network) until a report is actually rendered, so the app
@@ -65,6 +99,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ),
         signed_url_ttl=timedelta(seconds=settings.signed_url_ttl_seconds),
         ai_rewrite_enabled=settings.ai_rewrite_enabled,
+        retriever=retriever,
     )
 
     app.add_middleware(CorrelationIdMiddleware)
