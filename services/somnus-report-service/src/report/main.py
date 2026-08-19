@@ -13,12 +13,14 @@ from datetime import timedelta
 from pathlib import Path
 
 from fastapi import FastAPI
+from sqlalchemy.orm import sessionmaker
 
 from report.api.health import router as health_router
 from report.api.reports import router as reports_router
 from report.api.version import router as version_router
 from report.application.render_service import RenderService
 from report.infrastructure.correlation import CorrelationIdMiddleware
+from report.infrastructure.db import create_engine_from_url
 from report.infrastructure.errors import register_exception_handlers
 from report.infrastructure.logging import configure_logging
 from report.infrastructure.morpheo_client import MorpheoContentClient
@@ -44,6 +46,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.env = settings.env
+
+    # Lazy engine (build plan §2 cost policy: no eager pool warm-up). The clinical
+    # grounding corpus (Checkpoint 11.3) lives in `somnus_reporting`; no connection
+    # is opened until a query runs, so the render endpoint still boots without a DB.
+    engine = create_engine_from_url(settings.database_url)
+    app.state.engine = engine
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
 
     # The render pipeline. WeasyPrint + the morpheo client are lazy (no native
     # libs loaded, no network) until a report is actually rendered, so the app
