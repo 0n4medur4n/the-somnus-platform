@@ -22,3 +22,9 @@ class ClinicalSourceDTO:
 class ClinicalSourcesDTO:
     content_version: str
     sources: list[ClinicalSourceDTO]
+
+
+@dataclass(frozen=True)
+class EmbeddedSourceDTO:
+    source: ClinicalSourceDTO
+    vector: list[float]
