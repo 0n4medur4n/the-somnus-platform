@@ -63,6 +63,14 @@ class Settings(BaseSettings):
     # this off, the render pipeline is deterministic-only and the Rewriter cannot
     # be invoked. See report.application.ai_rewrite.
     ai_rewrite_enabled: bool = Field(default=False, alias="AI_REWRITE_ENABLED")
+    # Embeddings for explanation-only clinical grounding (build plan §3.6b). The
+    # dimensions are fixed at the model default (3072); reducing them requires a
+    # documented decision. Used only over the approved corpus — never on the
+    # decision path (§14b). The key is the same OPENAI_API_KEY (empty locally).
+    embedding_model: str = Field(
+        default="text-embedding-3-large", min_length=1, alias="EMBEDDING_MODEL"
+    )
+    embedding_dimensions: int = Field(default=3072, ge=1, le=3072, alias="EMBEDDING_DIMENSIONS")
 
 
 def load_settings() -> Settings:

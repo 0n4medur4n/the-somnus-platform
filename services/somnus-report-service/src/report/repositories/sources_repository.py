@@ -8,11 +8,13 @@ decision — this is grounding data, outside the clinical decision path (§14b).
 
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from report.infrastructure.models import ClinicalSourceRow
-from report.schemas.sources import ClinicalSourceDTO
+from report.schemas.sources import ClinicalSourceDTO, EmbeddedSourceDTO
 
 
 class SourcesRepository:
@@ -33,6 +35,27 @@ class SourcesRepository:
                 use_text=source.use,
             )
             for source in sources
+        )
+        self._session.flush()
+
+    def replace_embedded(
+        self, content_version: str, embedded: list[EmbeddedSourceDTO], model: str
+    ) -> None:
+        """Replace a content version with rows that carry their embeddings."""
+        self._session.execute(
+            delete(ClinicalSourceRow).where(ClinicalSourceRow.content_version == content_version)
+        )
+        self._session.add_all(
+            ClinicalSourceRow(
+                content_version=content_version,
+                source_id=entry.source.id,
+                citation=entry.source.citation,
+                url=entry.source.url,
+                use_text=entry.source.use,
+                embedding=json.dumps(entry.vector),
+                embedding_model=model,
+            )
+            for entry in embedded
         )
         self._session.flush()
 

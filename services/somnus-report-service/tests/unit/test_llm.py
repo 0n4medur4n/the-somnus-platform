@@ -10,7 +10,13 @@ import pytest
 
 from report.infrastructure.llm.audit import build_audit
 from report.infrastructure.llm.openai_adapter import OpenAiAdapter
-from report.infrastructure.llm.provider import LlmProvider, LlmRequest, LlmResponse
+from report.infrastructure.llm.openai_embedding_adapter import OpenAiEmbeddingAdapter
+from report.infrastructure.llm.provider import (
+    EmbeddingRequest,
+    LlmProvider,
+    LlmRequest,
+    LlmResponse,
+)
 
 
 class _FakeProvider:
@@ -53,6 +59,38 @@ def test_openai_adapter_forwards_the_prompt_and_maps_the_text(
     assert captured["model"] == "gpt-5.6"
     assert captured["temperature"] == 0.2
     assert captured["api_key"] == "secret"
+
+
+def test_openai_embedding_adapter_forwards_model_dimensions_and_maps_vectors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    class _Embeddings:
+        def create(self, **kwargs: Any) -> Any:
+            captured.update(kwargs)
+            data = [SimpleNamespace(embedding=[0.1, 0.2, 0.3])]
+            return SimpleNamespace(model="text-embedding-3-large", data=data)
+
+    class _Client:
+        def __init__(self, api_key: str) -> None:
+            captured["api_key"] = api_key
+            self.embeddings = _Embeddings()
+
+    import openai
+
+    monkeypatch.setattr(openai, "OpenAI", _Client)
+    response = OpenAiEmbeddingAdapter(api_key="secret").embed(
+        EmbeddingRequest(
+            inputs=["approved corpus text"], model="text-embedding-3-large", dimensions=3072
+        )
+    )
+
+    assert response.vectors == [[0.1, 0.2, 0.3]]
+    assert response.model == "text-embedding-3-large"
+    assert captured["model"] == "text-embedding-3-large"
+    assert captured["dimensions"] == 3072
+    assert captured["input"] == ["approved corpus text"]
 
 
 def test_audit_carries_only_hashes_never_raw_health_text() -> None:
