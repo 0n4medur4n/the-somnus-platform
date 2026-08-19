@@ -70,6 +70,16 @@
       </ul>
     </section>
     {% endif %}
+    {% if citations %}
+    <section class="sources">
+      <h2>{{ strings.sources }}</h2>
+      <ul>
+        {% for citation in citations %}
+        <li class="source" data-source-id="{{ citation.source_id }}">{{ citation.citation }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
     {% endif %}
     <section class="limits">
       <h2>{{ strings.limits }}</h2>

@@ -8,6 +8,7 @@ version and the definition/content versions are stamped into every output.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from report.rendering.i18n import strings_for
 from report.schemas.render import ClinicalContentDTO, ReportRenderRequestDTO
+from report.schemas.retrieval import RetrievedSource
 
 TEMPLATE_VERSION = "report_v1"
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -45,6 +47,7 @@ def render_html(
     request: ReportRenderRequestDTO,
     content: ClinicalContentDTO,
     template_version: str = TEMPLATE_VERSION,
+    citations: Sequence[RetrievedSource] = (),
 ) -> RenderedReport:
     modules_by_id = {module.id: module for module in content.modules}
     routed = [modules_by_id[route] for route in request.routes if route in modules_by_id]
@@ -66,6 +69,10 @@ def render_html(
         # level being L0 — no other field or heuristic may show it (§14b / §15,
         # clinical-governance condition; see README).
         is_emergency=request.level == "L0",
+        # Explanation-only grounding (§3.6b): citations attach to the professional
+        # output. They render into their own section and NEVER affect the level,
+        # the routing, or any other content — proven by the determinism test.
+        citations=citations,
         template_version=template_version,
     )
     return RenderedReport(

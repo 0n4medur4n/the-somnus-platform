@@ -92,13 +92,14 @@ def make_request() -> RequestBuilder:
         level: SafetyLevel | None = "L4",
         routes: tuple[str, ...] = ("INS",),
         stop: bool = False,
+        role: str = "adult",
     ) -> ReportRenderRequestDTO:
         return ReportRenderRequestDTO(
             assessment_id="assess-123",
             definition_version="1.0",
             content_version="1.2",
             locale=locale,
-            role="adult",
+            role=role,
             level=level,
             stop=stop,
             triggered_rules=[],

@@ -45,6 +45,18 @@ wording is Morpheo's approved content (§14a); this service only lays it out.
   por `tests/unit/test_rewriter.py`
   (`test_residual_risk_a_paraphrased_claim_is_not_caught...`) y por los cuatro
   vectores de inyección parametrizados en el mismo archivo.
+- **Grounding con RAG (§3.6b): solo explicativo, fuera de la ruta de decisión.**
+  Para la salida profesional, el report recupera por similitud (coseno sobre el
+  corpus embebido, `text-embedding-3-large` 3072-dim) la(s) fuente(s) clínica(s)
+  y adjunta su cita en una sección propia (`Fuentes clínicas`). La recuperación
+  **nunca cambia el nivel, el enrutamiento ni ninguna decisión**: alimenta solo esa
+  sección, está **role-gated** (solo `professional`), consulta **solo términos
+  aprobados** (nombres de módulo — nunca PII ni texto de salud), y **cualquier fallo
+  degrada a sin citas** (`RenderService._citations`, guardado). Fijado por
+  `tests/unit/test_render_determinism.py` (misma decisión con recuperación correcta,
+  errónea, vacía o nula) y `tests/unit/test_retrieval.py`. Los embeddings pasan por
+  la abstracción de proveedor (sin llamadas directas al SDK) y se desactivan solos
+  si no hay clave configurada.
 
 ## Layout
 
