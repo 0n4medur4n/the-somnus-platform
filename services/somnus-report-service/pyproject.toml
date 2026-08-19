@@ -7,12 +7,15 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "alembic>=1.18.5",
     "fastapi>=0.139.2",
     "httpx>=0.28.1",
     "jinja2>=3.1.4",
     "openai>=1.50.0",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
+    "pymysql>=1.2.0",
+    "sqlalchemy>=2.0.51",
     "uvicorn[standard]>=0.51.0",
     "weasyprint>=63.0",
 ]
@@ -29,6 +32,7 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.22",
+    "types-pymysql>=1.1.0.20260518",
 ]
 
 [tool.ruff]
@@ -56,6 +60,10 @@ plugins = ["pydantic.mypy"]
 # WeasyPrint ships no type stubs; imported lazily in infrastructure/pdf.py.
 [[tool.mypy.overrides]]
 module = "weasyprint.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "alembic.*"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

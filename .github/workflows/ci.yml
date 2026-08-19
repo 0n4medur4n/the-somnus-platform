@@ -597,8 +597,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # The report service (build plan §5.6 / Phase 11): uv + Ruff + strict mypy
-    # + pytest. Checkpoint 11.1 renders deterministic reports from an approved
-    # Morpheo result; no database in this stage. Coverage gate (pyproject) >= 80%.
+    # + pytest. Checkpoint 11.3 adds the clinical-source corpus in `somnus_reporting`
+    # for explanation-only grounding (§3.6b): Alembic migrations + integration tests
+    # against a MySQL 8 stand-in (§3.9 / §19). Coverage gate (pyproject) >= 80%.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpw"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
     defaults:
       run:
         working-directory: services/somnus-report-service
@@ -630,6 +643,12 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libgdk-pixbuf-2.0-0 libffi-dev
 
+      # The report logical database (build plan §3.9), for the grounding corpus.
+      - name: Create reporting database
+        run: |
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -prootpw -e \
+            "CREATE DATABASE IF NOT EXISTS somnus_reporting CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+
       - name: Ruff lint
         run: uv run ruff check .
 
@@ -641,3 +660,5 @@ jobs:
 
       - name: Pytest (coverage gate)
         run: uv run pytest -q
+        env:
+          DATABASE_URL: mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_reporting
