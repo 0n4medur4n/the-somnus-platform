@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "contentVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^SRC-\\d{2}$"
+          },
+          "citation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "use": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "citation",
+          "url",
+          "use"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "contentVersion",
+    "sources"
+  ],
+  "additionalProperties": false
+}

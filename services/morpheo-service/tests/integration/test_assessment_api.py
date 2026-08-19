@@ -95,6 +95,17 @@ def test_content_endpoint_serves_artifact_wording(client: TestClient) -> None:
     assert len(body["blockedClaims"]) == 6
 
 
+def test_clinical_sources_endpoint_serves_the_approved_corpus(client: TestClient) -> None:
+    response = client.get("/internal/v1/clinical-sources")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["contentVersion"] == "1.3"
+    assert {source["id"] for source in body["sources"]} == {f"SRC-{n:02d}" for n in range(1, 16)}
+    first = body["sources"][0]
+    assert set(first) == {"id", "citation", "url", "use"}
+    assert first["citation"] and first["use"]
+
+
 def test_create_blocked_on_missing_consent(client: TestClient) -> None:
     response = client.post(BASE, json={"role": "adult", "consentGiven": False, "ageYears": 30})
     assert response.status_code == 200

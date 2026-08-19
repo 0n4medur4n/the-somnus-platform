@@ -79,3 +79,29 @@ export const AssessmentContentResponseSchema = z
   })
   .strict();
 export type AssessmentContentResponse = z.infer<typeof AssessmentContentResponseSchema>;
+
+/**
+ * An approved clinical source (SRC-01…SRC-15) from the Morpheo artifact (build
+ * plan §20 Checkpoint 11.3 / §3.6b). These are bibliographic references the
+ * deterministic rules already cite; the report service embeds them for
+ * explanation-only grounding. This is professional-grounding data, NOT part of
+ * the SPA-facing assessment content, so it is served from its own endpoint.
+ */
+export const ClinicalSourceSchema = z
+  .object({
+    id: z.string().regex(/^SRC-\d{2}$/),
+    citation: z.string().min(1),
+    url: z.string().min(1),
+    use: z.string().min(1),
+  })
+  .strict();
+export type ClinicalSource = z.infer<typeof ClinicalSourceSchema>;
+
+/** morpheo -> report: the approved clinical-source corpus + its content version. */
+export const ClinicalSourcesResponseSchema = z
+  .object({
+    contentVersion: z.string().min(1),
+    sources: z.array(ClinicalSourceSchema),
+  })
+  .strict();
+export type ClinicalSourcesResponse = z.infer<typeof ClinicalSourcesResponseSchema>;
