@@ -6,10 +6,13 @@ governed phrases and their `[placeholder]` variants (case-insensitive) — Morph
 text) + every BLOQUEAR claim statement (`blockedClaims`), the single governed
 source fetched from Morpheo. It mirrors morpheo's own scanner.
 
-Residual risk (accepted): being literal, it does NOT catch an arbitrary PARAPHRASE
-that avoids the exact wording, nor Unicode/whitespace obfuscation. The scanner is a
-backstop; the primary control against paraphrased claims is the `pending_review`
-human gate — AI text is never served until a person approves it. See
+Residual risk (DEFERRED, not mitigated): being literal, it does NOT catch an
+arbitrary PARAPHRASE that avoids the exact wording, nor Unicode/whitespace
+obfuscation. It is the ONLY automated control that exists today. The human review
+that would compensate for the gap does not exist yet (no consumer of
+`pending_review`), so AI rewriting is disabled by `AI_REWRITE_ENABLED` (default
+off; see report.application.ai_rewrite) and must not be enabled until that
+mechanism is built. See
 tests/unit/test_rewriter.py::test_residual_risk_a_paraphrased_claim_is_not_caught.
 """
 

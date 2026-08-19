@@ -124,8 +124,9 @@ def test_residual_risk_a_paraphrased_claim_is_not_caught_by_the_literal_scanner(
 
     # The literal scanner does not flag it...
     assert result.blocked_phrases == []
-    # ...but it is STILL pending_review — never auto-served. The human review gate
-    # (not the scanner) is the primary control against paraphrased claims.
+    # ...it is marked pending_review, but NOTE: no human-review mechanism consumes
+    # that status yet, so this gap is DEFERRED, not mitigated. AI rewriting stays
+    # disabled by AI_REWRITE_ENABLED (default off) until that mechanism is built.
     assert result.review_status == PENDING_REVIEW
 
 

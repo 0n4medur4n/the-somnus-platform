@@ -24,20 +24,25 @@ wording is Morpheo's approved content (§14a); this service only lays it out.
 - **Reescritura con IA (§15):** el LLM solo reformula prosa ya aprobada; nunca ve
   ni devuelve el nivel, los flags ni el enrutamiento (`application/rewriter.py`).
   Toda salida pasa por el escáner de frases prohibidas y queda `pending_review`.
-- **Estado real del control (11.2):** el `Rewriter` **todavía no está cableado** a
-  ningún endpoint ni al pipeline de render (`render_service`/`api/reports` no lo
-  invocan); no se ejecuta en producción. `pending_review` existe hoy **solo como
-  valor de estado** (retornado por `Rewriter.rewrite()` y registrado en el audit
-  §15): **no hay** endpoint, UI de administración, rol/permiso ni persistencia que
-  permita a una persona ver, aprobar o rechazar ese contenido. **No existe aún una
-  puerta de revisión humana.**
-- **Riesgo residual (DIFERIDO, no mitigado):** el escáner es *literal* (frases
-  gobernadas + slots `[placeholder]`, sin distinción de mayúsculas); no atrapa una
-  **paráfrasis** que evite la redacción exacta ni ofuscación Unicode/espacios. El
-  escáner literal es el **único control automático** que existe hoy. La revisión
-  humana que compensaría este hueco **está pendiente de un mecanismo que aún no se
-  ha construido**; hasta que exista, la reescritura con IA no debe habilitarse en
-  producción. Documentado y fijado por `tests/unit/test_rewriter.py`
+- **Reescritura con IA: desactivada explícitamente.** La reescritura con IA está
+  **desactivada vía `AI_REWRITE_ENABLED` (default off)** hasta que exista un
+  mecanismo de revisión humana; **no debe activarse en ningún entorno hasta que ese
+  mecanismo esté construido y revisado.** El control es estructural, no accidental:
+  `RenderService._finalize_html` es el único punto por donde la IA podría entrar al
+  pipeline; con el flag off el `Rewriter` nunca se construye ni se invoca, y con el
+  flag on se rechaza servir salida sin revisar (§15). Fijado por
+  `tests/unit/test_render_service.py`
+  (`test_ai_rewrite_off_stores_the_deterministic_html_byte_for_byte`,
+  `test_ai_rewrite_on_refuses_to_serve_unreviewed_output`). Hoy `pending_review`
+  existe **solo como valor de estado**: no hay endpoint, UI, rol ni persistencia
+  para aprobar/rechazar contenido — **no existe aún una puerta de revisión humana**.
+- **Riesgo residual (diferido, no mitigado):** el escáner de frases prohibidas es
+  *literal* (frases gobernadas + slots `[placeholder]`, sin distinción de
+  mayúsculas); no atrapa una **paráfrasis** que evite la redacción exacta ni
+  ofuscación Unicode/espacios, y es el **único control automático** que existe hoy.
+  Como la IA está desactivada por flag, este hueco no es explotable en producción;
+  se reevaluará cuando se construya el mecanismo de revisión. Documentado y fijado
+  por `tests/unit/test_rewriter.py`
   (`test_residual_risk_a_paraphrased_claim_is_not_caught...`) y por los cuatro
   vectores de inyección parametrizados en el mismo archivo.
 
