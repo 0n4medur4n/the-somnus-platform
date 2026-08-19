@@ -55,6 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             root=Path(settings.reports_dir), base_url=settings.report_base_url
         ),
         signed_url_ttl=timedelta(seconds=settings.signed_url_ttl_seconds),
+        ai_rewrite_enabled=settings.ai_rewrite_enabled,
     )
 
     app.add_middleware(CorrelationIdMiddleware)

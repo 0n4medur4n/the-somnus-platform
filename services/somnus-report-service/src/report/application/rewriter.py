@@ -3,8 +3,14 @@
 The LLM ONLY rewrites already-approved prose in plain language. It never sees or
 returns the level, the safety flags, or the routing — those are the deterministic
 result, stamped separately — so the AI cannot alter them. Its output is scanned
-for forbidden phrases / BLOQUEAR claims and flagged `pending_review`: it is never
-user-visible until a human approves it. The rewriter can never mark text approved.
+for forbidden phrases / BLOQUEAR claims and flagged `pending_review`. The rewriter
+can never mark text approved.
+
+Status (Checkpoint 11.2): this class is NOT wired into the render pipeline and AI
+rewriting is disabled by `AI_REWRITE_ENABLED` (default off; see
+report.application.ai_rewrite). `pending_review` is only a status today — no
+endpoint, UI, role, or persistence exists to review, approve, or reject the output.
+Until such a human-review mechanism is built, no AI text may be served (§15).
 """
 
 from __future__ import annotations

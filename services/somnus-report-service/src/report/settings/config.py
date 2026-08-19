@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     llm_prompt_template_version: str = Field(
         default="rewrite_v1", min_length=1, alias="LLM_PROMPT_TEMPLATE_VERSION"
     )
+    # Master switch for AI rewriting (§15). OFF by default and unset everywhere.
+    # It must stay off in every environment until a human-review mechanism for
+    # `pending_review` content exists — it does not yet (Checkpoint 11.2). With
+    # this off, the render pipeline is deterministic-only and the Rewriter cannot
+    # be invoked. See report.application.ai_rewrite.
+    ai_rewrite_enabled: bool = Field(default=False, alias="AI_REWRITE_ENABLED")
 
 
 def load_settings() -> Settings:

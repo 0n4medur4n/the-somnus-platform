@@ -363,6 +363,13 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: "0.11.26"
+          # Do NOT save the uv cache from this job. The morpheo/report jobs run in
+          # parallel and save the same key (same uv.lock hash); this slower
+          # full-stack job loses the race and its cache-save post-action fails
+          # deterministically ("cache already exists"), reddening the badge even
+          # though the E2E golden path passes. Disabling the cache here removes the
+          # post-action entirely; the dedicated Python jobs keep their caching.
+          enable-cache: false
 
       - name: Install Python 3.13
         run: uv python install 3.13
