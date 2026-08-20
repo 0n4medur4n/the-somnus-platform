@@ -38,6 +38,8 @@ export default defineConfig({
         "src/modules/notification/delivery/brevo.client.ts",
         "src/modules/audit/audit.service.ts",
         "src/modules/audit/audit.controller.ts",
+        "src/modules/audit/export/audit-exporter.ts",
+        "src/modules/audit/export/bigquery-exporter.ts",
         "src/common/guards/internal-auth.guard.ts",
       ],
       thresholds: {
