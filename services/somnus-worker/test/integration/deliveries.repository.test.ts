@@ -34,6 +34,11 @@ describe("DeliveriesRepository", () => {
     expect(row?.attempts).toBe(0);
   });
 
+  it("returns null for a missing idempotency key or id", async () => {
+    expect(await repo.findByIdempotencyKey("does-not-exist")).toBeNull();
+    expect(await repo.findById("does-not-exist")).toBeNull();
+  });
+
   it("enforces idempotency: the same key cannot be inserted twice", async () => {
     await repo.create({ idempotencyKey: "invite:dup", ...base });
     await expect(repo.create({ idempotencyKey: "invite:dup", ...base })).rejects.toThrow();
