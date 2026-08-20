@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { AssessmentContentResponseSchema, ClinicalSourcesResponseSchema } from "./content.js";
-import { MaintenanceDeleteRequestSchema, MaintenanceDeleteResultSchema } from "./maintenance.js";
+import {
+  AccountAssessmentsDeleteRequestSchema,
+  MaintenanceDeleteRequestSchema,
+  MaintenanceDeleteResultSchema,
+} from "./maintenance.js";
 import {
   AnswerKindSchema,
   BaseOrientationSchema,
@@ -133,6 +137,7 @@ export const MORPHEO_CONTRACT_SCHEMAS = {
   ClinicalSourcesResponse: ClinicalSourcesResponseSchema,
   MaintenanceDeleteRequest: MaintenanceDeleteRequestSchema,
   MaintenanceDeleteResult: MaintenanceDeleteResultSchema,
+  AccountAssessmentsDeleteRequest: AccountAssessmentsDeleteRequestSchema,
   AssessmentCreateRequest: AssessmentCreateRequestSchema,
   AssessmentCreateResponse: AssessmentCreateResponseSchema,
   AnswerSubmitRequest: AnswerSubmitRequestSchema,

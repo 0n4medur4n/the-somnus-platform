@@ -11,7 +11,11 @@ from fastapi import APIRouter
 
 from morpheo.api.dependencies import SessionDep
 from morpheo.repositories.assessment import AssessmentRepository
-from morpheo.schemas.maintenance import MaintenanceDeleteRequestDTO, MaintenanceDeleteResultDTO
+from morpheo.schemas.maintenance import (
+    AccountAssessmentsDeleteRequestDTO,
+    MaintenanceDeleteRequestDTO,
+    MaintenanceDeleteResultDTO,
+)
 
 router = APIRouter(prefix="/internal/v1/maintenance", tags=["maintenance"])
 
@@ -37,4 +41,16 @@ def delete_claim_tokens(
     body: MaintenanceDeleteRequestDTO, session: SessionDep
 ) -> MaintenanceDeleteResultDTO:
     deleted = AssessmentRepository(session).delete_claim_tokens_before(body.before)
+    return MaintenanceDeleteResultDTO(deleted=deleted)
+
+
+@router.post(
+    "/user-assessments/delete",
+    response_model=MaintenanceDeleteResultDTO,
+    summary="Erase every assessment a user claimed (account deletion, §13.2).",
+)
+def delete_user_assessments(
+    body: AccountAssessmentsDeleteRequestDTO, session: SessionDep
+) -> MaintenanceDeleteResultDTO:
+    deleted = AssessmentRepository(session).delete_by_claimed_by(body.user_id)
     return MaintenanceDeleteResultDTO(deleted=deleted)

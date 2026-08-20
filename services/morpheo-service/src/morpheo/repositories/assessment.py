@@ -128,6 +128,39 @@ class AssessmentRepository:
         self._s.commit()
         return len(ids)
 
+    def delete_by_claimed_by(self, user_id: str) -> int:
+        """Erase every assessment a user claimed — its snapshot, session, answers,
+        and claim token (build plan §21 / 13.2, account deletion). Morpheo owns and
+        deletes its own data; the caller (edge) orchestrates the account erasure."""
+        ids = list(
+            self._s.scalars(
+                select(AssessmentSnapshot.session_id).where(
+                    AssessmentSnapshot.claimed_by == user_id
+                )
+            )
+        )
+        if not ids:
+            return 0
+        opts = {"synchronize_session": False}
+        self._s.execute(
+            delete(AssessmentClaimToken).where(AssessmentClaimToken.session_id.in_(ids)),
+            execution_options=opts,
+        )
+        self._s.execute(
+            delete(AssessmentAnswer).where(AssessmentAnswer.session_id.in_(ids)),
+            execution_options=opts,
+        )
+        self._s.execute(
+            delete(AssessmentSnapshot).where(AssessmentSnapshot.session_id.in_(ids)),
+            execution_options=opts,
+        )
+        self._s.execute(
+            delete(AssessmentSession).where(AssessmentSession.id.in_(ids)),
+            execution_options=opts,
+        )
+        self._s.commit()
+        return len(ids)
+
     def delete_claim_tokens_before(self, cutoff: datetime) -> int:
         """Purge claim tokens created before the cutoff (build plan §12.2: 72 h
         claim-token cleanup). Single-use tokens; deleting an old one is always safe."""

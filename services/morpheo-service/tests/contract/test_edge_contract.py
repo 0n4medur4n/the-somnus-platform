@@ -31,7 +31,11 @@ from morpheo.schemas.assessment import (
     AssessmentSnapshotResponseDTO,
 )
 from morpheo.schemas.content import build_content_response
-from morpheo.schemas.maintenance import MaintenanceDeleteRequestDTO, MaintenanceDeleteResultDTO
+from morpheo.schemas.maintenance import (
+    AccountAssessmentsDeleteRequestDTO,
+    MaintenanceDeleteRequestDTO,
+    MaintenanceDeleteResultDTO,
+)
 from morpheo.schemas.sources import build_clinical_sources
 
 SCHEMA_DIR = Path(__file__).resolve().parents[4] / "schemas" / "json-schema" / "morpheo"
@@ -58,6 +62,7 @@ def test_all_schema_artifacts_are_present() -> None:
         "ClinicalSourcesResponse",
         "MaintenanceDeleteRequest",
         "MaintenanceDeleteResult",
+        "AccountAssessmentsDeleteRequest",
     }
     present = {path.stem for path in SCHEMA_DIR.glob("*.json")}
     assert expected <= present
@@ -152,6 +157,8 @@ def test_maintenance_dtos_conform() -> None:
     jsonschema.validate(_dump(request), _schema("MaintenanceDeleteRequest"))
     result = MaintenanceDeleteResultDTO(deleted=3)
     jsonschema.validate(_dump(result), _schema("MaintenanceDeleteResult"))
+    account = AccountAssessmentsDeleteRequestDTO(user_id="user-1")
+    jsonschema.validate(_dump(account), _schema("AccountAssessmentsDeleteRequest"))
 
 
 def test_clinical_sources_from_artifacts_conforms() -> None:
