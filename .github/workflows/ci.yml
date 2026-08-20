@@ -75,6 +75,11 @@ jobs:
           done
           echo "All 12 ADRs present."
 
+      # Threat validation (build plan §21 / Checkpoint 13.1): no runtime service
+      # account may hold owner/editor/IAM-admin/wildcard roles.
+      - name: Least-privilege IAM check
+        run: node scripts/check-terraform-least-privilege.mjs
+
   identity-service:
     name: Identity service (TiDB dev cluster)
     runs-on: ubuntu-latest
