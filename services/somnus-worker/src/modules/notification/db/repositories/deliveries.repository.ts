@@ -13,7 +13,22 @@ export type NewDelivery = {
   locale: SupportedLocale;
 };
 
-export class DeliveriesRepository {
+export type DeliveryRow = typeof notificationDeliveries.$inferSelect;
+
+/**
+ * The persistence surface NotificationService depends on — an interface so the
+ * service is unit-tested with a fake, no database. DeliveriesRepository satisfies
+ * it structurally.
+ */
+export interface DeliveryStore {
+  create(input: NewDelivery): Promise<string>;
+  findByIdempotencyKey(idempotencyKey: string): Promise<DeliveryRow | null>;
+  markSent(id: string, providerMessageId: string): Promise<void>;
+  markFailed(id: string, error: string): Promise<void>;
+  markDeadLetter(id: string, error: string): Promise<void>;
+}
+
+export class DeliveriesRepository implements DeliveryStore {
   constructor(private readonly db: NotificationDb) {}
 
   /** Insert a new delivery row (id is a sortable UUIDv7). */

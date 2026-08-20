@@ -8,6 +8,7 @@ import {
   CorrelationInterceptor,
 } from "./common/interceptors/correlation.interceptor.js";
 import { HealthModule } from "./modules/health/health.module.js";
+import { NotificationModule } from "./modules/notification/notification.module.js";
 import { VersionModule } from "./modules/version/version.module.js";
 
 export const ROOT_LOGGER: Logger = createLogger({
@@ -22,7 +23,7 @@ export const ROOT_LOGGER: Logger = createLogger({
 });
 
 @Module({
-  imports: [HealthModule, VersionModule],
+  imports: [HealthModule, VersionModule, NotificationModule],
   providers: [
     { provide: APP_FILTER, useClass: SomnusExceptionFilter },
     { provide: CORRELATION_LOGGER, useValue: ROOT_LOGGER },

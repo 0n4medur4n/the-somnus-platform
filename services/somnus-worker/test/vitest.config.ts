@@ -31,6 +31,11 @@ export default defineConfig({
         "src/modules/health/health.controller.ts",
         "src/modules/version/version.controller.ts",
         "src/common/interceptors/correlation.interceptor.ts",
+        "src/modules/notification/notification.service.ts",
+        "src/modules/notification/notification.controller.ts",
+        "src/modules/notification/cloud-tasks-auth.guard.ts",
+        "src/modules/notification/templates/render.ts",
+        "src/modules/notification/delivery/brevo.client.ts",
       ],
       thresholds: {
         lines: 80,

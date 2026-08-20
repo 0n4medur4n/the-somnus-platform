@@ -1,1 +1,6 @@
-export { DeliveriesRepository, type NewDelivery } from "./deliveries.repository.js";
+export {
+  DeliveriesRepository,
+  type DeliveryRow,
+  type DeliveryStore,
+  type NewDelivery,
+} from "./deliveries.repository.js";
