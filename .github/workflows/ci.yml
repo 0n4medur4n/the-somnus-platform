@@ -712,11 +712,12 @@ jobs:
       - name: Build worker (nest build)
         run: pnpm --filter @somnus/worker build
 
-      # The notification logical database (build plan §3.9 / §5.7).
-      - name: Create notifications database
+      # The worker's isolated-module logical databases (build plan §3.9 / §5.7).
+      - name: Create worker databases
         run: |
           docker exec ${{ job.services.mysql.id }} mysql -uroot -prootpw -e \
-            "CREATE DATABASE IF NOT EXISTS somnus_notifications CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+            "CREATE DATABASE IF NOT EXISTS somnus_notifications CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+             CREATE DATABASE IF NOT EXISTS somnus_audit CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
       - name: Test (vitest + coverage)
         run: pnpm --filter @somnus/worker test:coverage
@@ -725,3 +726,4 @@ jobs:
         run: pnpm --filter @somnus/worker test:integration
         env:
           NOTIFICATIONS_DATABASE_URL: mysql://root:rootpw@127.0.0.1:3306/somnus_notifications
+          AUDIT_DATABASE_URL: mysql://root:rootpw@127.0.0.1:3306/somnus_audit

@@ -36,6 +36,9 @@ export default defineConfig({
         "src/modules/notification/cloud-tasks-auth.guard.ts",
         "src/modules/notification/templates/render.ts",
         "src/modules/notification/delivery/brevo.client.ts",
+        "src/modules/audit/audit.service.ts",
+        "src/modules/audit/audit.controller.ts",
+        "src/common/guards/internal-auth.guard.ts",
       ],
       thresholds: {
         lines: 80,
