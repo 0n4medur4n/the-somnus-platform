@@ -82,7 +82,11 @@ def test_claim_token_delete_endpoint_purges_old_tokens(
 ) -> None:
     session_id = "maint-tok-session"
     _drop(db_session, session_id)
+    # Commit the parent session first: AssessmentClaimToken has only a column-level
+    # ForeignKey (no ORM relationship), so the unit of work won't order its insert
+    # after the session's within a single flush.
     db_session.add(_open_session(session_id, NOW - timedelta(days=1)))
+    db_session.commit()
     old = NOW - timedelta(hours=100)
     db_session.add(
         AssessmentClaimToken(
