@@ -662,3 +662,41 @@ jobs:
         run: uv run pytest -q
         env:
           DATABASE_URL: mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_reporting
+
+  worker-service:
+    name: Worker service (build, tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The background worker (build plan §5.7): NestJS 11 + Fastify 5. Checkpoint
+    # 12.1 Stage 1 is the shell (health/version, structured logging, correlation,
+    # §16 errors); no database yet. Coverage gate in test/vitest.config.ts.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: pnpm --if-present -r --filter "./packages/*" run build
+
+      - name: Build worker (nest build)
+        run: pnpm --filter @somnus/worker build
+
+      - name: Test (vitest + coverage)
+        run: pnpm --filter @somnus/worker test:coverage

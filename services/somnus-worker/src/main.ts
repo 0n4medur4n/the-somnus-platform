@@ -1,0 +1,50 @@
+import "reflect-metadata";
+import helmet from "@fastify/helmet";
+import { NestFactory } from "@nestjs/core";
+import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { loadConfig } from "@somnus/config";
+import { createLogger } from "@somnus/observability";
+import { cleanupOpenApiDoc } from "nestjs-zod";
+import { AppModule } from "./app.module.js";
+import { SomnusLogger } from "./infrastructure/logger/somnus.logger.js";
+
+async function bootstrap(): Promise<void> {
+  const config = loadConfig({ serviceName: "somnus-worker" });
+  const logger = createLogger({ service: config.service, correlationId: "bootstrap" });
+  SomnusLogger.replaceGlobalLogger(logger);
+
+  const adapter = new FastifyAdapter({
+    logger: false,
+    trustProxy: true,
+    bodyLimit: 1024 * 1024,
+  });
+
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, adapter, {
+    bufferLogs: true,
+    abortOnError: false,
+  });
+
+  await app.register(helmet, { contentSecurityPolicy: false });
+  app.enableShutdownHooks();
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle("The Somnus — Worker")
+    .setDescription("Background worker: notifications, audit, scheduled jobs (private, Cloud Run).")
+    .setVersion("0.0.0")
+    .build();
+  // cleanupOpenApiDoc is required for nestjs-zod's createZodDto classes
+  // to produce correct request/response schemas (build plan §3.4).
+  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, swaggerConfig));
+  SwaggerModule.setup("/docs", app, document);
+
+  const port = (config.private["PORT"] as number | undefined) ?? 8080;
+  const host = "0.0.0.0";
+  await app.listen(port, host);
+  logger.info("somnus-worker listening", { port, host });
+}
+
+bootstrap().catch((err) => {
+  console.error("[bootstrap] fatal", err);
+  process.exit(1);
+});
