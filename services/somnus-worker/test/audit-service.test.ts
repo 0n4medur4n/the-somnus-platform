@@ -6,6 +6,7 @@ import type {
   AuditRow,
   AuditStore,
 } from "../src/modules/audit/db/repositories/index.js";
+import type { AuditExportRow } from "../src/modules/audit/export/audit-exporter.js";
 
 function makeRow(over: Partial<AuditRow>): AuditRow {
   return {
@@ -54,15 +55,26 @@ function envelope(over: Partial<EventEnvelope> = {}): EventEnvelope {
   };
 }
 
+class FakeExporter {
+  rows: AuditExportRow[] = [];
+  constructor(private readonly behavior: "ok" | "throw" = "ok") {}
+  async export(row: AuditExportRow): Promise<void> {
+    if (this.behavior === "throw") throw new Error("export down");
+    this.rows.push(row);
+  }
+}
+
 describe("AuditService", () => {
   let store: FakeStore;
+  let exporter: FakeExporter;
 
   beforeEach(() => {
     store = new FakeStore();
+    exporter = new FakeExporter();
   });
 
   it("normalizes an envelope into an audit record", async () => {
-    const result = await new AuditService(store).record(envelope());
+    const result = await new AuditService(store, exporter).record(envelope());
 
     expect(result.outcome).toBe("recorded");
     expect(store.created).toHaveLength(1);
@@ -75,18 +87,38 @@ describe("AuditService", () => {
   });
 
   it("carries a null actor through when the envelope has none", async () => {
-    await new AuditService(store).record(envelope({ actor: undefined }));
+    await new AuditService(store, exporter).record(envelope({ actor: undefined }));
     expect(store.created[0]?.actorType).toBeNull();
     expect(store.created[0]?.actorId).toBeNull();
   });
 
-  it("is idempotent: the same event id is recorded once", async () => {
+  it("is idempotent: the same event id is recorded once and not re-exported", async () => {
     store.rows.set("11111111-1111-1111-1111-111111111111", makeRow({ id: "existing" }));
 
-    const result = await new AuditService(store).record(envelope());
+    const result = await new AuditService(store, exporter).record(envelope());
 
     expect(result.outcome).toBe("deduped");
     expect(result.id).toBe("existing");
     expect(store.created).toHaveLength(0);
+    expect(exporter.rows).toHaveLength(0);
+  });
+
+  it("exports a redacted row (no actor/subject id, no forbidden data) on record", async () => {
+    await new AuditService(store, exporter).record(
+      envelope({ data: { routes: ["INS"], token: "secret-abc", email: "x@y.z" } }),
+    );
+
+    expect(exporter.rows).toHaveLength(1);
+    const row = exporter.rows[0];
+    expect(row?.data).toEqual({ routes: ["INS"] }); // token + email dropped
+    expect(row).not.toHaveProperty("actorId");
+    expect(row).not.toHaveProperty("subjectId");
+    expect(JSON.stringify(row)).not.toContain("secret-abc");
+  });
+
+  it("still records the event when the export fails (export never blocks ingest)", async () => {
+    const result = await new AuditService(store, new FakeExporter("throw")).record(envelope());
+    expect(result.outcome).toBe("recorded");
+    expect(store.created).toHaveLength(1);
   });
 });
