@@ -10,6 +10,7 @@ export {
   type SupportedLocale,
 } from "./locale.js";
 export * from "./morpheo/index.js";
+export * from "./notification/index.js";
 export {
   type PageInfo,
   PageInfoSchema,

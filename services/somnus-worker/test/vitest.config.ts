@@ -16,7 +16,9 @@ export default defineConfig({
   test: {
     globals: false,
     environment: "node",
-    include: ["test/**/*.test.ts"],
+    // The default suite is DB-free (units + app-boot e2e). Integration tests that
+    // need MySQL live under test/integration with their own config + global-setup.
+    include: ["test/*.test.ts"],
     setupFiles: ["test/setup.ts"],
     coverage: {
       provider: "v8",
