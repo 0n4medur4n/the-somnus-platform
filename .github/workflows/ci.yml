@@ -668,8 +668,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # The background worker (build plan §5.7): NestJS 11 + Fastify 5. Checkpoint
-    # 12.1 Stage 1 is the shell (health/version, structured logging, correlation,
-    # §16 errors); no database yet. Coverage gate in test/vitest.config.ts.
+    # 12.1 Stage 2 adds the isolated Notification module's database
+    # `somnus_notifications` (Drizzle + mysql2): unit/e2e tests plus integration
+    # tests against a MySQL 8 stand-in (§3.9 / §19). Coverage gates in the vitest
+    # configs.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpw"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -698,5 +712,16 @@ jobs:
       - name: Build worker (nest build)
         run: pnpm --filter @somnus/worker build
 
+      # The notification logical database (build plan §3.9 / §5.7).
+      - name: Create notifications database
+        run: |
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -prootpw -e \
+            "CREATE DATABASE IF NOT EXISTS somnus_notifications CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+
       - name: Test (vitest + coverage)
         run: pnpm --filter @somnus/worker test:coverage
+
+      - name: Integration tests (MySQL)
+        run: pnpm --filter @somnus/worker test:integration
+        env:
+          NOTIFICATIONS_DATABASE_URL: mysql://root:rootpw@127.0.0.1:3306/somnus_notifications
