@@ -1,4 +1,5 @@
 export * from "./access-grants.repository.js";
+export * from "./account-deletion.repository.js";
 export * from "./audit.repository.js";
 export * from "./individual-profiles.repository.js";
 export * from "./organization-invitations.repository.js";

@@ -3,6 +3,7 @@ import { createDb, createPool, type Db } from "./db.client.js";
 import { loadDbConfig } from "./db.config.js";
 import {
   AccessGrantsRepository,
+  AccountDeletionRepository,
   AuditRepository,
   IndividualProfilesRepository,
   OrganizationInvitationsRepository,
@@ -34,6 +35,11 @@ export const DB = Symbol("DB");
       },
     },
     { provide: UsersRepository, useFactory: (db: Db) => new UsersRepository(db), inject: [DB] },
+    {
+      provide: AccountDeletionRepository,
+      useFactory: (db: Db) => new AccountDeletionRepository(db),
+      inject: [DB],
+    },
     {
       provide: IndividualProfilesRepository,
       useFactory: (db: Db) => new IndividualProfilesRepository(db),
@@ -75,6 +81,7 @@ export const DB = Symbol("DB");
   exports: [
     DB,
     UsersRepository,
+    AccountDeletionRepository,
     IndividualProfilesRepository,
     ProfessionalProfilesRepository,
     OrganizationsRepository,
