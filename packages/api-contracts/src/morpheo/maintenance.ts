@@ -21,3 +21,17 @@ export const MaintenanceDeleteResultSchema = z
   })
   .strict();
 export type MaintenanceDeleteResult = z.infer<typeof MaintenanceDeleteResultSchema>;
+
+/**
+ * Account deletion (build plan §21 / Checkpoint 13.2, right to erasure): delete
+ * every assessment a given user claimed. The edge orchestrates this as part of
+ * deleting the account; Morpheo owns and erases its own data (§7).
+ */
+export const AccountAssessmentsDeleteRequestSchema = z
+  .object({
+    userId: z.string().min(1),
+  })
+  .strict();
+export type AccountAssessmentsDeleteRequest = z.infer<
+  typeof AccountAssessmentsDeleteRequestSchema
+>;

@@ -18,3 +18,7 @@ class MaintenanceDeleteRequestDTO(ContractModel):
 
 class MaintenanceDeleteResultDTO(ContractModel):
     deleted: int
+
+
+class AccountAssessmentsDeleteRequestDTO(ContractModel):
+    user_id: str

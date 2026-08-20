@@ -16,8 +16,10 @@ from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from morpheo.infrastructure.models import (
+    AssessmentAnswer,
     AssessmentClaimToken,
     AssessmentSession,
+    AssessmentSnapshot,
 )
 from morpheo.main import create_app
 
@@ -43,8 +45,15 @@ def _open_session(session_id: str, created_at: datetime) -> AssessmentSession:
 
 
 def _drop(session: Session, session_id: str) -> None:
-    """Remove one seeded session (and its children) by id — never touches other data."""
+    """Remove one seeded session (and its children) by id — never touches other data.
+
+    Claim tokens and snapshots have bare FKs (no ORM relationship), so delete them
+    explicitly before the session; the answers go via the ORM delete-orphan cascade.
+    """
     session.query(AssessmentClaimToken).filter_by(session_id=session_id).delete(
+        synchronize_session=False
+    )
+    session.query(AssessmentSnapshot).filter_by(session_id=session_id).delete(
         synchronize_session=False
     )
     existing = session.get(AssessmentSession, session_id)
@@ -109,3 +118,41 @@ def test_claim_token_delete_endpoint_purges_old_tokens(
     ).all()
     assert remaining == []
     _drop(db_session, session_id)
+
+
+def test_delete_user_assessments_erases_a_claimed_assessment(
+    client: TestClient, db_session: Session
+) -> None:
+    session_id, user_id = "acct-claimed", "user-erase-42"
+    _drop(db_session, session_id)
+    # Commit the parent session first (children below have bare FKs).
+    session = _open_session(session_id, NOW - timedelta(days=2))
+    session.status = "claimed"
+    db_session.add(session)
+    db_session.commit()
+    db_session.add(AssessmentAnswer(session_id=session_id, kind="signal", name="x", value="true"))
+    db_session.add(
+        AssessmentSnapshot(
+            id="snap-1",
+            session_id=session_id,
+            claimed_by=user_id,
+            result_json="{}",
+            workflow_version="1.0",
+            content_version="1.3",
+        )
+    )
+    db_session.commit()
+
+    response = client.post(
+        "/internal/v1/maintenance/user-assessments/delete",
+        json={"userId": user_id},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"deleted": 1}
+
+    db_session.expire_all()
+    assert db_session.get(AssessmentSession, session_id) is None
+    assert (
+        db_session.scalars(select(AssessmentSnapshot).filter_by(session_id=session_id)).all() == []
+    )
