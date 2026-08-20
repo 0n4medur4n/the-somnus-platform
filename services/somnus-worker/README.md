@@ -15,8 +15,13 @@ Plus scheduled jobs (Cloud Scheduler): unclaimed-assessment and claim-token clea
 
 ## Status
 
-- **12.1 Stage 1 — shell:** boots on Fastify with health/version, structured JSON
-  logging, correlation-id propagation, and the §16 error shape. No database yet.
+- **12.1 — Notifications (DONE):** the isolated Notification module. A Cloud Tasks
+  consumer (`POST /internal/v1/notifications/tasks`) validates the `NotificationTask`
+  contract, dedupes by idempotency key, renders a localized email (4 locales, secure
+  link, **no health details**), delivers via the Brevo adapter (mocked in tests), and
+  records delivery status in `somnus_notifications`. A 5xx asks Cloud Tasks to retry;
+  after max attempts the task is dead-lettered. Emails: invitation + report-ready.
+- Audit module + scheduled jobs are **Checkpoint 12.2** (not built).
 
 ## Develop
 
