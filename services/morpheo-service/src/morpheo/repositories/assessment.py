@@ -112,11 +112,19 @@ class AssessmentRepository:
         ids = self.unclaimed_older_than(cutoff)
         if not ids:
             return 0
+        opts = {"synchronize_session": False}
         self._s.execute(
-            delete(AssessmentClaimToken).where(AssessmentClaimToken.session_id.in_(ids))
+            delete(AssessmentClaimToken).where(AssessmentClaimToken.session_id.in_(ids)),
+            execution_options=opts,
         )
-        self._s.execute(delete(AssessmentAnswer).where(AssessmentAnswer.session_id.in_(ids)))
-        self._s.execute(delete(AssessmentSession).where(AssessmentSession.id.in_(ids)))
+        self._s.execute(
+            delete(AssessmentAnswer).where(AssessmentAnswer.session_id.in_(ids)),
+            execution_options=opts,
+        )
+        self._s.execute(
+            delete(AssessmentSession).where(AssessmentSession.id.in_(ids)),
+            execution_options=opts,
+        )
         self._s.commit()
         return len(ids)
 
@@ -126,7 +134,8 @@ class AssessmentRepository:
         result = cast(
             "CursorResult[Any]",
             self._s.execute(
-                delete(AssessmentClaimToken).where(AssessmentClaimToken.created_at < cutoff)
+                delete(AssessmentClaimToken).where(AssessmentClaimToken.created_at < cutoff),
+                execution_options={"synchronize_session": False},
             ),
         )
         self._s.commit()
