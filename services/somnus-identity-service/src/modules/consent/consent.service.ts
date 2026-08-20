@@ -211,4 +211,15 @@ export class ConsentService {
     const withdrawn = withdrawal !== null;
     return { consented: !withdrawn, withdrawn };
   }
+
+  /**
+   * Account erasure (build plan §21 / Checkpoint 13.2, right to erasure). Deletes
+   * the user's consent receipts and withdrawals. Part of the module's public
+   * interface — identity reaches the isolated consent database only through here
+   * (ADR 0010). The consent audit trail is retained (§21).
+   */
+  async eraseUser(userId: UUIDv7): Promise<void> {
+    await this.withdrawals.deleteByUserId(userId);
+    await this.receipts.deleteByUserId(userId);
+  }
 }

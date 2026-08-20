@@ -54,4 +54,9 @@ export class ConsentReceiptsRepository {
       .limit(1);
     return rows[0] ?? null;
   }
+
+  /** Account erasure (build plan §21 / 13.2): delete every receipt for a user. */
+  async deleteByUserId(userId: UUIDv7): Promise<void> {
+    await this.db.delete(consentReceipts).where(eq(consentReceipts.userId, userId));
+  }
 }

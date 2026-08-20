@@ -9,6 +9,7 @@ import {
 } from "./common/interceptors/correlation.interceptor.js";
 import { DbModule } from "./infrastructure/db/db.module.js";
 import { AccessGrantsModule } from "./modules/access-grants/access-grants.module.js";
+import { AccountModule } from "./modules/account/account.module.js";
 import { AuthorizationModule } from "./modules/authorization/authorization.module.js";
 import { ConsentModule } from "./modules/consent/consent.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
@@ -45,6 +46,7 @@ export const ROOT_LOGGER: Logger = createLogger({
     InvitationsModule,
     VerificationCasesModule,
     AccessGrantsModule,
+    AccountModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: SomnusExceptionFilter },
