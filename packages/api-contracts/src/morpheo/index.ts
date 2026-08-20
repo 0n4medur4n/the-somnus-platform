@@ -37,6 +37,12 @@ export {
   SafetyPromptContextSchema,
 } from "./content.js";
 export {
+  type MaintenanceDeleteRequest,
+  MaintenanceDeleteRequestSchema,
+  type MaintenanceDeleteResult,
+  MaintenanceDeleteResultSchema,
+} from "./maintenance.js";
+export {
   ANSWER_KINDS,
   type AnswerKind,
   AnswerKindSchema,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, cast
 
-from sqlalchemy import CursorResult, select, update
+from sqlalchemy import CursorResult, delete, select, update
 from sqlalchemy.orm import Session
 
 from morpheo.infrastructure.models import (
@@ -104,3 +104,30 @@ class AssessmentRepository:
             AssessmentSession.created_at < cutoff,
         )
         return list(self._s.scalars(stmt))
+
+    def delete_unclaimed_before(self, cutoff: datetime) -> int:
+        """Purge open sessions created before the cutoff, with their answers and
+        claim tokens (build plan §12.2: 30-day unclaimed-assessment cleanup). No
+        FK cascade in this schema (TiDB), so dependents are deleted explicitly."""
+        ids = self.unclaimed_older_than(cutoff)
+        if not ids:
+            return 0
+        self._s.execute(
+            delete(AssessmentClaimToken).where(AssessmentClaimToken.session_id.in_(ids))
+        )
+        self._s.execute(delete(AssessmentAnswer).where(AssessmentAnswer.session_id.in_(ids)))
+        self._s.execute(delete(AssessmentSession).where(AssessmentSession.id.in_(ids)))
+        self._s.commit()
+        return len(ids)
+
+    def delete_claim_tokens_before(self, cutoff: datetime) -> int:
+        """Purge claim tokens created before the cutoff (build plan §12.2: 72 h
+        claim-token cleanup). Single-use tokens; deleting an old one is always safe."""
+        result = cast(
+            "CursorResult[Any]",
+            self._s.execute(
+                delete(AssessmentClaimToken).where(AssessmentClaimToken.created_at < cutoff)
+            ),
+        )
+        self._s.commit()
+        return result.rowcount

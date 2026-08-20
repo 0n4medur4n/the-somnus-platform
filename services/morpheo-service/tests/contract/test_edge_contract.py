@@ -10,6 +10,7 @@ side owns the reciprocal drift guard (packages/api-contracts/.../morpheo.test.ts
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,7 @@ from morpheo.schemas.assessment import (
     AssessmentSnapshotResponseDTO,
 )
 from morpheo.schemas.content import build_content_response
+from morpheo.schemas.maintenance import MaintenanceDeleteRequestDTO, MaintenanceDeleteResultDTO
 from morpheo.schemas.sources import build_clinical_sources
 
 SCHEMA_DIR = Path(__file__).resolve().parents[4] / "schemas" / "json-schema" / "morpheo"
@@ -54,6 +56,8 @@ def test_all_schema_artifacts_are_present() -> None:
         "AssessmentClaimResponse",
         "AssessmentSnapshotResponse",
         "ClinicalSourcesResponse",
+        "MaintenanceDeleteRequest",
+        "MaintenanceDeleteResult",
     }
     present = {path.stem for path in SCHEMA_DIR.glob("*.json")}
     assert expected <= present
@@ -141,6 +145,13 @@ def test_content_response_from_artifacts_conforms() -> None:
         ),
         "Información general y preguntas para comentar con tu profesional.",
     ]
+
+
+def test_maintenance_dtos_conform() -> None:
+    request = MaintenanceDeleteRequestDTO(before=datetime(2026, 8, 20, 12, 0, tzinfo=UTC))
+    jsonschema.validate(_dump(request), _schema("MaintenanceDeleteRequest"))
+    result = MaintenanceDeleteResultDTO(deleted=3)
+    jsonschema.validate(_dump(result), _schema("MaintenanceDeleteResult"))
 
 
 def test_clinical_sources_from_artifacts_conforms() -> None:

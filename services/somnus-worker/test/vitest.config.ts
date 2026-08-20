@@ -40,6 +40,9 @@ export default defineConfig({
         "src/modules/audit/audit.controller.ts",
         "src/modules/audit/export/audit-exporter.ts",
         "src/modules/audit/export/bigquery-exporter.ts",
+        "src/modules/maintenance/maintenance.service.ts",
+        "src/modules/maintenance/maintenance.controller.ts",
+        "src/modules/maintenance/morpheo-maintenance.client.ts",
         "src/common/guards/internal-auth.guard.ts",
       ],
       thresholds: {
