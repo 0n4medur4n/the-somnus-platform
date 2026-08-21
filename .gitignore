@@ -71,6 +71,8 @@ infrastructure/terraform/**/*.tfplan
 infrastructure/terraform/**/terraform.tfvars
 !infrastructure/terraform/**/terraform.tfvars.example
 infrastructure/terraform/**/.terraform.lock.hcl.local
+infrastructure/terraform/**/backend.hcl
+!infrastructure/terraform/**/backend.hcl.example
 
 # Firebase
 .firebase/

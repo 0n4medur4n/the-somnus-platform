@@ -25,10 +25,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
+      fail-fast: false
       matrix:
-        # staging/production stay empty until build plan Checkpoint
-        # 13.3; validating them is a no-op until then, not an error.
-        environment: [dev]
+        # dev is inline; staging/production are thin roots over
+        # modules/environment (build plan Checkpoint 13.3). All three are
+        # fmt-checked and validated on every infra change.
+        environment: [dev, staging, production]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

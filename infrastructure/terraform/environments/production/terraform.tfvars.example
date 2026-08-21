@@ -1,0 +1,23 @@
+# Copy to terraform.tfvars (gitignored) and fill in real values.
+# Keeping real project/billing IDs out of git avoids leaking account structure.
+
+# Production backend infra project (separate from dev and staging).
+project_id = "the-somnus-prod"
+
+# Production Firebase project (separate from project_id).
+firebase_project_id = "the-somnus-prod-fb"
+
+billing_account_id = "XXXXXX-XXXXXX-XXXXXX"
+
+region = "europe-west3"
+env    = "production"
+
+# Firebase Hosting site IDs are globally unique across ALL of Firebase.
+marketing_site_id = "the-somnus-prod"
+app_site_id       = "the-somnus-prod-app"
+
+budget_amount_units          = 200
+firebase_budget_amount_units = 40
+
+# Conservative placeholder; re-tune from the load test (docs/runbooks/load-test.md).
+edge_5xx_threshold = 5
