@@ -1,0 +1,126 @@
+# Reusable: deploy the changed deployables to ONE environment (build plan §20
+# Checkpoint 13.3). Called by deploy.yml once per environment (dev -> staging ->
+# production). The `environment:` on the deploy job is what enforces the approval
+# gate (GitHub Environment protection rules) AND scopes vars/secrets to that
+# environment, so the same code deploys to a different GCP project per stage
+# without any hard-coded IDs.
+#
+# Build once, promote the same artifact: images are built ONCE in deploy.yml and
+# pulled by digest/tag here, so staging and production run the exact bytes that
+# passed dev. Authentication is keyless via Workload Identity Federation (no
+# service-account JSON in secrets). See docs/runbooks/promotion-pipeline.md for
+# the full GCP + GitHub setup this workflow expects.
+
+name: Deploy environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Target GitHub Environment (dev | staging | production)."
+        required: true
+        type: string
+      services:
+        description: "JSON array of changed Cloud Run service names."
+        required: true
+        type: string
+      marketing:
+        description: "Whether the Astro marketing frontend changed."
+        required: true
+        type: boolean
+      app:
+        description: "Whether the React SPA changed."
+        required: true
+        type: boolean
+      image_tag:
+        description: "Immutable image tag to deploy (the commit SHA)."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write # required for Workload Identity Federation
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # This is the promotion gate: staging/production Environments carry required
+    # reviewers, so this job pauses for approval before it runs.
+    environment: ${{ inputs.environment }}
+    env:
+      REGION: europe-west3
+      AR_REPOSITORY: somnus
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      # Keyless auth. The Environment supplies its own provider + deploy SA, so
+      # dev/staging/production each authenticate to their own project.
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Deploy only the services that changed, pulling the exact image built once
+      # in deploy.yml. The image lives in the shared artifacts registry; this
+      # environment's runtime + deploy service accounts have read access to it.
+      - name: Deploy changed Cloud Run services
+        if: ${{ inputs.services != '[]' }}
+        run: |
+          set -euo pipefail
+          image_host="${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev/${{ vars.ARTIFACTS_PROJECT_ID }}/${AR_REPOSITORY}"
+          for svc in $(echo '${{ inputs.services }}' | jq -r '.[]'); do
+            echo "::group::deploy $svc -> ${{ inputs.environment }}"
+            gcloud run deploy "$svc" \
+              --image "${image_host}/${svc}:${{ inputs.image_tag }}" \
+              --region "$REGION" \
+              --project "${{ vars.PROJECT_ID }}" \
+              --quiet
+            echo "::endgroup::"
+          done
+
+      # Frontends: build the changed one and deploy to this environment's Firebase
+      # project + Hosting site. Firebase CLI uses the ADC set up by the WIF auth
+      # step above (no separate service-account key).
+      - name: Set up Node + pnpm (frontends)
+        if: ${{ inputs.marketing || inputs.app }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install pnpm
+        if: ${{ inputs.marketing || inputs.app }}
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        if: ${{ inputs.marketing || inputs.app }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Build + deploy the marketing frontend
+        if: ${{ inputs.marketing }}
+        run: |
+          set -euo pipefail
+          pnpm --filter @somnus/marketing build
+          pnpm exec firebase target:apply hosting marketing "${{ vars.MARKETING_SITE_ID }}" \
+            --project "${{ vars.FIREBASE_PROJECT_ID }}"
+          pnpm exec firebase deploy --only hosting:marketing \
+            --project "${{ vars.FIREBASE_PROJECT_ID }}" --non-interactive
+
+      - name: Build + deploy the app frontend
+        if: ${{ inputs.app }}
+        run: |
+          set -euo pipefail
+          pnpm --filter @somnus/app build
+          pnpm exec firebase target:apply hosting app "${{ vars.APP_SITE_ID }}" \
+            --project "${{ vars.FIREBASE_PROJECT_ID }}"
+          pnpm exec firebase deploy --only hosting:app \
+            --project "${{ vars.FIREBASE_PROJECT_ID }}" --non-interactive
