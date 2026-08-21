@@ -27,6 +27,14 @@ import {
 export class AccountDeletionRepository {
   constructor(private readonly db: Db) {}
 
+  /**
+   * Scoped to the data subject's `userId`, deliberately NOT org-scoped
+   * (tenant-scope-guard exemption): right-to-erasure spans every organization
+   * the user ever belonged to, so there is no single organization scope to pass
+   * -- the user id *is* the scope. This is the same class of reviewed exception
+   * as the invitation-token lookups (build plan §8 allows an organization *or a
+   * user* scope).
+   */
   async eraseIdentityData(userId: UUIDv7): Promise<void> {
     await this.db.transaction(async (tx) => {
       const profiles = await tx
