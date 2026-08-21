@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Patch, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Patch, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { MeResponse } from "@somnus/api-contracts";
 import { CorrelationId } from "../../common/interceptors/correlation-id.decorator.js";
@@ -39,5 +39,17 @@ export class MeController {
     @CorrelationId() correlationId?: string,
   ): Promise<void> {
     await this.me.patchProfile(session, body, correlationId);
+  }
+
+  @Delete()
+  @HttpCode(204)
+  @ApiOperation({
+    summary: "Delete the current actor's account (right to erasure); CSRF-protected.",
+  })
+  async deleteAccount(
+    @CurrentSession() session: SessionRecord | undefined,
+    @CorrelationId() correlationId?: string,
+  ): Promise<void> {
+    await this.me.deleteAccount(session, correlationId);
   }
 }
