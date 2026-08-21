@@ -32,6 +32,4 @@ export const AccountAssessmentsDeleteRequestSchema = z
     userId: z.string().min(1),
   })
   .strict();
-export type AccountAssessmentsDeleteRequest = z.infer<
-  typeof AccountAssessmentsDeleteRequestSchema
->;
+export type AccountAssessmentsDeleteRequest = z.infer<typeof AccountAssessmentsDeleteRequestSchema>;
