@@ -50,10 +50,17 @@ const TENANT_SCOPED_TABLES = [
  * authorization mechanism (the same reasoning a password-reset token
  * relies on): the caller does not have an organizationId to provide
  * yet, only the token from an emailed link.
+ *
+ * `eraseIdentityData` (right-to-erasure, build plan §21 / Checkpoint 13.2) is
+ * scoped by the data subject's `userId`, not an organization: erasure spans
+ * every organization the user ever belonged to, so no single organization scope
+ * exists to pass. Build plan §8 explicitly allows an organization *or a user*
+ * scope, and the user id is that scope here.
  */
 const EXEMPTIONS = new Set([
   "organization-invitations.repository.ts:findByToken",
   "organization-invitations.repository.ts:accept",
+  "account-deletion.repository.ts:eraseIdentityData",
 ]);
 
 type ExtractedMethod = {
