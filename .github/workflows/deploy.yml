@@ -1,0 +1,182 @@
+# Promotion pipeline (build plan §20 Checkpoint 13.3):
+#   PR -> CI (ci.yml) -> merge -> [this] build once -> dev -> staging (gated)
+#   -> production (gated). Only the deployables that changed build and deploy.
+#
+# This workflow builds each changed service image ONCE and promotes that exact
+# artifact through the environments; the per-environment approval gates live on
+# the GitHub Environments (staging/production have required reviewers). All auth
+# is keyless (Workload Identity Federation). The GCP + GitHub configuration this
+# expects is documented in docs/runbooks/promotion-pipeline.md -- until it is in
+# place the jobs no-op or fail fast; nothing here can touch a real project on its
+# own.
+
+name: Deploy & Promote
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Never cancel an in-flight promotion: a half-applied deploy is worse than a queue.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  detect:
+    name: Detect changed deployables
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+      marketing: ${{ steps.detect.outputs.marketing }}
+      app: ${{ steps.detect.outputs.app }}
+      any: ${{ steps.detect.outputs.any }}
+      configured: ${{ steps.detect.outputs.configured }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect changes
+        id: detect
+        run: |
+          set -euo pipefail
+          base="${{ github.event.before }}"
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            # No reliable base (first push, force-push, or manual run): rebuild all.
+            changed="ALL"
+          else
+            changed="$(git diff --name-only "$base" "${{ github.sha }}")"
+          fi
+          echo "changed paths:"; echo "$changed"
+
+          is_all() { [ "$changed" = "ALL" ]; }
+          touched() { is_all && return 0; echo "$changed" | grep -qE "$1"; }
+
+          # A change to shared TS packages or the lockfile can affect every TS
+          # deployable; a change to the cross-language JSON-schema artifacts can
+          # affect the Python services. Conservative on purpose: over-deploying is
+          # a redundant no-op, under-deploying ships stale code.
+          shared_ts=false; { is_all || echo "$changed" | grep -qE '^(packages/|pnpm-lock\.yaml|package\.json)$|^packages/'; } && shared_ts=true
+          shared_py=false; { is_all || echo "$changed" | grep -qE '^schemas/json-schema/'; } && shared_py=true
+
+          services=()
+          { $shared_ts || touched '^services/somnus-edge-api/'; }        && services+=("somnus-edge-api")
+          { $shared_ts || touched '^services/somnus-identity-service/'; } && services+=("somnus-identity-service")
+          { $shared_ts || touched '^services/somnus-worker/'; }           && services+=("somnus-worker")
+          { $shared_py || touched '^services/morpheo-service/'; }         && services+=("morpheo-service")
+          { $shared_py || touched '^services/somnus-report-service/'; }   && services+=("somnus-report-service")
+
+          marketing=false; { $shared_ts || touched '^apps/somnus-marketing/'; } && marketing=true
+          app=false;       { $shared_ts || touched '^apps/somnus-app/'; }       && app=true
+
+          services_json="$(jq -cn '$ARGS.positional' --args ${services[@]+"${services[@]}"})"
+          any=false
+          if [ "$services_json" != "[]" ] || [ "$marketing" = true ] || [ "$app" = true ]; then any=true; fi
+
+          # Until the shared artifacts registry is configured (repo variable
+          # ARTIFACTS_PROJECT_ID), the pipeline no-ops cleanly instead of failing
+          # on missing credentials -- same pattern as ci.yml's Hosting deploy.
+          if [ -n "${{ vars.ARTIFACTS_PROJECT_ID }}" ]; then
+            configured=true
+          else
+            configured=false
+            echo "::notice::Promotion pipeline not configured yet (ARTIFACTS_PROJECT_ID unset). Skipping build/deploy. See docs/runbooks/promotion-pipeline.md."
+          fi
+
+          echo "services=$services_json"   >> "$GITHUB_OUTPUT"
+          echo "marketing=$marketing"       >> "$GITHUB_OUTPUT"
+          echo "app=$app"                   >> "$GITHUB_OUTPUT"
+          echo "any=$any"                   >> "$GITHUB_OUTPUT"
+          echo "configured=$configured"     >> "$GITHUB_OUTPUT"
+          echo "summary -> services=$services_json marketing=$marketing app=$app any=$any configured=$configured"
+
+  build-push:
+    name: Build + push ${{ matrix.service }}
+    needs: detect
+    if: ${{ needs.detect.outputs.configured == 'true' && needs.detect.outputs.services != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: true
+      matrix:
+        service: ${{ fromJSON(needs.detect.outputs.services) }}
+    env:
+      REGION: europe-west3
+      AR_REPOSITORY: somnus
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      # Build-time auth: a repo-level provider + a build service account with
+      # write access to the shared artifacts registry only.
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.BUILD_WIF_PROVIDER }}
+          service_account: ${{ secrets.BUILD_WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev" --quiet
+
+      - name: Build + push image (tagged with the commit SHA)
+        run: |
+          set -euo pipefail
+          image="${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev/${{ vars.ARTIFACTS_PROJECT_ID }}/${AR_REPOSITORY}/${{ matrix.service }}:${{ github.sha }}"
+          docker build -f "services/${{ matrix.service }}/Dockerfile" -t "$image" .
+          docker push "$image"
+
+  deploy-dev:
+    name: Promote to dev
+    needs: [detect, build-push]
+    if: ${{ always() && needs.detect.outputs.configured == 'true' && needs.detect.outputs.any == 'true' && needs.detect.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: dev
+      services: ${{ needs.detect.outputs.services }}
+      marketing: ${{ needs.detect.outputs.marketing == 'true' }}
+      app: ${{ needs.detect.outputs.app == 'true' }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit
+
+  deploy-staging:
+    name: Promote to staging
+    needs: [detect, deploy-dev]
+    if: ${{ needs.deploy-dev.result == 'success' }}
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: staging
+      services: ${{ needs.detect.outputs.services }}
+      marketing: ${{ needs.detect.outputs.marketing == 'true' }}
+      app: ${{ needs.detect.outputs.app == 'true' }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit
+
+  deploy-production:
+    name: Promote to production
+    needs: [detect, deploy-staging]
+    if: ${{ needs.deploy-staging.result == 'success' }}
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: production
+      services: ${{ needs.detect.outputs.services }}
+      marketing: ${{ needs.detect.outputs.marketing == 'true' }}
+      app: ${{ needs.detect.outputs.app == 'true' }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit
