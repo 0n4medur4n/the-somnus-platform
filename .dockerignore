@@ -1,0 +1,37 @@
+# Keep the Docker build context clean and reproducible: exclude build artifacts
+# and local-only state so `docker build .` sees the same files as a fresh CI
+# checkout (this is what makes "builds locally but fails in CI" not happen). The
+# service Dockerfiles rebuild dependencies inside the image.
+
+# Node / pnpm
+**/node_modules
+**/dist
+**/.turbo
+**/.pnpm-store
+
+# Python
+**/__pycache__
+**/*.pyc
+**/.venv
+**/.mypy_cache
+**/.ruff_cache
+**/.pytest_cache
+
+# Tests / coverage
+**/coverage
+**/.vitest
+
+# VCS / CI / editor
+.git
+.github
+**/.DS_Store
+
+# Terraform (never belongs in an image context)
+infrastructure/terraform/**/.terraform
+infrastructure/terraform/**/*.tfstate*
+infrastructure/terraform/**/terraform.tfvars
+infrastructure/terraform/**/backend.hcl
+
+# Local env / secrets
+**/.env
+**/.env.*

@@ -20,7 +20,7 @@ five service jobs, both frontend jobs, App SPA E2E, dev Hosting deploy).
 |-----------|--------|-----------------|
 | Implementation finished (through Checkpoint 13.2) | ✅ | Every checkpoint landed CI-green; 13.2 closed at `7ce0c65` (10/10). |
 | Format, lint, type-check, tests + coverage gates, build pass | ✅ | CI `b75c17e`: Quality gate + all five service jobs + both frontend jobs green. |
-| Affected Docker images build | ⚠️ | Dockerfiles exist for all five services; images build in `deploy.yml` (`build-push`) — but that pipeline is unconfigured, and there is no keyless build-only check in CI yet. **Gap #4.** |
+| Affected Docker images build | ✅ | CI `docker-build` matrix builds all five images on every PR (keyless, no push). The Node Dockerfiles were fixed to build the `@somnus/*` workspace packages before `nest build`, so a clean checkout builds. |
 | Migrations reviewed, reversibility stated | ✅ | identity `.down.sql` + `migrations.integration.test.ts` (up/down/idempotent); Alembic for the Python services; §17 policy. |
 | API contracts regenerated and committed | ✅ | Zod → JSON-schema, drift-guarded both sides in CI. |
 | Security implications reviewed | ✅ | `threat-validation.md` (13 scenarios), least-privilege IAM check (13.1), `dpia.md` (13.2). |
@@ -56,10 +56,12 @@ The **application code** meets the DoD. The remaining items are **operational**
    nothing calls them, and dev never had them either. The services cannot fully run
    until these, plus the scoped SA grants (`secretmanager.secretAccessor`, etc.), are
    added. → `modules/environment` (tracked comment).
-4. **Docker image build is not verified green anywhere.** It only runs in the
-   unconfigured promotion pipeline; a broken Dockerfile would surface at first deploy.
-   Recommend a keyless `docker build` (no push) job in CI for changed services on PRs.
-   *(I can add this on request.)*
+4. **~~Docker image build not verified in CI~~ — RESOLVED.** A CI `docker-build`
+   matrix now builds all five images on every PR (keyless, no push). Fixing it
+   surfaced a real bug: the Node Dockerfiles copied `packages/` but never built the
+   `@somnus/*` workspace packages, so a clean checkout failed `nest build` with
+   `TS2307` (masked locally by a dirty working tree). Fixed by building the workspace
+   deps in each Dockerfile + a `.dockerignore` so the local context matches CI.
 5. **Load test not yet run against a real environment.** The k6 harness and runbook
    are ready, but the alert thresholds (`edge_5xx_threshold`, k6 thresholds) are still
    conservative **placeholders**, not tuned from observed baselines. → `docs/runbooks/load-test.md` results log.

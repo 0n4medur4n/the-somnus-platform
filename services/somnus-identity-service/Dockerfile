@@ -15,6 +15,10 @@ COPY packages /app/packages
 COPY services/somnus-identity-service ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile=false --config.dangerouslyAllowAllBuilds=true --filter @somnus/identity-service...
+# Build the @somnus/* workspace packages this service depends on. Their dist/ is
+# gitignored, so in a clean checkout (CI, and any fresh build context) it does
+# not exist yet -- without this, `nest build` cannot resolve @somnus/* imports.
+RUN pnpm --filter "@somnus/identity-service^..." --if-present run build
 RUN pnpm exec nest build
 
 # ---- 2. runtime ----
