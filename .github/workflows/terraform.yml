@@ -1,0 +1,54 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths: ["infrastructure/terraform/**"]
+  pull_request:
+    branches: [main]
+    paths: ["infrastructure/terraform/**"]
+
+# Cancel in-progress runs for the same ref so PRs don't queue.
+concurrency:
+  group: terraform-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  TERRAFORM_VERSION: "1.15.7"
+
+jobs:
+  fmt-validate:
+    name: fmt + validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        # staging/production stay empty until build plan Checkpoint
+        # 13.3; validating them is a no-op until then, not an error.
+        environment: [dev]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: fmt check (all modules + environments)
+        run: terraform fmt -check -recursive infrastructure/terraform
+
+      - name: init (no backend, no credentials needed for validate)
+        working-directory: infrastructure/terraform/environments/${{ matrix.environment }}
+        run: terraform init -backend=false
+
+      - name: validate
+        working-directory: infrastructure/terraform/environments/${{ matrix.environment }}
+        run: terraform validate

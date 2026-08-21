@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars (gitignored) and fill in real values.
+# Never commit terraform.tfvars -- it is not a secret file per se, but
+# keeping real project/billing IDs out of git avoids leaking account
+# structure and keeps this example generic for anyone cloning the repo.
+
+# Backend infra: Cloud Run, Artifact Registry, service accounts, Secret
+# Manager, Cloud Tasks, Pub/Sub, Cloud Scheduler, Cloud Storage.
+project_id = "the-somnus"
+
+# Firebase: Hosting sites, Authentication, Firestore. Deliberately a
+# different project from project_id -- matches .firebaserc.
+firebase_project_id = "the-somnuss"
+
+billing_account_id = "XXXXXX-XXXXXX-XXXXXX"
+
+region                       = "europe-west3"
+env                          = "dev"
+budget_amount_units          = 50
+firebase_budget_amount_units = 10
