@@ -5,7 +5,7 @@ import { ACTOR_ID_HEADER } from "../../src/infrastructure/internal-clients/heade
 import { ConsentProxyService } from "../../src/modules/consent/consent.service.js";
 import { MeService } from "../../src/modules/me/me.service.js";
 import type { ActorResolver } from "../../src/modules/sessions/actor-resolver.service.js";
-import type { SessionRecord } from "../../src/modules/sessions/session.service.js";
+import type { SessionRecord, SessionService } from "../../src/modules/sessions/session.service.js";
 import { makeFakeIdentityClient } from "../support/fake-identity.js";
 
 const ACTOR = "018f0000-0000-7000-8000-000000000abc";
@@ -17,6 +17,10 @@ const SESSION = {
 
 /** A resolver that skips the identity round-trip (covered in actor-resolver.test). */
 const fakeResolver = { resolve: async () => ACTOR } as unknown as ActorResolver;
+
+/** Morpheo + session collaborators are unused by getMe/patchProfile; deleteAccount drives its own. */
+const { client: unusedMorpheo } = makeFakeIdentityClient(() => ({ status: 204 }));
+const noopSessions = { revoke: async () => undefined } as unknown as SessionService;
 
 const FAST_RETRY = {
   maxAttempts: 3,
@@ -43,7 +47,7 @@ describe("MeService (composition)", () => {
       expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
       return { status: 200, body };
     });
-    const service = new MeService(client, fakeResolver);
+    const service = new MeService(client, unusedMorpheo, fakeResolver, noopSessions);
 
     const result = await service.getMe(SESSION, "corr-1");
 
@@ -59,7 +63,7 @@ describe("MeService (composition)", () => {
       expect(JSON.parse(req.body ?? "{}")).toEqual({ firstName: "Ada" });
       return { status: 204 };
     });
-    const service = new MeService(client, fakeResolver);
+    const service = new MeService(client, unusedMorpheo, fakeResolver, noopSessions);
 
     await expect(
       service.patchProfile(SESSION, { firstName: "Ada" }, "corr-1"),
@@ -69,7 +73,7 @@ describe("MeService (composition)", () => {
 
   it("throws INTERNAL when identity returns an unexpected /v1/me body", async () => {
     const { client } = makeFakeIdentityClient(() => ({ status: 200, body: { bogus: true } }));
-    const service = new MeService(client, fakeResolver);
+    const service = new MeService(client, unusedMorpheo, fakeResolver, noopSessions);
 
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({ code: "INTERNAL" });
   });
@@ -79,9 +83,37 @@ describe("MeService (composition)", () => {
       status: 403,
       body: { error: { code: "FORBIDDEN", message: "no", correlationId: "x" } },
     }));
-    const service = new MeService(client, fakeResolver);
+    const service = new MeService(client, unusedMorpheo, fakeResolver, noopSessions);
 
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("erases morpheo assessments, deletes the identity account, then revokes the session", async () => {
+    const morpheo = makeFakeIdentityClient((req) => {
+      expect(req.path).toBe("/internal/v1/maintenance/user-assessments/delete");
+      expect(req.method).toBe("POST");
+      expect(JSON.parse(req.body ?? "{}")).toEqual({ userId: ACTOR });
+      return { status: 200, body: { deleted: 1 } };
+    });
+    const identity = makeFakeIdentityClient((req) => {
+      expect(req.path).toBe("/v1/me");
+      expect(req.method).toBe("DELETE");
+      expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
+      return { status: 204 };
+    });
+    const revoked: string[] = [];
+    const sessions = {
+      revoke: async (id: string) => {
+        revoked.push(id);
+      },
+    } as unknown as SessionService;
+    const service = new MeService(identity.client, morpheo.client, fakeResolver, sessions);
+
+    await expect(service.deleteAccount(SESSION, "corr-1")).resolves.toBeUndefined();
+
+    expect(morpheo.requests).toHaveLength(1);
+    expect(identity.requests).toHaveLength(1);
+    expect(revoked).toEqual(["s1"]);
   });
 });
 
@@ -96,7 +128,7 @@ describe("MeService timeout/retry behavior", () => {
       },
       { retry: FAST_RETRY },
     );
-    const service = new MeService(client, fakeResolver);
+    const service = new MeService(client, unusedMorpheo, fakeResolver, noopSessions);
 
     const result = await service.getMe(SESSION, "corr-1");
 
@@ -119,7 +151,7 @@ describe("MeService timeout/retry behavior", () => {
           );
         }),
     });
-    const service = new MeService(client, fakeResolver);
+    const service = new MeService(client, unusedMorpheo, fakeResolver, noopSessions);
 
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({
       code: "UPSTREAM_UNAVAILABLE",

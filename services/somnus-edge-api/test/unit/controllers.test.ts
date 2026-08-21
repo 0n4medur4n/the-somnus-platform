@@ -33,6 +33,14 @@ describe("MeController delegation", () => {
     await controller.patchProfile(SESSION, { firstName: "Ada" }, "corr-1");
     expect(me.patchProfile).toHaveBeenCalledWith(SESSION, { firstName: "Ada" }, "corr-1");
   });
+
+  it("deleteAccount delegates to MeService with the session and correlation id", async () => {
+    const me = { deleteAccount: vi.fn().mockResolvedValue(undefined) };
+    const controller = new MeController(me as unknown as MeService);
+
+    await controller.deleteAccount(SESSION, "corr-1");
+    expect(me.deleteAccount).toHaveBeenCalledWith(SESSION, "corr-1");
+  });
 });
 
 describe("ConsentsController delegation", () => {
