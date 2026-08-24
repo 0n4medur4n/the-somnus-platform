@@ -38,6 +38,12 @@ COPY --from=build --chown=somnus:somnus /app/services/morpheo-service/.venv ./.v
 # migrations at boot.
 COPY --chown=somnus:somnus services/morpheo-service/alembic.ini ./
 COPY --chown=somnus:somnus services/morpheo-service/migrations ./migrations
+# Clinical artifacts (build plan §14a). The loader resolves them relative to the
+# installed package -- Path(__file__).parents[3]/clinical -- which for this
+# non-editable install lands at <venv>/lib/python3.13/clinical. Copy them there
+# so get_content() and the safety engine find them at runtime. (Coupled to the
+# pinned python3.13 base image above.)
+COPY --chown=somnus:somnus services/morpheo-service/clinical ./.venv/lib/python3.13/clinical
 USER somnus
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
