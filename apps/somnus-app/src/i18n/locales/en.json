@@ -26,7 +26,10 @@
     "emailHint": "We'll send you a single-use link. We don't use passwords.",
     "sendLink": "Send sign-in link",
     "linkSent": "We've sent a sign-in link to {{email}}. Check your inbox.",
-    "error": "We couldn't send the link. Please try again."
+    "error": "We couldn't send the link. Please try again.",
+    "subtitle": "Log in or create your account. No passwords.",
+    "passwordless": "Passwordless",
+    "tryAnotherEmail": "Use a different email"
   },
   "callback": {
     "title": "Completing sign-in",

@@ -26,7 +26,10 @@
     "emailHint": "T'enviarem un enllaç d'un sol ús. No fem servir contrasenyes.",
     "sendLink": "Envia l'enllaç d'accés",
     "linkSent": "T'hem enviat un enllaç d'accés a {{email}}. Revisa el correu.",
-    "error": "No hem pogut enviar l'enllaç. Torna-ho a provar."
+    "error": "No hem pogut enviar l'enllaç. Torna-ho a provar.",
+    "subtitle": "Entra o crea el teu compte. Sense contrasenyes.",
+    "passwordless": "Sense contrasenyes",
+    "tryAnotherEmail": "Fes servir un altre correu"
   },
   "callback": {
     "title": "Completant l'accés",
