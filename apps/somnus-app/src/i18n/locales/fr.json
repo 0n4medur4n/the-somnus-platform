@@ -26,7 +26,10 @@
     "emailHint": "Nous vous enverrons un lien à usage unique. Nous n'utilisons pas de mot de passe.",
     "sendLink": "Envoyer le lien de connexion",
     "linkSent": "Nous avons envoyé un lien de connexion à {{email}}. Vérifiez votre boîte de réception.",
-    "error": "Nous n'avons pas pu envoyer le lien. Veuillez réessayer."
+    "error": "Nous n'avons pas pu envoyer le lien. Veuillez réessayer.",
+    "subtitle": "Connectez-vous ou créez votre compte. Sans mot de passe.",
+    "passwordless": "Sans mot de passe",
+    "tryAnotherEmail": "Utiliser une autre adresse"
   },
   "callback": {
     "title": "Finalisation de la connexion",

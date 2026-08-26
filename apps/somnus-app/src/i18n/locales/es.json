@@ -26,7 +26,10 @@
     "emailHint": "Te enviaremos un enlace de un solo uso. No usamos contraseñas.",
     "sendLink": "Enviar enlace de acceso",
     "linkSent": "Te hemos enviado un enlace de acceso a {{email}}. Revisa tu correo.",
-    "error": "No hemos podido enviar el enlace. Inténtalo de nuevo."
+    "error": "No hemos podido enviar el enlace. Inténtalo de nuevo.",
+    "subtitle": "Entra o crea tu cuenta. Sin contraseñas.",
+    "passwordless": "Sin contraseñas",
+    "tryAnotherEmail": "Usar otro correo"
   },
   "callback": {
     "title": "Completando el acceso",
