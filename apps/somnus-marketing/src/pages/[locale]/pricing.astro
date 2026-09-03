@@ -9,7 +9,7 @@ export function getStaticPaths() {
 type Locale = (typeof LOCALES)[number];
 const { locale } = Astro.params as { locale: Locale };
 
-const APP_URL = "https://the-somnus-app.web.app/";
+const APP_URL = "https://app.thesomnus.com/";
 const freeFeatures = ["pricing.free.f1", "pricing.free.f2"] as const;
 const proFeatures = ["pricing.pro.f1", "pricing.pro.f2", "pricing.pro.f3"] as const;
 ---

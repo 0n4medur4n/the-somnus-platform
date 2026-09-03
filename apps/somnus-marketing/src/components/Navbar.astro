@@ -40,7 +40,7 @@ const links: ReadonlyArray<{ href: string; icon: string; key: string }> = [
 const locales = ["es", "en", "ca", "fr"] as const;
 const currentPath = localizedPath(locale, path).replace(/\/$/, "");
 const isActive = (href: string): boolean => href.replace(/\/$/, "") === currentPath;
-const appUrl = "https://the-somnus-app.web.app/";
+const appUrl = "https://app.thesomnus.com/";
 ---
 
 <header class="navbar" id="navbar">

@@ -15,8 +15,8 @@ export function getStaticPaths() {
 type Locale = (typeof LOCALES)[number];
 const { locale } = Astro.params as { locale: Locale };
 
-const APP_URL = "https://the-somnus-app.web.app/";
-const MORPHEO_URL = localizedPath(locale, "/morpheo/");
+const APP_URL = "https://app.thesomnus.com/";
+const LOGIN_URL = "https://app.thesomnus.com/login";
 const resultKeys = ["1", "2", "3", "4", "5"] as const;
 const transformationKeys = ["1", "2", "3", "4"] as const;
 const stepKeys = ["1", "2", "3"] as const;
@@ -60,7 +60,7 @@ const sectionIndexItems = [
         <p>{t(locale, "story.hero.body2")}</p>
       </div>
       <div class="story-actions">
-        <CtaButton client:load href={MORPHEO_URL} label={t(locale, "story.hero.cta")} />
+        <CtaButton client:load href={LOGIN_URL} label={t(locale, "story.hero.cta")} />
         <a class="story-secondary-link" href={APP_URL}>
           <span>{t(locale, "story.hero.secondaryCta")}</span>
           <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h11M11 6l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>

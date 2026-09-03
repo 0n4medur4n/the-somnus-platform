@@ -13,7 +13,7 @@ export function getStaticPaths() {
 
 type Locale = (typeof LOCALES)[number];
 const { locale } = Astro.params as { locale: Locale };
-const APP_URL = "https://the-somnus-app.web.app/";
+const APP_URL = "https://app.thesomnus.com/";
 const problemItems = ["1", "2", "3", "4"] as const;
 const receiveItems = ["1", "2", "3", "4", "5", "6"] as const;
 const transformationItems = ["1", "2", "3", "4"] as const;
