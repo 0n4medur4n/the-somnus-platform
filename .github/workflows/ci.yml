@@ -520,7 +520,7 @@ jobs:
       - name: Build both frontends
         if: env.FIREBASE_SA != ''
         run: |
-          pnpm --filter @somnus/app build
+          pnpm --filter @somnus/app build:hosting --mode hosting-dev
           pnpm --filter @somnus/marketing build
 
       - name: Authenticate to Firebase

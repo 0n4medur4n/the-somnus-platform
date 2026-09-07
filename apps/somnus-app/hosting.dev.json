@@ -1,0 +1,6 @@
+{
+  "VITE_EDGE_API_URL": "https://somnus-edge-api-lx3fvb5r5q-ey.a.run.app",
+  "VITE_FIREBASE_API_KEY": "AIzaSyC8U2ApQdyt-rZnT3ZFlb6GCY216Au_3Ko",
+  "VITE_FIREBASE_AUTH_DOMAIN": "the-somnuss.firebaseapp.com",
+  "VITE_FIREBASE_PROJECT_ID": "the-somnuss"
+}
