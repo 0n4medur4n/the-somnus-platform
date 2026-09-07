@@ -32,6 +32,10 @@ on:
         description: "Whether the React SPA changed."
         required: true
         type: boolean
+      admin:
+        description: "Whether the admin console SPA changed."
+        required: true
+        type: boolean
       image_tag:
         description: "Immutable image tag to deploy (the commit SHA)."
         required: true
@@ -92,17 +96,17 @@ jobs:
       # project + Hosting site. Firebase CLI uses the ADC set up by the WIF auth
       # step above (no separate service-account key).
       - name: Set up Node + pnpm (frontends)
-        if: ${{ inputs.marketing || inputs.app }}
+        if: ${{ inputs.marketing || inputs.app || inputs.admin }}
         uses: actions/setup-node@v4
         with:
           node-version: "24"
 
       - name: Install pnpm
-        if: ${{ inputs.marketing || inputs.app }}
+        if: ${{ inputs.marketing || inputs.app || inputs.admin }}
         uses: pnpm/action-setup@v4
 
       - name: Install dependencies
-        if: ${{ inputs.marketing || inputs.app }}
+        if: ${{ inputs.marketing || inputs.app || inputs.admin }}
         run: pnpm install --frozen-lockfile
 
       - name: Build + deploy the marketing frontend
@@ -130,4 +134,33 @@ jobs:
           pnpm exec firebase target:apply hosting app "${{ vars.APP_SITE_ID }}" \
             --project "${{ vars.FIREBASE_PROJECT_ID }}"
           pnpm exec firebase deploy --only hosting:app \
+            --project "${{ vars.FIREBASE_PROJECT_ID }}" --non-interactive
+
+      # The admin console is a third Hosting site (Addendum A §A2.1), deployed on
+      # its own cadence rather than alongside the consumer app.
+      #
+      # Hosting mode is what makes this deployable: it validates the four public
+      # settings against the console's strict schema, refuses any local/emulator
+      # value, drops source maps, and emits the hosting-config.json that the
+      # firebase.json predeploy guard reads back. A plain `vite build` here would
+      # ship a console pointed at localhost -- which is what it did until this was
+      # fixed, so the mode is not optional.
+      #
+      # VITE_AUTH_EMULATOR_URL is passed empty and stripped by the config, the same
+      # way the app step does it: the schema requires the key to be absent.
+      - name: Build + deploy the admin console
+        if: ${{ inputs.admin }}
+        env:
+          VITE_EDGE_API_URL: ${{ vars.EDGE_API_URL }}
+          VITE_FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          VITE_AUTH_EMULATOR_URL: ""
+          HOSTING_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          pnpm --filter @somnus/admin build:hosting --mode "hosting-${HOSTING_ENVIRONMENT}"
+          pnpm exec firebase target:apply hosting admin "${{ vars.ADMIN_SITE_ID }}" \
+            --project "${{ vars.FIREBASE_PROJECT_ID }}"
+          pnpm exec firebase deploy --only hosting:admin \
             --project "${{ vars.FIREBASE_PROJECT_ID }}" --non-interactive

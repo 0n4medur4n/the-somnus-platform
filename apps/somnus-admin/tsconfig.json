@@ -1,0 +1,16 @@
+{
+  "extends": "@somnus/tsconfig/base.json",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force",
+    "resolveJsonModule": true
+  },
+  "include": ["src", "vite-env.d.ts"]
+}

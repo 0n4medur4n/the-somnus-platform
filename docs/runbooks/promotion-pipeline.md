@@ -26,6 +26,27 @@ all build/deploy jobs, exactly like ci.yml's Hosting deploy skips without
 `FIREBASE_SERVICE_ACCOUNT`. Nothing here can touch a real project until you
 complete the steps below.
 
+### Which deploy path is actually running today
+
+Read this before concluding anything about how a live site got there.
+
+**Everything on Firebase Hosting today is deployed by ci.yml's `deploy-hosting`
+job**, not by this pipeline. That job authenticates with the
+`FIREBASE_SERVICE_ACCOUNT` repository secret (a service-account JSON key, not
+WIF), and builds and deploys **all three sites** -- marketing, app and admin --
+to the `the-somnuss` Firebase project on every push to `main`. A pull request
+gets a preview channel instead. That includes app.thesomnus.com.
+
+**`deploy.yml` + `deploy-environment.yml` -- the WIF promotion pipeline described
+in this document -- are dormant.** The `detect` job skips every downstream job
+while the repository variable `ARTIFACTS_PROJECT_ID` is unset, so `build-push`
+has never run and `BUILD_WIF_PROVIDER` / `BUILD_WIF_SERVICE_ACCOUNT` have never
+been read. Those secrets not existing yet is expected, not a fault.
+
+Until `ARTIFACTS_PROJECT_ID` exists, the ci.yml path above is the **only** deploy
+path in use. Setting that variable is what switches the pipeline on, and is a
+deliberate decision, not a step to take while configuring something else.
+
 ---
 
 ## 1. Authentication: Workload Identity Federation (keyless)
@@ -80,6 +101,24 @@ same workflow deploys to a different GCP project per stage:
 | `FIREBASE_PROJECT_ID` | That environment's Firebase project |
 | `MARKETING_SITE_ID` | Firebase Hosting site for the Astro marketing app |
 | `APP_SITE_ID` | Firebase Hosting site for the React SPA |
+| `ADMIN_SITE_ID` | Firebase Hosting site for the admin console (Addendum A §A2.1) |
+| `EDGE_API_URL` | Public HTTPS edge Cloud Run URL for this environment |
+| `FIREBASE_API_KEY` | Public Firebase web SDK API key (not an admin credential) |
+| `FIREBASE_AUTH_DOMAIN` | `<FIREBASE_PROJECT_ID>.firebaseapp.com` |
+
+The SPA build uses `hosting-dev`, `hosting-staging`, or `hosting-production`.
+The workflow injects the four public settings as `VITE_*` variables. Missing,
+empty, inconsistent, or emulator settings fail before bundling; local `.env`
+files are never loaded in these modes. Both the build and Firebase predeploy
+scan the output for local/emulator markers. Source maps are not published.
+
+**The admin console builds the same way.** `apps/somnus-admin` has its own
+`build:hosting`, its own `hosting.dev.json`, the same strict schema, and its own
+`predeploy` guard on the `admin` target in firebase.json. Both SPAs must be built
+with `--mode hosting-<env>`; a plain `vite build` loads local .env files, keeps
+source maps, emits no `hosting-config.json`, and validates nothing, so its output
+cannot pass the predeploy guard. The console was deployed that way once, pointing
+at `localhost:8080` with `demo-api-key`, which is why the guard now covers it.
 
 | Per-environment secret | Meaning |
 |------------------------|---------|

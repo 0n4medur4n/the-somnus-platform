@@ -8,8 +8,15 @@
   "targets": {
     "the-somnuss": {
       "hosting": {
-        "marketing": ["the-somnuss"],
-        "app": ["the-somnus-app"]
+        "marketing": [
+          "the-somnuss"
+        ],
+        "app": [
+          "the-somnus-app"
+        ],
+        "admin": [
+          "the-somnus-admin"
+        ]
       }
     }
   }
