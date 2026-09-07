@@ -14,7 +14,15 @@ export default defineConfig({
     // the node-environment root runner must not sweep their tests
     // (somnus-app is jsdom; somnus-marketing runs astro check + its own
     // suite, and its source is intentionally not touched by the root gate).
-    exclude: ["**/node_modules/**", "**/dist/**", "apps/somnus-app/**", "apps/somnus-marketing/**"],
+    // Each frontend runs its own suite with its own jsdom config; picking their
+    // tests up here would run them in the node environment and fail.
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "apps/somnus-app/**",
+      "apps/somnus-admin/**",
+      "apps/somnus-marketing/**",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json-summary"],

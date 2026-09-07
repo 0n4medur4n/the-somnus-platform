@@ -93,9 +93,34 @@ jobs:
     concurrency:
       group: identity-service-tidb-dev
       cancel-in-progress: false
+    # This is the ONLY job in the platform that runs a destructive test setup
+    # (test/global-setup.ts drops every table in its target database). Binding it
+    # to the `dev` Environment is what scopes its database credential: with
+    # TIDB_DEV_DATABASE_URL held as a `dev` Environment secret rather than a
+    # repository secret, no job that does not declare this Environment can read
+    # it at all.
+    #
+    # Read the limit honestly: `environment:` does NOT hide the repository's
+    # other secrets from this job -- GitHub merges repository and Environment
+    # secrets. What it buys is that the DESTRUCTIVE credential is reachable from
+    # exactly one declared place, and that a future production credential kept in
+    # a `production` Environment is unreachable from here by construction.
+    #
+    # The `dev` Environment must carry NO required reviewers and NO deployment
+    # branch policy: those apply to any job referencing an Environment, so a
+    # protection rule here would hang or fail the identity job on every pull
+    # request. See docs/runbooks/promotion-pipeline.md.
+    environment: dev
     env:
       DATABASE_URL: ${{ secrets.TIDB_DEV_DATABASE_URL }}
       DB_SSL: "true"
+      # The destructive setup refuses to run without BOTH of these, whatever the
+      # DSN says (services/somnus-identity-service/test/destructive-guard.ts).
+      # The host list is a `dev` Environment *variable*, not a secret: a hostname
+      # is not a credential, and keeping it in the Environment is what stops a
+      # differently-scoped run from inheriting permission to drop tables there.
+      SOMNUS_ALLOW_DESTRUCTIVE_TESTS: "1"
+      SOMNUS_DESTRUCTIVE_TEST_HOSTS: ${{ vars.TIDB_DEV_HOST }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -196,6 +221,48 @@ jobs:
 
       - name: Build SPA (vite)
         run: pnpm --filter @somnus/app build
+
+  somnus-admin:
+    name: Admin console (build, tests, i18n)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # The console imports @somnus/api-contracts through its built dist/.
+      - name: Build shared packages
+        run: pnpm --if-present -r --filter "./packages/*" run build
+
+      - name: Typecheck (strict)
+        run: pnpm --filter @somnus/admin typecheck
+
+      # The gate's client half (denial screen, capability rendering) and the
+      # i18n completeness check for the console's two locales, es and en
+      # (Addendum A §A5.5), with coverage thresholds enforced.
+      - name: Test admin console (vitest + coverage)
+        run: pnpm --filter @somnus/admin test:coverage
+
+      - name: Build admin console (vite)
+        run: pnpm --filter @somnus/admin build
 
   edge-api:
     name: Edge API (Firebase emulators)
@@ -475,9 +542,10 @@ jobs:
     name: Deploy frontends to dev Hosting
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [quality-gate, somnus-app, somnus-marketing]
-    # Build plan §20 Checkpoint 9.2 exit: both frontends deploy to dev
-    # Hosting from CI. PRs get a preview channel; main goes live to dev.
+    needs: [quality-gate, somnus-app, somnus-admin, somnus-marketing]
+    # Build plan §20 Checkpoint 9.2 exit: the frontends deploy to dev Hosting
+    # from CI. Three sites since Addendum A §A2.1 added the admin console on
+    # its own site. PRs get a preview channel; main goes live to dev.
     # Gated on the Firebase service-account secret so the pipeline stays
     # green until it is configured (see docs/runbooks/deploy-dev.md).
     env:
@@ -517,10 +585,15 @@ jobs:
         if: env.FIREBASE_SA != ''
         run: pnpm --if-present -r --filter "./packages/*" run build
 
-      - name: Build both frontends
+      # Both SPAs build in hosting mode: a plain `vite build` loads local .env
+      # files, keeps source maps, and skips the config validation and bundle scan,
+      # so it produces a bundle that points at localhost. The admin console was
+      # deployed that way until this was fixed.
+      - name: Build the frontends
         if: env.FIREBASE_SA != ''
         run: |
           pnpm --filter @somnus/app build:hosting --mode hosting-dev
+          pnpm --filter @somnus/admin build:hosting --mode hosting-dev
           pnpm --filter @somnus/marketing build
 
       - name: Authenticate to Firebase

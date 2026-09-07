@@ -1,0 +1,154 @@
+{
+  "common": {
+    "appName": "The Somnus · Console",
+    "loading": "Loading…",
+    "signOut": "Sign out",
+    "skipToContent": "Skip to content",
+    "language": "Language"
+  },
+  "login": {
+    "title": "Internal console",
+    "subtitle": "Restricted to The Somnus staff.",
+    "intro": "Enter your work email and we will send you a sign-in link.",
+    "emailLabel": "Email",
+    "emailHint": "A single-use link. We do not use passwords.",
+    "sendLink": "Send sign-in link",
+    "linkSent": "We sent a sign-in link to {{email}}. Check your inbox.",
+    "tryAnotherEmail": "Use a different email",
+    "error": "We could not send the link. Please try again."
+  },
+  "callback": {
+    "verifying": "Verifying your sign-in link…",
+    "title": "Completing sign-in",
+    "error": "This link is not valid or has expired. Request a new one."
+  },
+  "denied": {
+    "title": "You do not have console access",
+    "body": "Your account holds no internal Somnus role. The console is for authorised staff only.",
+    "noSelfService": "Internal roles are never requested or self-assigned: a platform administrator grants them."
+  },
+  "console": {
+    "title": "Admin console",
+    "signedInAs": "{{email}}",
+    "rolesTitle": "Your internal roles",
+    "capabilitiesTitle": "What you can do",
+    "noCapabilities": "Your role has no capabilities assigned yet.",
+    "pendingNotice": "The screens for the remaining capabilities arrive in Checkpoints 15.3 to 15.5."
+  },
+  "role": {
+    "support_agent": "Support agent",
+    "professional_verifier": "Professional verifier",
+    "clinical_governance_reviewer": "Clinical governance reviewer",
+    "platform_admin": "Platform administrator",
+    "platform_super_admin": "Platform super administrator"
+  },
+  "capability": {
+    "admin_users_read": "Search users and view their status",
+    "admin_account_status_write": "Suspend and reactivate accounts",
+    "admin_deletion_requests_process": "Process deletion requests",
+    "admin_verification_queue": "Professional verification queue",
+    "admin_organizations_manage": "Manage organizations",
+    "admin_roles_assign": "Assign internal roles",
+    "admin_content_review": "AI content review",
+    "admin_statistics_read": "Aggregate statistics",
+    "admin_audit_read": "Audit log",
+    "admin_consent_read": "Consent records",
+    "admin_break_glass": "Break-glass access to clinical data",
+    "admin_system_health": "System health"
+  },
+  "errors": {
+    "required": "This field is required.",
+    "invalidEmail": "Enter a valid email.",
+    "generic": "Something went wrong. Please try again.",
+    "summaryTitle": "Fix the following errors",
+    "forbidden": "You are not allowed to do that.",
+    "conflict": "The state changed since you loaded this screen. Try again.",
+    "notFound": "Not found."
+  },
+  "nav": {
+    "overview": "Overview",
+    "users": "Users",
+    "deletions": "Deletion requests",
+    "organizations": "Organizations",
+    "verification": "Professional verification",
+    "roles": "Internal roles"
+  },
+  "users": {
+    "title": "Users",
+    "searchLabel": "Search by email",
+    "searchCta": "Search",
+    "truncated": "There are more results than fit. Narrow your search.",
+    "empty": "No account matches.",
+    "colEmail": "Email",
+    "colStatus": "Status",
+    "view": "View account",
+    "detailTitle": "Account",
+    "noClinical": "This view shows account metadata only. Clinical data requires break-glass access with a justification.",
+    "internalRoles": "Internal roles",
+    "organizations": "Organizations",
+    "professional": "Professional profile",
+    "none": "None",
+    "suspend": "Suspend account",
+    "reactivate": "Reactivate account",
+    "reasonLabel": "Reason",
+    "reasonHint": "Recorded against your identity. Required.",
+    "statusChanged": "Status updated."
+  },
+  "status": {
+    "active": "Active",
+    "suspended": "Suspended",
+    "deleted": "Deleted"
+  },
+  "deletions": {
+    "title": "Deletion requests",
+    "empty": "No pending requests.",
+    "complete": "Carry out deletion",
+    "cancel": "Cancel request",
+    "irreversible": "Carrying out a deletion is irreversible: it erases identity and consent data. The audit trail is retained.",
+    "done": "Request resolved."
+  },
+  "organizations": {
+    "title": "Organizations",
+    "empty": "No organizations yet.",
+    "nameLabel": "Name",
+    "create": "Create organization",
+    "created": "Organization created. You were not added as a member.",
+    "approve": "Approve",
+    "suspend": "Suspend",
+    "members": "View members",
+    "membersTitle": "Members",
+    "noMembers": "No members.",
+    "statusChanged": "Status updated."
+  },
+  "verification": {
+    "title": "Professional verification queue",
+    "empty": "No pending cases.",
+    "colSpecialty": "Specialty",
+    "colLicense": "Registration number",
+    "approve": "Approve",
+    "reject": "Reject",
+    "reasonLabel": "Reason for the decision",
+    "reasonHint": "Required for approvals too: it is recorded against your identity.",
+    "consequence": "Approving grants the professional role. From then on they can reach clinical data of anyone who explicitly grants it to them.",
+    "decided": "Case resolved."
+  },
+  "roles": {
+    "title": "Internal roles",
+    "intro": "Only a platform super administrator can assign internal roles.",
+    "targetLabel": "User id",
+    "targetHint": "Find them under Users and copy their id.",
+    "roleLabel": "Role",
+    "assign": "Assign role",
+    "assigned": "Role assigned.",
+    "noSelfAssign": "You cannot assign a role to yourself. Privilege escalation always passes through a second person."
+  },
+  "specialty": {
+    "family_physician": "Family medicine",
+    "pediatrician": "Paediatrics",
+    "sleep_physician": "Sleep medicine",
+    "psychologist": "Psychology",
+    "nurse": "Nursing",
+    "pharmacist": "Pharmacy",
+    "therapist": "Therapy"
+  }
+}

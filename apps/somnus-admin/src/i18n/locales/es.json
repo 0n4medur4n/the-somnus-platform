@@ -1,0 +1,154 @@
+{
+  "common": {
+    "appName": "The Somnus · Consola",
+    "loading": "Cargando…",
+    "signOut": "Cerrar sesión",
+    "skipToContent": "Saltar al contenido",
+    "language": "Idioma"
+  },
+  "login": {
+    "title": "Consola interna",
+    "subtitle": "Acceso restringido al personal de The Somnus.",
+    "intro": "Introduce tu correo corporativo y te enviaremos un enlace de acceso.",
+    "emailLabel": "Correo electrónico",
+    "emailHint": "Enlace de un solo uso. No usamos contraseñas.",
+    "sendLink": "Enviar enlace de acceso",
+    "linkSent": "Te hemos enviado un enlace de acceso a {{email}}. Revisa tu correo.",
+    "tryAnotherEmail": "Usar otro correo",
+    "error": "No hemos podido enviar el enlace. Inténtalo de nuevo."
+  },
+  "callback": {
+    "verifying": "Verificando tu enlace de acceso…",
+    "title": "Completando el acceso",
+    "error": "El enlace no es válido o ha caducado. Vuelve a solicitar uno."
+  },
+  "denied": {
+    "title": "No tienes acceso a la consola",
+    "body": "Tu cuenta no tiene ningún rol interno de The Somnus. La consola es solo para personal autorizado.",
+    "noSelfService": "Los roles internos no se solicitan ni se autoasignan: los concede un administrador de plataforma."
+  },
+  "console": {
+    "title": "Consola de administración",
+    "signedInAs": "{{email}}",
+    "rolesTitle": "Tus roles internos",
+    "capabilitiesTitle": "Lo que puedes hacer",
+    "noCapabilities": "Tu rol no tiene ninguna capacidad asignada todavía.",
+    "pendingNotice": "Las pantallas de cada capacidad restante llegan en los checkpoints 15.3 a 15.5."
+  },
+  "role": {
+    "support_agent": "Agente de soporte",
+    "professional_verifier": "Verificador de profesionales",
+    "clinical_governance_reviewer": "Revisor de gobernanza clínica",
+    "platform_admin": "Administrador de plataforma",
+    "platform_super_admin": "Superadministrador de plataforma"
+  },
+  "capability": {
+    "admin_users_read": "Buscar personas usuarias y ver su estado",
+    "admin_account_status_write": "Suspender y reactivar cuentas",
+    "admin_deletion_requests_process": "Tramitar solicitudes de borrado",
+    "admin_verification_queue": "Cola de verificación profesional",
+    "admin_organizations_manage": "Gestionar organizaciones",
+    "admin_roles_assign": "Asignar roles internos",
+    "admin_content_review": "Revisión de contenido generado por IA",
+    "admin_statistics_read": "Estadísticas agregadas",
+    "admin_audit_read": "Registro de auditoría",
+    "admin_consent_read": "Registros de consentimiento",
+    "admin_break_glass": "Acceso de emergencia a datos clínicos",
+    "admin_system_health": "Estado del sistema"
+  },
+  "errors": {
+    "required": "Este campo es obligatorio.",
+    "invalidEmail": "Introduce un correo válido.",
+    "generic": "Algo ha salido mal. Inténtalo de nuevo.",
+    "summaryTitle": "Corrige los siguientes errores",
+    "forbidden": "No tienes permiso para esta acción.",
+    "conflict": "El estado ha cambiado desde que cargaste la pantalla. Vuelve a intentarlo.",
+    "notFound": "No se ha encontrado."
+  },
+  "nav": {
+    "overview": "Resumen",
+    "users": "Personas usuarias",
+    "deletions": "Solicitudes de borrado",
+    "organizations": "Organizaciones",
+    "verification": "Verificación profesional",
+    "roles": "Roles internos"
+  },
+  "users": {
+    "title": "Personas usuarias",
+    "searchLabel": "Buscar por correo",
+    "searchCta": "Buscar",
+    "truncated": "Hay más resultados de los que caben. Afina la búsqueda.",
+    "empty": "Ninguna cuenta coincide.",
+    "colEmail": "Correo",
+    "colStatus": "Estado",
+    "view": "Ver ficha",
+    "detailTitle": "Ficha de la cuenta",
+    "noClinical": "Esta ficha muestra solo metadatos de la cuenta. Los datos clínicos requieren acceso de emergencia con justificación.",
+    "internalRoles": "Roles internos",
+    "organizations": "Organizaciones",
+    "professional": "Perfil profesional",
+    "none": "Ninguno",
+    "suspend": "Suspender cuenta",
+    "reactivate": "Reactivar cuenta",
+    "reasonLabel": "Motivo",
+    "reasonHint": "Queda registrado con tu identidad. Obligatorio.",
+    "statusChanged": "Estado actualizado."
+  },
+  "status": {
+    "active": "Activa",
+    "suspended": "Suspendida",
+    "deleted": "Borrada"
+  },
+  "deletions": {
+    "title": "Solicitudes de borrado",
+    "empty": "No hay solicitudes pendientes.",
+    "complete": "Ejecutar borrado",
+    "cancel": "Cancelar solicitud",
+    "irreversible": "Ejecutar el borrado es irreversible: elimina los datos de identidad y de consentimiento. La traza de auditoría se conserva.",
+    "done": "Solicitud resuelta."
+  },
+  "organizations": {
+    "title": "Organizaciones",
+    "empty": "Todavía no hay organizaciones.",
+    "nameLabel": "Nombre",
+    "create": "Crear organización",
+    "created": "Organización creada. No te has añadido como miembro.",
+    "approve": "Aprobar",
+    "suspend": "Suspender",
+    "members": "Ver miembros",
+    "membersTitle": "Miembros",
+    "noMembers": "Sin miembros.",
+    "statusChanged": "Estado actualizado."
+  },
+  "verification": {
+    "title": "Cola de verificación profesional",
+    "empty": "No hay casos pendientes.",
+    "colSpecialty": "Especialidad",
+    "colLicense": "Nº de colegiado",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "reasonLabel": "Motivo de la decisión",
+    "reasonHint": "Obligatorio también al aprobar: queda registrado con tu identidad.",
+    "consequence": "Aprobar concede el rol profesional. A partir de ahí podrá acceder a datos clínicos de quien se los conceda explícitamente.",
+    "decided": "Caso resuelto."
+  },
+  "roles": {
+    "title": "Roles internos",
+    "intro": "Solo un superadministrador de plataforma puede asignar roles internos.",
+    "targetLabel": "Id de la persona usuaria",
+    "targetHint": "Búscala en Personas usuarias y copia su id.",
+    "roleLabel": "Rol",
+    "assign": "Asignar rol",
+    "assigned": "Rol asignado.",
+    "noSelfAssign": "No puedes asignarte un rol a ti. La escalada de privilegios pasa siempre por una segunda persona."
+  },
+  "specialty": {
+    "family_physician": "Medicina de familia",
+    "pediatrician": "Pediatría",
+    "sleep_physician": "Medicina del sueño",
+    "psychologist": "Psicología",
+    "nurse": "Enfermería",
+    "pharmacist": "Farmacia",
+    "therapist": "Terapia"
+  }
+}

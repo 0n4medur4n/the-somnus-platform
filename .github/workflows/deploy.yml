@@ -35,6 +35,7 @@ jobs:
       services: ${{ steps.detect.outputs.services }}
       marketing: ${{ steps.detect.outputs.marketing }}
       app: ${{ steps.detect.outputs.app }}
+      admin: ${{ steps.detect.outputs.admin }}
       any: ${{ steps.detect.outputs.any }}
       configured: ${{ steps.detect.outputs.configured }}
     steps:
@@ -75,11 +76,18 @@ jobs:
           { $shared_py || touched '^services/somnus-report-service/'; }   && services+=("somnus-report-service")
 
           marketing=false; { $shared_ts || touched '^apps/somnus-marketing/'; } && marketing=true
-          app=false;       { $shared_ts || touched '^apps/somnus-app/'; }       && app=true
+          app=false;       { $shared_ts || touched '^apps/somnus-app/|^scripts/check-hosting-bundle\.|^firebase\.json$|^\.github/workflows/deploy-environment\.yml$'; } && app=true
+          # The admin console is a third static frontend on its own Hosting site
+          # with its own deploy cadence (Addendum A §A2.1), so it carries its own
+          # flag instead of riding on the app's. `check-hosting-bundle` is
+          # deliberately absent here: that guard is wired as a predeploy on the
+          # `app` target only, because it requires the hosting-config.json that
+          # only the SPA's hosting-mode build emits (see promotion-pipeline.md).
+          admin=false;     { $shared_ts || touched '^apps/somnus-admin/|^firebase\.json$|^\.github/workflows/deploy-environment\.yml$'; } && admin=true
 
           services_json="$(jq -cn '$ARGS.positional' --args ${services[@]+"${services[@]}"})"
           any=false
-          if [ "$services_json" != "[]" ] || [ "$marketing" = true ] || [ "$app" = true ]; then any=true; fi
+          if [ "$services_json" != "[]" ] || [ "$marketing" = true ] || [ "$app" = true ] || [ "$admin" = true ]; then any=true; fi
 
           # Until the shared artifacts registry is configured (repo variable
           # ARTIFACTS_PROJECT_ID), the pipeline no-ops cleanly instead of failing
@@ -94,9 +102,10 @@ jobs:
           echo "services=$services_json"   >> "$GITHUB_OUTPUT"
           echo "marketing=$marketing"       >> "$GITHUB_OUTPUT"
           echo "app=$app"                   >> "$GITHUB_OUTPUT"
+          echo "admin=$admin"               >> "$GITHUB_OUTPUT"
           echo "any=$any"                   >> "$GITHUB_OUTPUT"
           echo "configured=$configured"     >> "$GITHUB_OUTPUT"
-          echo "summary -> services=$services_json marketing=$marketing app=$app any=$any configured=$configured"
+          echo "summary -> services=$services_json marketing=$marketing app=$app admin=$admin any=$any configured=$configured"
 
   build-push:
     name: Build + push ${{ matrix.service }}
@@ -152,6 +161,7 @@ jobs:
       services: ${{ needs.detect.outputs.services }}
       marketing: ${{ needs.detect.outputs.marketing == 'true' }}
       app: ${{ needs.detect.outputs.app == 'true' }}
+      admin: ${{ needs.detect.outputs.admin == 'true' }}
       image_tag: ${{ github.sha }}
     secrets: inherit
 
@@ -165,6 +175,7 @@ jobs:
       services: ${{ needs.detect.outputs.services }}
       marketing: ${{ needs.detect.outputs.marketing == 'true' }}
       app: ${{ needs.detect.outputs.app == 'true' }}
+      admin: ${{ needs.detect.outputs.admin == 'true' }}
       image_tag: ${{ github.sha }}
     secrets: inherit
 
@@ -178,5 +189,6 @@ jobs:
       services: ${{ needs.detect.outputs.services }}
       marketing: ${{ needs.detect.outputs.marketing == 'true' }}
       app: ${{ needs.detect.outputs.app == 'true' }}
+      admin: ${{ needs.detect.outputs.admin == 'true' }}
       image_tag: ${{ github.sha }}
     secrets: inherit
