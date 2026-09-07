@@ -152,12 +152,18 @@ resource, and this suite's `resetTables()` would otherwise let one run
 truncate another's in-flight data. The migration + full test run
 (including this suite) has been verified end to end against the real
 cluster, not just against local docker-compose MySQL. The job reads
-its connection string from the `TIDB_DEV_DATABASE_URL` repository
-secret and sets `DB_SSL=true` so `db.client.ts` negotiates TLS (see
+its connection string from the `TIDB_DEV_DATABASE_URL` secret held on
+the **`dev` GitHub Environment** (the job declares `environment: dev`,
+which is what scopes that credential: a job that does not declare the
+Environment cannot read it at all) and sets `DB_SSL=true` so `db.client.ts` negotiates TLS (see
 `DbConfigSchema`'s `DB_SSL` field, off by default for local dev, since
 docker-compose MySQL doesn't speak TLS at all) -- this only becomes a
-live required check once that secret is present in the repo's Actions
-secrets (Settings -> Secrets and variables -> Actions). `CONSENT_DATABASE_URL`/`CONSENT_DB_SSL`
+live required check once that secret is present on the `dev`
+Environment (Settings -> Secrets and variables -> Actions ->
+Environments -> dev), together with the `TIDB_DEV_HOST` Environment
+variable the destructive guard requires. The `dev` Environment must
+carry no required reviewers and no deployment branch policy, or this
+job will hang or fail on every pull request. `CONSENT_DATABASE_URL`/`CONSENT_DB_SSL`
 for the consent module (Phase 7.1) are derived from that same secret
 in the workflow (same cluster/user, `/somnus_identity` swapped for
 `/somnus_consent`) rather than needing a second one -- see that
@@ -353,9 +359,67 @@ curl http://localhost:8080/version
 
 ```bash
 # Requires `just dev-up` running (MySQL 8 on localhost:3306)
-pnpm --filter @somnus/identity-service test
-pnpm --filter @somnus/identity-service test:coverage
+SOMNUS_ALLOW_DESTRUCTIVE_TESTS=1 pnpm --filter @somnus/identity-service test
+SOMNUS_ALLOW_DESTRUCTIVE_TESTS=1 pnpm --filter @somnus/identity-service test:coverage
 ```
+
+### Why the suite refuses to run without that variable
+
+`test/global-setup.ts` **drops every table** in its target database before
+migrating. `test/destructive-guard.ts` refuses to let it, unless all three of
+these hold:
+
+1. `SOMNUS_ALLOW_DESTRUCTIVE_TESTS=1` is set. Running a test command is never on
+   its own enough to destroy a database.
+2. The target database is `somnus_identity` or `somnus_consent`. This catches a
+   DSN aimed at the wrong logical database; it does **not** separate dev from
+   production, because production uses the same names.
+3. The host is loopback, **or** is named explicitly in
+   `SOMNUS_DESTRUCTIVE_TEST_HOSTS`. This is the condition that actually separates
+   dev from production. Against a shared dev cluster:
+
+   ```bash
+   export SOMNUS_ALLOW_DESTRUCTIVE_TESTS=1
+   export SOMNUS_DESTRUCTIVE_TEST_HOSTS='<dev cluster hostname>'
+   export DATABASE_URL='<dev identity DSN>' DB_SSL=true
+   export CONSENT_DATABASE_URL='<dev consent DSN>' CONSENT_DB_SSL=true
+   pnpm --filter @somnus/identity-service test
+   ```
+
+The guard fails closed on anything it cannot positively recognise, including an
+unparseable DSN, and never puts a credential in an error message. It travels
+with the code, so it holds on a laptop and in any future pipeline, not only in
+the one CI job that happens to be configured correctly today.
+
+A fourth rule sits alongside those three: **the identity and consent targets must
+not be the same database.** Each is dropped in turn, and each drop is scoped by
+MySQL's `DATABASE()` -- which is exactly what keeps the two apart, and which
+silently stops meaning anything when both DSNs name one database. The consent
+pass then deletes the identity tables the identity pass has just migrated, and
+the run continues into a half-missing schema; the first symptom is a `DELETE`
+against a table that no longer exists, files later, in a suite that touched
+nothing related. That is not hypothetical -- it is how CI failed on 466ef37.
+
+The allowlist cannot catch this, because `somnus_identity` and `somnus_consent`
+are both allowed and an identical pair satisfies every other check. It is
+reachable from a one-character mistake: CI derives the consent DSN from
+identity's by literal substitution (`s#/somnus_identity#/somnus_consent#`), so
+any `DATABASE_URL` whose path is not exactly `/somnus_identity` leaves the
+substitution a no-op and collapses the two into one.
+
+The flip side of a guard that fails closed is that CI depends on something
+supplying those two variables, and nothing in the TypeScript build would notice
+if `ci.yml` stopped doing so: the job would simply go red, with an error about a
+variable nobody had touched. `test/architecture/ci-destructive-guard-wiring.test.ts`
+closes that loop. It reads `.github/workflows/ci.yml` and asserts that every job
+invoking this suite declares `environment: dev`, sets the opt-in to exactly the
+string `"1"`, and feeds `SOMNUS_DESTRUCTIVE_TEST_HOSTS` from a `${{ vars.* }}`
+expression -- currently `vars.TIDB_DEV_HOST`. It imports the variable *names*
+from `test/destructive-guard.ts` rather than repeating them, so renaming a
+constant without updating the workflow fails here, by name, instead of in a CI
+run tomorrow. Note this checks the wiring, not the value: whether
+`TIDB_DEV_HOST` is actually set on the `dev` Environment, and set to the right
+hostname, is GitHub-side configuration no test in this repository can see.
 
 The test suite includes:
 

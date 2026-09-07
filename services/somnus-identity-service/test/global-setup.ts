@@ -5,6 +5,7 @@ import { runMigrationsUp } from "../src/infrastructure/db/migrate.js";
 import { createConsentDb, createConsentPool } from "../src/modules/consent/db/consent-db.client.js";
 import { loadConsentDbConfig } from "../src/modules/consent/db/consent-db.config.js";
 import { runConsentMigrationsUp } from "../src/modules/consent/db/migrate.js";
+import { assertDestructiveTargetAllowed, assertTargetsAreDistinct } from "./destructive-guard.js";
 
 /**
  * Drops every table in the pool's current database, Drizzle's
@@ -39,6 +40,10 @@ async function dropAllTables(pool: Pool): Promise<void> {
  * separate from identity's, not just a different folder read by the
  * same runner).
  *
+ * Guarded first: `assertDestructiveTargetAllowed` refuses anything that is not
+ * a disposable target, before a pool is opened. See destructive-guard.ts for
+ * why a secret's name in one workflow line was not a control.
+ *
  * Clean slate first: the CI TiDB cluster is shared and persistent, and
  * `globalSetup` has no teardown, so a previous run that crashed mid-test
  * (e.g. on a serverless connection flake) leaves its tables behind. On
@@ -48,13 +53,26 @@ async function dropAllTables(pool: Pool): Promise<void> {
  */
 export default async function setup(): Promise<void> {
   const config = loadDbConfig(process.env);
+  const consentConfig = loadConsentDbConfig(process.env);
+
+  // BOTH targets are checked before a single pool is opened. Checking each one
+  // just before its own drop would still let a run that is half-legitimate
+  // destroy the identity database and only then refuse the consent one; a
+  // partial wipe is not a safer outcome than a refusal.
+  assertDestructiveTargetAllowed(config.DATABASE_URL, "identity");
+  assertDestructiveTargetAllowed(consentConfig.CONSENT_DATABASE_URL, "consent");
+
+  // Both targets can be individually legitimate and still be the same database,
+  // in which case the consent pass below wipes what the identity pass just
+  // migrated. Checked here, before any pool, for the same reason as above.
+  assertTargetsAreDistinct(config.DATABASE_URL, consentConfig.CONSENT_DATABASE_URL);
+
   const pool = createPool(config);
   const db = createDb(pool);
   await dropAllTables(pool);
   await runMigrationsUp(db);
   await pool.end();
 
-  const consentConfig = loadConsentDbConfig(process.env);
   const consentPool = createConsentPool(consentConfig);
   const consentDb = createConsentDb(consentPool);
   await dropAllTables(consentPool);
