@@ -6,7 +6,12 @@ import {
   Logger as NestLogger,
 } from "@nestjs/common";
 import { ApiErrorResponseSchema } from "@somnus/api-contracts";
-import { ErrorCode, type ErrorCodeType, SomnusError, toHttpResponse } from "@somnus/errors";
+import {
+  type ErrorCodeType,
+  errorCodeToHttpStatus,
+  SomnusError,
+  toHttpResponse,
+} from "@somnus/errors";
 import type { FastifyReply } from "fastify";
 
 /**
@@ -84,23 +89,15 @@ function extractStatusCode(exception: unknown): number | null {
   return null;
 }
 
-// Local mapping that does not depend on the consumer's packages.
+/**
+ * The status for a code comes from `@somnus/errors` itself, never from a copy
+ * kept here. A duplicated table silently downgraded every newly added code to
+ * a 500 -- the invitation codes of Addendum A Checkpoint 14.2 were 500s until
+ * this was collapsed onto the single source of truth. Anything genuinely
+ * unmapped still falls back to 500.
+ */
 function errorCodeToStatus(code: ErrorCodeType): number {
-  const c = ErrorCode;
-  if (code === c.VALIDATION_FAILED) return 400;
-  if (code === c.UNAUTHENTICATED) return 401;
-  if (code === c.FORBIDDEN) return 403;
-  if (code === c.NOT_FOUND) return 404;
-  if (code === c.CONFLICT) return 409;
-  if (code === c.RATE_LIMITED) return 429;
-  if (code === c.CSRF_REJECTED) return 403;
-  if (code === c.CONSENT_REQUIRED) return 412;
-  if (code === c.CONSENT_WITHDRAWN) return 412;
-  if (code === c.PROFESSIONAL_NOT_VERIFIED) return 403;
-  if (code === c.ORGANIZATION_MEMBERSHIP_NOT_FOUND) return 404;
-  if (code === c.ACCESS_GRANT_EXPIRED) return 410;
-  if (code === c.UPSTREAM_UNAVAILABLE) return 502;
-  return 500;
+  return errorCodeToHttpStatus[code] ?? 500;
 }
 
 function httpStatusToErrorCode(status: number): ErrorCodeType {

@@ -11,5 +11,8 @@ import { AccountDeletionService } from "./account-deletion.service.js";
   imports: [ConsentModule],
   controllers: [AccountDeletionController],
   providers: [AccountDeletionService],
+  // Exported so the admin console can complete a deletion request through the
+  // SAME erasure the user own DELETE /v1/me runs, never a second path.
+  exports: [AccountDeletionService],
 })
 export class AccountModule {}

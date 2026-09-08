@@ -9,6 +9,8 @@ import {
 import {
   InvitationAcceptRequestSchema,
   InvitationCreateRequestSchema,
+  InvitationPreviewRequestSchema,
+  InvitationPreviewResponseSchema,
   InvitationSchema,
 } from "./invitation.js";
 import { MembershipPatchRequestSchema, MembershipSchema } from "./membership.js";
@@ -245,40 +247,196 @@ describe("UserResolveRequestSchema / UserResolveResponseSchema", () => {
   });
 });
 
-describe("RegistrationRequestSchema", () => {
-  it("accepts profile fields only (identity comes from the session)", () => {
+describe("RegistrationRequestSchema (Addendum A Checkpoint 14.1: one flow, three role branches)", () => {
+  /** Both required purposes, separate flags -- never one combined value (build plan §13). */
+  const consents = { termsAcceptance: true, privacyPolicyAcknowledgement: true } as const;
+  const common = { firstName: "Ada", lastName: "Lovelace", consents } as const;
+
+  it("accepts the adult branch (identity still comes from the session)", () => {
     expect(
-      RegistrationRequestSchema.safeParse({ firstName: "Ada", lastName: "Lovelace" }).success,
+      RegistrationRequestSchema.safeParse({ ...common, role: "adult", ageYears: 34 }).success,
     ).toBe(true);
     expect(
-      RegistrationRequestSchema.safeParse({ firstName: "Ada", lastName: "Lovelace", locale: "ca" })
+      RegistrationRequestSchema.safeParse({ ...common, role: "adult", ageYears: 18, locale: "ca" })
         .success,
+    ).toBe(true);
+  });
+
+  it("accepts the parent branch with a guardianship confirmation and a minor age band", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        role: "parent",
+        guardianshipConfirmed: true,
+        minorAgeBand: "6-12y",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts the professional branch with a specialty and a licence number", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        role: "professional",
+        specialty: "sleep_physician",
+        licenseNumber: "COL-12345",
+      }).success,
     ).toBe(true);
   });
 
   it("rejects a client-supplied providerUserId or email (strict)", () => {
     expect(
       RegistrationRequestSchema.safeParse({
-        firstName: "Ada",
-        lastName: "Lovelace",
+        ...common,
+        role: "adult",
+        ageYears: 34,
         email: "a@b.com",
+      }).success,
+    ).toBe(false);
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        role: "adult",
+        ageYears: 34,
+        providerUserId: "firebase-uid-1",
       }).success,
     ).toBe(false);
   });
 
-  it("rejects missing names", () => {
-    expect(RegistrationRequestSchema.safeParse({ firstName: "Ada" }).success).toBe(false);
+  it("rejects a minor age, or a missing age, on the adult branch", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({ ...common, role: "adult", ageYears: 17 }).success,
+    ).toBe(false);
+    expect(RegistrationRequestSchema.safeParse({ ...common, role: "adult" }).success).toBe(false);
+  });
+
+  it("rejects a guardian who omits or denies the guardianship confirmation", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({ ...common, role: "parent", minorAgeBand: "3-5y" })
+        .success,
+    ).toBe(false);
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        role: "parent",
+        guardianshipConfirmed: false,
+        minorAgeBand: "3-5y",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an age band outside Morpheo's role definitions (§14a)", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        role: "parent",
+        guardianshipConfirmed: true,
+        minorAgeBand: "18-20y",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a professional without a specialty or without a licence number", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        role: "professional",
+        licenseNumber: "COL-1",
+      }).success,
+    ).toBe(false);
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        role: "professional",
+        specialty: "psychologist",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects either consent purpose being absent or false -- they are never combined", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        role: "adult",
+        ageYears: 34,
+        consents: { termsAcceptance: true },
+      }).success,
+    ).toBe(false);
+    expect(
+      RegistrationRequestSchema.safeParse({
+        firstName: "Ada",
+        lastName: "Lovelace",
+        role: "adult",
+        ageYears: 34,
+        consents: { termsAcceptance: true, privacyPolicyAcknowledgement: false },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects branch fields leaking across branches (strict)", () => {
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        role: "adult",
+        ageYears: 34,
+        minorAgeBand: "6-12y",
+      }).success,
+    ).toBe(false);
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        role: "professional",
+        specialty: "nurse",
+        licenseNumber: "COL-1",
+        guardianshipConfirmed: true,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an unknown role and a missing name", () => {
+    expect(RegistrationRequestSchema.safeParse({ ...common, role: "platform_admin" }).success).toBe(
+      false,
+    );
+    expect(
+      RegistrationRequestSchema.safeParse({
+        firstName: "Ada",
+        role: "adult",
+        ageYears: 34,
+        consents,
+      }).success,
+    ).toBe(false);
   });
 });
 
 describe("UserProvisionRequestSchema", () => {
-  it("accepts a full provision request", () => {
+  const consents = { termsAcceptance: true, privacyPolicyAcknowledgement: true } as const;
+  const common = {
+    providerUserId: "firebase-uid-1",
+    email: "a@example.com",
+    firstName: "Ada",
+    lastName: "Lovelace",
+    consents,
+  } as const;
+
+  it("accepts a full provision request on every branch", () => {
+    expect(
+      UserProvisionRequestSchema.safeParse({ ...common, role: "adult", ageYears: 34 }).success,
+    ).toBe(true);
     expect(
       UserProvisionRequestSchema.safeParse({
-        providerUserId: "firebase-uid-1",
-        email: "a@example.com",
-        firstName: "Ada",
-        lastName: "Lovelace",
+        ...common,
+        role: "parent",
+        guardianshipConfirmed: true,
+        minorAgeBand: "0-3m",
+      }).success,
+    ).toBe(true);
+    expect(
+      UserProvisionRequestSchema.safeParse({
+        ...common,
+        role: "professional",
+        specialty: "pediatrician",
+        licenseNumber: "COL-9",
       }).success,
     ).toBe(true);
   });
@@ -289,7 +447,83 @@ describe("UserProvisionRequestSchema", () => {
         email: "a@example.com",
         firstName: "Ada",
         lastName: "Lovelace",
+        role: "adult",
+        ageYears: 34,
+        consents,
       }).success,
+    ).toBe(false);
+    expect(
+      UserProvisionRequestSchema.safeParse({
+        providerUserId: "firebase-uid-1",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        role: "adult",
+        ageYears: 34,
+        consents,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("carries the same branch rules as the registration request", () => {
+    expect(
+      UserProvisionRequestSchema.safeParse({ ...common, role: "adult", ageYears: 12 }).success,
+    ).toBe(false);
+    expect(
+      UserProvisionRequestSchema.safeParse({
+        ...common,
+        role: "parent",
+        guardianshipConfirmed: false,
+        minorAgeBand: "1-2y",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("InvitationPreviewResponseSchema (Addendum A Checkpoint 14.2)", () => {
+  const valid = {
+    organizationName: "Acme Health",
+    email: "invited@example.com",
+    expiresAt: new Date().toISOString(),
+  };
+
+  it("accepts an organization name, the invited email and an expiry", () => {
+    expect(InvitationPreviewResponseSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("requires every field", () => {
+    for (const key of ["organizationName", "email", "expiresAt"] as const) {
+      const { [key]: _dropped, ...rest } = valid;
+      expect(InvitationPreviewResponseSchema.safeParse(rest).success, key).toBe(false);
+    }
+  });
+
+  it("rejects an empty organization name and a non-email address", () => {
+    expect(
+      InvitationPreviewResponseSchema.safeParse({ ...valid, organizationName: "" }).success,
+    ).toBe(false);
+    expect(InvitationPreviewResponseSchema.safeParse({ ...valid, email: "nope" }).success).toBe(
+      false,
+    );
+  });
+
+  it("carries no organization id, role or inviter -- it is read by an unauthenticated caller", () => {
+    const parsed = InvitationPreviewResponseSchema.parse({
+      ...valid,
+      organizationId: "01900000-0000-7000-8000-000000000000",
+      roleKey: "professional",
+      invitedBy: "someone",
+    });
+    expect(Object.keys(parsed).sort()).toEqual(["email", "expiresAt", "organizationName"]);
+  });
+});
+
+describe("InvitationPreviewRequestSchema", () => {
+  it("accepts a token and rejects anything else alongside it (strict)", () => {
+    expect(InvitationPreviewRequestSchema.safeParse({ token: "abc" }).success).toBe(true);
+    expect(InvitationPreviewRequestSchema.safeParse({ token: "" }).success).toBe(false);
+    expect(InvitationPreviewRequestSchema.safeParse({}).success).toBe(false);
+    expect(
+      InvitationPreviewRequestSchema.safeParse({ token: "abc", email: "a@b.com" }).success,
     ).toBe(false);
   });
 });

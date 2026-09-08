@@ -65,7 +65,16 @@ export const roleAssignments = mysqlTable("role_assignments", {
   userId: uuidRef("user_id").notNull(),
   roleId: uuidRef("role_id").notNull(),
   organizationId: uuidRef("organization_id"),
-  assignedBy: uuidRef("assigned_by").notNull(),
+  /**
+   * The admin who granted this role. NULL means there was no acting admin:
+   * the platform bootstrap that creates the very first `platform_super_admin`
+   * (Addendum A §A5.4). Nullable rather than self-referential on purpose --
+   * recording the grantee as their own grantor would make the most privileged
+   * assignment on the platform indistinguishable, in the table, from exactly
+   * the self-assignment attack the immutable negative from Checkpoint 6.3
+   * exists to forbid.
+   */
+  assignedBy: uuidRef("assigned_by"),
   assignedAt: timestamp("assigned_at").notNull().defaultNow(),
   revokedAt: timestamp("revoked_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

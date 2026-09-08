@@ -1,5 +1,5 @@
 import { UUIDv7 } from "@somnus/api-contracts";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Db } from "../db.client.js";
 import {
   professionalCredentials,
@@ -90,6 +90,84 @@ export class ProfessionalProfilesRepository {
     const id = UUIDv7();
     await this.db.insert(professionalVerificationCases).values({ id, professionalProfileId });
     return id;
+  }
+
+  /**
+   * The verifier queue (Addendum A §A2.2 `admin_verification_queue`), joined to
+   * the profile so a verifier sees what they are actually verifying: the
+   * specialty and the licence number. Deliberately not UserScope -- the queue is
+   * a cross-user work list, which is what the capability gates.
+   *
+   * Carries no clinical data. Verifying a licence never requires it.
+   */
+  async listOpenVerificationCases(limit: number) {
+    return this.db
+      .select({
+        caseId: professionalVerificationCases.id,
+        professionalProfileId: professionalVerificationCases.professionalProfileId,
+        status: professionalVerificationCases.status,
+        openedAt: professionalVerificationCases.createdAt,
+        userId: professionalProfiles.userId,
+        specialty: professionalProfiles.specialty,
+        licenseNumber: professionalProfiles.licenseNumber,
+      })
+      .from(professionalVerificationCases)
+      .innerJoin(
+        professionalProfiles,
+        eq(professionalVerificationCases.professionalProfileId, professionalProfiles.id),
+      )
+      .where(eq(professionalVerificationCases.status, "pending"))
+      .orderBy(professionalVerificationCases.createdAt)
+      .limit(limit + 1);
+  }
+
+  async findVerificationCase(caseId: UUIDv7) {
+    const rows = await this.db
+      .select({
+        caseId: professionalVerificationCases.id,
+        professionalProfileId: professionalVerificationCases.professionalProfileId,
+        status: professionalVerificationCases.status,
+        openedAt: professionalVerificationCases.createdAt,
+        userId: professionalProfiles.userId,
+        specialty: professionalProfiles.specialty,
+        licenseNumber: professionalProfiles.licenseNumber,
+      })
+      .from(professionalVerificationCases)
+      .innerJoin(
+        professionalProfiles,
+        eq(professionalVerificationCases.professionalProfileId, professionalProfiles.id),
+      )
+      .where(eq(professionalVerificationCases.id, caseId))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Resolves a case. Only ever from `pending`, so two verifiers racing the same
+   * case cannot both record a decision -- the second one gets no rows and the
+   * service turns that into a conflict rather than overwriting the first.
+   */
+  async resolveVerificationCase(input: {
+    caseId: UUIDv7;
+    status: "approved" | "rejected";
+    reviewerId: UUIDv7;
+    notes: string;
+  }): Promise<boolean> {
+    const result = await this.db
+      .update(professionalVerificationCases)
+      .set({
+        status: input.status,
+        reviewerId: input.reviewerId,
+        reviewedAt: new Date(),
+        notes: input.notes,
+      })
+      .where(
+        and(
+          eq(professionalVerificationCases.id, input.caseId),
+          eq(professionalVerificationCases.status, "pending"),
+        ),
+      );
+    return (result[0].affectedRows ?? 0) > 0;
   }
 
   async listVerificationCases(professionalProfileId: UUIDv7) {

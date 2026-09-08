@@ -7,7 +7,7 @@
 
 1. Put the **Standard Rules** block below into the agent's persistent project context (CLAUDE.md, system prompt, or equivalent). If your tool has no persistent context, prepend it to every prompt.
 2. Run prompts strictly in order. One prompt = one session = one checkpoint.
-3. Review the agent's exit report against the checkpoint's *Tests* and *Exit* criteria in the build plan before issuing the next prompt.
+3. Review the agent's exit report against the checkpoint's _Tests_ and _Exit_ criteria in the build plan before issuing the next prompt.
 4. If criteria fail, re-run the same prompt with the failure report appended. Never advance on red.
 5. Never let the agent continue past STOP.
 
@@ -311,34 +311,70 @@ Exit criteria are those of Checkpoint 9.2 (both frontends deploy to dev
 Hosting from CI). STOP and report.
 ```
 
+## Prompt 10.0 — Load the Morpheo artifacts
+
+```text
+Read THE_SOMNUS_PLATFORM_BUILD_PLAN.md, then focus on §14, §14a, §14b, and
+§20 Phase 10, Checkpoint 10.0.
+
+Execute Checkpoint 10.0: commit the four Morpheo source artifacts under
+services/morpheo-service/clinical/, write a validating loader for
+morpheo_workflows_v1.json and morpheo_claims_registry_v1.csv that fails
+loudly on schema drift, and extract workflow_version and content_version as
+stamped constants.
+
+The artifacts are the source of truth. Do not restate their clinical
+content in code; load and enforce them. No engine logic yet.
+
+Exit criteria are those of Checkpoint 10.0 (loader rejects a mutated JSON;
+claims parse; versions read correctly). STOP and report.
+```
+
 ## Prompt 10.1 — Morpheo rule engine
 
 ```text
-Read THE_SOMNUS_PLATFORM_BUILD_PLAN.md, then focus on §5.5, §14, §15, §19,
-and §20 Phase 10, Checkpoint 10.1.
+Read THE_SOMNUS_PLATFORM_BUILD_PLAN.md, then focus on §14a (state machine,
+rule priority, safety levels, roles, modules), §14b (RAG boundary), §15,
+§19, and §20 Phase 10, Checkpoint 10.1.
 
-Execute Checkpoint 10.1: the pure-domain rule engine (definitions,
-versioned localized questions, deterministic scoring, safety flags,
-orientation rules) with zero framework dependencies, five rule versions
-recorded on every output, and the exhaustive test suite described in the
-checkpoint, including property-based tests.
+Execute Checkpoint 10.1: implement the pure-domain rule engine EXACTLY as
+the pseudocode and rules in §14a — role/eligibility, the 9 priority-ordered
+safety rules with L0–L4 levels, the 11-state machine with re-evaluation of
+the safety gate after each answer, multi-label module routing across
+INS/BRE/SLP/CIR/RLS/PAR, the forbidden-phrase scanner from the claims
+registry, unknown-never-defaults-to-false, and version stamping. Zero
+dependencies on FastAPI/SQLAlchemy/Firebase/HTTP. No RAG, no LLM anywhere
+in this engine.
 
-This is required to reach ≥95% coverage. Do not touch persistence or HTTP
-in this session.
+Automate the twelve test_cases T-01…T-12 from the JSON as acceptance tests
+(route + L-level each), plus every safety rule trigger/non-trigger, illegal
+transitions rejected, and the property test that adding answers never lowers
+a safety level.
 
-Exit criteria are those of Checkpoint 10.1. STOP and report.
+Required: ≥95% coverage on the engine, 100% of safety rules and test cases.
+Do not touch persistence or HTTP this session.
+
+Exit criteria are those of Checkpoint 10.1 (all twelve test cases green).
+STOP and report.
 ```
 
-## Prompt 10.2 — Morpheo persistence and anonymous flow
+## Prompt 10.2 — Morpheo persistence, roles, and anonymous flow
 
 ```text
-Read THE_SOMNUS_PLATFORM_BUILD_PLAN.md, then focus on §14 (including
-retention), §17, and §20 Phase 10, Checkpoint 10.2.
+Read THE_SOMNUS_PLATFORM_BUILD_PLAN.md, then focus on §14 (data model +
+retention + privacy), §14a (roles and age bands), §17, and §20 Phase 10,
+Checkpoint 10.2.
 
-Execute Checkpoint 10.2: Alembic migrations, the full anonymous flow with
-the exactly-once claim (72h single-use tokens), immutable snapshots, the
-two Morpheo events, and the TTL query for the worker. Include the
-concurrency test proving exactly-once claiming under parallel attempts.
+Execute Checkpoint 10.2: Alembic migrations for the full §14 model with
+safety_rules, clinical_modules, roles, age_bands, clinical_sources,
+claims_registry, approved_output_templates and forbidden_phrases seeded
+from the artifacts; role/consent/age gating at entry; the anonymous flow
+with safety re-evaluation per answer and exactly-once claim (72h tokens);
+immutable snapshots; the two Morpheo events; the TTL query; and the
+professional-mode identifiable-data block (test case T-12).
+
+Include the exactly-once concurrency test, the parent-flow test (no
+minor-facing conversation), and the professional privacy block.
 
 Exit criteria are those of Checkpoint 10.2. STOP and report.
 ```
@@ -346,13 +382,19 @@ Exit criteria are those of Checkpoint 10.2. STOP and report.
 ## Prompt 10.3 — Morpheo web integration
 
 ```text
-Read THE_SOMNUS_PLATFORM_BUILD_PLAN.md, then focus on §5.3, §5.5, and §20
-Phase 10, Checkpoint 10.3.
+Read THE_SOMNUS_PLATFORM_BUILD_PLAN.md, then focus on §14a (roles), §14b
+(output contract), §5.3, and §20 Phase 10, Checkpoint 10.3.
 
-Execute Checkpoint 10.3: edge routes proxying Morpheo and the SPA
-assessment flow (anonymous test, preliminary summary, authenticate, claim,
-result), with localized questions. Playwright E2E in es and ca, plus the
-double-claim and expired-token paths and the accessibility pass.
+Execute Checkpoint 10.3: edge routes proxying Morpheo and the per-role SPA
+assessment flow (role selection, consent, safety-first questioning, module
+questions, result rendered with the §14b output contract and the "with the
+information available" framing on L3/L4). Localized questions and approved
+wording per locale.
+
+Playwright E2E per role in es and ca: adult INS path; parent BRE path (T-05)
+with adult-directed output; professional path with the privacy block; an L0
+emergency path (T-06) that stops with no reassuring hypothesis; double-claim
+rejected; accessibility pass. Assert no forbidden phrase can reach the screen.
 
 Exit criteria are those of Checkpoint 10.3. STOP and report.
 ```
@@ -381,11 +423,33 @@ Phase 11, Checkpoint 11.2.
 
 Execute Checkpoint 11.2: the provider-abstraction module with the OpenAI
 adapter (GPT-5.6), configuration-driven model and templates, the
-pending_review gate, full §15 logging, and the prompt-injection test
-proving hostile content in structured fields cannot alter safety flags or
-introduce clinical claims.
+pending_review gate, full §15 logging, the prompt-injection test proving
+hostile content in structured fields cannot alter safety flags or introduce
+clinical claims, and the forbidden-phrase scanner running on the AI output
+to block every BLOQUEAR claim.
 
 Exit criteria are those of Checkpoint 11.2. STOP and report.
+```
+
+## Prompt 11.3 — Clinical grounding (RAG), explanation-only
+
+```text
+Read THE_SOMNUS_PLATFORM_BUILD_PLAN.md, then focus on §3.6b (embeddings and
+RAG), §14b (the hard RAG boundary), and §20 Phase 11, Checkpoint 11.3.
+
+Execute Checkpoint 11.3: index the fifteen clinical sources (SRC-01…SRC-15)
+into somnus_reporting using text-embedding-3-large via the OpenAI adapter
+and TiDB native vector search. When rendering professional output, retrieve
+the source(s) the deterministic rule already cited to attach accurate
+citations. Retrieval never changes the level, routing, or any decision.
+
+Critical test: prove determinism — stub retrieval to return correct
+results, wrong results, and to fail entirely, and assert the L-level and
+routes are identical in all three cases. Assert embeddings go through the
+provider abstraction and that no PII or health free-text is ever sent to
+the embedding API.
+
+Exit criteria are those of Checkpoint 11.3. STOP and report.
 ```
 
 ## Prompt 12.1 — Notifications

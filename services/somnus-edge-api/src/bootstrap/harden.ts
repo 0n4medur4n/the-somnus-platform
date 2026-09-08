@@ -26,9 +26,16 @@ const CSRF_EXEMPT = new Set(["/v1/sessions"]);
  * rationale — so a forged cross-site request gains nothing. The authenticated
  * claim (`/v1/assessments/claim`) DOES ride the session cookie and stays
  * protected.
+ *
+ * `/v1/invitations/preview` is exempt for the same reason: it is the pre-login
+ * lookup behind the invitation accept screen (Addendum A Checkpoint 14.2), so
+ * by definition there is no session cookie yet to forge against. It reads; it
+ * creates nothing. `/v1/invitations/accept` rides the session and stays
+ * protected.
  */
 function isCsrfExempt(path: string): boolean {
   if (CSRF_EXEMPT.has(path)) return true;
+  if (path === "/v1/invitations/preview") return true;
   if (path === "/v1/assessments") return true;
   return path.startsWith("/v1/assessments/") && path !== "/v1/assessments/claim";
 }

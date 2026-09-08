@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { SessionsModule } from "../sessions/sessions.module.js";
-import { InvitationsController } from "./invitations.controller.js";
+import { InvitationPreviewController, InvitationsController } from "./invitations.controller.js";
 import { OrganizationsController } from "./organizations.controller.js";
 import { OrganizationsProxyService } from "./organizations.service.js";
 
@@ -12,7 +12,7 @@ import { OrganizationsProxyService } from "./organizations.service.js";
  */
 @Module({
   imports: [SessionsModule],
-  controllers: [OrganizationsController, InvitationsController],
+  controllers: [OrganizationsController, InvitationsController, InvitationPreviewController],
   providers: [OrganizationsProxyService],
 })
 export class OrganizationsModule {}

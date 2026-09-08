@@ -67,23 +67,40 @@ The **application code** meets the DoD. The remaining items are **operational**
    conservative **placeholders**, not tuned from observed baselines. → `docs/runbooks/load-test.md` results log.
 6. **Backup/restore rehearsal not performed.** The procedure is documented; the
    per-logical-database rehearsal record is unfilled. → `docs/runbooks/backup-restore.md` §4.
+7. **Identity migration `0002_registration_role_branch.sql` is NOT applied in
+   production.** It is applied in dev (the integration suite runs it there). It adds
+   `registration_role`, `guardianship_confirmed` and `minor_age_band` to
+   `individual_profiles`, and the Checkpoint 14.1 registration flow writes all three
+   on every provision. **Apply it before identity is deployed to production** —
+   otherwise `POST /internal/v1/users/provision` fails on the unknown columns and
+   *no one can register at all*. Reversible: `0002_registration_role_branch.down.sql`.
+   → `services/somnus-identity-service/migrations/`.
+8. **Invitation emails are not sent yet.** The Checkpoint 14.2 accept flow works end
+   to end — preview, magic link, professional-branch registration, membership — but
+   nothing enqueues the notification task, so no invitation email leaves the platform.
+   The template exists in the worker (`invitation`, all four locales); what is missing
+   is the async layer from Gap #3: Pub/Sub topic, the Cloud Tasks queue, and the Brevo
+   API key in Secret Manager. **Until that is wired, the invitation token is obtained
+   from the organization's invitations screen and passed to the invitee by hand — not
+   from an email.** Do not tell an operator that invitations are self-service before
+   Gap #3 closes. → `services/somnus-worker/src/modules/notification/`.
 
 ### B. Structural follow-ups (safe, but recommended)
 
-7. **dev Terraform not unified onto `modules/environment`.** dev is still inline
+9. **dev Terraform not unified onto `modules/environment`.** dev is still inline
    (its state is already applied); unify via `moved` blocks, validated against a real
    `terraform plan`, so all three environments share one composition.
 
 ### C. Carried-forward deferrals (deliberate; not 13.3 regressions)
 
-8. **DPIA open verification items.** Confirm the TiDB Cloud cluster is EU-region and
-   the OpenAI API training-opt-out / ZDR / EU-residency terms on the signed DPAs. →
-   `docs/security/dpia.md` §5.
-9. **AI rewriting disabled** by `AI_REWRITE_ENABLED` until a human-review mechanism
-   exists (build plan §15). Deliberate safety hold, not a bug.
-10. **Morpheo clinical content incomplete for ca/en/fr**, plus deferred safety items
+10. **DPIA open verification items.** Confirm the TiDB Cloud cluster is EU-region and
+    the OpenAI API training-opt-out / ZDR / EU-residency terms on the signed DPAs. →
+    `docs/security/dpia.md` §5.
+11. **AI rewriting disabled** by `AI_REWRITE_ENABLED` until a human-review mechanism
+    exists (build plan §15). Deliberate safety hold, not a bug.
+12. **Morpheo clinical content incomplete for ca/en/fr**, plus deferred safety items
     (SAFE-004 escalation signal, SAFE-002 ops pathway). Spanish + English content is in.
-11. **Firebase dev Hosting deploy** needs the `FIREBASE_SERVICE_ACCOUNT` secret (the
+13. **Firebase dev Hosting deploy** needs the `FIREBASE_SERVICE_ACCOUNT` secret (the
     job skips without it), and staging/production need their own Firebase projects +
     site targets for frontend promotion.
 
@@ -99,5 +116,8 @@ The **application code** meets the DoD. The remaining items are **operational**
 - **13.3 exit ("staging green; gaps as a numbered list"):** the gaps above are that
   list. "staging green" becomes true once Gaps #1–#2 are completed and a first
   promotion runs.
+- **Phase 14 added Gaps #7 and #8.** Both are deployment/operations actions, not code:
+  the registration branch needs its migration applied, and invitations need the async
+  layer before they can be self-service.
 
 This document is updated as each gap closes.

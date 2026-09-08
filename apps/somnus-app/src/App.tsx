@@ -7,6 +7,7 @@ import { OrgProvider } from "./org/OrgContext.js";
 import { AppHome } from "./routes/AppHome.js";
 import { Assessment } from "./routes/Assessment.js";
 import { AuthCallback } from "./routes/AuthCallback.js";
+import { InvitationAccept } from "./routes/InvitationAccept.js";
 import { Login } from "./routes/Login.js";
 import { NotFound } from "./routes/NotFound.js";
 import { Organization } from "./routes/Organization.js";
@@ -24,6 +25,11 @@ const router = createBrowserRouter([
   { path: "/auth/callback", element: <AuthCallback /> },
   // Public: the anonymous assessment flow needs no session (build plan §14).
   { path: "/assessment", element: <Assessment /> },
+  // Public: the invitation accept flow is reached from the invitation email,
+  // before the invited person has any session (Addendum A Checkpoint 14.2).
+  // This is the ONLY entry point into a Nox organization -- there is no Nox
+  // signup route here or anywhere else in the table.
+  { path: "/invitation/accept", element: <InvitationAccept /> },
   {
     element: <RequireAuth />,
     children: [

@@ -16,9 +16,44 @@ describe("edge (typed edge-api surface)", () => {
     expect(post).toHaveBeenCalledWith("/v1/sessions", { idToken: "id-token" });
   });
 
-  it("register posts to /v1/registration", () => {
-    void edge.register({ firstName: "Ada", lastName: "L" });
-    expect(post).toHaveBeenCalledWith("/v1/registration", { firstName: "Ada", lastName: "L" });
+  // One case per role branch: the client must forward the whole branch, not
+  // a name-only subset (Addendum A Checkpoint 14.1).
+  it("register posts the adult branch to /v1/registration unchanged", () => {
+    const body = {
+      role: "adult",
+      firstName: "Ada",
+      lastName: "L",
+      ageYears: 34,
+      consents: { termsAcceptance: true, privacyPolicyAcknowledgement: true },
+    } as const;
+    void edge.register(body);
+    expect(post).toHaveBeenCalledWith("/v1/registration", body);
+  });
+
+  it("register posts the parent branch to /v1/registration unchanged", () => {
+    const body = {
+      role: "parent",
+      firstName: "Marie",
+      lastName: "C",
+      guardianshipConfirmed: true,
+      minorAgeBand: "6-12y",
+      consents: { termsAcceptance: true, privacyPolicyAcknowledgement: true },
+    } as const;
+    void edge.register(body);
+    expect(post).toHaveBeenCalledWith("/v1/registration", body);
+  });
+
+  it("register posts the professional branch to /v1/registration unchanged", () => {
+    const body = {
+      role: "professional",
+      firstName: "Grace",
+      lastName: "H",
+      specialty: "sleep_physician",
+      licenseNumber: "COL-12345",
+      consents: { termsAcceptance: true, privacyPolicyAcknowledgement: true },
+    } as const;
+    void edge.register(body);
+    expect(post).toHaveBeenCalledWith("/v1/registration", body);
   });
 
   it("patchProfile patches /v1/me/profile", () => {

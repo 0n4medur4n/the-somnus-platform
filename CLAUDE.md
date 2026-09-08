@@ -12,6 +12,7 @@ Also read before coding: the root README, every ADR relevant to the task,
 and the README of every service you will touch.
 
 ## Non-negotiable rules
+
 (summarized from the build plan; the plan's full text governs)
 
 - Deployable map: 2 static frontends on Firebase Hosting (Astro marketing,
@@ -25,8 +26,8 @@ and the README of every service you will touch.
   endpoints are implemented.
 - Stack is pinned in build plan §3: Node 24 LTS, pnpm 10, NestJS 11 +
   Fastify 5, Drizzle, nestjs-zod; Python 3.13, FastAPI, SQLAlchemy 2.0 sync
-  + PyMySQL, Alembic, uv; WeasyPrint; Brevo; GPT-5.6 via the OpenAI API
-  behind the provider-abstraction module. No substitutions.
+  - PyMySQL, Alembic, uv; WeasyPrint; Brevo; GPT-5.6 via the OpenAI API
+    behind the provider-abstraction module. No substitutions.
 - i18n: es, en, ca, fr. Default es. No hardcoded user-facing strings.
   Missing keys fail CI.
 - Never access another service's or isolated module's database, tables, or
@@ -42,6 +43,7 @@ and the README of every service you will touch.
 - Never claim a command passed without executing it.
 
 ## Session protocol
+
 (build plan §23)
 
 **BEFORE**: inspect repo, restate objective, list files to change, list and

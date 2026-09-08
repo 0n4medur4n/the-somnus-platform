@@ -100,3 +100,24 @@ describe("isKnownEventType and isProducer", () => {
     expect(isProducer("not-a-service")).toBe(false);
   });
 });
+
+/**
+ * The registry and the envelope must agree. They did not: the envelope's
+ * eventType pattern demanded exactly three dotted segments, which rejected
+ * `identity.organization.invitation.created.v1` and
+ * `identity.professional.verification.requested.v1` -- two names §17 lists
+ * itself. Nothing emitted them, so nothing failed, until Checkpoint 14.3 did.
+ */
+describe("every registered event type is a valid envelope eventType", () => {
+  it.each([...KNOWN_EVENT_TYPES])("%s", (eventType) => {
+    const event = makeEvent({
+      eventType,
+      producer: "somnus-identity-service",
+      correlationId: "corr-1",
+      subject: { type: "thing", id: "id-1" },
+      data: {},
+    });
+    const parsed = EventEnvelopeSchema.safeParse(event);
+    expect(parsed.success, `${eventType} is not accepted by EventEnvelopeSchema`).toBe(true);
+  });
+});

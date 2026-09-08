@@ -20,6 +20,7 @@ module "env" {
 
   marketing_site_id = var.marketing_site_id
   app_site_id       = var.app_site_id
+  admin_site_id     = var.admin_site_id
 
   budget_amount_units          = var.budget_amount_units
   firebase_budget_amount_units = var.firebase_budget_amount_units

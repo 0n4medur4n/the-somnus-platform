@@ -344,6 +344,30 @@ module "hosting_app" {
   depends_on = [google_firebase_project.this]
 }
 
+# --- Platform bootstrap secret (Addendum A §A5.4) ---
+#
+# An EMPTY secret container. Terraform creates the container and never the
+# value: the address of the first `platform_super_admin` is set out of band
+# (`gcloud secrets versions add`) and appears nowhere in this repository.
+#
+# No service account is granted access. Nothing at runtime reads it -- only the
+# one-time, manually-invoked `bootstrap:super-admin` script does, with the
+# operator's own credentials. Granting a runtime SA access to it would widen the
+# blast radius of that service for a secret it never uses.
+module "bootstrap_secret" {
+  source     = "../../modules/secret-manager"
+  project_id = var.project_id
+  region     = var.region
+
+  secrets = {
+    BOOTSTRAP_SUPER_ADMIN_EMAIL = {
+      accessor_members = []
+    }
+  }
+
+  depends_on = [module.project_apis_backend]
+}
+
 # --- Cost guardrail (build plan §2) ---
 # One budget per project: Firebase Hosting/Auth free-tier usage means
 # the-somnuss should rarely approach its (smaller) budget, but §2 says

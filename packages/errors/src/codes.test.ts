@@ -28,6 +28,13 @@ describe("errorCodeToHttpStatus", () => {
     expect(errorCodeToHttpStatus.CONSENT_REQUIRED).toBe(412);
     expect(errorCodeToHttpStatus.CONSENT_WITHDRAWN).toBe(412);
     expect(errorCodeToHttpStatus.ACCESS_GRANT_EXPIRED).toBe(410);
+    // Invitations (Addendum A Checkpoint 14.2): each failure is a distinct
+    // code AND a distinct status, so the invited person is told which thing
+    // went wrong instead of a blanket 404.
+    expect(errorCodeToHttpStatus.INVITATION_NOT_FOUND).toBe(404);
+    expect(errorCodeToHttpStatus.INVITATION_EXPIRED).toBe(410);
+    expect(errorCodeToHttpStatus.INVITATION_ALREADY_USED).toBe(409);
+    expect(errorCodeToHttpStatus.INVITATION_EMAIL_MISMATCH).toBe(403);
     expect(errorCodeToHttpStatus.INTERNAL).toBe(500);
     expect(errorCodeToHttpStatus.UPSTREAM_UNAVAILABLE).toBe(502);
   });

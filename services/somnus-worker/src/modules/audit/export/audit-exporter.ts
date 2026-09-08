@@ -1,3 +1,4 @@
+import { ANALYTICS_EVENT_DATA_SCHEMAS, isAnalyticsEventType } from "@somnus/api-contracts";
 import type { AuditRecordInput } from "../db/repositories/index.js";
 
 /**
@@ -47,7 +48,25 @@ export const FORBIDDEN_DATA_KEYS: ReadonlySet<string> = new Set([
   "dob",
 ]);
 
-function redactData(data: Record<string, unknown>): Record<string, unknown> {
+/**
+ * Two regimes, deliberately.
+ *
+ * For an **analytics event** (Addendum A Checkpoint 14.3) the payload is parsed
+ * with its registered `.strict()` contract: an allowlist. Nothing that is not a
+ * declared field can survive, whatever it is called -- which is the property a
+ * denylist cannot give, since it only catches names someone thought of. A
+ * payload that fails the contract exports as `{}` rather than half-trusted:
+ * these events feed dashboards, and a malformed one is worth losing.
+ *
+ * For **every other event type** the original denylist still applies as defence
+ * in depth against a misbehaving producer.
+ */
+function redactData(eventType: string, data: Record<string, unknown>): Record<string, unknown> {
+  if (isAnalyticsEventType(eventType)) {
+    const parsed = ANALYTICS_EVENT_DATA_SCHEMAS[eventType].safeParse(data);
+    return parsed.success ? (parsed.data as Record<string, unknown>) : {};
+  }
+
   const safe: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(data)) {
     if (FORBIDDEN_DATA_KEYS.has(key.toLowerCase())) continue;
@@ -69,6 +88,6 @@ export function redactForExport(record: AuditRecordInput): AuditExportRow {
     correlationId: record.correlationId,
     actorType: record.actorType,
     subjectType: record.subjectType,
-    data: redactData(record.data),
+    data: redactData(record.eventType, record.data),
   };
 }

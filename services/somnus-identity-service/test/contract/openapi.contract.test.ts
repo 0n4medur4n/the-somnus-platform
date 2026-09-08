@@ -63,6 +63,8 @@ interface JsonSchemaObject {
   minLength?: number;
   maxLength?: number;
   pattern?: string;
+  /** Emitted for a discriminated union (the provision/registration body). */
+  oneOf?: JsonSchemaObject[];
 }
 
 interface OpenApiDocument {
@@ -299,6 +301,8 @@ describe("OpenAPI document structure", () => {
     ["/v1/consents/current", "get", undefined],
     ["/v1/consents/{receiptId}/withdraw", "post", "ConsentWithdrawDto"],
     ["/internal/v1/consents/check", "post", "ConsentCheckDto"],
+    ["/internal/v1/users/provision", "post", "UserProvisionDto"],
+    ["/internal/v1/invitations/preview", "post", "InvitationPreviewDto"],
   ] as const)("documents %s %s with request schema %s", (path, method, expectedSchemaRef) => {
     const operation = document.paths[path]?.[method];
     expect(
@@ -347,6 +351,55 @@ describe("generated request-body JSON Schemas agree with the source Zod schemas"
       }
     });
   }
+});
+
+/**
+ * The provision body is a discriminated union (Addendum A Checkpoint 14.1),
+ * which the deliberately small validator above does not model. These assert
+ * the generated document really carries all three branches with their
+ * branch-specific required fields, so a branch dropped from the contract
+ * cannot silently disappear from the published API.
+ */
+describe("UserProvisionDto documents all three registration branches", () => {
+  const schema = document.components.schemas["UserProvisionDto"];
+
+  function branchOf(role: string): JsonSchemaObject | undefined {
+    return (schema?.oneOf ?? []).find((b) => b.properties?.["role"]?.enum?.[0] === role);
+  }
+
+  it("is a oneOf over the three role branches, in contract order", () => {
+    expect(schema?.oneOf).toHaveLength(3);
+    expect((schema?.oneOf ?? []).map((b) => b.properties?.["role"]?.enum?.[0])).toEqual([
+      "adult",
+      "parent",
+      "professional",
+    ]);
+  });
+
+  it.each([
+    ["adult", ["ageYears"]],
+    ["parent", ["guardianshipConfirmed", "minorAgeBand"]],
+    ["professional", ["specialty", "licenseNumber"]],
+  ] as const)("the %s branch requires its own fields (%s)", (role, fields) => {
+    const branch = branchOf(role);
+    expect(branch, `${role} branch missing from the generated document`).toBeDefined();
+    for (const field of fields) {
+      expect(branch?.required).toContain(field);
+      expect(branch?.properties?.[field]).toBeDefined();
+    }
+  });
+
+  it.each(["adult", "parent", "professional"] as const)(
+    "the %s branch requires both consent purposes as separate flags",
+    (role) => {
+      const branch = branchOf(role);
+      expect(branch?.required).toContain("consents");
+      expect(branch?.properties?.["consents"]?.required).toEqual([
+        "termsAcceptance",
+        "privacyPolicyAcknowledgement",
+      ]);
+    },
+  );
 });
 
 describe("authorization reasonCode taxonomy is fully documented on the request/response contract", () => {

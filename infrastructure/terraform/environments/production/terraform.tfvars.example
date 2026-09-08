@@ -15,6 +15,7 @@ env    = "production"
 # Firebase Hosting site IDs are globally unique across ALL of Firebase.
 marketing_site_id = "the-somnus-prod"
 app_site_id       = "the-somnus-prod-app"
+admin_site_id     = "the-somnus-prod-admin"
 
 budget_amount_units          = 200
 firebase_budget_amount_units = 40

@@ -156,6 +156,26 @@ nothing.
 
 ### One-time setup
 
+The SPA is built explicitly with `build:hosting --mode hosting-dev`. Public dev
+configuration is versioned in `apps/somnus-app/hosting.dev.json`; ignored
+`.env.production` files are not a CI configuration source. Verified values:
+
+- Edge: `https://somnus-edge-api-lx3fvb5r5q-ey.a.run.app` (`the-somnus`, `europe-west3`).
+- Firebase: project `the-somnuss`, auth domain `the-somnuss.firebaseapp.com`.
+- Public web app: `1:131552832912:web:f90ead739b307593ad5715`.
+
+Reconfirm with `gcloud run services describe somnus-edge-api --project the-somnus
+--region europe-west3 --format='value(status.url)'` and `firebase apps:sdkconfig
+WEB 1:131552832912:web:f90ead739b307593ad5715 --project the-somnuss` before changing
+the file. Firebase web API keys are public client configuration, never admin
+credentials. No service-account key belongs in this file or any `VITE_*` setting.
+
+The build and app predeploy hook both run `scripts/check-hosting-bundle.mjs`.
+For an urgent app-only redeploy, run the three commands in the SPA README.
+Verify `/v1/me` targets the real edge (401 is expected before login), its
+preflight permits the exact app origin, and `accounts:sendOobCode` returns 200
+with the real Firebase web key. Use an operator-approved recipient for the email.
+
 1. Create (or reuse) a service account on the `the-somnuss` Firebase
    project with the **Firebase Hosting Admin**
    (`roles/firebasehosting.admin`) role, plus **Firebase Viewer**.
@@ -168,3 +188,120 @@ The two Hosting sites must exist on the project — `the-somnuss`
 `.firebaserc`. Create them once with
 `firebase hosting:sites:create <site-id> --project the-somnuss` (or via
 Terraform, above) if they do not yet exist.
+
+---
+
+## Database migrations before a service deploy
+
+Terraform does not run migrations. Each Node service ships its own SQL
+migrations and they are applied separately, **before** the service image that
+depends on them is rolled out.
+
+**Outstanding for production (see `production-readiness.md` gaps #7-#8):**
+
+- **`0002_registration_role_branch.sql` (identity) is applied in dev, NOT in
+  production.** It adds `registration_role`, `guardianship_confirmed` and
+  `minor_age_band` to `individual_profiles`. The Checkpoint 14.1 registration
+  flow writes all three on every provision, so deploying identity to production
+  before applying it breaks registration outright — `POST
+  /internal/v1/users/provision` fails on the unknown columns. Apply it first;
+  `0002_registration_role_branch.down.sql` reverses it.
+- **Invitation emails do not send yet.** The Checkpoint 14.2 accept flow is
+  complete and works from a link, but no producer enqueues the notification
+  task: the async layer (Pub/Sub topic + Cloud Tasks queue + the Brevo key in
+  Secret Manager) is not wired in any environment. Until then the invitation
+  token is read from the organization's invitations screen and handed to the
+  invitee directly. Do not describe invitations as self-service to an operator
+  before that gap closes.
+
+---
+
+## Bootstrapping the first `platform_super_admin`
+
+Addendum A §A2.2 makes `platform_super_admin` the only role that can assign
+internal roles, so a fresh environment has no way to create the first one. This
+one-time script is that way in, and nothing else is.
+
+**It is never run automatically.** Not on service boot, not from a migration,
+not from a deploy job, not from CI. Wiring it into any of those would turn a
+door that closes into a standing backdoor. It is an operator action, by hand,
+once per environment.
+
+### What it does, and refuses to do
+
+- Reads the address from **Secret Manager at runtime**, by secret name
+  (`BOOTSTRAP_SUPER_ADMIN_EMAIL`). The value is never an argument, never an
+  environment default, never in the repository, and is never printed — not on
+  success, not in an error. The only identifier it echoes is the opaque Somnus
+  user id.
+- **Finds** an existing account. It never creates one: the person must have
+  registered through the normal magic-link flow first, so the account is one
+  they actually control. If no account matches, it exits non-zero and says so
+  without naming the address.
+- Assigns through `InternalRolesService` — the same method the admin console
+  uses. There is no parallel insert.
+- Is refused once **any** `platform_super_admin` exists. Running it a second
+  time is a conflict, by design.
+- Records `admin.internal_role.assigned.v1` with `source="bootstrap"`, so the
+  grant is visibly different from an in-console assignment when the audit log is
+  read later. `role_assignments.assigned_by` is `NULL` for it, because there was
+  no acting admin — never the grantee's own id, which would be indistinguishable
+  from a self-assignment.
+
+### Prerequisites
+
+1. The secret exists and holds a value. Terraform creates the **empty
+   container** (`module.bootstrap_secret`); the value is set out of band:
+   ```bash
+   printf '%s' 'person@example.org' | gcloud secrets versions add BOOTSTRAP_SUPER_ADMIN_EMAIL \
+     --project the-somnus --data-file=-
+   ```
+   If the secret was created by hand before Terraform, import it rather than
+   letting `apply` collide:
+   ```bash
+   terraform import 'module.bootstrap_secret.google_secret_manager_secret.this["BOOTSTRAP_SUPER_ADMIN_EMAIL"]' \
+     projects/the-somnus/secrets/BOOTSTRAP_SUPER_ADMIN_EMAIL
+   ```
+2. **That person has already registered** at the dev app and can sign in.
+3. Application Default Credentials for an account holding
+   `roles/secretmanager.secretAccessor` on the secret:
+   ```bash
+   gcloud auth login --update-adc
+   ```
+   No service account is granted access to this secret. Nothing at runtime reads
+   it; only this script does, with the operator's own credentials.
+
+### Run it
+
+```bash
+GCP_PROJECT_ID=the-somnus \
+DATABASE_URL='<identity dev connection string>' \
+DB_SSL=true \
+pnpm --filter @somnus/identity-service bootstrap:super-admin
+```
+
+### Confirm it
+
+Not by trusting the output — by asking the authorization service, which is what
+the console itself asks:
+
+```bash
+curl -s -X POST "$IDENTITY_URL/internal/v1/authorization/admin-context" \
+  -H 'content-type: application/json' \
+  -d '{"actorUserId":"<the userId the script printed>"}'
+```
+
+`roleKeys` must contain `platform_super_admin`, and `capabilities` must list all
+twelve of the §A2.2 capabilities.
+
+### Warning: dev's identity database is wiped by the test suite
+
+`services/somnus-identity-service/test/global-setup.ts` drops **every table** in
+`somnus_identity` before a test run, and CI runs the identity suite on every
+push. A bootstrap grant made against dev therefore survives only until the next
+test run, and the account itself is deleted with it.
+
+That is fine for proving the flow, and it means **dev is not a place to keep a
+standing admin**. In staging and production the identity database is not shared
+with CI, and the grant persists. Re-run the script after a dev wipe; it is
+refused only while a super admin actually exists.

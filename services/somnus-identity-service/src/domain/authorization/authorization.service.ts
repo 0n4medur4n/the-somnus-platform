@@ -1,5 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import type { AuthorizationCheckRequest, AuthorizationCheckResponse } from "@somnus/api-contracts";
+import type {
+  AdminCapabilityCheckRequest,
+  AdminCapabilityCheckResponse,
+  AdminContextResponse,
+  AuthorizationCheckRequest,
+  AuthorizationCheckResponse,
+} from "@somnus/api-contracts";
 import { UUIDv7 } from "@somnus/api-contracts";
 import {
   AccessGrantsRepository,
@@ -10,6 +16,11 @@ import {
   UsersRepository,
 } from "../../infrastructure/db/repositories/index.js";
 import { ConsentService } from "../../modules/consent/consent.service.js";
+import {
+  capabilitiesFor,
+  evaluateAdminCapability,
+  internalRolesOf,
+} from "./admin-capability-policy.js";
 import { evaluateAccess } from "./authorization-policy.js";
 
 /**
@@ -29,6 +40,54 @@ export class AuthorizationService {
     private readonly accessGrants: AccessGrantsRepository,
     private readonly consentService: ConsentService,
   ) {}
+
+  /**
+   * The admin console gate (Addendum A §A2.2 / Checkpoint 15.1). A separate
+   * decision from `check()` on purpose: admin capabilities are platform-scoped
+   * and role-driven, with no subject, no organization, no grant and no consent
+   * to consider. Sharing the clinical path would have meant widening a contract
+   * that Checkpoint 6.3's immutable suite deliberately freezes.
+   */
+  async checkAdminCapability(
+    request: AdminCapabilityCheckRequest,
+  ): Promise<AdminCapabilityCheckResponse> {
+    const { actorStatus, actorRoleKeys } = await this.actorFacts(request.actorUserId);
+    const decision = evaluateAdminCapability({
+      actorStatus,
+      actorRoleKeys,
+      capability: request.capability,
+    });
+    return { allowed: decision.allowed, decisionId: UUIDv7(), reasonCode: decision.reasonCode };
+  }
+
+  /**
+   * Everything the console shell needs in one round trip: which internal roles
+   * the actor holds and which capabilities those resolve to. External roles are
+   * filtered out -- an admin who is also a professional must not be able to read
+   * that from here.
+   */
+  async adminContext(actorUserId: string): Promise<AdminContextResponse> {
+    const { actorStatus, actorRoleKeys } = await this.actorFacts(actorUserId);
+    return {
+      roleKeys: internalRolesOf(actorRoleKeys),
+      capabilities: capabilitiesFor(actorStatus, actorRoleKeys),
+    };
+  }
+
+  /** Account status + active role keys: the facts both admin decisions need. */
+  private async actorFacts(actorUserId: string) {
+    const actor = await this.users.findById(actorUserId);
+    const assignments = await this.roleAssignments.listActiveForUser({ userId: actorUserId });
+    const roleRows =
+      assignments.length > 0
+        ? await this.roles.findManyByIds(assignments.map((a) => a.roleId))
+        : [];
+    return {
+      // A missing actor is treated as deleted, matching check() below.
+      actorStatus: actor?.status ?? ("deleted" as const),
+      actorRoleKeys: roleRows.map((r) => r.key),
+    };
+  }
 
   async check(request: AuthorizationCheckRequest): Promise<AuthorizationCheckResponse> {
     const actor = await this.users.findById(request.actorUserId);

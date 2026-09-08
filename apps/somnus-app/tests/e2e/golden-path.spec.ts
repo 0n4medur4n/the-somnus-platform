@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
 import ca from "../../src/i18n/locales/ca.json" with { type: "json" };
 import es from "../../src/i18n/locales/es.json" with { type: "json" };
-import { getSignInLink, uniqueEmail } from "./support/emulator.js";
+import { escapeRe, getSignInLink, uniqueEmail } from "./support/emulator.js";
 
 type Dict = typeof es;
 const DICTS: Record<string, Dict> = { es, ca };
@@ -32,11 +32,20 @@ async function signInAndRegister(
   const link = await getSignInLink(email);
   await page.goto(link);
 
-  // New account -> the callback shows the registration form. Labels are
-  // matched exactly: "Nom" (ca) is a substring of "Cognoms".
-  await page.getByLabel(t.callback.firstName, { exact: true }).fill(firstName);
-  await page.getByLabel(t.callback.lastName, { exact: true }).fill(lastName);
-  await page.getByRole("button", { name: t.callback.completeRegistration }).click();
+  // New account -> the callback shows the role-branched registration flow
+  // (Addendum A Checkpoint 14.1). Labels are matched exactly: "Nom" (ca) is a
+  // substring of "Cognoms". The golden path registers on the adult branch.
+  await page.getByLabel(t.register.firstName, { exact: true }).fill(firstName);
+  await page.getByLabel(t.register.lastName, { exact: true }).fill(lastName);
+  await page.getByRole("button", { name: t.register.next }).click();
+
+  await page.getByRole("radio", { name: new RegExp(escapeRe(t.register.roleAdult)) }).check();
+  await page.getByRole("button", { name: t.register.next }).click();
+
+  await page.getByLabel(t.register.ageLabel, { exact: true }).fill("34");
+  await page.getByLabel(t.register.consentTerms, { exact: true }).check();
+  await page.getByLabel(t.register.consentPrivacy, { exact: true }).check();
+  await page.getByRole("button", { name: t.register.submit }).click();
 
   await page.waitForURL("**/app");
 }
@@ -78,8 +87,11 @@ for (const locale of ["es", "ca"] as const) {
     await expect(owner.getByRole("heading", { level: 1 })).toHaveText(t.app.homeTitle);
     await expectNoTokenInStorage(owner);
 
-    // Edit profile + accessibility baseline on the profile screen.
+    // Edit profile + accessibility baseline on the profile screen. Wait for the
+    // form to render before scanning: otherwise the scan can land on the
+    // still-loading status screen and pass without ever seeing this page.
     await owner.goto(`/app/profile?lng=${locale}`);
+    await expect(owner.getByLabel(t.profile.firstName, { exact: true })).toBeVisible();
     const profileA11y = await new AxeBuilder({ page: owner }).analyze();
     expect(profileA11y.violations).toEqual([]);
     await owner.getByLabel(t.profile.firstName, { exact: true }).fill("Augusta");

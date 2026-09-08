@@ -97,13 +97,75 @@ export type UserResolveResponse = z.infer<typeof UserResolveResponseSchema>;
  * the individual-profile fields. edge-api forwards these plus the
  * session identity to identity's internal provision endpoint.
  */
-export const RegistrationRequestSchema = z
+/**
+ * Minor age bands, verbatim from the §14a clinical artifact
+ * (`roles[].age_bands` in morpheo_workflows_v1.json). Only the parent/guardian
+ * branch carries one; the minor never has an account (Addendum A, A1).
+ */
+export const MORPHEO_MINOR_AGE_BANDS = [
+  "0-3m",
+  "4-11m",
+  "1-2y",
+  "3-5y",
+  "6-12y",
+  "13-17y",
+] as const;
+export const MinorAgeBandSchema = z.enum(MORPHEO_MINOR_AGE_BANDS);
+export type MinorAgeBand = z.infer<typeof MinorAgeBandSchema>;
+
+/**
+ * Consent purposes captured at registration. Build plan §13: every purpose is
+ * its own explicit checkbox, never bundled into one. Health-data processing is
+ * deliberately NOT here -- it stays at the first assessment (Addendum A, A1).
+ */
+export const RegistrationConsentsSchema = z
   .object({
-    firstName: z.string().min(1).max(120),
-    lastName: z.string().min(1).max(120),
-    locale: LocaleSchema.optional(),
+    termsAcceptance: z.literal(true),
+    privacyPolicyAcknowledgement: z.literal(true),
   })
   .strict();
+export type RegistrationConsents = z.infer<typeof RegistrationConsentsSchema>;
+
+/**
+ * Registration is ONE flow with a role branch (Addendum A, A1) -- not four
+ * forms. The branch vocabulary is Morpheo's clinical role vocabulary
+ * (MORPHEO_ROLES: adult | parent | professional), never a second parallel enum;
+ * "parent" is the guardian branch.
+ */
+const registrationCommon = {
+  firstName: z.string().min(1).max(120),
+  lastName: z.string().min(1).max(120),
+  locale: LocaleSchema.optional(),
+  consents: RegistrationConsentsSchema,
+};
+
+/** Adult: self-attested age. A minor age is rejected by the schema itself. */
+const adultBranch = {
+  role: z.literal("adult"),
+  ageYears: z.number().int().min(18).max(120),
+};
+/** Parent/guardian: guardianship confirmation cannot be skipped (literal true). */
+const parentBranch = {
+  role: z.literal("parent"),
+  guardianshipConfirmed: z.literal(true),
+  minorAgeBand: MinorAgeBandSchema,
+};
+/**
+ * Professional: supplies profile fields and requests verification. The account
+ * behaves as an individual until a `professional_verifier` approves the case
+ * (Addendum A, A1) -- this request never grants the professional role.
+ */
+const professionalBranch = {
+  role: z.literal("professional"),
+  specialty: ProfessionalSpecialtySchema,
+  licenseNumber: z.string().min(1).max(64),
+};
+
+export const RegistrationRequestSchema = z.discriminatedUnion("role", [
+  z.object({ ...registrationCommon, ...adultBranch }).strict(),
+  z.object({ ...registrationCommon, ...parentBranch }).strict(),
+  z.object({ ...registrationCommon, ...professionalBranch }).strict(),
+]);
 export type RegistrationRequest = z.infer<typeof RegistrationRequestSchema>;
 
 /**
@@ -113,13 +175,15 @@ export type RegistrationRequest = z.infer<typeof RegistrationRequestSchema>;
  * provider id returns the existing user unchanged (re-registration is
  * not an error). Internal-only, like resolve.
  */
-export const UserProvisionRequestSchema = z
-  .object({
-    providerUserId: z.string().min(1).max(128),
-    email: z.string().email(),
-    firstName: z.string().min(1).max(120),
-    lastName: z.string().min(1).max(120),
-    locale: LocaleSchema.optional(),
-  })
-  .strict();
+const provisionCommon = {
+  ...registrationCommon,
+  providerUserId: z.string().min(1).max(128),
+  email: z.string().email(),
+};
+
+export const UserProvisionRequestSchema = z.discriminatedUnion("role", [
+  z.object({ ...provisionCommon, ...adultBranch }).strict(),
+  z.object({ ...provisionCommon, ...parentBranch }).strict(),
+  z.object({ ...provisionCommon, ...professionalBranch }).strict(),
+]);
 export type UserProvisionRequest = z.infer<typeof UserProvisionRequestSchema>;

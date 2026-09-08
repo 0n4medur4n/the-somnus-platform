@@ -1,6 +1,14 @@
+export * from "./analytics/index.js";
 export * from "./consent/index.js";
 export { type ApiErrorResponse, ApiErrorResponseSchema } from "./error.js";
-export { type EventEnvelope, EventEnvelopeSchema, type EventType, makeEvent } from "./events.js";
+export {
+  type EventEnvelope,
+  EventEnvelopeSchema,
+  type EventType,
+  isKnownEventType,
+  KNOWN_EVENT_TYPES,
+  makeEvent,
+} from "./events.js";
 export * from "./identity/index.js";
 export {
   DEFAULT_LOCALE,

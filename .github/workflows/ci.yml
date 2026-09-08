@@ -152,7 +152,45 @@ jobs:
       # somnus_consent (build plan §8), not this derivation.
       - name: Derive CONSENT_DATABASE_URL
         run: |
-          echo "CONSENT_DATABASE_URL=$(echo "$DATABASE_URL" | sed 's#/somnus_identity#/somnus_consent#')" >> "$GITHUB_ENV"
+          set -euo pipefail
+
+          # This derivation is one substitution away from opening the same
+          # database twice: `sed` against a path that is not /somnus_identity is
+          # a no-op, both variables come out identical, and global-setup.ts then
+          # drops the identity tables it has just migrated. Not hypothetical --
+          # it is how this job stayed red from 2026-08-26 to 2026-09-07, dying
+          # ~130s into the suite on a table that no longer existed.
+          #
+          # test/destructive-guard.ts still refuses that pair before any drop and
+          # is unchanged. This is the earlier, cheaper layer: it names the problem
+          # here, in about three seconds, instead of after a full install + run.
+          #
+          # Only the host and database name are ever printed. Everything before
+          # the last '@' is the credential and never reaches the log.
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::DATABASE_URL is empty -- the dev Environment secret TIDB_DEV_DATABASE_URL is missing, or unreadable from this job."
+            exit 1
+          fi
+
+          rest="${DATABASE_URL#*://}"
+          rest="${rest##*@}"
+          host="${rest%%/*}"
+          database="${rest#*/}"
+          database="${database%%[?]*}"
+
+          if [ "$database" != "somnus_identity" ]; then
+            echo "::error::DATABASE_URL names database '${database}' on ${host}, not somnus_identity. CONSENT_DATABASE_URL is derived by substituting /somnus_identity, so this would be a no-op and both pools would open one database. Fix the dev Environment secret TIDB_DEV_DATABASE_URL so its path is /somnus_identity."
+            exit 1
+          fi
+
+          consent="$(printf '%s' "$DATABASE_URL" | sed 's#/somnus_identity#/somnus_consent#')"
+
+          if [ "$consent" = "$DATABASE_URL" ]; then
+            echo "::error::the CONSENT_DATABASE_URL derivation changed nothing; identity and consent would both open ${host}/${database}."
+            exit 1
+          fi
+
+          echo "CONSENT_DATABASE_URL=$consent" >> "$GITHUB_ENV"
           echo "CONSENT_DB_SSL=true" >> "$GITHUB_ENV"
 
       # identity-service depends on the built dist/ of these workspace

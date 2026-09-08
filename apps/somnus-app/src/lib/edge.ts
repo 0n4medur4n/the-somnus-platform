@@ -11,6 +11,8 @@ import type {
   InvitationAcceptRequest,
   InvitationCreateRequest,
   InvitationCreateResponse,
+  InvitationPreviewRequest,
+  InvitationPreviewResponse,
   Membership,
   MeResponse,
   Organization,
@@ -46,6 +48,9 @@ export const edge = {
     api.post<InvitationCreateResponse>(`/v1/organizations/${organizationId}/invitations`, body),
   acceptInvitation: (body: InvitationAcceptRequest): Promise<Invitation> =>
     api.post<Invitation>("/v1/invitations/accept", body),
+  /** Pre-login: the only invitation call that works without a session (Addendum A 14.2). */
+  previewInvitation: (body: InvitationPreviewRequest): Promise<InvitationPreviewResponse> =>
+    api.post<InvitationPreviewResponse>("/v1/invitations/preview", body),
 
   // --- Morpheo anonymous assessment (build plan §20 Checkpoint 10.3) ---
   getAssessmentContent: (): Promise<AssessmentContentResponse> =>

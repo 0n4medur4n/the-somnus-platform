@@ -4,11 +4,25 @@ import type { Db } from "../db.client.js";
 import { individualProfiles } from "../schema/index.js";
 import type { UserScope } from "../tenant-scope.js";
 
+/** The registration role branch chosen at sign-up (Addendum A §A1, Checkpoint 14.1). */
+export type RegistrationRole = (typeof individualProfiles.registrationRole.enumValues)[number];
+/** Morpheo's pediatric age bands (§14a `roles[].age_bands`), set only on the guardian branch. */
+export type MinorAgeBand = (typeof individualProfiles.minorAgeBand.enumValues)[number];
+
 export type NewIndividualProfile = UserScope & {
   firstName: string;
   lastName: string;
   dateOfBirth?: string;
   phone?: string;
+  /**
+   * Null for profiles created before the role branch existed, and for any
+   * path that provisions a profile without going through registration.
+   * `guardianshipConfirmed` / `minorAgeBand` are only ever non-null on the
+   * `parent` branch -- never inferred, never defaulted.
+   */
+  registrationRole?: RegistrationRole | null;
+  guardianshipConfirmed?: boolean | null;
+  minorAgeBand?: MinorAgeBand | null;
 };
 
 export type ProfilePatch = Partial<Pick<NewIndividualProfile, "firstName" | "lastName" | "phone">>;
@@ -26,6 +40,9 @@ export class IndividualProfilesRepository {
       lastName: input.lastName,
       dateOfBirth: input.dateOfBirth,
       phone: input.phone,
+      registrationRole: input.registrationRole,
+      guardianshipConfirmed: input.guardianshipConfirmed,
+      minorAgeBand: input.minorAgeBand,
     });
     return id;
   }

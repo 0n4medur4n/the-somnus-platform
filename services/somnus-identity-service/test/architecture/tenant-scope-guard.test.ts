@@ -61,6 +61,34 @@ const EXEMPTIONS = new Set([
   "organization-invitations.repository.ts:findByToken",
   "organization-invitations.repository.ts:accept",
   "account-deletion.repository.ts:eraseIdentityData",
+
+  // --- Admin console (Addendum A Checkpoint 15.2) ---
+  //
+  // These are the console's cross-tenant work lists, and being cross-tenant is
+  // the operation, not an oversight: finding a person you have no id for,
+  // draining a verifier queue, processing erasure requests. There is no scope
+  // to pass, because the scope IS "everyone", and that is precisely what makes
+  // them dangerous enough to need a different control.
+  //
+  // What guards them instead is the §A2.2 capability matrix, enforced per route
+  // by edge-api's AdminCapabilityGuard against identity's own authorization
+  // service -- a stronger gate than a scope parameter, because it is checked
+  // before the handler runs and is exhaustively tested per role.
+  //
+  // Each one is bounded (`limit + 1`) so an admin screen cannot page through
+  // the whole table, and each returns metadata only: §A2.3's line between
+  // administrative and clinical access holds regardless of scope.
+  //
+  // Only the methods that genuinely touch a tenant-scoped table are listed. The
+  // console's other cross-tenant reads (user search, organization list, the
+  // verification queue) query root tables the guard does not police, and adding
+  // them here would be an escape hatch for a rule that was never engaged --
+  // which the stale-exemption test correctly refuses.
+  "organization-memberships.repository.ts:listMembershipsForUser",
+  "account-deletion.repository.ts:listPendingRequests",
+  "account-deletion.repository.ts:findRequest",
+  "account-deletion.repository.ts:resolveRequest",
+  "role-assignments.repository.ts:hasAnyActiveHolder",
 ]);
 
 type ExtractedMethod = {

@@ -104,3 +104,67 @@ describe("OrganizationsProxyService", () => {
     });
   });
 });
+
+/**
+ * Addendum A Checkpoint 14.2. The preview is the one invitation call with no
+ * session and no actor -- the invited person has not signed in yet -- so these
+ * assert that it neither requires a session nor leaks one downstream.
+ */
+describe("OrganizationsProxyService.previewInvitation (pre-login)", () => {
+  const preview = {
+    organizationName: "Nox Research Lab",
+    email: "invited@example.com",
+    expiresAt: new Date().toISOString(),
+  };
+
+  it("posts the token to identity's internal preview route with no actor header", async () => {
+    const { client } = makeFakeIdentityClient((req) => {
+      expect(req.method).toBe("POST");
+      expect(req.path).toBe("/internal/v1/invitations/preview");
+      expect(req.headers[ACTOR_ID_HEADER]).toBeUndefined();
+      expect(JSON.parse(req.body ?? "{}")).toEqual({ token: "tok-1" });
+      return { status: 200, body: preview };
+    });
+    const service = new OrganizationsProxyService(client, fakeResolver);
+
+    expect(await service.previewInvitation({ token: "tok-1" }, "c")).toEqual(preview);
+  });
+
+  it("never resolves an actor: it works with no session at all", async () => {
+    const exploding = {
+      resolve: async () => {
+        throw new Error("previewInvitation must not resolve an actor");
+      },
+    } as unknown as ActorResolver;
+    const { client } = makeFakeIdentityClient(() => ({ status: 200, body: preview }));
+    const service = new OrganizationsProxyService(client, exploding);
+
+    await expect(service.previewInvitation({ token: "tok-1" }, "c")).resolves.toEqual(preview);
+  });
+
+  it("propagates identity's stable code for an unusable invitation", async () => {
+    const { client } = makeFakeIdentityClient(() => ({
+      status: 410,
+      body: {
+        error: { code: "INVITATION_EXPIRED", message: "expired", correlationId: "x", details: {} },
+      },
+    }));
+    const service = new OrganizationsProxyService(client, fakeResolver);
+
+    await expect(service.previewInvitation({ token: "tok-1" }, "c")).rejects.toMatchObject({
+      code: "INVITATION_EXPIRED",
+    });
+  });
+
+  it("rejects an unexpected identity response shape rather than passing it through", async () => {
+    const { client } = makeFakeIdentityClient(() => ({
+      status: 200,
+      body: { organizationName: "Nox" },
+    }));
+    const service = new OrganizationsProxyService(client, fakeResolver);
+
+    await expect(service.previewInvitation({ token: "tok-1" }, "c")).rejects.toMatchObject({
+      code: "INTERNAL",
+    });
+  });
+});

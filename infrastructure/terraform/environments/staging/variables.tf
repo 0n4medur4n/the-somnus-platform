@@ -34,6 +34,11 @@ variable "app_site_id" {
   type        = string
 }
 
+variable "admin_site_id" {
+  description = "Firebase Hosting site ID for the staging internal admin console -- a separate site from the consumer SPA (Addendum A §A2.1). Globally unique."
+  type        = string
+}
+
 variable "budget_amount_units" {
   description = "Monthly budget in whole currency units for the staging backend project."
   type        = number

@@ -5,6 +5,9 @@ import {
   type InvitationCreateRequest,
   type InvitationCreateResponse,
   InvitationCreateResponseSchema,
+  type InvitationPreviewRequest,
+  type InvitationPreviewResponse,
+  InvitationPreviewResponseSchema,
   InvitationSchema,
   type Membership,
   MembershipSchema,
@@ -106,6 +109,25 @@ export class OrganizationsProxyService {
       body,
     });
     return this.parse(InvitationSchema, response.body, correlationId);
+  }
+
+  /**
+   * The one invitation route with no session and no actor (Addendum A
+   * Checkpoint 14.2): it backs the pre-login accept screen, so an invited
+   * person can be told which organization invited them, and whether the
+   * invitation is still usable, before they sign in. Identity owns the
+   * decision; edge only forwards the token and shapes the response.
+   */
+  async previewInvitation(
+    body: InvitationPreviewRequest,
+    rawCorrelationId?: string,
+  ): Promise<InvitationPreviewResponse> {
+    const correlationId = correlationOf(rawCorrelationId);
+    const response = await this.identity.post("/internal/v1/invitations/preview", {
+      correlationId,
+      body,
+    });
+    return this.parse(InvitationPreviewResponseSchema, response.body, correlationId);
   }
 
   private async context(

@@ -108,6 +108,9 @@ uv run pytest
   generated, never hand-written.
 - i18n: `es` (default), `en`, `ca`, `fr`. No hardcoded user-facing strings.
 - Never log passwords, tokens, cookies, health data, or secrets.
+- Exception filters never maintain their own code→HTTP-status map; they always
+  import `errorCodeToHttpStatus` from `@somnus/errors`. A new error code is wired
+  once, there, and never copied into a filter.
 - LLMs only rephrase approved structured results (§15).
 
 See the build plan for the full ruleset.

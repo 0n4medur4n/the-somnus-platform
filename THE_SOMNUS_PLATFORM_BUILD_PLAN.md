@@ -1,7 +1,8 @@
-# The Somnus Platform — Build Plan v2
+# The Somnus Platform — Build Plan v3
 
 **Document type:** AI-executable engineering plan
-**Version:** 2.0 (supersedes v1 entirely)
+**Version:** 3.0 (supersedes v1 and v2 entirely)
+**v3 changes:** Morpheo is now specified by its real clinical algorithm (state machine, 9 safety rules with L0–L4 levels, 6 clinical modules, 3 roles, claims registry). The four Morpheo source artifacts are the versioned source of truth for the engine. A clinical RAG layer is added for the explanatory/grounding step only — never for clinical decisions, which stay fully deterministic.
 **Language:** English
 **Architecture:** Static frontends on Firebase Hosting + independent Cloud Run services
 **Primary goal:** Build The Somnus platform incrementally, securely, and cheaply, without creating a distributed monolith
@@ -161,7 +162,16 @@ Python must not be introduced into identity, users, roles, organizations, or ord
 - **Primary LLM: GPT-5.6 via the OpenAI API.** Note for the record: GPT-5.6 is served by OpenAI directly; it is not available through Vertex AI (Vertex offers OpenAI's open-weight gpt-oss models, which are a different product line).
 - All LLM calls go through a **provider-abstraction module** inside the report service (`infrastructure/llm/`): a single interface, provider adapters behind it (OpenAI first; a Vertex/Gemini adapter may be added later without touching business logic). Model name, temperature, and prompt-template version are configuration, never hardcoded at call sites.
 - EU data handling: the DPIA (§ 21) must record OpenAI's data-residency and retention terms for the API, confirm training-opt-out/ZDR settings, and list OpenAI as a processor. If residency requirements cannot be met, the fallback decision is switching the adapter to Gemini on Vertex AI with EU region pinning.
-- The AI restriction model in § 19 applies to every provider identically.
+- The AI restriction model in § 15 applies to every provider identically.
+
+## 3.6b Embeddings and clinical RAG
+
+The platform uses retrieval-augmented generation for **grounding and education only**, strictly outside the deterministic clinical engine (see § 14b for the hard boundary).
+
+- **Embedding model: `text-embedding-3-large` (3072 dimensions) via the OpenAI API**, behind the same provider-abstraction module as the chat model. The larger model is justified here specifically because the corpus is clinical: for medical retrieval, a wrong or missed source has real consequences, which is exactly the case where the quality premium over `text-embedding-3-small` is worth paying. Cost is negligible at this corpus size (one-time indexing of a small curated corpus costs cents). OpenAI embeddings are not available through Vertex AI, so they use the OpenAI adapter.
+- **Vector store: TiDB Cloud native vector search.** TiDB supports vector columns and indexes over the MySQL protocol, so no separate vector database is introduced. Clinical-source vectors live in `somnus_reporting` (owned by the report service); educational/product-content vectors live in a separate logical database `somnus_content`.
+- **The Matryoshka `dimensions` parameter is fixed at the model default (3072)** for the clinical corpus; a documented decision is required to reduce it.
+- Retrieval uses cosine similarity. Every retrieved chunk carries its source identifier (SRC-xx) so grounding is traceable to the approved clinical sources.
 
 ## 3.7 Email
 
@@ -183,7 +193,8 @@ TiDB Cloud with the MySQL protocol. For the MVP, one physical cluster contains m
 somnus_identity
 somnus_consent
 somnus_morpheo
-somnus_reporting
+somnus_reporting        (includes clinical-source vectors for grounding)
+somnus_content          (educational/product-content vectors for RAG)
 somnus_notifications
 somnus_audit
 ```
@@ -213,7 +224,14 @@ Design direction: dark-first, calm, trustworthy, clinical without appearing cold
 Typography: use approved brand fonts only after web licences are confirmed; until then the documented fallback:
 
 ```css
-font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+font-family:
+  Inter,
+  ui-sans-serif,
+  system-ui,
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  sans-serif;
 ```
 
 Design tokens live in `packages/design-system` and are consumed by both frontends and the report templates.
@@ -244,9 +262,11 @@ Platform users; Firebase identity mapping; individual and professional profiles;
 
 ## 5.5 `morpheo-service` (Cloud Run, private)
 
-Assessment definitions and versions; localized question definitions; assessment sessions; answers; deterministic questionnaire scoring; safety-signal rules; orientation rules; structured results; anonymous-assessment claim flow; rule versioning; Morpheo audit events.
+Morpheo is a deterministic clinical-orientation engine, not a diagnostic engine. Its intended use, per the source artifacts (§ 14a): initial sleep-health orientation before a specialist clinic or unit. It is **not intended for** definitive diagnosis, exclusion of disease, prescription or treatment adjustment, autonomous decision on diagnostic testing or referral, or direct interaction with minors under 18.
 
-Restrictions: no password management; no organization management; no identity-database access; no email delivery; no final authorization decisions; no unrestricted LLM decisions. Morpheo receives validated identity and authorization context from the platform.
+Responsibilities: role/eligibility/consent gating; the assessment state machine; deterministic safety gate (levels L0–L4); minimum-dataset collection; multi-label module routing across the six clinical modules; deterministic scoring and orientation; forbidden-phrase scanning; structured results; anonymous-assessment claim flow; rule and content versioning; Morpheo audit events. It holds the versioned clinical algorithm (state machine, safety rules, modules, roles) and the localized question and source content.
+
+Restrictions: no password management; no organization management; no identity-database access; no email delivery; no final authorization decisions. **No LLM inside the decision path** — see § 14b. Morpheo receives validated identity and authorization context from the platform. Any plain-language rewriting of an approved result is delegated to the report service, not performed here.
 
 ## 5.6 `somnus-report-service` (Cloud Run, private)
 
@@ -349,8 +369,8 @@ Do not rely on: stored procedures; triggers; scheduled database events; cross-se
 Tenant isolation is explicit in service code. Every tenant-aware repository method receives an organization or user scope:
 
 ```typescript
-findMembership({ organizationId, membershipId });   // correct
-findMembershipById(membershipId);                    // forbidden for tenant data
+findMembership({ organizationId, membershipId }); // correct
+findMembershipById(membershipId); // forbidden for tenant data
 ```
 
 **Migration rollback policy:** every Drizzle/Alembic migration must be reversible, or explicitly documented as irreversible with a stated recovery path, reviewed in the pull request.
@@ -434,25 +454,79 @@ Never combine legal permissions into one checkbox. Record separately: terms acce
 
 ```text
 assessment_definitions, assessment_definition_versions,
+role_definitions, age_bands,
+state_machine_definitions,
+safety_rules, safety_levels,
+clinical_modules, module_entry_conditions, module_min_questions, module_rules,
 question_definitions (localized: es, en, ca, fr),
-questionnaire_license_records, assessment_sessions, assessment_answers,
+core_questions,
+questionnaire_license_records,
+clinical_sources,                       (the SRC-xx approved sources)
+approved_output_templates, forbidden_phrases,
+claims_registry,
+assessment_sessions, assessment_answers,
+safety_evaluations, module_activations,
 score_results, safety_flag_results, orientation_results,
 assessment_claim_tokens, assessment_access_links, morpheo_audit_events
 ```
 
-Morpheo is an assessment and orientation service, never an automated medical-diagnosis engine.
+Deterministic (always): consent/age/role gating; safety questions and urgency level; module routing; scoring; orientation codes; forbidden-phrase scanning; required output fields; result status; escalation requirements. Every output records: assessment-definition version; **workflow_version and content_version**; question-set version; scoring-rule version; safety-rule version; orientation-rule version; completion timestamp.
 
-Deterministic (always): questionnaire scoring; answer validation; safety flags; orientation codes; result status; escalation requirements. Every output records: assessment-definition version; question-set version; scoring-rule version; safety-rule version; orientation-rule version; completion timestamp.
+**Unknown policy:** unknown remains unknown and never defaults to false. A missing answer is never silently treated as a negative.
 
 **Retention:** unclaimed anonymous assessments are deleted after **30 days** by a scheduled worker job; claim tokens expire after **72 hours**. Both policies are stated in the privacy policy.
+
+**Privacy in the flow:** the orientation flow never requests names, addresses, or identifiers. The professional beta uses simulated or anonymized cases unless an approved lawful workflow exists.
+
+## 14a. Morpheo source artifacts (versioned source of truth)
+
+The Morpheo engine is defined by four artifacts, which live under `services/morpheo-service/clinical/` and are versioned with the service. Code does not restate their content; it loads and enforces them.
+
+1. `morpheo_workflows_v1.json` — the executable specification: meta and intended-use limits, three roles, the 11-state machine, six-level rule priority, nine core questions, five safety levels, nine safety rules, six clinical modules, the output contract, LLM boundaries, data/audit policy, the claims registry, twelve test cases, and fifteen clinical sources (SRC-01…SRC-15). This JSON directly seeds the tables above.
+2. `morpheo_claims_registry_v1.csv` — the twelve claims with status APROBABLE / CONDICIONAL / BLOQUEAR, reason, evidence, replacement wording, and owner. Seeds `claims_registry` and feeds the forbidden-phrase scanner and the marketing copy rules.
+3. `Morpheo_Algoritmos_Clinicos_y_Claims_v1.docx` — the clinical-functional narrative, reference pseudocode, per-role and per-module rules, and approved output wording per module. Human-readable companion; the JSON is authoritative where they overlap.
+4. `The_Somnus_Dossier_Maestro_v1.docx` — portfolio dossier: permitted/forbidden language, the Clinical/Legal/Claims Safety Committee, immediate-pause triggers, data minimization, and minimum documentation before beta.
+
+**Version binding:** the engine reads `workflow_version` and `content_version` from the JSON and stamps both on every result and audit record. A change to any artifact is a content-version bump reviewed by the Safety Committee, never an ad-hoc code edit.
+
+**State machine (from the JSON):**
+
+```text
+START → ROLE_SELECTED → CONSENT_OK → SAFETY_GATE
+SAFETY_GATE → ESCALATED            (stop, render approved safety message)
+SAFETY_GATE → CORE_PROFILE → COMPLAINT_ROUTER → MODULES → CROSS_CHECK
+CROSS_CHECK → SAFETY_GATE          (re-evaluated after new answers)
+CROSS_CHECK → OUTPUT_READY → END
+```
+
+**Rule priority (highest first):** safety/safeguarding override; role, age and consent eligibility; minimum-dataset completeness; multi-label clinical routing; cross-checks and conflicts; output wording and education.
+
+**Safety levels:** L0 current emergency (interrupt flow, no reassuring hypotheses); L1 urgent/same-day; L2 priority consultation; L3 scheduled consultation; L4 information and observation. An L3/L4 output means only that no higher-priority signal was communicated — never that disease is excluded. The UI must show "with the information available" and which changes warrant consulting sooner.
+
+**Roles:** adult (age ≥ 18); parent/guardian (adult confirms guardianship AND minor age < 18; age bands 0-3m, 4-11m, 1-2y, 3-5y, 6-12y, 13-17y; the minor never converses directly, output is addressed to the adult); professional (professional confirmation; clinical summary, reviewable differential, sources, no final decision).
+
+**Six clinical modules (multi-label — several can activate at once):** INS difficulty sleeping; BRE breathing during sleep; SLP daytime sleepiness; CIR sleep-wake timing/rhythm; RLS leg sensations/movement; PAR nocturnal behaviors/episodes. Each has entry conditions, minimum questions, rules, and approved output wording, all from artifacts 1 and 3.
+
+## 14b. The RAG boundary (hard rule)
+
+Retrieval-augmented generation and embeddings are used **only** for the explanatory and grounding step and for educational content. They are **forbidden inside the clinical decision path.**
+
+Deterministic, never RAG or LLM: consent/age gates; safety questions and urgency level; module routing; the forbidden-phrase scanner; required output fields; any escalation or L0–L4 assignment.
+
+RAG/embeddings permitted:
+
+- **Grounding the explanation:** when the report service renders the professional output, it may retrieve the approved clinical source (SRC-xx) that the deterministic rule already cited, by embedding similarity over the clinical corpus, so the citation text is accurate. Retrieval only attaches an already-approved source to an already-made decision; it never changes the decision, the level, or the routing.
+- **Educational/product content:** FAQs, web content, and support material in `somnus_content`, entirely outside the assessment flow.
+
+The identical-input/identical-output guarantee holds: the same answers always produce the same L-level, the same routes, and the same result, regardless of anything the retrieval layer returns. Retrieval failure degrades a citation, never a safety decision.
 
 ---
 
 # 15. Artificial Intelligence Restrictions
 
-An LLM must never: calculate questionnaire scores; determine safety flags; provide a definitive diagnosis; remove an approved warning; prescribe medication; invent symptoms; infer facts absent from the structured data; independently decide clinical urgency.
+An LLM (or any retrieval/embedding layer) must never: calculate questionnaire scores; determine safety flags; route to a clinical module; provide a definitive diagnosis; remove an approved warning; prescribe medication; invent symptoms; infer facts absent from the structured data; independently decide clinical urgency; or change an L0–L4 level. See the hard RAG boundary in § 14b.
 
-An LLM may: rewrite approved structured results in plain language; adapt tone to the audience; translate approved content between the four locales; summarize deterministic results; improve readability.
+An LLM may: rewrite approved structured results in plain language; adapt tone to the audience; translate approved content between the four locales; summarize deterministic results; improve readability. A retrieval layer may attach an already-approved clinical source to an already-made decision for citation accuracy, nothing more.
 
 Initially, all AI-generated health-related text requires human review before release (`pending_review` status, not user-visible until approved).
 
@@ -473,7 +547,14 @@ Success shape:
 Error shape:
 
 ```json
-{ "error": { "code": "ORGANIZATION_MEMBERSHIP_NOT_FOUND", "message": "The requested membership could not be found.", "correlationId": "uuid", "details": {} } }
+{
+  "error": {
+    "code": "ORGANIZATION_MEMBERSHIP_NOT_FOUND",
+    "message": "The requested membership could not be found.",
+    "correlationId": "uuid",
+    "details": {}
+  }
+}
 ```
 
 Never return stack traces, SQL errors, secret values, Firebase tokens, or connection details. Error `message` values shown to users go through i18n on the frontend using the stable `code`.
@@ -560,163 +641,192 @@ Each checkpoint ends with the same exit ritual: run the full quality gate (forma
 
 **Checkpoint 0.1 — Environment baseline.**
 Install and verify: Git, Node 24 LTS, Corepack, pnpm 10, Python 3.13, uv, Docker, gcloud, Terraform, Firebase CLI. Record everything in `docs/environment-baseline.md` (OS, architecture, versions, date, limitations).
-*Exit:* every verification command succeeds at pinned versions.
+_Exit:_ every verification command succeeds at pinned versions.
 
 ## Phase 1 — Repository bootstrap
 
 **Checkpoint 1.1 — Workspace and quality gate.**
 Repo, pnpm workspace, root `package.json` (strict scripts incl. `ci`), strict `tsconfig.json` (never weakened), Biome, Vitest, `.nvmrc`, `.editorconfig`, `.gitignore`. Directory tree from § 6. `docker-compose.dev.yml` (MySQL 8 + Firebase emulators) and a `justfile` (`dev-up`, `dev-down`, `ci`, `seed`).
-*Tests:* a trivial root test proves Vitest wiring; `just ci` green from a clean clone.
-*Exit:* lockfile committed; all root commands green.
+_Tests:_ a trivial root test proves Vitest wiring; `just ci` green from a clean clone.
+_Exit:_ lockfile committed; all root commands green.
 
 **Checkpoint 1.2 — ADRs and CI.**
-ADRs: 0001 Cloud Run per bounded context; 0002 monorepo/independent deployments; 0003 service-owned data; 0004 NestJS+Fastify; 0005 Python for Morpheo/data; 0006 Firebase auth / Somnus authz; 0007 Morpheo independent; 0008 private internal services; 0009 static frontends on Firebase Hosting (Astro marketing + Vite SPA); 0010 consolidated 5-service map with isolated modules; 0011 pinned technical decisions (Zod-first contracts, PyMySQL, WeasyPrint, Brevo, GPT-5.6 via OpenAI API with provider abstraction, min-instances 0); 0012 four-locale i18n. Minimal GitHub Actions: frozen install, format, lint, typecheck, test, build.
-*Exit:* CI green on the initial PR.
+ADRs: 0001 Cloud Run per bounded context; 0002 monorepo/independent deployments; 0003 service-owned data; 0004 NestJS+Fastify; 0005 Python for Morpheo/data; 0006 Firebase auth / Somnus authz; 0007 Morpheo independent; 0008 private internal services; 0009 static frontends on Firebase Hosting (Astro marketing + Vite SPA); 0010 consolidated 5-service map with isolated modules; 0011 pinned technical decisions (Zod-first contracts, PyMySQL, WeasyPrint, Brevo, GPT-5.6 via OpenAI API with provider abstraction, min-instances 0); 0012 four-locale i18n; 0013 Morpheo algorithm sourced from versioned clinical artifacts (§ 14a), code enforces not rewrites; 0014 clinical RAG is explanation/grounding-only and forbidden in the decision path (§ 14b); 0015 embeddings = text-embedding-3-large via OpenAI, TiDB native vector search, no separate vector DB. Minimal GitHub Actions: frozen install, format, lint, typecheck, test, build.
+_Exit:_ CI green on the initial PR.
 
 ## Phase 2 — Shared packages
 
 **Checkpoint 2.1 — config, errors, observability.**
 `config`: Zod-validated env, startup failure on invalid config, public/private separation, typed access. `errors`: stable codes, safe public messages, internal metadata, HTTP mapping. `observability`: structured JSON logs (service, env, version, commit, correlation ID, duration), redaction, OpenTelemetry → Cloud Trace (no-op locally).
-*Tests:* config rejects each invalid shape; error mapping table-tested; **redaction test proves tokens/cookies/health fields never appear in output**.
-*Exit:* every package ≥ 80 % coverage; no imports from `services/`.
+_Tests:_ config rejects each invalid shape; error mapping table-tested; **redaction test proves tokens/cookies/health fields never appear in output**.
+_Exit:_ every package ≥ 80 % coverage; no imports from `services/`.
 
 **Checkpoint 2.2 — api-contracts, cloud-run-client, i18n, design-system.**
 `api-contracts`: Zod v4 request/response schemas, event envelope, pagination, UUIDv7 helpers, shared error schema; zero business logic. `cloud-run-client`: OIDC token acquisition, explicit audience, timeouts, retry policy, correlation propagation, safe error conversion. `i18n`: locale loader, typing for keys, CI completeness check across es/en/ca/fr. `design-system`: brand tokens.
-*Tests:* contract schemas round-trip valid/invalid fixtures; client retry/timeout behavior mocked; i18n check fails on a deliberately missing key (test asserts the failure).
-*Exit:* quality gate green.
+_Tests:_ contract schemas round-trip valid/invalid fixtures; client retry/timeout behavior mocked; i18n check fails on a deliberately missing key (test asserts the failure).
+_Exit:_ quality gate green.
 
 ## Phase 3 — NestJS service template
 
 **Checkpoint 3.1 — Identity shell as template.**
 Scaffold `somnus-identity-service`: Fastify, nestjs-zod validation, OpenAPI generated to `schemas/openapi/` by script; structure `common/ (errors, filters, guards, interceptors, pipes)`, `config/`, `modules/`, `infrastructure/`; endpoints `GET /health/live`, `GET /health/ready`, `GET /version`; behavior: 0.0.0.0, `PORT` (8080 default), graceful shutdown, correlation interceptor, structured logs, no production stack traces; multi-stage non-root Dockerfile; README documents how to clone the template.
-*Tests:* e2e-style tests for health/version; error filter maps a thrown domain error to the § 16 shape; log-shape test with redaction assertion.
-*Exit:* boots locally, OpenAPI generates, image builds.
+_Tests:_ e2e-style tests for health/version; error filter maps a thrown domain error to the § 16 shape; log-shape test with redaction assertion.
+_Exit:_ boots locally, OpenAPI generates, image builds.
 
 ## Phase 4 — Python service template
 
 **Checkpoint 4.1 — Morpheo shell as template.**
 `uv init` (3.13); deps: fastapi, uvicorn[standard], pydantic, pydantic-settings, sqlalchemy, alembic, httpx, pymysql; dev: pytest, pytest-asyncio, pytest-cov, ruff, mypy. **Do not install** pandas/numpy/ML/langchain/notebooks. Structure `src/morpheo/{main, api, application, domain, infrastructure, repositories, schemas, settings}` + `tests/{unit,integration,contract}`. Health/version endpoints, same behavioral rules as § 20 Phase 3. Alembic against `somnus_morpheo` (local MySQL), empty initial migration. Multi-stage non-root Dockerfile.
-*Tests:* health/version; settings validation failure test; a placeholder pure-function test establishing the `domain/` testing pattern.
-*Exit:* ruff format+check, mypy, pytest green; image builds.
+_Tests:_ health/version; settings validation failure test; a placeholder pure-function test establishing the `domain/` testing pattern.
+_Exit:_ ruff format+check, mypy, pytest green; image builds.
 
 ## Phase 5 — Development infrastructure
 
 **Checkpoint 5.1 — Terraform dev.**
 Modules: project APIs, Artifact Registry, Cloud Run, service accounts (one per service, least privilege), Cloud Run IAM, Secret Manager, Cloud Tasks, Pub/Sub, Cloud Scheduler, Cloud Storage, Firebase Hosting sites (marketing + app), budget alerts, monitoring alerts. Environment `dev` applied; `staging`/`production` directories exist but empty. **Min instances 0 everywhere.** Region `europe-west3`. CI runs `terraform fmt` + `validate` on infra PRs. `docs/runbooks/deploy-dev.md`.
-*Exit:* fmt/validate/plan clean for dev; budget alert configured.
+_Exit:_ fmt/validate/plan clean for dev; budget alert configured.
 
 ## Phase 6 — Identity and authorization MVP
 
 **Checkpoint 6.1 — Data layer.**
 Drizzle schemas + reversible migrations for § 12 tables in `somnus_identity`; UUIDv7 everywhere; repository layer where every tenant-sensitive method requires explicit scope.
-*Tests:* repository integration tests against MySQL; migration up/down test; a compile-time or lint guard proving unscoped tenant queries cannot be written (pattern documented).
-*Exit:* ≥ 80 % coverage on repositories.
+_Tests:_ repository integration tests against MySQL; migration up/down test; a compile-time or lint guard proving unscoped tenant queries cannot be written (pattern documented).
+_Exit:_ ≥ 80 % coverage on repositories.
 
 **Checkpoint 6.2 — Domain and API.**
 Contracts in `packages/api-contracts` first, then endpoints: sessions (stubs until Phase 8), `/v1/me`, profile patch, organizations CRUD, invitations create/accept, members list/patch, verification cases, access grants create/revoke, `POST /internal/v1/authorization/check` returning:
 
 ```json
-{ "allowed": true, "decisionId": "uuid", "reasonCode": "AUTHORIZED_BY_ACTIVE_ACCESS_GRANT", "constraints": { "organizationId": "opaque-id", "subjectUserId": "opaque-id", "expiresAt": "2026-01-01T00:00:00.000Z" } }
+{
+  "allowed": true,
+  "decisionId": "uuid",
+  "reasonCode": "AUTHORIZED_BY_ACTIVE_ACCESS_GRANT",
+  "constraints": {
+    "organizationId": "opaque-id",
+    "subjectUserId": "opaque-id",
+    "expiresAt": "2026-01-01T00:00:00.000Z"
+  }
+}
 ```
 
-*Tests:* unit tests for every reasonCode path of the authorization policy; contract tests against the generated OpenAPI.
-*Exit:* ≥ 90 % coverage on authorization domain code.
+_Tests:_ unit tests for every reasonCode path of the authorization policy; contract tests against the generated OpenAPI.
+_Exit:_ ≥ 90 % coverage on authorization domain code.
 
 **Checkpoint 6.3 — Negative authorization suite (immutable).**
 Automated tests, all green: org admin cannot read clinical data automatically; inactive professional denied; unverified professional denied where verification required; expired membership denied; revoked grant denied; cross-organization member access denied; self-assignment of privileged roles denied; support staff denied health data by default; invitation token single-use; deleted/suspended user cannot create a session.
-*Exit:* suite green and marked immutable.
+_Exit:_ suite green and marked immutable.
 
 ## Phase 7 — Consent module
 
 **Checkpoint 7.1 — Consent inside identity, fully isolated.**
 Drizzle schemas + migrations for § 13 in `somnus_consent`; separate purposes (never one checkbox); APIs: `GET /v1/legal-documents/current`, `POST /v1/consents`, `GET /v1/consents/current`, `POST /v1/consents/:id/withdraw`, `POST /internal/v1/consents/check`; events `consent.receipt.recorded.v1` / `consent.receipt.withdrawn.v1`.
-*Tests:* record, withdraw, version supersession, check endpoint; **withdrawal immediately fails the check** (time-sensitive test); an architectural test (dependency-cruiser or equivalent) proving identity code cannot import consent internals.
-*Exit:* quality gate green; isolation test green.
+_Tests:_ record, withdraw, version supersession, check endpoint; **withdrawal immediately fails the check** (time-sensitive test); an architectural test (dependency-cruiser or equivalent) proving identity code cannot import consent internals.
+_Exit:_ quality gate green; isolation test green.
 
 ## Phase 8 — Edge API
 
 **Checkpoint 8.1 — Sessions and hardening.**
 Clone template → `somnus-edge-api` + `@fastify/cookie`, `@fastify/cors`, `@fastify/helmet`, `@fastify/rate-limit`. Firebase ID-token verification (emulator locally); `POST /v1/sessions` exchanges token for HttpOnly/Secure/SameSite cookie; `DELETE /v1/sessions/current` clears and revokes; CSRF on state-changing routes; strict CORS for the two Hosting origins; rate limiting; size limits; correlation propagation.
-*Tests:* token exchange happy path; forged/expired token rejected; cookie attribute assertions; CSRF rejection; rate-limit 429 behavior; revoked session rejected.
-*Exit:* full login round-trip green against docker-compose stack.
+_Tests:_ token exchange happy path; forged/expired token rejected; cookie attribute assertions; CSRF rejection; rate-limit 429 behavior; revoked session rejected.
+_Exit:_ full login round-trip green against docker-compose stack.
 
 **Checkpoint 8.2 — Composition.**
 Internal clients via `packages/cloud-run-client` (OIDC audience per service); `/v1/me` composed from identity; consent routes proxied; error normalization via `packages/errors`; **no TiDB connection in this service** (architectural test).
-*Tests:* contract tests edge ↔ identity/consent; error mapping from downstream failures; timeout/retry behavior.
-*Exit:* quality gate green.
+_Tests:_ contract tests edge ↔ identity/consent; error mapping from downstream failures; timeout/retry behavior.
+_Exit:_ quality gate green.
 
 ## Phase 9 — Frontends
 
 **Checkpoint 9.1 — SPA foundation.**
 `apps/somnus-app`: Vite + React + TS + Tailwind + react-router + TanStack Query + react-hook-form/Zod + i18next (es/en/ca/fr, default es). Auth screens (Firebase email link via emulator) → session exchange with edge API. Routes: `/login`, `/auth/callback`, `/app`, `/app/profile`, `/app/security`, `/professional`, `/professional/profile`, `/organization`, `/organization/members`, `/organization/invitations`. Accessibility baseline: keyboard navigation, visible focus, semantic headings, labeled forms, error summaries, screen-reader announcements, reduced motion, contrast, no color-only status. No tokens in browser storage (test asserts).
-*Tests:* component tests for auth and forms; i18n completeness in CI; Playwright E2E: register, login, edit profile, create organization, invite, accept, logout — once in `es`, once in `ca`.
-*Exit:* E2E green; Lighthouse a11y ≥ 95 on login and profile.
+_Tests:_ component tests for auth and forms; i18n completeness in CI; Playwright E2E: register, login, edit profile, create organization, invite, accept, logout — once in `es`, once in `ca`.
+_Exit:_ E2E green; Lighthouse a11y ≥ 95 on login and profile.
 
 **Checkpoint 9.2 — Marketing site.**
 `apps/somnus-marketing`: Astro static, localized landing/pricing/legal pages rendered from versioned legal documents, SEO metadata + hreflang for four locales, links into the SPA. Firebase Hosting config with two sites/targets and CI deploy previews.
-*Tests:* build-time link check; hreflang/meta snapshot tests; i18n completeness.
-*Exit:* both frontends deploy to dev Hosting from CI.
+_Tests:_ build-time link check; hreflang/meta snapshot tests; i18n completeness.
+_Exit:_ both frontends deploy to dev Hosting from CI.
 
 ## Phase 10 — Morpheo MVP
 
+This phase implements the clinical algorithm defined in § 14a from the source artifacts. The artifacts are committed first, then enforced by code. No clinical rule is invented, softened, or reordered by the agent.
+
+**Checkpoint 10.0 — Load the artifacts.**
+Commit the four artifacts under `services/morpheo-service/clinical/`. Write a loader + Zod/Pydantic validation for `morpheo_workflows_v1.json` and `morpheo_claims_registry_v1.csv` that fails loudly on any schema drift. Extract `workflow_version` and `content_version` as constants stamped on every output.
+_Tests:_ the loader rejects a mutated JSON (missing rule, bad level, unknown state); the twelve claims parse; versions are read correctly.
+_Exit:_ artifacts load and validate; no engine logic yet.
+
 **Checkpoint 10.1 — Rule engine (pure domain).**
-Assessment definitions, versioned localized questions, deterministic scoring, safety-flag rules, orientation rules as pure functions with zero dependencies on FastAPI/SQLAlchemy/Firebase/HTTP:
+Implement, as pure functions with zero dependencies on FastAPI/SQLAlchemy/Firebase/HTTP, exactly the algorithm in § 14a:
 
 ```python
-result = calculate_assessment_result(definition=definition, answers=answers, rule_version=rule_version)
+role      = require_role_and_eligibility(inputs)          # adult / parent / professional + age bands
+safety    = run_safety_gate(all_known_answers)            # 9 rules, priority-ordered, L0–L4
+if safety.stop:
+    return escalate(safety)                               # approved safety message, no reassurance
+profile   = collect_minimum_dataset(role)                 # 9 core questions; unknown stays unknown
+routes    = activate_all_matching_modules(profile)        # INS/BRE/SLP/CIR/RLS/PAR, multi-label
+# safety gate re-runs after every new answer (CROSS_CHECK → SAFETY_GATE)
+result    = compile_facts_rules_unknowns_next_step(routes, profile)
+result    = scan_forbidden_phrases(result)               # from claims registry BLOQUEAR set
 ```
 
-Every output records all five rule versions + timestamp.
-*Tests:* exhaustive unit tests: every question type, boundary answers, every safety-flag trigger and non-trigger, version pinning, property-based tests on score monotonicity where applicable. **≥ 95 % coverage on the rule engine.**
-*Exit:* the most-tested code in the platform, demonstrably.
+Every output records workflow_version, content_version, and all rule versions + timestamp. The state machine (§ 14a) is explicit; illegal transitions are rejected.
+_Tests:_ **the twelve `test_cases` from the JSON (T-01…T-12) are automated as acceptance tests**, each asserting the expected route(s) and expected L-level, including T-06 (infant L0 stop), T-03 (driving near-miss L1 stop), T-12 (professional identifiable-data privacy block). Plus: every one of the nine safety rules triggered and not-triggered; multi-label activation (T-02 INS+BRE); the unknown-never-defaults-to-false rule; forbidden-phrase scanner catches every BLOQUEAR claim; illegal state transitions rejected; property test that adding answers never lowers a safety level. **≥ 95 % coverage on the rule engine, and 100 % of safety rules and test cases covered.**
+_Exit:_ all twelve test cases green; the most-tested code in the platform, demonstrably.
 
-**Checkpoint 10.2 — Persistence and anonymous flow.**
-Alembic migrations for § 14; anonymous flow: create session → incremental validated answers → deterministic results → preliminary summary → authenticate → claim exactly once (single-use token, 72 h) → immutable snapshot → async report request. Events emitted. TTL query exposed for the worker.
-*Tests:* integration tests for the flow; **concurrency test proving exactly-once claim under parallel attempts**; expired/reused token rejected; snapshot immutability (update attempts fail); contract tests against edge expectations.
-*Exit:* quality gate green.
+**Checkpoint 10.2 — Persistence, roles, and anonymous flow.**
+Alembic migrations for § 14 (including safety_rules, clinical_modules, role_definitions, age_bands, clinical_sources, claims_registry, approved_output_templates, forbidden_phrases seeded from the artifacts). Role/consent/age gating enforced at entry. Anonymous flow: create session → incremental validated answers → safety re-evaluation per answer → deterministic results → preliminary summary → authenticate → claim exactly once (single-use token, 72 h) → immutable snapshot → async report request. Events `morpheo.assessment.created.v1` / `.completed.v1`. TTL query exposed for the worker. Professional mode accepts only simulated/anonymized cases and blocks identifiable data (T-12).
+_Tests:_ the full flow as integration tests; **concurrency test proving exactly-once claim**; parent flow never exposes a minor-facing conversation; professional identifiable-data block; expired/reused token rejected; snapshot immutability; contract tests against edge.
+_Exit:_ quality gate green.
 
 **Checkpoint 10.3 — Web integration.**
-Edge routes proxying Morpheo; SPA assessment flow: take test anonymously, preliminary summary, authenticate, claim, view result; localized questions render per locale.
-*Tests:* Playwright E2E: anonymous completion + claim (es and ca); double-claim rejected; expired token path; accessibility pass on the assessment screens.
-*Exit:* golden path green end-to-end locally.
+Edge routes proxying Morpheo; SPA assessment flow per role: role selection, consent, safety-first questioning, module questions, result with the § 14b output contract (summary, care level + concrete action, up to three patterns with the facts that triggered them, what is unknown, what to prepare, explicit limits). Localized questions and approved output wording per locale. The UI shows the "with the information available" framing on every L3/L4 result.
+_Tests:_ Playwright E2E for each role (es and ca): adult INS path; parent BRE path (T-05) confirming adult-directed output; professional path with the privacy block; an L0 emergency path (T-06) confirming the flow stops and shows no reassuring hypothesis; double-claim rejected; accessibility pass on assessment screens.
+_Exit:_ golden paths green end-to-end locally; no forbidden phrase can reach the screen (asserted).
 
 ## Phase 11 — Report service
 
 **Checkpoint 11.1 — Deterministic rendering.**
 Clone Python template → `somnus-report-service`. Input: structured Morpheo payload (`assessmentId`, `definitionVersion`, `scoreResults`, `safetyFlags`, `orientationCodes`, `completedAt`). Versioned templates; immutable metadata; HTML; PDF via WeasyPrint; localized output es/en/ca/fr; storage in private Cloud Storage; signed URLs via edge. The service never recalculates or alters results.
-*Tests:* golden-file test per template version and locale; immutability; template/rule version references present in output; signed-URL expiry.
-*Exit:* completed assessment produces HTML + PDF locally.
+_Tests:_ golden-file test per template version and locale; immutability; template/rule version references present in output; signed-URL expiry.
+_Exit:_ completed assessment produces HTML + PDF locally.
 
 **Checkpoint 11.2 — Controlled AI wording.**
 Provider-abstraction module (`infrastructure/llm/`): interface + OpenAI adapter (GPT-5.6), model/template/temperature from config. AI rewrites approved structured results only; output flagged `pending_review`, never user-visible until approved. Full § 15 logging.
-*Tests:* adapter mocked; **prompt-injection test: hostile content in structured fields cannot alter safety flags or add clinical claims** (output validated against an allowlist schema); logging asserts hashes present and raw health text absent; review-gate test (unapproved text never reaches the report endpoint).
-*Exit:* quality gate green.
+_Tests:_ adapter mocked; **prompt-injection test: hostile content in structured fields cannot alter safety flags or add clinical claims** (output validated against an allowlist schema); logging asserts hashes present and raw health text absent; review-gate test (unapproved text never reaches the report endpoint); **forbidden-phrase scanner runs on the AI output and blocks every BLOQUEAR claim** even if the model produces it.
+_Exit:_ quality gate green.
+
+**Checkpoint 11.3 — Clinical grounding (RAG), explanation-only.**
+Index the fifteen clinical sources (SRC-01…SRC-15) into `somnus_reporting` using `text-embedding-3-large` via the OpenAI adapter and TiDB native vector search (§ 3.6b). When rendering the professional output, retrieve the source(s) the deterministic rule already cited, by similarity, to attach accurate citation text. Retrieval never changes the level, the routing, or any decision.
+_Tests:_ **determinism test — the same assessment produces the identical L-level and routes whether retrieval returns correct results, wrong results, or fails entirely** (retrieval is stubbed to misbehave and the decision is unchanged); retrieved citations map to the SRC-xx the rule fired; embeddings go through the provider abstraction (no direct SDK calls); no PII or health free-text is ever sent to the embedding API (only approved source corpus is embedded, and queries are rule identifiers/approved terms, asserted).
+_Exit:_ grounding attaches correct sources; determinism proof green.
 
 ## Phase 12 — Worker
 
 **Checkpoint 12.1 — Notifications.**
 `somnus-worker` from the NestJS template; notification module: Cloud Tasks consumer, Brevo adapter, localized templates (4 locales), idempotency keys, retry policy, max attempts, dead-letter handling, delivery status in `somnus_notifications`. Emails carry secure links, never health details (test asserts template content).
-*Tests:* idempotent redelivery (same key processed once); dead-letter path; Brevo adapter mocked; locale selection.
-*Exit:* invitation and report-ready emails flow locally (mocked Brevo).
+_Tests:_ idempotent redelivery (same key processed once); dead-letter path; Brevo adapter mocked; locale selection.
+_Exit:_ invitation and report-ready emails flow locally (mocked Brevo).
 
 **Checkpoint 12.2 — Audit and scheduled jobs.**
 Audit module: consume all audit events, normalize, persist in `somnus_audit`, export privacy-safe events to BigQuery (redaction enforced). Scheduled jobs: 30-day unclaimed-assessment cleanup calling Morpheo's deletion endpoint; 72 h claim-token cleanup.
-*Tests:* redaction test on BigQuery export (forbidden fields absent); TTL job behavior with time control; audit trail present for every Phase 9/10 E2E flow.
-*Exit:* quality gate green; module isolation test green.
+_Tests:_ redaction test on BigQuery export (forbidden fields absent); TTL job behavior with time control; audit trail present for every Phase 9/10 E2E flow.
+_Exit:_ quality gate green; module isolation test green.
 
 ## Phase 13 — Hardening and launch readiness
 
 **Checkpoint 13.1 — Threat validation.**
 Execute every scenario as an automated or scripted test, documented in `docs/security/threat-validation.md`: forged Firebase tokens; stolen session cookies; CSRF; privilege escalation; cross-organization access; insecure direct object references; expired grants; replayed invitations; replayed claims; shared report links; over-permissioned service accounts; sensitive data in logs; prompt injection against AI wording.
-*Exit:* every scenario has a documented pass.
+_Exit:_ every scenario has a documented pass.
 
 **Checkpoint 13.2 — Compliance and operations.**
 `docs/security/dpia.md`: data inventory, flows, legal bases, retention (30-day TTL, 72 h tokens), processors (GCP, Firebase, Brevo, OpenAI — with residency/retention terms verified and the Gemini/Vertex fallback recorded), mitigations. Backup/restore rehearsal per logical database, documented. Incident-response and rollback runbooks. Account-deletion workflow verified end-to-end.
-*Exit:* DPIA complete; restore rehearsal documented.
+_Exit:_ DPIA complete; restore rehearsal documented.
 
 **Checkpoint 13.3 — Staging, load, production readiness.**
 Terraform staging + production (min instances 0 per cost policy); promotion pipeline: PR → CI → dev deploy → approved promotion → staging → manual approval → production; only changed services build/deploy. Load test the public path (login, assessment, claim, report download) including cold-start percentiles, recorded in `docs/runbooks/load-test.md`; alert thresholds set from observed baselines (elevated 5xx, failed readiness, pool exhaustion, dead-letter tasks, report failures, auth anomalies, cost spikes). Final Definition-of-Done sweep (§ 22) across all deployables.
-*Exit:* staging green; readiness gaps reported as a numbered list or none.
+_Exit:_ staging green; readiness gaps reported as a numbered list or none.
 
 ---
 
@@ -758,5 +868,8 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy src && uv run
 > Every service and isolated module owns its data.
 > Administrative access is not clinical access.
 > Morpheo rules decide structured results. AI may explain approved results but may not diagnose.
+> The Morpheo algorithm is the four source artifacts; code enforces them, never rewrites them.
+> Same answers, same L-level, same routes — always. RAG grounds and educates; it never decides.
+> Embeddings are text-embedding-3-large via OpenAI, stored in TiDB vector search, outside the decision path.
 > Minimum instances are zero; cold starts are the price of runway.
 > Four locales, always: es, en, ca, fr.

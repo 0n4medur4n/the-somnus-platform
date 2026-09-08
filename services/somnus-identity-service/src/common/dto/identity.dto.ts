@@ -11,9 +11,12 @@
 
 import {
   AccessGrantCreateRequestSchema,
+  AdminCapabilityCheckRequestSchema,
+  AdminContextRequestSchema,
   AuthorizationCheckRequestSchema,
   InvitationAcceptRequestSchema,
   InvitationCreateRequestSchema,
+  InvitationPreviewRequestSchema,
   MembershipPatchRequestSchema,
   OrganizationCreateRequestSchema,
   OrganizationStatusSchema,
@@ -37,5 +40,10 @@ export class OrganizationUpdateDto extends createZodDto(OrganizationUpdateReques
 export class MembershipPatchDto extends createZodDto(MembershipPatchRequestSchema) {}
 export class InvitationCreateDto extends createZodDto(InvitationCreateRequestSchema) {}
 export class InvitationAcceptDto extends createZodDto(InvitationAcceptRequestSchema) {}
+export class InvitationPreviewDto extends createZodDto(InvitationPreviewRequestSchema) {}
+
+/** Admin console gate (Addendum A Checkpoint 15.1). */
+export class AdminCapabilityCheckDto extends createZodDto(AdminCapabilityCheckRequestSchema) {}
+export class AdminContextDto extends createZodDto(AdminContextRequestSchema) {}
 export class AccessGrantCreateDto extends createZodDto(AccessGrantCreateRequestSchema) {}
 export class AuthorizationCheckDto extends createZodDto(AuthorizationCheckRequestSchema) {}
