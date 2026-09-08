@@ -346,6 +346,24 @@ describe("admin console gate (/admin/v1/*)", () => {
         url: "/admin/v1/content-review/items/i1/decision",
         capability: "admin_content_review",
       },
+      // Checkpoint 15.4 -- statistics and the audit log. Three routes, three
+      // different answers: dashboards for the wider analyst set, the audit log
+      // for the narrower one, and the CSV export for platform_super_admin alone.
+      {
+        method: "POST",
+        url: "/admin/v1/statistics",
+        capability: "admin_statistics_read",
+      },
+      {
+        method: "POST",
+        url: "/admin/v1/audit/query",
+        capability: "admin_audit_read",
+      },
+      {
+        method: "POST",
+        url: "/admin/v1/audit/export",
+        capability: "admin_audit_export",
+      },
     ];
 
     /** Bodies that satisfy each route's contract, so a 4xx can only be the gate. */

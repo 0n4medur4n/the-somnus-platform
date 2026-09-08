@@ -4,10 +4,12 @@ import { useTranslation } from "react-i18next";
 import { useAdminAuth } from "../auth/useAdminAuth.js";
 import { Button } from "../components/Button.js";
 import { ConsoleLayout } from "../layouts/ConsoleLayout.js";
+import { AuditViewerScreen } from "../screens/AuditViewerScreen.js";
 import { ContentReviewScreen } from "../screens/ContentReviewScreen.js";
 import { DeletionRequestsScreen } from "../screens/DeletionRequestsScreen.js";
 import { OrganizationsScreen } from "../screens/OrganizationsScreen.js";
 import { RolesScreen } from "../screens/RolesScreen.js";
+import { StatisticsScreen } from "../screens/StatisticsScreen.js";
 import { UsersScreen } from "../screens/UsersScreen.js";
 import { VerificationScreen } from "../screens/VerificationScreen.js";
 
@@ -18,6 +20,8 @@ type ViewId =
   | "organizations"
   | "verification"
   | "contentReview"
+  | "statistics"
+  | "audit"
   | "roles";
 
 /**
@@ -37,6 +41,10 @@ const VIEW_CAPABILITY: Record<Exclude<ViewId, "overview">, AdminCapability> = {
   // §A2.2 grants this to clinical_governance_reviewer and
   // platform_super_admin only -- platform_admin included in the exclusion.
   contentReview: "admin_content_review",
+  // §A2.2: support_agent, clinical_governance_reviewer, platform_admin and
+  // platform_super_admin. professional_verifier is not on that row.
+  statistics: "admin_statistics_read",
+  audit: "admin_audit_read",
   roles: "admin_roles_assign",
 };
 
@@ -90,6 +98,9 @@ export function ConsoleHome({ me }: { me: AdminMeResponse }) {
       {view === "organizations" ? <OrganizationsScreen /> : null}
       {view === "verification" ? <VerificationScreen /> : null}
       {view === "contentReview" ? <ContentReviewScreen /> : null}
+      {view === "statistics" ? <StatisticsScreen /> : null}
+      {/* The CSV export is its own capability (super admin only, §A4). */}
+      {view === "audit" ? <AuditViewerScreen canExport={held.has("admin_audit_export")} /> : null}
       {view === "roles" ? <RolesScreen actingAdminUserId={me.user.id} /> : null}
     </ConsoleLayout>
   );

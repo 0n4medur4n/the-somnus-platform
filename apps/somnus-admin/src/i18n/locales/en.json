@@ -72,7 +72,9 @@
     "organizations": "Organizations",
     "verification": "Professional verification",
     "roles": "Internal roles",
-    "contentReview": "AI content review"
+    "contentReview": "AI content review",
+    "statistics": "Statistics",
+    "audit": "Audit log"
   },
   "users": {
     "title": "Users",
@@ -150,6 +152,45 @@
     "consequence": "Approving makes this text eligible for rendering. Rejecting excludes it for good.",
     "scannerNote": "Candidates carrying prohibited claims never reach this queue: they are discarded before being shown.",
     "decided": "Decision recorded."
+  },
+  "stats": {
+    "title": "Platform statistics",
+    "intro": "Aggregate only. No number here is tied to a person.",
+    "window": "Window",
+    "rowsConsidered": "Rows considered",
+    "truncated": "Partial numbers: the read hit its cap, so these are a lower bound, not a total.",
+    "empty": "No data yet. The event transport is not wired, so the audit store is empty.",
+    "registrations": "Registrations by role branch",
+    "verification": "Verification funnel",
+    "invitations": "Invitation funnel",
+    "counts": "Volumes",
+    "opened": "Opened",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "medianTime": "Median time to decision",
+    "issued": "Issued",
+    "previewed": "Previewed",
+    "accepted": "Accepted",
+    "expired": "Expired",
+    "breakGlass": "Break-glass accesses per admin",
+    "breakGlassPending": "Zero until Checkpoint 15.5: the panel is wired, the feature does not exist yet.",
+    "unavailable": "Metrics nothing currently measures",
+    "unavailableIntro": "§A2.4 asks for these, but no event carries them. Shown as gaps rather than zero: a zero is a measurement."
+  },
+  "audit": {
+    "title": "Audit log",
+    "intro": "Provenance, never a copy of anyone's data. Identifiers are opaque.",
+    "actor": "Actor",
+    "entity": "Entity",
+    "action": "Action",
+    "from": "From",
+    "to": "To",
+    "search": "Search",
+    "exportCsv": "Export CSV",
+    "exportHint": "Platform super admin only.",
+    "exported": "Exported {{count}} rows.",
+    "empty": "No entries match.",
+    "occurredAt": "When"
   },
   "roles": {
     "title": "Internal roles",

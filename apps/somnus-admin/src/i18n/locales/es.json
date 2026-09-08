@@ -72,7 +72,9 @@
     "organizations": "Organizaciones",
     "verification": "Verificación profesional",
     "roles": "Roles internos",
-    "contentReview": "Revisión de contenido IA"
+    "contentReview": "Revisión de contenido IA",
+    "statistics": "Estadísticas",
+    "audit": "Registro de auditoría"
   },
   "users": {
     "title": "Personas usuarias",
@@ -150,6 +152,45 @@
     "consequence": "Aprobar hace que este texto sea elegible para renderizarse. Rechazar lo excluye de forma definitiva.",
     "scannerNote": "Los candidatos con afirmaciones prohibidas no llegan a esta cola: se descartan antes de mostrarse.",
     "decided": "Decisión registrada."
+  },
+  "stats": {
+    "title": "Estadísticas de plataforma",
+    "intro": "Solo agregados. Ningún número aquí está ligado a una persona.",
+    "window": "Ventana",
+    "rowsConsidered": "Filas consideradas",
+    "truncated": "Números parciales: la lectura alcanzó su límite, así que son una cota inferior, no un total.",
+    "empty": "Sin datos todavía. El transporte de eventos aún no está cableado, así que el almacén de auditoría está vacío.",
+    "registrations": "Registros por rama de rol",
+    "verification": "Embudo de verificación",
+    "invitations": "Embudo de invitaciones",
+    "counts": "Volúmenes",
+    "opened": "Abiertos",
+    "approved": "Aprobados",
+    "rejected": "Rechazados",
+    "medianTime": "Mediana hasta la decisión",
+    "issued": "Emitidas",
+    "previewed": "Vistas",
+    "accepted": "Aceptadas",
+    "expired": "Expiradas",
+    "breakGlass": "Accesos break-glass por administrador",
+    "breakGlassPending": "Cero hasta el checkpoint 15.5: el panel está cableado, la función aún no existe.",
+    "unavailable": "Métricas que hoy nadie mide",
+    "unavailableIntro": "§A2.4 las pide, pero ningún evento las lleva. Se muestran como huecos y no como cero: un cero es una medición."
+  },
+  "audit": {
+    "title": "Registro de auditoría",
+    "intro": "Procedencia, nunca copia de los datos de nadie. Los identificadores son opacos.",
+    "actor": "Actor",
+    "entity": "Entidad",
+    "action": "Acción",
+    "from": "Desde",
+    "to": "Hasta",
+    "search": "Buscar",
+    "exportCsv": "Exportar CSV",
+    "exportHint": "Solo superadministrador de plataforma.",
+    "exported": "Exportadas {{count}} filas.",
+    "empty": "Ninguna entrada coincide.",
+    "occurredAt": "Cuándo"
   },
   "roles": {
     "title": "Roles internos",

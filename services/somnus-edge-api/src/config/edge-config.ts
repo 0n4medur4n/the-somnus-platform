@@ -50,6 +50,7 @@ export const EdgeConfigSchema = z.object({
     .string()
     .default(
       "http://localhost:5173,http://localhost:4173,http://localhost:5174,http://localhost:4174",
+    )
     .transform((s) =>
       s
         .split(",")
@@ -87,6 +88,13 @@ export const EdgeConfigSchema = z.object({
   REPORT_BASE_URL: z.string().url().default("http://127.0.0.1:8081"),
   // OIDC audience for the report service's Cloud Run URL; defaults to REPORT_BASE_URL.
   REPORT_AUDIENCE: z.string().min(1).optional(),
+
+  // The worker owns `somnus_audit` (build plan §5.7 / ADR 0010), so the admin
+  // console's statistics and audit viewer reach it through here -- never through
+  // a second connection to that database.
+  WORKER_BASE_URL: z.string().url().default("http://127.0.0.1:3003"),
+  // OIDC audience for the worker's Cloud Run URL; defaults to WORKER_BASE_URL.
+  WORKER_AUDIENCE: z.string().min(1).optional(),
   // How internal calls are authenticated. `gcp`: mint a real Google
   // OIDC identity token (production on Cloud Run). `insecure-dev`: send
   // a fixed dev token -- for local/docker/tests where there is no GCP

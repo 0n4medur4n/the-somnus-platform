@@ -63,6 +63,25 @@ async function buildReportClient(config: EdgeConfig): Promise<CloudRunClient> {
 }
 
 /**
+ * DI token for the worker client. The worker owns `somnus_audit`, so the admin
+ * console's statistics dashboards and audit log viewer read through it
+ * (Checkpoint 15.4) rather than opening that database from here (§7).
+ */
+export const WORKER_CLIENT = Symbol("WORKER_CLIENT");
+export type WorkerClient = CloudRunClient;
+
+async function buildWorkerClient(config: EdgeConfig): Promise<CloudRunClient> {
+  const audience = config.WORKER_AUDIENCE ?? config.WORKER_BASE_URL;
+  const tokenProvider = await createInternalTokenProvider(config, audience);
+  return createCloudRunClient({
+    baseUrl: config.WORKER_BASE_URL,
+    tokenProvider,
+    defaultTimeoutMs: config.INTERNAL_TIMEOUT_MS,
+    serviceName: "somnus-edge-api",
+  });
+}
+
+/**
  * Global so any composing module (`me`, `consent`, and the actor
  * resolver) can inject the identity client. Built once at bootstrap
  * from validated config.
@@ -79,10 +98,14 @@ async function buildReportClient(config: EdgeConfig): Promise<CloudRunClient> {
       useFactory: (): Promise<CloudRunClient> => buildMorpheoClient(loadEdgeConfig(process.env)),
     },
     {
+      provide: WORKER_CLIENT,
+      useFactory: (): Promise<CloudRunClient> => buildWorkerClient(loadEdgeConfig(process.env)),
+    },
+    {
       provide: REPORT_CLIENT,
       useFactory: (): Promise<CloudRunClient> => buildReportClient(loadEdgeConfig(process.env)),
     },
   ],
-  exports: [IDENTITY_CLIENT, MORPHEO_CLIENT, REPORT_CLIENT],
+  exports: [WORKER_CLIENT, IDENTITY_CLIENT, MORPHEO_CLIENT, REPORT_CLIENT],
 })
 export class InternalClientsModule {}

@@ -14,9 +14,12 @@ import type {
   AdminUserSearchResponse,
   AdminVerificationCase,
   AdminVerificationDecisionRequest,
+  AuditQueryRequest,
+  AuditViewPage,
   ContentReviewDecisionRequest,
   ContentReviewItem,
   ContentReviewQueue,
+  Dashboards,
   SessionResponse,
 } from "@somnus/api-contracts";
 import { api } from "./api.js";
@@ -95,6 +98,15 @@ export const edge = {
       body,
     ),
 
+  // Checkpoint 15.4 -- aggregate statistics and the audit log. POST for the
+  // audit query because an actor id does not belong in a URL that lands in
+  // access logs.
+  statistics: (window: { from?: string; to?: string } = {}): Promise<Dashboards> =>
+    api.post<Dashboards>("/admin/v1/statistics", window),
+  auditQuery: (filter: AuditQueryRequest): Promise<AuditViewPage> =>
+    api.post<AuditViewPage>("/admin/v1/audit/query", filter),
+  auditExport: (filter: AuditQueryRequest): Promise<{ csv: string; rowCount: number }> =>
+    api.post<{ csv: string; rowCount: number }>("/admin/v1/audit/export", filter),
 
   // --- Internal roles (admin_roles_assign, platform_super_admin only) ---
   assignRole: (body: AdminRoleAssignRequest): Promise<AdminRoleAssignResponse> =>
