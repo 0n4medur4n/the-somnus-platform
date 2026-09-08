@@ -71,7 +71,8 @@
     "deletions": "Solicitudes de borrado",
     "organizations": "Organizaciones",
     "verification": "Verificación profesional",
-    "roles": "Roles internos"
+    "roles": "Roles internos",
+    "contentReview": "Revisión de contenido IA"
   },
   "users": {
     "title": "Personas usuarias",
@@ -131,6 +132,24 @@
     "reasonHint": "Obligatorio también al aprobar: queda registrado con tu identidad.",
     "consequence": "Aprobar concede el rol profesional. A partir de ahí podrá acceder a datos clínicos de quien se los conceda explícitamente.",
     "decided": "Caso resuelto."
+  },
+  "contentReview": {
+    "title": "Cola de revisión de contenido IA",
+    "intro": "Texto reescrito por IA que aún no es visible para nadie. Nada se publica sin una decisión humana registrada.",
+    "empty": "No hay candidatos pendientes de revisión.",
+    "deterministic": "Texto aprobado (determinista)",
+    "candidate": "Candidato reescrito por IA",
+    "model": "Modelo",
+    "templateVersion": "Versión de plantilla",
+    "inputHash": "Hash de entrada",
+    "outputHash": "Hash de salida",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "reasonLabel": "Motivo de la decisión",
+    "reasonHint": "Obligatorio también al aprobar: queda registrado con tu identidad y no se puede modificar después.",
+    "consequence": "Aprobar hace que este texto sea elegible para renderizarse. Rechazar lo excluye de forma definitiva.",
+    "scannerNote": "Los candidatos con afirmaciones prohibidas no llegan a esta cola: se descartan antes de mostrarse.",
+    "decided": "Decisión registrada."
   },
   "roles": {
     "title": "Roles internos",

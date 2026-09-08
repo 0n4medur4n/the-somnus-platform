@@ -6,6 +6,7 @@ import {
   AdminRoleAssignRequestSchema,
   AdminUserSearchRequestSchema,
   AdminVerificationDecisionRequestSchema,
+  ContentReviewDecisionRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
 
@@ -27,3 +28,5 @@ export class AdminVerificationDecisionDto extends createZodDto(
   AdminVerificationDecisionRequestSchema,
 ) {}
 export class AdminRoleAssignDto extends createZodDto(AdminRoleAssignRequestSchema) {}
+/** Checkpoint 15.3: reason required for approve AND reject, as 15.2 requires it. */
+export class ContentReviewDecisionDto extends createZodDto(ContentReviewDecisionRequestSchema) {}

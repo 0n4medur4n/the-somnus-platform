@@ -7,10 +7,18 @@ for any locale/level/routes so the golden tests can exercise the matrix.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from dataclasses import replace
+from datetime import datetime
 
 import pytest
 
+from report.application.content_review import (
+    STATUS_APPROVED,
+    STATUS_PENDING,
+    ContentReviewItem,
+    ContentReviewService,
+)
 from report.schemas.render import (
     ClinicalContentDTO,
     Locale,
@@ -108,3 +116,61 @@ def make_request() -> RequestBuilder:
         )
 
     return build
+
+
+class InMemoryContentReviewRepository:
+    """The content-review persistence port, in memory (Checkpoint 15.3).
+
+    Lives in conftest rather than in one test module so the queue tests and the
+    render-gate tests exercise the same port implementation. The SQL one is
+    covered against a real MySQL in tests/integration/test_content_review_db.py.
+    """
+
+    def __init__(self) -> None:
+        self.items: dict[str, ContentReviewItem] = {}
+
+    def add(self, item: ContentReviewItem) -> None:
+        self.items[item.item_id] = item
+
+    def get(self, item_id: str) -> ContentReviewItem | None:
+        return self.items.get(item_id)
+
+    def list_by_status(self, status: str, *, limit: int) -> Sequence[ContentReviewItem]:
+        found = [item for item in self.items.values() if item.status == status]
+        return sorted(found, key=lambda item: item.created_at)[:limit]
+
+    def latest_approved_for_report(self, report_id: str) -> ContentReviewItem | None:
+        found = [
+            item
+            for item in self.items.values()
+            if item.report_id == report_id and item.status == STATUS_APPROVED
+        ]
+        return found[-1] if found else None
+
+    def record_decision(
+        self, item_id: str, *, status: str, reviewer_id: str, reason: str, decided_at: datetime
+    ) -> ContentReviewItem | None:
+        existing = self.items.get(item_id)
+        # Mirrors the SQL WHERE clause: an already-decided row matches nothing,
+        # which is what makes reviewer identity and timestamp immutable.
+        if existing is None or existing.status != STATUS_PENDING:
+            return None
+        decided = replace(
+            existing,
+            status=status,
+            reviewer_id=reviewer_id,
+            decided_at=decided_at,
+            reason=reason,
+        )
+        self.items[item_id] = decided
+        return decided
+
+
+@pytest.fixture
+def make_review_service() -> Callable[[], ContentReviewService]:
+    """A fresh, empty review service per call."""
+
+    def _make() -> ContentReviewService:
+        return ContentReviewService(InMemoryContentReviewRepository())
+
+    return _make

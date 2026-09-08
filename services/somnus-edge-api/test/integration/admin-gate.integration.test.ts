@@ -332,6 +332,20 @@ describe("admin console gate (/admin/v1/*)", () => {
         capability: "admin_verification_queue",
       },
       { method: "POST", url: "/admin/v1/roles/assign", capability: "admin_roles_assign" },
+      // Checkpoint 15.3 -- the AI content review queue. §A2.2 grants
+      // admin_content_review to clinical_governance_reviewer and
+      // platform_super_admin only; every other internal role, support_agent
+      // and platform_admin included, is refused by the parametrized run below.
+      {
+        method: "GET",
+        url: "/admin/v1/content-review/items",
+        capability: "admin_content_review",
+      },
+      {
+        method: "POST",
+        url: "/admin/v1/content-review/items/i1/decision",
+        capability: "admin_content_review",
+      },
     ];
 
     /** Bodies that satisfy each route's contract, so a 4xx can only be the gate. */

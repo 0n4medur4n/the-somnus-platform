@@ -71,7 +71,8 @@
     "deletions": "Deletion requests",
     "organizations": "Organizations",
     "verification": "Professional verification",
-    "roles": "Internal roles"
+    "roles": "Internal roles",
+    "contentReview": "AI content review"
   },
   "users": {
     "title": "Users",
@@ -131,6 +132,24 @@
     "reasonHint": "Required for approvals too: it is recorded against your identity.",
     "consequence": "Approving grants the professional role. From then on they can reach clinical data of anyone who explicitly grants it to them.",
     "decided": "Case resolved."
+  },
+  "contentReview": {
+    "title": "AI content review queue",
+    "intro": "AI-reworded text that is not visible to anyone yet. Nothing is released without a recorded human decision.",
+    "empty": "No candidates awaiting review.",
+    "deterministic": "Approved text (deterministic)",
+    "candidate": "AI-reworded candidate",
+    "model": "Model",
+    "templateVersion": "Template version",
+    "inputHash": "Input hash",
+    "outputHash": "Output hash",
+    "approve": "Approve",
+    "reject": "Reject",
+    "reasonLabel": "Reason for the decision",
+    "reasonHint": "Required when approving too: it is recorded with your identity and cannot be changed afterwards.",
+    "consequence": "Approving makes this text eligible for rendering. Rejecting excludes it for good.",
+    "scannerNote": "Candidates carrying prohibited claims never reach this queue: they are discarded before being shown.",
+    "decided": "Decision recorded."
   },
   "roles": {
     "title": "Internal roles",
