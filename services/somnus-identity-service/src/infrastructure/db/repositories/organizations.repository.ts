@@ -31,6 +31,19 @@ export class OrganizationsRepository {
     return rows[0] ?? null;
   }
 
+  /**
+   * Every organization, for the console's organization screen
+   * (§A2.2 `admin_organizations_manage`). Bounded like the user search: an
+   * admin list is a working view, not an export.
+   */
+  async listForAdmin(limit: number) {
+    return this.db
+      .select()
+      .from(organizations)
+      .orderBy(organizations.createdAt)
+      .limit(limit + 1);
+  }
+
   /** findById (not scope) is correct here -- see the class doc: organizations is a root entity. */
   async update(
     id: UUIDv7,

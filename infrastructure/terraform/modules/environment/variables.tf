@@ -49,6 +49,11 @@ variable "app_site_id" {
   type        = string
 }
 
+variable "admin_site_id" {
+  description = "Firebase Hosting site ID for the internal admin console (Addendum A §A2.1). Globally unique across all of Firebase, so each environment needs its own."
+  type        = string
+}
+
 variable "edge_5xx_threshold" {
   description = "somnus-edge-api sustained-5xx alert threshold (responses/min). Build plan Checkpoint 13.3: re-tuned per environment from observed baselines after the load test; a conservative placeholder until then."
   type        = number
@@ -59,4 +64,10 @@ variable "edge_5xx_duration" {
   description = "How long the 5xx rate must stay above the threshold before alerting."
   type        = string
   default     = "300s"
+}
+
+variable "bigquery_location" {
+  description = "Location of the privacy-safe analytics dataset. EU by default: platform data stays in the EU (docs/security/dpia.md)."
+  type        = string
+  default     = "EU"
 }

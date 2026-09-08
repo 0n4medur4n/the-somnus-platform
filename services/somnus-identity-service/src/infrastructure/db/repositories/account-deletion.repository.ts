@@ -1,5 +1,5 @@
 import type { UUIDv7 } from "@somnus/api-contracts";
-import { eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import type { Db } from "../db.client.js";
 import {
   accessGrants,
@@ -35,6 +35,38 @@ export class AccountDeletionRepository {
    * as the invitation-token lookups (build plan §8 allows an organization *or a
    * user* scope).
    */
+  /**
+   * Pending deletion requests, for the console's processing queue
+   * (Addendum A §A2.2 `admin_deletion_requests_process`). A cross-user work
+   * list, gated by the capability rather than by scope.
+   */
+  async listPendingRequests(limit: number) {
+    return this.db
+      .select()
+      .from(deletionRequests)
+      .where(eq(deletionRequests.status, "pending"))
+      .orderBy(deletionRequests.requestedAt)
+      .limit(limit + 1);
+  }
+
+  async findRequest(requestId: UUIDv7) {
+    const rows = await this.db
+      .select()
+      .from(deletionRequests)
+      .where(eq(deletionRequests.id, requestId))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  /** Only ever from `pending`, so two admins cannot both resolve one request. */
+  async resolveRequest(requestId: UUIDv7, status: "completed" | "cancelled"): Promise<boolean> {
+    const result = await this.db
+      .update(deletionRequests)
+      .set({ status, completedAt: new Date() })
+      .where(and(eq(deletionRequests.id, requestId), eq(deletionRequests.status, "pending")));
+    return (result[0].affectedRows ?? 0) > 0;
+  }
+
   async eraseIdentityData(userId: UUIDv7): Promise<void> {
     await this.db.transaction(async (tx) => {
       const profiles = await tx

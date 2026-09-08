@@ -1,6 +1,7 @@
 import {
   InvitationAcceptRequestSchema,
   InvitationCreateRequestSchema,
+  InvitationPreviewRequestSchema,
   OrganizationCreateRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
@@ -9,3 +10,4 @@ import { createZodDto } from "nestjs-zod";
 export class OrganizationCreateDto extends createZodDto(OrganizationCreateRequestSchema) {}
 export class InvitationCreateDto extends createZodDto(InvitationCreateRequestSchema) {}
 export class InvitationAcceptDto extends createZodDto(InvitationAcceptRequestSchema) {}
+export class InvitationPreviewDto extends createZodDto(InvitationPreviewRequestSchema) {}

@@ -1,4 +1,5 @@
 import {
+  boolean,
   date,
   mysqlEnum,
   mysqlTable,
@@ -44,6 +45,15 @@ export const individualProfiles = mysqlTable("individual_profiles", {
   // footguns Date objects would introduce for no benefit here.
   dateOfBirth: date("date_of_birth", { mode: "string" }),
   phone: varchar("phone", { length: 32 }),
+  // Registration role branch (Addendum A, Checkpoint 14.1). Stored so the
+  // registration funnel metrics (14.3) and the guardian flow are auditable.
+  // The vocabulary is Morpheo's clinical role vocabulary, never a second enum.
+  registrationRole: mysqlEnum("registration_role", ["adult", "parent", "professional"]),
+  // Parent/guardian branch only. The minor never has an account (Addendum A,
+  // A1), so the guardian's attestation and the minor's age band (§14a) are the
+  // only record that a pediatric flow is in play.
+  guardianshipConfirmed: boolean("guardianship_confirmed"),
+  minorAgeBand: mysqlEnum("minor_age_band", ["0-3m", "4-11m", "1-2y", "3-5y", "6-12y", "13-17y"]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });

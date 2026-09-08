@@ -12,6 +12,14 @@ export const ErrorCode = {
   PROFESSIONAL_NOT_VERIFIED: "PROFESSIONAL_NOT_VERIFIED",
   ORGANIZATION_MEMBERSHIP_NOT_FOUND: "ORGANIZATION_MEMBERSHIP_NOT_FOUND",
   ACCESS_GRANT_EXPIRED: "ACCESS_GRANT_EXPIRED",
+  // Invitations are the only way into a Nox organization (Addendum A §A1),
+  // so the reason one cannot be used is a distinct, stable code the frontend
+  // translates -- never a generic 404 that would leave "expired", "already
+  // used" and "wrong account" indistinguishable to the invited person.
+  INVITATION_NOT_FOUND: "INVITATION_NOT_FOUND",
+  INVITATION_EXPIRED: "INVITATION_EXPIRED",
+  INVITATION_ALREADY_USED: "INVITATION_ALREADY_USED",
+  INVITATION_EMAIL_MISMATCH: "INVITATION_EMAIL_MISMATCH",
   // 5xx
   INTERNAL: "INTERNAL",
   UPSTREAM_UNAVAILABLE: "UPSTREAM_UNAVAILABLE",
@@ -34,6 +42,10 @@ export const errorCodeToHttpStatus: Readonly<Record<ErrorCodeType, number>> = Ob
   PROFESSIONAL_NOT_VERIFIED: 403,
   ORGANIZATION_MEMBERSHIP_NOT_FOUND: 404,
   ACCESS_GRANT_EXPIRED: 410,
+  INVITATION_NOT_FOUND: 404,
+  INVITATION_EXPIRED: 410,
+  INVITATION_ALREADY_USED: 409,
+  INVITATION_EMAIL_MISMATCH: 403,
   INTERNAL: 500,
   UPSTREAM_UNAVAILABLE: 502,
   CONFIGURATION_INVALID: 500,
@@ -53,6 +65,10 @@ export const SAFE_PUBLIC_MESSAGES: Readonly<Record<ErrorCodeType, string>> = Obj
   PROFESSIONAL_NOT_VERIFIED: "Professional verification is required.",
   ORGANIZATION_MEMBERSHIP_NOT_FOUND: "The requested membership could not be found.",
   ACCESS_GRANT_EXPIRED: "The access grant has expired.",
+  INVITATION_NOT_FOUND: "The invitation could not be found.",
+  INVITATION_EXPIRED: "The invitation has expired.",
+  INVITATION_ALREADY_USED: "The invitation has already been used.",
+  INVITATION_EMAIL_MISMATCH: "The invitation was issued to a different email address.",
   INTERNAL: "An internal error occurred.",
   UPSTREAM_UNAVAILABLE: "An upstream service is unavailable.",
   CONFIGURATION_INVALID: "The service is misconfigured.",

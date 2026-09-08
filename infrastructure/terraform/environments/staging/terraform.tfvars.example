@@ -16,6 +16,7 @@ env    = "staging"
 # must not collide with dev/production or any other Firebase project.
 marketing_site_id = "the-somnus-staging"
 app_site_id       = "the-somnus-staging-app"
+admin_site_id     = "the-somnus-staging-admin"
 
 budget_amount_units          = 100
 firebase_budget_amount_units = 20

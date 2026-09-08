@@ -58,6 +58,28 @@ test-coverage:
 build:
     pnpm run build
 
+# --- Infrastructure (Terraform, build plan §20 Phase 5) ---
+
+# Format all Terraform modules and environments in place.
+infra-fmt:
+    terraform fmt -recursive infrastructure/terraform
+
+# Format check only (what CI runs); does not modify files.
+infra-fmt-check:
+    terraform fmt -check -recursive infrastructure/terraform
+
+# Init + validate the dev environment (no cloud credentials required).
+infra-validate:
+    cd infrastructure/terraform/environments/dev; terraform init -backend=false; terraform validate
+
+# Init the dev environment against real GCP credentials (see docs/runbooks/deploy-dev.md).
+infra-init-dev:
+    cd infrastructure/terraform/environments/dev; terraform init
+
+# Plan the dev environment. Requires terraform.tfvars (copy from the .example) and `gcloud auth login --update-adc`.
+infra-plan-dev:
+    cd infrastructure/terraform/environments/dev; terraform plan
+
 # --- Seeding ---
 
 # Reset and seed the local dev database. At Phase 1.1 there is no seed data

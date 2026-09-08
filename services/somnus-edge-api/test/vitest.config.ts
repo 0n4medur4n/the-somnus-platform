@@ -40,6 +40,9 @@ export default defineConfig({
         "src/modules/consent/**/*.ts",
         "src/modules/registration/**/*.ts",
         "src/modules/organizations/**/*.ts",
+        // The admin console gate: the guard and the audit interceptor are the
+        // security core of Addendum A Checkpoint 15.1.
+        "src/modules/admin/**/*.ts",
         "src/infrastructure/internal-clients/**/*.ts",
         "src/common/composition.util.ts",
       ],

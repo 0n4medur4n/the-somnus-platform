@@ -23,3 +23,12 @@ export async function getSignInLink(email: string): Promise<string> {
 export function uniqueEmail(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
 }
+
+/**
+ * The role radios take their accessible name from the whole label (title +
+ * hint), so a locale string has to be matched as a substring regex rather
+ * than an exact name.
+ */
+export function escapeRe(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

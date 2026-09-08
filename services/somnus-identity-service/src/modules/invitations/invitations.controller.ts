@@ -1,8 +1,16 @@
-import { Body, Controller, Param, Post } from "@nestjs/common";
+import { Body, Controller, HttpCode, Param, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import type { Invitation, InvitationCreateResponse } from "@somnus/api-contracts";
+import type {
+  Invitation,
+  InvitationCreateResponse,
+  InvitationPreviewResponse,
+} from "@somnus/api-contracts";
 import { CurrentActorId } from "../../common/decorators/current-actor.decorator.js";
-import { InvitationAcceptDto, InvitationCreateDto } from "../../common/dto/identity.dto.js";
+import {
+  InvitationAcceptDto,
+  InvitationCreateDto,
+  InvitationPreviewDto,
+} from "../../common/dto/identity.dto.js";
 import { InvitationsService } from "./invitations.service.js";
 
 @ApiTags("invitations")
@@ -37,5 +45,26 @@ export class InvitationsController {
     @Body() body: InvitationAcceptDto,
   ): Promise<Invitation> {
     return this.invitationsService.accept(actorId, body.token);
+  }
+}
+
+/**
+ * Internal-only (build plan §16 `/internal/v1/`), and the one invitation route
+ * that takes no actor: it backs the pre-login accept screen, where the invited
+ * person has no session yet (Addendum A Checkpoint 14.2). The token is the
+ * only credential, and it was mailed to the invited address.
+ */
+@ApiTags("invitations")
+@Controller({ path: "internal/v1/invitations" })
+export class InvitationPreviewController {
+  constructor(private readonly invitationsService: InvitationsService) {}
+
+  @Post("preview")
+  @HttpCode(200)
+  @ApiOperation({
+    summary: "Look up an invitation by token, before the invited person has a session.",
+  })
+  async preview(@Body() body: InvitationPreviewDto): Promise<InvitationPreviewResponse> {
+    return this.invitationsService.preview(body.token);
   }
 }

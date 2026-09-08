@@ -7,8 +7,10 @@ import {
   CORRELATION_LOGGER,
   CorrelationInterceptor,
 } from "./common/interceptors/correlation.interceptor.js";
+import { EventsModule } from "./infrastructure/events/events.module.js";
 import { FirebaseModule } from "./infrastructure/firebase/firebase.module.js";
 import { InternalClientsModule } from "./infrastructure/internal-clients/internal-clients.module.js";
+import { AdminModule } from "./modules/admin/admin.module.js";
 import { ConsentModule } from "./modules/consent/consent.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
 import { MeModule } from "./modules/me/me.module.js";
@@ -32,6 +34,8 @@ export const ROOT_LOGGER: Logger = createLogger({
 
 @Module({
   imports: [
+    AdminModule,
+    EventsModule,
     FirebaseModule,
     InternalClientsModule,
     HealthModule,

@@ -44,11 +44,13 @@ export class RegistrationService {
     const provisionResponse = await this.identity.post("/internal/v1/users/provision", {
       correlationId,
       body: {
+        // Forward the whole validated registration branch (role + the
+        // branch-specific fields + consents) verbatim -- dropping fields here
+        // was silently discarding the role branch. The identity fields are
+        // appended from the verified session, never taken from the client.
+        ...body,
         providerUserId: active.firebaseUid,
         email: active.email,
-        firstName: body.firstName,
-        lastName: body.lastName,
-        ...(body.locale ? { locale: body.locale } : {}),
       },
     });
     const provisioned = UserResolveResponseSchema.safeParse(provisionResponse.body);

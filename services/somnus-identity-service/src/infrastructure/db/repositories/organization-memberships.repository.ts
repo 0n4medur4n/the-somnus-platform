@@ -55,6 +55,19 @@ export class OrganizationMembershipsRepository {
     return rows[0] ?? null;
   }
 
+  /**
+   * Every organization a user belongs to. UserScope, not OrgScope: the console's
+   * user detail answers "where does this person belong", which has no single
+   * organization to scope by -- the user id is the scope (build plan §8 allows
+   * an organization *or a user* scope).
+   */
+  async listMembershipsForUser(userId: UUIDv7) {
+    return this.db
+      .select()
+      .from(organizationMemberships)
+      .where(eq(organizationMemberships.userId, userId));
+  }
+
   async listMembers(scope: OrgScope) {
     return this.db
       .select()

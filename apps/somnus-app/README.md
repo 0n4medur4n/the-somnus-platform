@@ -53,5 +53,31 @@ pnpm --filter @somnus/app e2e            # Playwright golden path (needs the sta
 ```
 
 Config is via `VITE_*` env vars (`src/config/env.ts`), all public — no secrets
-in the browser. Defaults target the local emulator + docker stack. See
-`tests/e2e/README.md` for the E2E stack.
+in the browser. Defaults exist only in development builds. See
+`tests/e2e/README.md` for the local emulator stack.
+
+## Real Firebase Hosting builds
+
+```bash
+pnpm --filter @somnus/app build:hosting --mode hosting-dev
+node scripts/check-hosting-bundle.mjs apps/somnus-app/dist
+pnpm exec firebase deploy --only hosting:app --project the-somnuss --non-interactive
+```
+
+Run these from the repository root. `hosting-dev` uses the versioned, public
+`hosting.dev.json` configuration, verified against Cloud Run and Firebase.
+Hosting modes ignore all local `.env` files. Explicit process variables override
+the dev file and must pass validation. `hosting-staging` and `hosting-production`
+require all four `VITE_EDGE_API_URL`, `VITE_FIREBASE_API_KEY`,
+`VITE_FIREBASE_AUTH_DOMAIN`, and `VITE_FIREBASE_PROJECT_ID` variables; neither
+inherits dev values. `VITE_AUTH_EMULATOR_URL` must be absent or empty.
+
+Zod validates the configuration before bundling. A post-build guard scans the
+entire output, and Firebase's app `predeploy` hook repeats it for direct CLI
+deploys. Missing Hosting metadata, local/emulator values, and malformed output
+fail closed. The only localhost exception is React Router's exact dummy-origin
+expression used for relative URL resolution without a window; additional
+localhost strings still fail. Generic Firebase SDK emulator support is not itself
+an emulator configuration. Hosting source maps are disabled so development source
+defaults are not published. Regression tests are in `tests/hosting-bundle.test.ts`
+at the root and `src/config/env-schema.test.ts`.
