@@ -24,18 +24,31 @@ wording is Morpheo's approved content (§14a); this service only lays it out.
 - **Reescritura con IA (§15):** el LLM solo reformula prosa ya aprobada; nunca ve
   ni devuelve el nivel, los flags ni el enrutamiento (`application/rewriter.py`).
   Toda salida pasa por el escáner de frases prohibidas y queda `pending_review`.
-- **Reescritura con IA: desactivada explícitamente.** La reescritura con IA está
-  **desactivada vía `AI_REWRITE_ENABLED` (default off)** hasta que exista un
-  mecanismo de revisión humana; **no debe activarse en ningún entorno hasta que ese
-  mecanismo esté construido y revisado.** El control es estructural, no accidental:
-  `RenderService._finalize_html` es el único punto por donde la IA podría entrar al
-  pipeline; con el flag off el `Rewriter` nunca se construye ni se invoca, y con el
-  flag on se rechaza servir salida sin revisar (§15). Fijado por
+- **Reescritura con IA: mecanismo de revisión construido; el flag sigue off.**
+  Checkpoint 15.3 cierra el diferido de 11.2. Existe ya una cola de revisión humana
+  real: tabla `ai_content_review_items` en `somnus_reporting`, servicio de dominio
+  (`application/content_review.py`), endpoints internos
+  (`/internal/v1/admin/content-review/*`) y pantalla en la consola de administración
+  restringida a `clinical_governance_reviewer` y `platform_super_admin` (§A2.2).
+  **`AI_REWRITE_ENABLED` continúa en `default off`, y activarlo requiere una firma
+  clínica explícita del responsable clínico después de haber usado esta cola** — no
+  es una consecuencia de que el mecanismo exista, es una decisión aparte.
+  El control sigue siendo estructural: `RenderService._finalize_html` es el único
+  punto por donde la IA podría entrar al pipeline; con el flag off el `Rewriter`
+  nunca se construye ni se invoca, y con el flag on **solo un ítem aprobado** hace
+  elegible un candidato: la única pregunta que el pipeline puede hacerle a la cola
+  ya lleva el filtro de estado dentro (`approved_candidate`), así que un ítem
+  rechazado o pendiente no tiene ninguna ruta de salida. Fijado por
   `tests/unit/test_render_service.py`
   (`test_ai_rewrite_off_stores_the_deterministic_html_byte_for_byte`,
-  `test_ai_rewrite_on_refuses_to_serve_unreviewed_output`). Hoy `pending_review`
-  existe **solo como valor de estado**: no hay endpoint, UI, rol ni persistencia
-  para aprobar/rechazar contenido — **no existe aún una puerta de revisión humana**.
+  `test_ai_rewrite_on_refuses_to_serve_unreviewed_output`) y por
+  `tests/unit/test_content_review_render_gate.py`, que lo comprueba **a nivel de
+  pipeline**: tras un render rechazado no queda ni un byte del candidato en storage.
+- **El escáner corre antes de que el revisor vea nada.** Un candidato con una
+  afirmación BLOQUEAR no llega a la cola como revisable: se escanea antes de
+  persistir y se descarta con registro §15 (hashes, nunca prosa clínica). El
+  revisor juzga redacción, no atrapa lo que un control automático ya prohíbe.
+  Fijado por `tests/unit/test_content_review.py`.
 - **Riesgo residual (diferido, no mitigado):** el escáner de frases prohibidas es
   *literal* (frases gobernadas + slots `[placeholder]`, sin distinción de
   mayúsculas); no atrapa una **paráfrasis** que evite la redacción exacta ni

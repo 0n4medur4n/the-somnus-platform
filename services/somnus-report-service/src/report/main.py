@@ -16,9 +16,11 @@ from pathlib import Path
 from fastapi import FastAPI
 from sqlalchemy.orm import sessionmaker
 
+from report.api.content_review import router as content_review_router
 from report.api.health import router as health_router
 from report.api.reports import router as reports_router
 from report.api.version import router as version_router
+from report.application.content_review import ContentReviewService
 from report.application.render_service import RenderService
 from report.application.retrieval import SourceRetriever, VectorStoreRetriever
 from report.infrastructure.correlation import CorrelationIdMiddleware
@@ -29,6 +31,7 @@ from report.infrastructure.logging import configure_logging
 from report.infrastructure.morpheo_client import MorpheoContentClient
 from report.infrastructure.pdf import WeasyPrintPdfRenderer
 from report.infrastructure.storage import LocalStorageBackend
+from report.repositories.content_review_repository import ContentReviewRepositorySql
 from report.repositories.sources_repository import SourcesRepository
 from report.schemas.retrieval import CorpusEntry
 from report.settings.config import Settings, load_settings
@@ -91,6 +94,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # The render pipeline. WeasyPrint + the morpheo client are lazy (no native
     # libs loaded, no network) until a report is actually rendered, so the app
     # boots anywhere.
+    # The human review queue (Checkpoint 15.3) is what can make an AI candidate
+    # eligible for rendering. The render gate consults it ONLY when
+    # AI_REWRITE_ENABLED is on -- which it is not, in any environment -- and can
+    # ask it exactly one question: is there an APPROVED candidate for this report.
+    class _ApprovedCandidates:
+        def approved_candidate(self, report_id: str) -> str | None:
+            with session_factory() as session:
+                service = ContentReviewService(ContentReviewRepositorySql(session))
+                return service.approved_candidate(report_id)
+
     app.state.render_service = RenderService(
         content_provider=MorpheoContentClient(settings.morpheo_base_url),
         pdf_renderer=WeasyPrintPdfRenderer(),
@@ -100,6 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         signed_url_ttl=timedelta(seconds=settings.signed_url_ttl_seconds),
         ai_rewrite_enabled=settings.ai_rewrite_enabled,
         retriever=retriever,
+        review=_ApprovedCandidates(),
     )
 
     app.add_middleware(CorrelationIdMiddleware)
@@ -108,6 +122,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(version_router)
     app.include_router(reports_router)
+    app.include_router(content_review_router)
 
     return app
 

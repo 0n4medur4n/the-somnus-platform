@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Protocol
 
 from report.application.ai_rewrite import AiRewriteDisabledError
 from report.application.retrieval import SourceRetriever
@@ -27,6 +28,18 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+class ApprovedCandidateSource(Protocol):
+    """What the render pipeline is allowed to ask the review queue.
+
+    Deliberately one method, and deliberately the approved one. The pipeline
+    cannot request "the candidate for this report" and then decide for itself
+    whether the status permits it -- the only question it can ask already has the
+    status filter inside the answer (see ContentReviewService.approved_candidate).
+    """
+
+    def approved_candidate(self, report_id: str) -> str | None: ...
+
+
 class RenderService:
     def __init__(
         self,
@@ -36,6 +49,7 @@ class RenderService:
         signed_url_ttl: timedelta,
         ai_rewrite_enabled: bool = False,
         retriever: SourceRetriever | None = None,
+        review: ApprovedCandidateSource | None = None,
     ) -> None:
         self._content = content_provider
         self._pdf = pdf_renderer
@@ -45,6 +59,10 @@ class RenderService:
         self._ai_rewrite_enabled = ai_rewrite_enabled
         # Explanation-only grounding (§3.6b); optional. None -> no citations.
         self._retriever = retriever
+        # The human review queue (Checkpoint 15.3). Consulted only when the flag
+        # above is on; None means "no approvals reachable", which the gate treats
+        # exactly like no approval existing.
+        self._review = review
 
     def _citations(
         self, request: ReportRenderRequestDTO, content: ClinicalContentDTO
@@ -72,30 +90,47 @@ class RenderService:
             logger.warning("clinical-source retrieval failed; rendering without citations")
             return []
 
-    def _finalize_html(self, html: str) -> str:
+    def _finalize_html(self, html: str, report_id: str) -> str:
         """The one seam where AI rewriting could ever enter the pipeline (§15).
 
         Off (the default): return the deterministic HTML unchanged — the Rewriter
-        is never constructed or invoked. On: there is still no human-review
-        mechanism for `pending_review` output, so serving unreviewed AI text is
-        forbidden and we refuse rather than emit it.
+        is never constructed or invoked, and the review queue is not consulted.
+
+        On: the ONLY thing that can make AI text eligible is an approved review
+        item (Checkpoint 15.3). The lookup asks the review service for the
+        APPROVED candidate; there is no call that returns a rejected or pending
+        one, so those cannot reach this point even in principle. Absent an
+        approval, this raises exactly as it did in 11.2 — the guard is the same
+        one, now with something able to satisfy it rather than nothing.
+
+        Eligibility is as far as this checkpoint goes: an approved candidate does
+        not yet get substituted into the output. Wiring that substitution belongs
+        with the decision to enable the flag, which is the clinical lead's after
+        using the queue, not this checkpoint's.
         """
         if not self._ai_rewrite_enabled:
             return html
-        raise AiRewriteDisabledError(
-            "AI_REWRITE_ENABLED is on but AI rewriting cannot serve output: no "
-            "human-review mechanism for pending_review exists yet (§15). Do not "
-            "enable it in any environment until that mechanism is built and reviewed."
-        )
+        approved = None if self._review is None else self._review.approved_candidate(report_id)
+        if approved is None:
+            raise AiRewriteDisabledError(
+                "AI_REWRITE_ENABLED is on but no approved review item exists for this "
+                "report (§15). Unreviewed, pending, and rejected AI text can never be "
+                "served; only a human approval in the content review queue makes a "
+                "candidate eligible."
+            )
+        return html
 
     def render(self, request: ReportRenderRequestDTO) -> ReportRefDTO:
         content = self._content.get_content()
         citations = self._citations(request, content)
         rendered = render_html(request, content, citations=citations)
-        html = self._finalize_html(rendered.html)
+        # Minted before finalizing so the AI gate can ask the review queue about
+        # THIS report. Nothing is stored under it until the gate has allowed the
+        # render to proceed.
+        report_id = uuid.uuid4().hex
+        html = self._finalize_html(rendered.html, report_id)
         pdf_bytes = self._pdf.to_pdf(html)
 
-        report_id = uuid.uuid4().hex
         html_key = f"{report_id}/{request.locale}/report.html"
         pdf_key = f"{report_id}/{request.locale}/report.pdf"
         self._storage.put(html_key, html.encode("utf-8"), "text/html; charset=utf-8")

@@ -4,13 +4,21 @@ import { useTranslation } from "react-i18next";
 import { useAdminAuth } from "../auth/useAdminAuth.js";
 import { Button } from "../components/Button.js";
 import { ConsoleLayout } from "../layouts/ConsoleLayout.js";
+import { ContentReviewScreen } from "../screens/ContentReviewScreen.js";
 import { DeletionRequestsScreen } from "../screens/DeletionRequestsScreen.js";
 import { OrganizationsScreen } from "../screens/OrganizationsScreen.js";
 import { RolesScreen } from "../screens/RolesScreen.js";
 import { UsersScreen } from "../screens/UsersScreen.js";
 import { VerificationScreen } from "../screens/VerificationScreen.js";
 
-type ViewId = "overview" | "users" | "deletions" | "organizations" | "verification" | "roles";
+type ViewId =
+  | "overview"
+  | "users"
+  | "deletions"
+  | "organizations"
+  | "verification"
+  | "contentReview"
+  | "roles";
 
 /**
  * Which capability each section needs. Transcribed from Addendum A §A2.2, and
@@ -26,6 +34,9 @@ const VIEW_CAPABILITY: Record<Exclude<ViewId, "overview">, AdminCapability> = {
   deletions: "admin_deletion_requests_process",
   organizations: "admin_organizations_manage",
   verification: "admin_verification_queue",
+  // §A2.2 grants this to clinical_governance_reviewer and
+  // platform_super_admin only -- platform_admin included in the exclusion.
+  contentReview: "admin_content_review",
   roles: "admin_roles_assign",
 };
 
@@ -78,6 +89,7 @@ export function ConsoleHome({ me }: { me: AdminMeResponse }) {
       {view === "deletions" ? <DeletionRequestsScreen /> : null}
       {view === "organizations" ? <OrganizationsScreen /> : null}
       {view === "verification" ? <VerificationScreen /> : null}
+      {view === "contentReview" ? <ContentReviewScreen /> : null}
       {view === "roles" ? <RolesScreen actingAdminUserId={me.user.id} /> : null}
     </ConsoleLayout>
   );

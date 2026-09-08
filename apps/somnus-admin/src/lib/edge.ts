@@ -14,6 +14,9 @@ import type {
   AdminUserSearchResponse,
   AdminVerificationCase,
   AdminVerificationDecisionRequest,
+  ContentReviewDecisionRequest,
+  ContentReviewItem,
+  ContentReviewQueue,
   SessionResponse,
 } from "@somnus/api-contracts";
 import { api } from "./api.js";
@@ -77,6 +80,21 @@ export const edge = {
       `/admin/v1/verification-cases/${encodeURIComponent(caseId)}/decision`,
       body,
     ),
+
+  // Checkpoint 15.3 -- the AI content review queue. The queue only ever returns
+  // `pending_review` items; a candidate the forbidden-phrase scanner blocked is
+  // never in it, and a decided one is not a queue.
+  contentReviewQueue: (): Promise<ContentReviewQueue> =>
+    api.get<ContentReviewQueue>("/admin/v1/content-review/items"),
+  decideContentReview: (
+    itemId: string,
+    body: ContentReviewDecisionRequest,
+  ): Promise<ContentReviewItem> =>
+    api.post<ContentReviewItem>(
+      `/admin/v1/content-review/items/${encodeURIComponent(itemId)}/decision`,
+      body,
+    ),
+
 
   // --- Internal roles (admin_roles_assign, platform_super_admin only) ---
   assignRole: (body: AdminRoleAssignRequest): Promise<AdminRoleAssignResponse> =>
