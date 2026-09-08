@@ -33,6 +33,9 @@ const EXPECTED: Readonly<Record<AdminCapability, ReadonlyArray<RoleKey>>> = {
   admin_organizations_manage: ["platform_admin", "platform_super_admin"],
   admin_roles_assign: ["platform_super_admin"],
   admin_content_review: ["clinical_governance_reviewer", "platform_super_admin"],
+  // Reading the audit log and taking a copy of it out of the platform are
+  // different acts (§A4 Checkpoint 15.4), so they are different capabilities.
+  admin_audit_export: ["platform_super_admin"],
   admin_statistics_read: [
     "support_agent",
     "clinical_governance_reviewer",

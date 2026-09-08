@@ -6,9 +6,11 @@ import {
   AdminRoleAssignRequestSchema,
   AdminUserSearchRequestSchema,
   AdminVerificationDecisionRequestSchema,
+  AuditQueryRequestSchema,
   ContentReviewDecisionRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
+import { z } from "zod";
 
 /**
  * Request bodies for the admin console surface (Addendum A Checkpoint 15.2),
@@ -30,3 +32,12 @@ export class AdminVerificationDecisionDto extends createZodDto(
 export class AdminRoleAssignDto extends createZodDto(AdminRoleAssignRequestSchema) {}
 /** Checkpoint 15.3: reason required for approve AND reject, as 15.2 requires it. */
 export class ContentReviewDecisionDto extends createZodDto(ContentReviewDecisionRequestSchema) {}
+
+/** The audit log viewer's four filters (§A2.4 / Checkpoint 15.4). */
+export class AdminAuditQueryDto extends createZodDto(AuditQueryRequestSchema) {}
+
+/** The dashboard window; both ends optional. */
+export const AdminDashboardWindowSchema = z
+  .object({ from: z.iso.datetime().optional(), to: z.iso.datetime().optional() })
+  .strict();
+export class AdminDashboardWindowDto extends createZodDto(AdminDashboardWindowSchema) {}

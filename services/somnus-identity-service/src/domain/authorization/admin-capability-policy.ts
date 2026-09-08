@@ -60,6 +60,10 @@ const CAPABILITY_ROLES: Readonly<Record<AdminCapability, ReadonlySet<RoleKey>>> 
     "platform_admin",
     "platform_super_admin",
   ]),
+  // CSV export of the audit log -- super admin ONLY (§A4 Checkpoint 15.4).
+  // Reading the log on screen is a wider set; taking a copy of it out of the
+  // platform is not.
+  admin_audit_export: new Set<RoleKey>(["platform_super_admin"]),
   // Consent records viewer (per user, metadata only)
   admin_consent_read: new Set<RoleKey>(["support_agent", "platform_admin", "platform_super_admin"]),
   // Break-glass: view an individual's clinical answers/results.

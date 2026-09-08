@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { isBigQueryConfigured, loadAuditExportConfig } from "./audit.config.js";
 import { AuditController } from "./audit.controller.js";
 import { AuditService } from "./audit.service.js";
+import { AuditInsightsController } from "./audit-insights.controller.js";
 import { AuditDbModule } from "./db/audit-db.module.js";
 import { AuditRepository } from "./db/repositories/index.js";
 import type { AuditExporter } from "./export/audit-exporter.js";
@@ -17,7 +18,7 @@ export const AUDIT_EXPORTER = Symbol("AUDIT_EXPORTER");
  */
 @Module({
   imports: [AuditDbModule],
-  controllers: [AuditController],
+  controllers: [AuditController, AuditInsightsController],
   providers: [
     {
       provide: AUDIT_EXPORTER,

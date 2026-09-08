@@ -38,6 +38,12 @@ export const ADMIN_CAPABILITIES = [
   "admin_statistics_read",
   /** Audit log viewer. */
   "admin_audit_read",
+  /**
+   * Export the audit log to CSV. Separate from reading it: §A4 Checkpoint 15.4
+   * restricts the export to `platform_super_admin`, while the on-screen viewer
+   * is open to the wider set §A2.2 lists. One capability could not express both.
+   */
+  "admin_audit_export",
   /** Consent records viewer (per user, metadata only). */
   "admin_consent_read",
   /** Break-glass: view an individual's clinical answers/results. Justification required. */

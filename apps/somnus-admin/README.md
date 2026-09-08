@@ -62,3 +62,36 @@ console says so rather than showing empty pages.
 still an open decision (one named person, ideally two). Until someone does, the
 console has no way to grant a first internal role, so every account reaching it
 sees the denial screen. That is correct behaviour, not a bug.
+
+## Estadísticas: qué está vivo y qué no (Checkpoint 15.4)
+
+La pantalla de estadísticas lee el export privacy-safe de BigQuery cableado en
+14.3. No hay una segunda vía de export ni campos nuevos: los números salen
+exactamente de las filas que llegan al almacén, pasadas por `redactForExport`,
+así que pantalla y almacén no pueden discrepar.
+
+**Derivadas de payloads `.strict()` de analytics** — registros por rama de rol,
+embudo de verificación (abiertos / aprobados / rechazados y mediana hasta la
+decisión) y embudo de invitaciones (emitidas / vistas / aceptadas / expiradas).
+
+**Contadas por ocurrencia de evento**, que es lo único fiable en la vía denylist:
+assessments creados y completados, informes solicitados y generados,
+notificaciones solicitadas y organizaciones creadas.
+
+**Cero deliberado, cableado y a la espera de 15.5** — accesos break-glass por
+administrador. El panel existe ahora para que la forma del dashboard no cambie
+cuando llegue la función.
+
+**Declaradas como huecos, no como cero**, porque ningún evento las lleva:
+distribución de niveles L0–L4, descargas de PDF, éxito/fallo de entrega de
+notificaciones, dead-letter, miembros activos por organización, assessments
+reclamados, drop-off por paso, telemetría de coste, y **los filtros por locale y
+por producto** que pide §A2.4. La pantalla las lista con su motivo. Un cero es
+una medición: mostrarlo donde nadie mide diría que la plataforma está parada
+cuando la verdad es que nadie está contando.
+
+**Nota operativa:** hoy todos los números salen a cero en dev, y no es un fallo
+del dashboard. Los servicios publican eventos vía `LoggingEventPublisher` — al
+log, no a un transporte —, así que nada llega a `somnus_audit` todavía
+(production-readiness gap #3). Cuando ese transporte se cablee, estas mismas
+pantallas mostrarán datos reales sin cambio alguno.

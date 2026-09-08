@@ -5,6 +5,8 @@ import { AdminAuditInterceptor } from "./admin-audit.interceptor.js";
 import { AdminCapabilityGuard } from "./admin-capability.guard.js";
 import { AdminContentReviewController } from "./admin-content-review.controller.js";
 import { AdminContentReviewService } from "./admin-content-review.service.js";
+import { AdminInsightsController } from "./admin-insights.controller.js";
+import { AdminInsightsService } from "./admin-insights.service.js";
 import { AdminMeController } from "./admin-me.controller.js";
 import { AdminOperationsController } from "./admin-operations.controller.js";
 
@@ -18,12 +20,18 @@ import { AdminOperationsController } from "./admin-operations.controller.js";
  */
 @Module({
   imports: [SessionsModule],
-  controllers: [AdminMeController, AdminOperationsController, AdminContentReviewController],
+  controllers: [
+    AdminMeController,
+    AdminOperationsController,
+    AdminContentReviewController,
+    AdminInsightsController,
+  ],
   providers: [
     AdminProxyService,
     // Checkpoint 15.3: the review queue lives in `somnus_reporting`, so its
     // proxy targets the report service rather than identity (§7).
     AdminContentReviewService,
+    AdminInsightsService,
     AdminCapabilityGuard,
     AdminAuditInterceptor,
   ],

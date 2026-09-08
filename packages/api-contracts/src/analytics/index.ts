@@ -1,4 +1,20 @@
 export {
+  type AuditQueryRequest,
+  AuditQueryRequestSchema,
+  type AuditViewPage,
+  AuditViewPageSchema,
+  type AuditViewRow,
+  AuditViewRowSchema,
+  DashboardCountsSchema,
+  type Dashboards,
+  DashboardsSchema,
+  InvitationFunnelSchema,
+  RegistrationFunnelSchema,
+  type UnavailableMetric,
+  UnavailableMetricSchema,
+  VerificationFunnelSchema,
+} from "./dashboards.js";
+export {
   ANALYTICS_EVENT_DATA_SCHEMAS,
   ANALYTICS_EVENT_TYPES,
   type AnalyticsEventType,
