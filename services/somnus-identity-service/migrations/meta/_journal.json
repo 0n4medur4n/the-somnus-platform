@@ -22,6 +22,13 @@
       "when": 1788529240073,
       "tag": "0002_registration_role_branch",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1788567479439,
+      "tag": "0003_nullable_assigned_by",
+      "breakpoints": true
     }
   ]
 }
