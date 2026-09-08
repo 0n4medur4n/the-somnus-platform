@@ -42,10 +42,14 @@ export const EdgeConfigSchema = z.object({
   COOKIE_SAMESITE: z.enum(["lax", "strict", "none"]).default("lax"),
   COOKIE_DOMAIN: z.string().optional(),
 
-  // CORS: the two Firebase Hosting origins (build plan §5.3). Comma-separated.
+  // CORS: the Firebase Hosting origins (build plan §5.3, extended in Addendum A
+  // §A2.1 with the admin console's own site). Comma-separated. The local
+  // defaults cover somnus-app (5173 dev / 4173 preview) and somnus-admin
+  // (5174 / 4174), so `pnpm dev` works for both with no .env file.
   CORS_ORIGINS: z
     .string()
-    .default("http://localhost:5173,http://localhost:4173")
+    .default(
+      "http://localhost:5173,http://localhost:4173,http://localhost:5174,http://localhost:4174",
     .transform((s) =>
       s
         .split(",")

@@ -1,0 +1,1 @@
+ALTER TABLE `role_assignments` MODIFY COLUMN `assigned_by` varchar(36);
