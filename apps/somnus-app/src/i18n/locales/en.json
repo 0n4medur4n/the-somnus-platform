@@ -34,7 +34,8 @@
   "callback": {
     "title": "Completing sign-in",
     "verifying": "Verifying your sign-in link…",
-    "error": "The link is invalid or has expired. Please request a new one."
+    "error": "The link is invalid or has expired. Please request a new one.",
+    "errorGeneric": "We could not complete sign-in. Please try again in a moment."
   },
   "register": {
     "title": "Create your account",

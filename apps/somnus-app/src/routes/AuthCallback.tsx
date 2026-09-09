@@ -22,8 +22,14 @@ import { Field } from "../components/Field.js";
 import { FullPageStatus } from "../components/FullPageStatus.js";
 import { SelectField } from "../components/SelectField.js";
 import { AuthLayout } from "../layouts/AuthLayout.js";
+import {
+  type CallbackFailure,
+  classifyCallbackFailure,
+  describeCallbackFailure,
+} from "../lib/auth-failure.js";
 import { edge } from "../lib/edge.js";
 import { pendingInvitation } from "../lib/invitation.js";
+import { reportError } from "../lib/report-error.js";
 
 type Phase = "verifying" | "register" | "error";
 
@@ -32,20 +38,34 @@ export function AuthCallback() {
   const navigate = useNavigate();
   const { state, refresh } = useAuth();
   const [phase, setPhase] = useState<Phase>("verifying");
+  const [failure, setFailure] = useState<CallbackFailure>("generic");
   const started = useRef(false);
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
     void (async () => {
+      // Which of the three steps we are in. The screen used to blame the emailed
+      // link for all of them; the log now says which one actually failed, so the
+      // next incident is diagnosable from a console rather than from a trace.
+      let stage: "sign-in" | "session" | "account" = "account";
       try {
         if (isEmailLink(window.location.href)) {
+          stage = "sign-in";
           const email = storedEmail() ?? window.prompt(t("login.emailLabel")) ?? "";
           const idToken = await completeEmailLinkSignIn(email, window.location.href);
+          stage = "session";
           await edge.createSession(idToken);
         }
+        stage = "account";
         await refresh();
-      } catch {
+      } catch (error) {
+        // Only the Firebase codes that mean the link itself is unusable get the
+        // "request a new one" copy. Anything else says something went wrong
+        // without inventing a cause -- sending someone for a fresh link when the
+        // session endpoint is failing just loops them through the same error.
+        setFailure(classifyCallbackFailure(error));
+        reportError("auth-callback", { stage, ...describeCallbackFailure(error) });
         setPhase("error");
       }
     })();
@@ -72,7 +92,7 @@ export function AuthCallback() {
       <AuthLayout>
         <h1 className="text-2xl font-semibold">{t("callback.title")}</h1>
         <p role="alert" className="text-somnus-danger">
-          {t("callback.error")}
+          {failure === "link-invalid" ? t("callback.error") : t("callback.errorGeneric")}
         </p>
       </AuthLayout>
     );

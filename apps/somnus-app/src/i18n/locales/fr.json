@@ -34,7 +34,8 @@
   "callback": {
     "title": "Finalisation de la connexion",
     "verifying": "Vérification de votre lien de connexion…",
-    "error": "Le lien est invalide ou a expiré. Veuillez en demander un nouveau."
+    "error": "Le lien est invalide ou a expiré. Veuillez en demander un nouveau.",
+    "errorGeneric": "Nous n'avons pas pu finaliser la connexion. Veuillez réessayer dans un instant."
   },
   "register": {
     "title": "Créez votre compte",

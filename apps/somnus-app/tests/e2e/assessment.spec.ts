@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import es from "../../src/i18n/locales/es.json" with { type: "json" };
+import { expect, test } from "./support/console.js";
 
 /**
  * Anonymous assessment golden paths (build plan §20 Checkpoint 10.3), run in
