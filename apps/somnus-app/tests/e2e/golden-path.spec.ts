@@ -1,7 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import ca from "../../src/i18n/locales/ca.json" with { type: "json" };
 import es from "../../src/i18n/locales/es.json" with { type: "json" };
+import { expect, test } from "./support/console.js";
 import { escapeRe, getSignInLink, uniqueEmail } from "./support/emulator.js";
 
 type Dict = typeof es;

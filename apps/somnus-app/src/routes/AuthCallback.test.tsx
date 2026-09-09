@@ -1,13 +1,23 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from "vitest";
 import type { AuthContextValue } from "../auth/AuthContext.js";
+import { ApiRequestError } from "../lib/api.js";
 import { i18n, renderWithProviders } from "../test/utils.js";
 
 const { isEmailLink, completeEmailLinkSignIn, storedEmail } = vi.hoisted(() => ({
   isEmailLink: vi.fn(() => false),
   completeEmailLinkSignIn: vi.fn(),
-  storedEmail: vi.fn(() => null),
+  storedEmail: vi.fn<() => string | null>(() => null),
 }));
 vi.mock("../auth/firebase-auth.js", () => ({
   isEmailLink,
@@ -222,5 +232,88 @@ describe("AuthCallback registration (Addendum A Checkpoint 14.1: one flow, three
     await userEvent.click(screen.getByRole("button", { name: t("register.back") }));
     await screen.findByText(t("register.nameTitle"));
     expect(screen.getByLabelText(t("register.firstName"))).toHaveValue("Ada");
+  });
+});
+
+/**
+ * The callback screen used to render one sentence -- "your link is invalid or
+ * has expired" -- for every failure of any of its three awaits. That sentence
+ * asserts a cause. When the real failure was the session exchange it was untrue,
+ * it sent the person to fetch another link that would fail identically, and it
+ * pointed a CI investigation at the wrong component for three rounds.
+ *
+ * These tests are the regression: the link copy is claimed only when Firebase
+ * says the link itself is unusable.
+ */
+describe("AuthCallback failures (the error screen must not assert a cause)", () => {
+  // Spied inside beforeAll, not at describe-body time: describe bodies all run
+  // during collection, so patching there would silence the other suites too.
+  let consoleError: MockInstance<typeof console.error>;
+  beforeAll(() => {
+    consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterAll(() => consoleError.mockRestore());
+
+  beforeEach(() => {
+    createSession.mockReset();
+    completeEmailLinkSignIn.mockReset();
+    isEmailLink.mockReturnValue(true);
+    storedEmail.mockReturnValue("ada@example.test");
+    consoleError.mockClear();
+  });
+
+  it("a 500 from POST /v1/sessions shows the generic error, never the expired-link copy", async () => {
+    completeEmailLinkSignIn.mockResolvedValue("id-token");
+    createSession.mockRejectedValue(new ApiRequestError(500, "INTERNAL", "Request failed (500)"));
+
+    renderWithProviders(<AuthCallback />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(t("callback.errorGeneric"));
+    expect(screen.queryByText(t("callback.error"))).not.toBeInTheDocument();
+  });
+
+  it("logs which of the three steps failed, with the status and without the link", async () => {
+    completeEmailLinkSignIn.mockResolvedValue("id-token");
+    createSession.mockRejectedValue(new ApiRequestError(503, "UPSTREAM", "Request failed (503)"));
+
+    renderWithProviders(<AuthCallback />);
+    await screen.findByRole("alert");
+
+    // `session`, not `sign-in`: the emailed link was redeemed fine. This is the
+    // distinction that did not exist before, and the whole reason for the change.
+    expect(consoleError).toHaveBeenCalledWith("[somnus] auth-callback", {
+      stage: "session",
+      kind: "http",
+      status: 503,
+      code: "UPSTREAM",
+      message: "Request failed (503)",
+    });
+  });
+
+  it("an expired action code still shows the expired-link copy -- that one is accurate", async () => {
+    completeEmailLinkSignIn.mockRejectedValue(
+      Object.assign(new Error("expired"), { code: "auth/expired-action-code" }),
+    );
+
+    renderWithProviders(<AuthCallback />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(t("callback.error"));
+    expect(consoleError).toHaveBeenCalledWith("[somnus] auth-callback", {
+      stage: "sign-in",
+      kind: "auth",
+      code: "auth/expired-action-code",
+    });
+  });
+
+  it("a network failure with no code shows the generic error", async () => {
+    // No `code` at all: a fetch that never reached edge-api. Nothing about that
+    // says the link expired.
+    completeEmailLinkSignIn.mockResolvedValue("id-token");
+    createSession.mockRejectedValue(new TypeError("Failed to fetch"));
+
+    renderWithProviders(<AuthCallback />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(t("callback.errorGeneric"));
+    expect(screen.queryByText(t("callback.error"))).not.toBeInTheDocument();
   });
 });

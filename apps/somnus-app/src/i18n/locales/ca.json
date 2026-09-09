@@ -34,7 +34,8 @@
   "callback": {
     "title": "Completant l'accés",
     "verifying": "Verificant el teu enllaç d'accés…",
-    "error": "L'enllaç no és vàlid o ha caducat. Torna a sol·licitar-ne un."
+    "error": "L'enllaç no és vàlid o ha caducat. Torna a sol·licitar-ne un.",
+    "errorGeneric": "No hem pogut completar l'accés. Torna-ho a provar en uns instants."
   },
   "register": {
     "title": "Crea el teu compte",
