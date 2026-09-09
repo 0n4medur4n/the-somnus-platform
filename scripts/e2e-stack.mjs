@@ -24,6 +24,27 @@ import { setTimeout as sleep } from "node:timers/promises";
 const root = process.cwd();
 const procs = [];
 
+/**
+ * The E2E stack's own rate-limit budget (build plan §21).
+ *
+ * edge-api's limiter is global and keyed by client IP, not scoped to a route --
+ * `/health/live` counts against it too, as its own negative test shows. The
+ * whole suite arrives from 127.0.0.1, so every request the run makes (the
+ * health polls this script makes, plus twenty-odd calls per test across the
+ * nineteen sequential tests) shares one budget of 100 per minute. Later tests
+ * then take 429s that have nothing to do with what they are testing: a session
+ * exchange fails, and the screen blames the emailed link.
+ *
+ * This is the limiter working as designed, so the limit does not move -- dev,
+ * staging and production all still run on edge-api's schema default, which
+ * nothing anywhere overrides. Only this harness gets a bigger budget, and it
+ * stays a real limit: a runaway loop still trips it.
+ *
+ * `tests/e2e-rate-limit.test.ts` fails if this value ever stops diverging from
+ * that default, so the divergence cannot be closed from the production side.
+ */
+const E2E_RATE_LIMIT_MAX = "5000";
+
 function spawnService(name, command, args, cwd, extraEnv, useShell = false) {
   const child = spawn(command, args, {
     cwd,
@@ -104,6 +125,9 @@ try {
     MORPHEO_BASE_URL: "http://localhost:8080",
     INTERNAL_AUTH_MODE: "insecure-dev",
     COOKIE_SECURE: "false",
+    // Only the ceiling moves; the window stays at the production default so
+    // the two configurations differ on exactly one axis.
+    RATE_LIMIT_MAX: E2E_RATE_LIMIT_MAX,
     CORS_ORIGINS: "http://localhost:5173,http://localhost:4173",
   });
 

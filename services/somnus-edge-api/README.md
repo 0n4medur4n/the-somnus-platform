@@ -143,7 +143,7 @@ startup:
 | `COOKIE_SECURE` | `false` | `true` in every deployed env. |
 | `COOKIE_SAMESITE` | `lax` | |
 | `CORS_ORIGINS` | localhost dev origins | Comma-separated Hosting origins. |
-| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | `100` / `60000` | |
+| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | `100` / `60000` | Global, keyed by client IP; `/health/live` counts too. Nothing in terraform, the deploy workflows or compose overrides these, so the defaults **are** the deployed limit. The Playwright stack raises `RATE_LIMIT_MAX` for itself (`scripts/e2e-stack.mjs`) because the whole suite shares one IP; `tests/e2e-rate-limit.test.ts` fails if that harness value ever stops diverging from this default. |
 | `BODY_LIMIT_BYTES` | `65536` | |
 
 ## Tests

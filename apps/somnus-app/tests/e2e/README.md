@@ -42,6 +42,21 @@ Set `PW_GREP="es:"` to run a single locale. CI runs exactly this in the
 The Auth emulator sends no real mail; the sign-in link is read back from its
 REST API (`tests/e2e/support/emulator.ts`), which stands in for the inbox.
 
+`scripts/e2e-stack.mjs` starts edge-api with a raised `RATE_LIMIT_MAX`. The
+limiter (build plan §21) is global and keyed by client IP, so the whole suite --
+nineteen sequential tests plus the script's own health polls -- shares a single
+budget of 100 requests per minute. Once it is spent, later tests take 429s on
+`POST /v1/sessions` that have nothing to do with what they are testing. The
+limit itself does not move: dev, staging and production all still run on
+edge-api's schema default, and `tests/e2e-rate-limit.test.ts` fails if the
+harness value ever stops diverging from it.
+
+Browser console errors are forwarded into the test output by an auto fixture
+(`tests/e2e/support/console.ts`), which also logs one line per magic-link
+redemption. Both routes a context can be created by are covered, and
+`console-forwarding.spec.ts` fails if either stops being wired -- a diagnostic
+whose failure mode is silence needs its own test.
+
 ## Accessibility
 
 `golden-path.spec.ts` runs **axe-core** on the login and profile screens and
