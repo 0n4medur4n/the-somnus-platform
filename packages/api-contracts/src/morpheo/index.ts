@@ -16,6 +16,12 @@ export {
   type AssessmentSnapshotResponse,
   AssessmentSnapshotResponseSchema,
   MORPHEO_CONTRACT_SCHEMAS,
+  type UserAssessmentSnapshot,
+  UserAssessmentSnapshotSchema,
+  type UserAssessmentsRequest,
+  UserAssessmentsRequestSchema,
+  type UserAssessmentsResponse,
+  UserAssessmentsResponseSchema,
 } from "./assessment.js";
 export {
   type AssessmentContentResponse,

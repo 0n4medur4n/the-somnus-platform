@@ -78,9 +78,12 @@ decisión) y embudo de invitaciones (emitidas / vistas / aceptadas / expiradas).
 assessments creados y completados, informes solicitados y generados,
 notificaciones solicitadas y organizaciones creadas.
 
-**Cero deliberado, cableado y a la espera de 15.5** — accesos break-glass por
-administrador. El panel existe ahora para que la forma del dashboard no cambie
-cuando llegue la función.
+**Real desde 15.5** — accesos break-glass por administrador **y por mes**
+(§A2.3 punto 4). Sale de la misma proyección que todo lo demás: el contador lee
+`data.adminId` de las filas exportadas, porque `redactForExport` descarta los
+ids de actor y sujeto antes de que nada salga del worker. Por mes y no un total
+del periodo: el sentido de la métrica es que un patrón en el uso de una persona
+se vea, y un total cambia de significado en cuanto alguien amplía la ventana.
 
 **Declaradas como huecos, no como cero**, porque ningún evento las lleva:
 distribución de niveles L0–L4, descargas de PDF, éxito/fallo de entrega de
@@ -95,3 +98,26 @@ del dashboard. Los servicios publican eventos vía `LoggingEventPublisher` — a
 log, no a un transporte —, así que nada llega a `somnus_audit` todavía
 (production-readiness gap #3). Cuando ese transporte se cablee, estas mismas
 pantallas mostrarán datos reales sin cambio alguno.
+
+## Acceso de emergencia (break-glass) — Checkpoint 15.5
+
+`admin_break_glass`, que §A2.2 concede a `clinical_governance_reviewer`,
+`platform_admin` y `platform_super_admin`. Para `support_agent` y
+`professional_verifier` la sección no existe: no aparece en la navegación, no se
+renderiza, y la consola no tiene URL para una sección que no ofreció.
+
+La pantalla es un formulario de justificación que a veces muestra un resultado,
+no un visor con una justificación al lado. La única petición que sabe hacer ya
+lleva la categoría (soporte / seguridad / legal / otra) y el texto libre con un
+mínimo de longitud, así que "abrir primero y explicar después" no es un estado
+alcanzable. No hay desbloqueo: nada queda guardado como "abierto", no se emite
+cookie ni token, y volver mañana significa escribir otra justificación.
+
+Cada revelación escribe **un** evento de auditoría — el mismo que emite el
+interceptor para cualquier ruta admin, enriquecido, no un segundo evento — con
+quién, qué registro, cuándo, la categoría y la justificación. La justificación
+viaja a una **columna propia** de `audit_records`, nunca dentro de `data`: §17
+prohíbe texto libre en el payload de un evento y la fila de export se construye
+con una lista fija de campos que no incluye `justification`, así que el texto no
+puede llegar a BigQuery por ninguna vía. El visor de auditoría sí lo muestra, a
+través de su propio allowlist y junto a la categoría.

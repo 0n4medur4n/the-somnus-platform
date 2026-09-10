@@ -17,6 +17,15 @@ export type AuditRecordInput = {
   subjectType: string;
   subjectId: string;
   data: Record<string, unknown>;
+  /**
+   * The admin's written reason, for the one event type that carries one
+   * (Addendum A §A2.3 / Checkpoint 15.5). Null for everything else.
+   *
+   * Outside `data` deliberately: the analytics export row is built from a fixed
+   * field list that has no `justification`, so free text a human typed cannot
+   * reach BigQuery by any route (build plan §9).
+   */
+  justification: string | null;
 };
 
 /**

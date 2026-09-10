@@ -21,6 +21,7 @@ function makeRow(over: Partial<AuditRow>): AuditRow {
     subjectType: "assessment",
     subjectId: "s1",
     data: {},
+    justification: null,
     receivedAt: new Date(),
     ...over,
   };

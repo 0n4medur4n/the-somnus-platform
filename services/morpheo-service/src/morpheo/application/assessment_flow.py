@@ -186,6 +186,10 @@ class AssessmentFlow:
     def get_snapshot(self, session_id: str) -> AssessmentSnapshot | None:
         return self._repo.get_snapshot(session_id)
 
+    def snapshots_for_user(self, user_id: str) -> list[AssessmentSnapshot]:
+        """Every snapshot a user claimed (Addendum A §A2.3, break-glass reveal)."""
+        return self._repo.snapshots_by_claimed_by(user_id)
+
     def ttl_unclaimed(self, older_than_days: int = UNCLAIMED_TTL_DAYS) -> list[str]:
         return self._repo.unclaimed_older_than(_now() - timedelta(days=older_than_days))
 

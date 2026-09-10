@@ -5,6 +5,7 @@ import { useAdminAuth } from "../auth/useAdminAuth.js";
 import { Button } from "../components/Button.js";
 import { ConsoleLayout } from "../layouts/ConsoleLayout.js";
 import { AuditViewerScreen } from "../screens/AuditViewerScreen.js";
+import { BreakGlassScreen } from "../screens/BreakGlassScreen.js";
 import { ContentReviewScreen } from "../screens/ContentReviewScreen.js";
 import { DeletionRequestsScreen } from "../screens/DeletionRequestsScreen.js";
 import { OrganizationsScreen } from "../screens/OrganizationsScreen.js";
@@ -22,6 +23,7 @@ type ViewId =
   | "contentReview"
   | "statistics"
   | "audit"
+  | "breakGlass"
   | "roles";
 
 /**
@@ -45,6 +47,11 @@ const VIEW_CAPABILITY: Record<Exclude<ViewId, "overview">, AdminCapability> = {
   // platform_super_admin. professional_verifier is not on that row.
   statistics: "admin_statistics_read",
   audit: "admin_audit_read",
+  // §A2.2: clinical_governance_reviewer, platform_admin and
+  // platform_super_admin. support_agent and professional_verifier are not on
+  // that row, so for them this section is not rendered, not listed in the nav,
+  // and has no URL -- structurally absent rather than disabled.
+  breakGlass: "admin_break_glass",
   roles: "admin_roles_assign",
 };
 
@@ -101,6 +108,7 @@ export function ConsoleHome({ me }: { me: AdminMeResponse }) {
       {view === "statistics" ? <StatisticsScreen /> : null}
       {/* The CSV export is its own capability (super admin only, §A4). */}
       {view === "audit" ? <AuditViewerScreen canExport={held.has("admin_audit_export")} /> : null}
+      {view === "breakGlass" ? <BreakGlassScreen /> : null}
       {view === "roles" ? <RolesScreen actingAdminUserId={me.user.id} /> : null}
     </ConsoleLayout>
   );

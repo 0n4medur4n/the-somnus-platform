@@ -29,6 +29,9 @@ from morpheo.schemas.assessment import (
     AssessmentCreateResponseDTO,
     AssessmentResultDTO,
     AssessmentSnapshotResponseDTO,
+    UserAssessmentSnapshotDTO,
+    UserAssessmentsRequestDTO,
+    UserAssessmentsResponseDTO,
 )
 from morpheo.schemas.content import build_content_response
 from morpheo.schemas.maintenance import (
@@ -63,6 +66,9 @@ def test_all_schema_artifacts_are_present() -> None:
         "MaintenanceDeleteRequest",
         "MaintenanceDeleteResult",
         "AccountAssessmentsDeleteRequest",
+        "UserAssessmentsRequest",
+        "UserAssessmentSnapshot",
+        "UserAssessmentsResponse",
     }
     present = {path.stem for path in SCHEMA_DIR.glob("*.json")}
     assert expected <= present
@@ -126,6 +132,37 @@ def test_snapshot_response_dto_conforms() -> None:
         content_version="1.0",
     )
     jsonschema.validate(_dump(snapshot), _schema("AssessmentSnapshotResponse"))
+
+
+def test_user_assessments_dtos_conform() -> None:
+    """Break-glass boundary (Addendum A §A2.3 / Checkpoint 15.5)."""
+    jsonschema.validate(
+        _dump(UserAssessmentsRequestDTO(user_id="user-1")),
+        _schema("UserAssessmentsRequest"),
+    )
+
+    snapshot = UserAssessmentSnapshotDTO(
+        snapshot_id="snap-1",
+        session_id="sess-1",
+        result=AssessmentResultDTO(
+            role=RoleId.ADULT,
+            level=SafetyLevelId.L4,
+            stop=False,
+            privacy_block=False,
+            routes=[ModuleId.INS],
+            triggered_rules=[],
+            workflow_version="1.0",
+            content_version="1.0",
+        ),
+        workflow_version="1.0",
+        content_version="1.0",
+        created_at=datetime(2026, 9, 4, 9, 0, tzinfo=UTC).isoformat(),
+    )
+    jsonschema.validate(_dump(snapshot), _schema("UserAssessmentSnapshot"))
+    jsonschema.validate(
+        _dump(UserAssessmentsResponseDTO(snapshots=[snapshot])),
+        _schema("UserAssessmentsResponse"),
+    )
 
 
 def test_content_response_from_artifacts_conforms() -> None:

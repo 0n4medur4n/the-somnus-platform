@@ -128,6 +128,52 @@ export const AssessmentSnapshotResponseSchema = z
 export type AssessmentSnapshotResponse = z.infer<typeof AssessmentSnapshotResponseSchema>;
 
 /**
+ * edge -> morpheo: every assessment a given person claimed.
+ *
+ * Break-glass only (Addendum A §A2.3 / Checkpoint 15.5). Every other read of a
+ * snapshot is actor-scoped -- the edge resolves the signed-in person and asks for
+ * their own -- so this is the one route that returns a result to somebody who is
+ * not its subject. It exists because an admin cannot exercise break-glass over a
+ * record they have no way to name, and it is the only reason it exists.
+ *
+ * POST rather than GET so the person's id does not land in an access log, the
+ * same reasoning the audit query uses.
+ */
+export const UserAssessmentsRequestSchema = z
+  .object({
+    userId: z.string().min(1),
+  })
+  .strict();
+export type UserAssessmentsRequest = z.infer<typeof UserAssessmentsRequestSchema>;
+
+/**
+ * One claimed assessment, as break-glass reveals it.
+ *
+ * The snapshot fields plus when it was frozen. `claimedAt` is deliberately absent:
+ * the snapshot is written exactly once at claim, so `createdAt` already answers
+ * "when", and a second timestamp meaning almost the same thing invites the reader
+ * to wonder which one matters.
+ */
+export const UserAssessmentSnapshotSchema = z
+  .object({
+    snapshotId: z.string().min(1),
+    sessionId: z.string().min(1),
+    result: AssessmentResultSchema,
+    workflowVersion: z.string().min(1),
+    contentVersion: z.string().min(1),
+    createdAt: z.string().min(1),
+  })
+  .strict();
+export type UserAssessmentSnapshot = z.infer<typeof UserAssessmentSnapshotSchema>;
+
+export const UserAssessmentsResponseSchema = z
+  .object({
+    snapshots: z.array(UserAssessmentSnapshotSchema),
+  })
+  .strict();
+export type UserAssessmentsResponse = z.infer<typeof UserAssessmentsResponseSchema>;
+
+/**
  * The named set of schemas exported as JSON Schema artifacts. The generator
  * (scripts/generate-json-schema.ts) and the drift-guard test iterate this same
  * record, so the checked-in files can never silently fall out of sync.
@@ -146,4 +192,7 @@ export const MORPHEO_CONTRACT_SCHEMAS = {
   AssessmentClaimTokenResponse: AssessmentClaimTokenResponseSchema,
   AssessmentClaimResponse: AssessmentClaimResponseSchema,
   AssessmentSnapshotResponse: AssessmentSnapshotResponseSchema,
+  UserAssessmentsRequest: UserAssessmentsRequestSchema,
+  UserAssessmentSnapshot: UserAssessmentSnapshotSchema,
+  UserAssessmentsResponse: UserAssessmentsResponseSchema,
 } as const;

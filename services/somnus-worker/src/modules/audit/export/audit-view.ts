@@ -18,6 +18,10 @@ import { FORBIDDEN_DATA_KEYS } from "./audit-exporter.js";
  * * The viewer can never show a `data` key the analytics export would strip, so
  *   the two surfaces cannot disagree about what is safe to display.
  *
+ * `justification` is the third field that travels here and not to BigQuery, for
+ * the same kind of reason and a stronger one: it is free text, §9 forbids that
+ * in the warehouse outright, and the export row has no field it could occupy.
+ *
  * `subjectId` and `actorId` DO travel, unlike in the BigQuery export, and that
  * asymmetry is deliberate: §A2.4 requires filtering by actor, and an audit log
  * that cannot say who did what to whom is not an audit log. They are opaque ids,
@@ -41,6 +45,15 @@ export const AUDIT_VIEW_FIELDS = [
   "subjectType",
   "subjectId",
   "data",
+  /**
+   * The break-glass justification (Addendum A §A2.3 point 3). Admitted here
+   * deliberately and only here: it is free text a human typed, it is the whole
+   * reason a break-glass access can be judged after the fact, and it lives in a
+   * column rather than in `data` precisely so this allowlist -- not a denylist
+   * someone might rename their way past -- is what decides it can be shown.
+   * Null on every row that is not a break-glass access.
+   */
+  "justification",
 ] as const;
 
 export type AuditViewField = (typeof AUDIT_VIEW_FIELDS)[number];
@@ -57,6 +70,7 @@ export type AuditViewRow = {
   subjectType: string;
   subjectId: string;
   data: Record<string, unknown>;
+  justification: string | null;
 };
 
 /** Anything the store can hand us. Deliberately wide: the allowlist is the filter. */
@@ -102,6 +116,7 @@ export function toAuditViewRow(row: AuditSourceRow): AuditViewRow {
     subjectType: text(row["subjectType"]),
     subjectId: text(row["subjectId"]),
     data: redactViewData(row["data"]),
+    justification: nullableText(row["justification"]),
   };
 }
 

@@ -72,6 +72,10 @@ export class AuditService {
         subjectType: row.subjectType,
         subjectId: row.subjectId,
         data: row.data as Record<string, unknown>,
+        // Handed over and then dropped: `redactForExport` builds a fixed shape
+        // with no `justification` in it. Passing it here rather than nulling it
+        // keeps that guarantee visible instead of relying on this call site.
+        justification: row.justification,
       }),
     );
     return projectDashboards(exported, { truncated: rows.length >= DASHBOARD_ROW_CAP });
@@ -83,6 +87,7 @@ export class AuditService {
       return { outcome: "deduped", id: existing.id };
     }
 
+    const { justification, data } = liftJustification(event.data);
     const input: AuditRecordInput = {
       eventId: event.eventId,
       eventType: event.eventType,
@@ -93,7 +98,8 @@ export class AuditService {
       actorId: event.actor?.id ?? null,
       subjectType: event.subject.type,
       subjectId: event.subject.id,
-      data: event.data,
+      data,
+      justification,
     };
 
     const id = await this.store.create(input);
@@ -109,4 +115,40 @@ export class AuditService {
       this.logger.warn("audit analytics export failed; the record is persisted");
     }
   }
+}
+
+/** The one key an event payload may carry that must not stay in `data`. */
+const JUSTIFICATION_KEY = "justification";
+
+/**
+ * Move a break-glass justification out of the event payload and into its own
+ * field (Addendum A §A2.3 / Checkpoint 15.5).
+ *
+ * The §17 envelope has one free-form slot, `data`, and §17 also says free text
+ * does not belong in it. Break-glass needs both things to be true: the admin's
+ * written reason has to be stored and shown in the audit viewer, and it must
+ * never reach the analytics export. Lifting it here is what reconciles them --
+ * after this, `data` holds no free text, and the export row's fixed shape has no
+ * field the text could travel in.
+ *
+ * Applied to every event, not just break-glass. A producer that puts a
+ * `justification` in a payload has written free text into `data` whatever it
+ * called the action, and the same rule should catch it.
+ */
+export function liftJustification(payload: Record<string, unknown>): {
+  justification: string | null;
+  data: Record<string, unknown>;
+} {
+  const raw = payload[JUSTIFICATION_KEY];
+  if (typeof raw !== "string") {
+    // Not a string (or absent): nothing to lift. A non-string value under that
+    // key is still removed, because whatever it is, it is not a justification
+    // and it is not something `data` should be carrying under that name.
+    if (!(JUSTIFICATION_KEY in payload)) return { justification: null, data: payload };
+    const { [JUSTIFICATION_KEY]: _dropped, ...rest } = payload;
+    return { justification: null, data: rest };
+  }
+  const { [JUSTIFICATION_KEY]: _lifted, ...rest } = payload;
+  const trimmed = raw.trim();
+  return { justification: trimmed.length > 0 ? trimmed.slice(0, 500) : null, data: rest };
 }

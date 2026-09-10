@@ -99,10 +99,24 @@ export function StatisticsScreen() {
           </Panel>
 
           <Panel title={t("stats.breakGlass")}>
-            {/* Wired now, empty until 15.5 (§A4), so the shape does not change
-                when the feature lands. */}
-            <p className="text-sm text-somnus-subtle">{t("stats.breakGlassPending")}</p>
-            <Numbers entries={Object.entries(data.breakGlassByAdmin)} />
+            {/* Real from Checkpoint 15.5, through the same projection as every
+                other number here. Per admin AND per month (§A2.3 point 4): the
+                point of the metric is that a pattern in one person's usage
+                becomes visible, and a single total hides exactly that. */}
+            {Object.keys(data.breakGlassByAdmin).length === 0 ? (
+              <p className="text-sm text-somnus-subtle">{t("stats.breakGlassNone")}</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {Object.entries(data.breakGlassByAdmin).map(([adminId, months]) => (
+                  <div key={adminId} className="flex flex-col gap-1">
+                    <p className="font-mono text-xs text-somnus-subtle">{adminId}</p>
+                    <Numbers
+                      entries={Object.entries(months).sort(([a], [b]) => a.localeCompare(b))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </Panel>
 
           <Panel title={t("stats.unavailable")}>

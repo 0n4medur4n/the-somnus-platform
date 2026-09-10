@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { SessionsModule } from "../sessions/sessions.module.js";
 import { AdminProxyService } from "./admin.service.js";
 import { AdminAuditInterceptor } from "./admin-audit.interceptor.js";
+import { AdminBreakGlassController } from "./admin-break-glass.controller.js";
+import { AdminBreakGlassService } from "./admin-break-glass.service.js";
 import { AdminCapabilityGuard } from "./admin-capability.guard.js";
 import { AdminContentReviewController } from "./admin-content-review.controller.js";
 import { AdminContentReviewService } from "./admin-content-review.service.js";
@@ -25,6 +27,7 @@ import { AdminOperationsController } from "./admin-operations.controller.js";
     AdminOperationsController,
     AdminContentReviewController,
     AdminInsightsController,
+    AdminBreakGlassController,
   ],
   providers: [
     AdminProxyService,
@@ -32,6 +35,9 @@ import { AdminOperationsController } from "./admin-operations.controller.js";
     // proxy targets the report service rather than identity (§7).
     AdminContentReviewService,
     AdminInsightsService,
+    // Checkpoint 15.5: assessment results are morpheo's data (§7), so this
+    // proxy targets morpheo rather than identity or the worker.
+    AdminBreakGlassService,
     AdminCapabilityGuard,
     AdminAuditInterceptor,
   ],
