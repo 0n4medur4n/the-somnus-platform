@@ -137,6 +137,17 @@ const PHASE_15_EVENT_TYPES: ReadonlyArray<string> = [
   "admin.verification_queue.viewed.v1",
   "admin.verification_case.decided.v1",
   "admin.internal_role.granted.v1",
+  // Checkpoints 15.3 and 15.4. Registered late: the routes emitted these from
+  // the day they were built, but the registry is what tells a later reader which
+  // event types exist, and a list that is missing entries is worse than no list.
+  "admin.content_review_queue.viewed.v1",
+  "admin.content_review_item.decided.v1",
+  "admin.statistics.viewed.v1",
+  "admin.audit_log.viewed.v1",
+  "admin.audit_log.exported.v1",
+  // Checkpoint 15.5. The one admin action that reaches an individual's clinical
+  // data, and the reason §A2.3 exists.
+  "admin.break_glass.accessed.v1",
 ];
 
 const ALL_EVENT_TYPES: ReadonlyArray<string> = [

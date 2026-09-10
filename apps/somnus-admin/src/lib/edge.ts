@@ -16,6 +16,8 @@ import type {
   AdminVerificationDecisionRequest,
   AuditQueryRequest,
   AuditViewPage,
+  BreakGlassRevealRequest,
+  BreakGlassRevealResponse,
   ContentReviewDecisionRequest,
   ContentReviewItem,
   ContentReviewQueue,
@@ -107,6 +109,12 @@ export const edge = {
     api.post<AuditViewPage>("/admin/v1/audit/query", filter),
   auditExport: (filter: AuditQueryRequest): Promise<{ csv: string; rowCount: number }> =>
     api.post<{ csv: string; rowCount: number }>("/admin/v1/audit/export", filter),
+
+  // Checkpoint 15.5 -- break-glass. One call, and it carries the justification:
+  // there is no "unlock" endpoint to reach first, so the client cannot express
+  // fetching the record and explaining it afterwards.
+  breakGlassReveal: (body: BreakGlassRevealRequest): Promise<BreakGlassRevealResponse> =>
+    api.post<BreakGlassRevealResponse>("/admin/v1/break-glass/reveal", body),
 
   // --- Internal roles (admin_roles_assign, platform_super_admin only) ---
   assignRole: (body: AdminRoleAssignRequest): Promise<AdminRoleAssignResponse> =>

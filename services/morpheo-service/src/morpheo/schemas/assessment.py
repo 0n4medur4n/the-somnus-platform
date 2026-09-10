@@ -92,3 +92,28 @@ class AssessmentSnapshotResponseDTO(_ContractModel):
     result: AssessmentResultDTO
     workflow_version: str
     content_version: str
+
+
+class UserAssessmentsRequestDTO(_ContractModel):
+    """Break-glass only (Addendum A §A2.3 / Checkpoint 15.5).
+
+    Every other read of a snapshot is actor-scoped: the edge resolves the signed-in
+    person and asks for their own. This is the one route that answers about somebody
+    who is not the caller, and it exists because an admin cannot exercise break-glass
+    over a record they have no way to name.
+    """
+
+    user_id: str
+
+
+class UserAssessmentSnapshotDTO(_ContractModel):
+    snapshot_id: str
+    session_id: str
+    result: AssessmentResultDTO
+    workflow_version: str
+    content_version: str
+    created_at: str
+
+
+class UserAssessmentsResponseDTO(_ContractModel):
+    snapshots: list[UserAssessmentSnapshotDTO]

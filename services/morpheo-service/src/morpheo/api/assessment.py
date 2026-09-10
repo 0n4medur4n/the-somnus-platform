@@ -25,6 +25,9 @@ from morpheo.schemas.assessment import (
     AssessmentCreateResponseDTO,
     AssessmentResultDTO,
     AssessmentSnapshotResponseDTO,
+    UserAssessmentSnapshotDTO,
+    UserAssessmentsRequestDTO,
+    UserAssessmentsResponseDTO,
 )
 from morpheo.schemas.content import AssessmentContentResponseDTO, build_content_response
 
@@ -136,4 +139,40 @@ def get_snapshot(session_id: str, flow: FlowDep) -> AssessmentSnapshotResponseDT
         result=result,
         workflow_version=snapshot.workflow_version,
         content_version=snapshot.content_version,
+    )
+
+
+@router.post(
+    "/by-user",
+    response_model=UserAssessmentsResponseDTO,
+    summary="Every assessment a person claimed. Break-glass only (Addendum A §A2.3).",
+)
+def get_user_assessments(
+    body: UserAssessmentsRequestDTO, flow: FlowDep
+) -> UserAssessmentsResponseDTO:
+    """The clinical side of break-glass (Checkpoint 15.5).
+
+    Two things this route deliberately does not do. It does not decide whether the
+    caller may see this: identity owns every authorization decision (§5.3), the edge
+    names the capability, and morpheo would be duplicating a decision it cannot make
+    correctly. And it does not record the access: the audit event carries the admin's
+    justification and category, which are the edge's to collect, and one action should
+    produce one audit record rather than two half-records in two stores.
+
+    POST rather than GET so the person's id does not land in an access log — the same
+    reason the audit query is a POST.
+    """
+    snapshots = flow.snapshots_for_user(body.user_id)
+    return UserAssessmentsResponseDTO(
+        snapshots=[
+            UserAssessmentSnapshotDTO(
+                snapshot_id=snapshot.id,
+                session_id=snapshot.session_id,
+                result=AssessmentResultDTO.model_validate(json.loads(snapshot.result_json)),
+                workflow_version=snapshot.workflow_version,
+                content_version=snapshot.content_version,
+                created_at=snapshot.created_at.isoformat(),
+            )
+            for snapshot in snapshots
+        ]
     )

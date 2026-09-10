@@ -74,7 +74,8 @@
     "roles": "Roles internos",
     "contentReview": "Revisión de contenido IA",
     "statistics": "Estadísticas",
-    "audit": "Registro de auditoría"
+    "audit": "Registro de auditoría",
+    "breakGlass": "Acceso de emergencia"
   },
   "users": {
     "title": "Personas usuarias",
@@ -175,7 +176,8 @@
     "breakGlass": "Accesos break-glass por administrador",
     "breakGlassPending": "Cero hasta el checkpoint 15.5: el panel está cableado, la función aún no existe.",
     "unavailable": "Métricas que hoy nadie mide",
-    "unavailableIntro": "§A2.4 las pide, pero ningún evento las lleva. Se muestran como huecos y no como cero: un cero es una medición."
+    "unavailableIntro": "§A2.4 las pide, pero ningún evento las lleva. Se muestran como huecos y no como cero: un cero es una medición.",
+    "breakGlassNone": "Nadie ha usado el acceso de emergencia en este periodo."
   },
   "audit": {
     "title": "Registro de auditoría",
@@ -190,7 +192,8 @@
     "exportHint": "Solo superadministrador de plataforma.",
     "exported": "Exportadas {{count}} filas.",
     "empty": "Ninguna entrada coincide.",
-    "occurredAt": "Cuándo"
+    "occurredAt": "Cuándo",
+    "justification": "Justificación"
   },
   "roles": {
     "title": "Roles internos",
@@ -210,5 +213,33 @@
     "nurse": "Enfermería",
     "pharmacist": "Farmacia",
     "therapist": "Terapia"
+  },
+  "breakGlass": {
+    "title": "Acceso de emergencia (break-glass)",
+    "intro": "Acceso registrado a las respuestas y resultados clínicos de una persona. El acceso administrativo y el acceso clínico son cosas distintas (§A2.3): esto no forma parte del acceso operativo habitual.",
+    "warning": "Cada revelación queda registrada de forma inmutable con tu identidad, el registro consultado, la categoría y tu justificación, y se cuenta en el panel de estadísticas.",
+    "subjectLabel": "Identificador de la persona",
+    "subjectHint": "El identificador opaco que aparece en la ficha de la persona.",
+    "categoryLabel": "Categoría",
+    "categoryPlaceholder": "Elige una categoría",
+    "category": {
+      "support": "Soporte",
+      "safety": "Seguridad",
+      "legal": "Legal",
+      "other": "Otra"
+    },
+    "justificationLabel": "Justificación",
+    "justificationHint": "Mínimo {{min}} caracteres. Otra persona leerá esto para juzgar el acceso.",
+    "charactersShort": "Faltan {{count}} caracteres.",
+    "reveal": "Revelar el registro",
+    "revealedAt": "Revelado el {{at}}. Solo para esta sesión: no queda desbloqueado.",
+    "auditReference": "Evento de auditoría: {{id}}",
+    "empty": "Esta persona no tiene ninguna evaluación guardada.",
+    "role": "Rol",
+    "level": "Nivel",
+    "routes": "Módulos",
+    "rules": "Reglas activadas",
+    "versions": "Flujo {{workflow}} · contenido {{content}}",
+    "close": "Cerrar"
   }
 }

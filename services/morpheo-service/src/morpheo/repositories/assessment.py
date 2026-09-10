@@ -87,6 +87,20 @@ class AssessmentRepository:
         stmt = select(AssessmentSnapshot).where(AssessmentSnapshot.session_id == session_id)
         return self._s.scalars(stmt).first()
 
+    def snapshots_by_claimed_by(self, user_id: str) -> list[AssessmentSnapshot]:
+        """Every snapshot a user claimed, newest first (Addendum A §A2.3, break-glass).
+
+        Read-only counterpart of `delete_by_claimed_by`, and scoped the same way: the
+        `claimed_by` column is the only thing tying a snapshot to a person, so there is
+        no query here that could widen beyond one user.
+        """
+        stmt = (
+            select(AssessmentSnapshot)
+            .where(AssessmentSnapshot.claimed_by == user_id)
+            .order_by(AssessmentSnapshot.created_at.desc())
+        )
+        return list(self._s.scalars(stmt))
+
     # --- audit + worker TTL ---
 
     def add_audit(self, session_id: str | None, event_type: str, payload_json: str) -> None:

@@ -74,10 +74,15 @@ export const DashboardsSchema = z
       .strict(),
     counts: DashboardCountsSchema,
     /**
-     * Break-glass accesses per admin. Wired now and empty until Checkpoint 15.5
-     * builds the feature, so the dashboard's shape does not change when it lands.
+     * Break-glass accesses per admin per calendar month (Addendum A §A2.3 point
+     * 4, built in Checkpoint 15.5). Outer key is the opaque admin id, inner key
+     * is `YYYY-MM` in UTC.
+     *
+     * Per month rather than one total over the requested window: the point of
+     * the metric is that a pattern in one person's usage becomes visible, and a
+     * total silently changes meaning as soon as somebody widens the window.
      */
-    breakGlassByAdmin: z.record(z.string(), z.number().int().nonnegative()),
+    breakGlassByAdmin: z.record(z.string(), z.record(z.string(), z.number().int().nonnegative())),
     unavailable: z.array(UnavailableMetricSchema),
     rowsConsidered: z.number().int().nonnegative(),
     /** True when the read hit its cap: the numbers are a lower bound, not a total. */
@@ -115,6 +120,13 @@ export const AuditViewRowSchema = z
     subjectType: z.string(),
     subjectId: z.string(),
     data: z.record(z.string(), z.unknown()),
+    /**
+     * The written reason for a break-glass access (§A2.3 point 3), null on every
+     * other row. It travels here and never to BigQuery: it is free text a human
+     * typed, §9 forbids that in the warehouse, and the export row has no field
+     * it could occupy.
+     */
+    justification: z.string().nullable(),
   })
   .strict();
 export type AuditViewRow = z.infer<typeof AuditViewRowSchema>;

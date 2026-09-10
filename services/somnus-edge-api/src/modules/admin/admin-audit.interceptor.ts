@@ -27,9 +27,44 @@ import { ADMIN_ROUTE_KEY, type AdminRouteMeta } from "./admin-route.decorator.js
  * event, not an admin action.
  *
  * The envelope carries the acting admin's opaque user id and the route's
- * entity/action. Never a request body, never anything about the subject: §9
- * forbids that reaching analytics, and the audit module redacts on top.
+ * entity/action. By default it carries nothing else -- no request body, nothing
+ * about the subject: §9 forbids that reaching analytics, and the audit module
+ * redacts on top.
+ *
+ * One route needs more, and asks for it explicitly. Break-glass (§A2.3 /
+ * Checkpoint 15.5) is required to record WHICH record was opened, under which
+ * category, with which written justification -- an audit event saying only "an
+ * admin used break-glass" would defeat the point of having the control. A
+ * handler can therefore attach `adminAuditDetail` to the request and the
+ * interceptor merges it into the envelope it was already going to emit.
+ *
+ * Merged, not emitted separately, and that is the whole reason for doing it this
+ * way: Checkpoint 15.1's immutable test asserts every admin call produces
+ * EXACTLY ONE audit event, and a second `publish` here would break it. The
+ * privacy line still holds downstream -- the worker lifts the justification into
+ * a column the analytics export has no field for, and the export drops subject
+ * ids -- so what reaches BigQuery is unchanged.
  */
+
+/**
+ * What a handler may add to its own audit event. Opt-in, per route.
+ *
+ * `eventId` lets the handler pre-mint the id so it can tell the admin which
+ * audit record their access wrote; without it the interceptor mints one as
+ * before.
+ */
+export type AdminAuditDetail = {
+  eventId?: string;
+  subjectId?: string;
+  data?: Record<string, unknown>;
+};
+
+/** Where a handler leaves it. Read once, on success, then forgotten. */
+export type RequestWithAuditDetail = {
+  session?: SessionRecord;
+  correlationId?: string;
+  adminAuditDetail?: AdminAuditDetail;
+};
 @Injectable()
 export class AdminAuditInterceptor implements NestInterceptor {
   constructor(
@@ -44,16 +79,16 @@ export class AdminAuditInterceptor implements NestInterceptor {
     ]);
     if (!meta) return next.handle();
 
-    const request = context
-      .switchToHttp()
-      .getRequest<{ session?: SessionRecord; correlationId?: string }>();
+    const request = context.switchToHttp().getRequest<RequestWithAuditDetail>();
     const correlationId = correlationOf(request.correlationId);
     const actorId = request.session?.somnusUserId ?? null;
 
     return next.handle().pipe(
       tap({
         next: () => {
-          void this.emit(meta, actorId, correlationId);
+          // Read AFTER the handler ran: that is when the detail exists, and a
+          // handler that threw has nothing to record.
+          void this.emit(meta, actorId, correlationId, request.adminAuditDetail);
         },
       }),
     );
@@ -64,18 +99,18 @@ export class AdminAuditInterceptor implements NestInterceptor {
     meta: AdminRouteMeta,
     actorId: string | null,
     correlationId: string,
+    detail?: AdminAuditDetail,
   ): Promise<void> {
     try {
-      await this.events.publish(
-        makeEvent({
-          eventType: meta.eventType,
-          producer: "somnus-edge-api",
-          correlationId,
-          ...(actorId ? { actor: { type: "user", id: actorId } } : {}),
-          subject: { type: meta.entity, id: actorId ?? "unknown" },
-          data: { capability: meta.capability },
-        }),
-      );
+      const event = makeEvent({
+        eventType: meta.eventType,
+        producer: "somnus-edge-api",
+        correlationId,
+        ...(actorId ? { actor: { type: "user", id: actorId } } : {}),
+        subject: { type: meta.entity, id: detail?.subjectId ?? actorId ?? "unknown" },
+        data: { capability: meta.capability, ...detail?.data },
+      });
+      await this.events.publish(detail?.eventId ? { ...event, eventId: detail.eventId } : event);
     } catch {
       // Deliberately swallowed: see the method doc.
     }

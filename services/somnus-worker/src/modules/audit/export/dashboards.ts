@@ -1,3 +1,4 @@
+import { BREAK_GLASS_EVENT_TYPE, BreakGlassEventDataSchema } from "@somnus/api-contracts";
 import type { AuditExportRow } from "./audit-exporter.js";
 import { buildFunnels, type Funnels } from "./funnels.js";
 
@@ -24,8 +25,9 @@ import { buildFunnels, type Funnels } from "./funnels.js";
  * papered over. `unavailable` below names every metric §A2.4 lists that no event
  * carries, with the reason. Those are not rendered as zero: a zero is a
  * measurement, and claiming one where nothing is measured is worse than an
- * honest gap. The single exception is break-glass, which §A4 Checkpoint 15.4
- * explicitly wants wired and showing zero until 15.5 builds the feature.
+ * honest gap. Break-glass was the one slot deliberately wired and left at zero
+ * by 15.4; Checkpoint 15.5 makes it a real count, through this same projection
+ * and no other path.
  *
  * Neither of §A2.4's filter axes — locale and product — exists in any payload, so
  * this projection groups by time only. Adding them means instrumenting the
@@ -93,11 +95,16 @@ export type Dashboards = {
   /** Occurrence counts, safe for both export regimes. */
   counts: Record<CountedMetric, number>;
   /**
-   * Break-glass accesses per admin. Wired now and empty until Checkpoint 15.5
-   * builds the feature (§A4): a slot showing zero, not an absent panel, so the
-   * dashboard's shape does not change when the feature lands.
+   * Break-glass accesses, per admin and per calendar month (Addendum A §A2.3
+   * point 4: "so abuse is visible, not hidden"). Outer key is the opaque admin
+   * id, inner key is `YYYY-MM` in UTC.
+   *
+   * Per month, rather than a single total over whatever window was asked for.
+   * A total labelled "per month" is a wrong number the moment somebody widens
+   * the window, and the reason this metric exists is that someone will read it
+   * looking for a pattern.
    */
-  breakGlassByAdmin: Record<string, number>;
+  breakGlassByAdmin: Record<string, Record<string, number>>;
   /** §A2.4 metrics nothing currently measures. Rendered as gaps, never as zero. */
   unavailable: ReadonlyArray<UnavailableMetric>;
   /** Rows the projection actually saw, so an empty dashboard is legible as empty. */
@@ -132,15 +139,50 @@ export function projectDashboards(
   return {
     funnels: buildFunnels(rows),
     counts,
-    // Empty by construction until 15.5. The exporter drops actor ids, so even
-    // when the feature exists this can only ever be per-admin if the break-glass
-    // event carries an opaque admin id in its own strict payload.
-    breakGlassByAdmin: {},
+    breakGlassByAdmin: breakGlassByAdmin(rows),
     unavailable: UNAVAILABLE_METRICS,
     rowsConsidered: rows.length,
     truncated: options.truncated ?? false,
     window: dashboardWindow(rows),
   };
+}
+
+/**
+ * Break-glass accesses per admin per month, from the same exported rows as every
+ * other number on this dashboard (Checkpoint 15.5).
+ *
+ * The admin id comes out of `data`, not out of `actorId`, and that is not a
+ * shortcut: `redactForExport` drops actor and subject ids before a row leaves
+ * the worker, so a per-admin count is only possible for an event that puts an
+ * opaque admin id in its own payload. The break-glass event does exactly that
+ * and carries nothing else identifying -- no subject, no justification.
+ *
+ * The payload is validated rather than trusted. A row whose `data` does not
+ * match the contract is not counted: an audit metric that quietly counts
+ * malformed rows tells you a number without telling you what it counted.
+ */
+function breakGlassByAdmin(
+  rows: ReadonlyArray<AuditExportRow>,
+): Record<string, Record<string, number>> {
+  const byAdmin: Record<string, Record<string, number>> = {};
+  for (const row of rows) {
+    if (row.eventType !== BREAK_GLASS_EVENT_TYPE) continue;
+    const parsed = BreakGlassEventDataSchema.safeParse(row.data);
+    if (!parsed.success) continue;
+    const month = monthOf(row.occurredAt);
+    if (month === null) continue;
+    const months = byAdmin[parsed.data.adminId] ?? {};
+    months[month] = (months[month] ?? 0) + 1;
+    byAdmin[parsed.data.adminId] = months;
+  }
+  return byAdmin;
+}
+
+/** `YYYY-MM` in UTC, or null if the stamp is not a date we can place in a month. */
+function monthOf(occurredAt: string): string | null {
+  const at = new Date(occurredAt);
+  if (Number.isNaN(at.getTime())) return null;
+  return `${at.getUTCFullYear()}-${String(at.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 /** The time span the numbers cover, for the dashboard header. */

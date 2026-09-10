@@ -170,3 +170,44 @@ def test_urgent_base_orientation_is_rejected_by_validation(client: TestClient) -
         BASE, json={"role": "adult", "consentGiven": True, "baseOrientation": "L1"}
     )
     assert response.status_code == 422
+
+
+# --- break-glass: every assessment one person claimed (Addendum A §A2.3) ---
+
+
+def _claim_new_assessment(client: TestClient, user_id: str) -> str:
+    session_id = _create_adult(client)
+    token = client.post(f"{BASE}/{session_id}/claim-token").json()["token"]
+    claimed = client.post(
+        f"{BASE}/claim", json={"token": token}, headers={"X-Somnus-Actor-Id": user_id}
+    )
+    assert claimed.status_code == 200
+    assert claimed.json()["success"] is True
+    return session_id
+
+
+def test_by_user_returns_every_snapshot_that_person_claimed(client: TestClient) -> None:
+    first = _claim_new_assessment(client, "bg-user-1")
+    second = _claim_new_assessment(client, "bg-user-1")
+
+    response = client.post(f"{BASE}/by-user", json={"userId": "bg-user-1"})
+
+    assert response.status_code == 200
+    snapshots = response.json()["snapshots"]
+    assert {snapshot["sessionId"] for snapshot in snapshots} == {first, second}
+    # The clinical result travels whole: this is the point of break-glass.
+    assert snapshots[0]["result"]["role"] == "adult"
+    assert snapshots[0]["createdAt"]
+
+
+def test_by_user_never_returns_another_person_s_record(client: TestClient) -> None:
+    _claim_new_assessment(client, "bg-user-2")
+
+    response = client.post(f"{BASE}/by-user", json={"userId": "bg-user-3"})
+
+    assert response.status_code == 200
+    assert response.json()["snapshots"] == []
+
+
+def test_by_user_rejects_a_request_with_no_user(client: TestClient) -> None:
+    assert client.post(f"{BASE}/by-user", json={}).status_code == 422

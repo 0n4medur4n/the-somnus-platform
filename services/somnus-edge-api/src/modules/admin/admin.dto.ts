@@ -7,6 +7,7 @@ import {
   AdminUserSearchRequestSchema,
   AdminVerificationDecisionRequestSchema,
   AuditQueryRequestSchema,
+  BreakGlassRevealRequestSchema,
   ContentReviewDecisionRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
@@ -41,3 +42,13 @@ export const AdminDashboardWindowSchema = z
   .object({ from: z.iso.datetime().optional(), to: z.iso.datetime().optional() })
   .strict();
 export class AdminDashboardWindowDto extends createZodDto(AdminDashboardWindowSchema) {}
+
+/**
+ * Break-glass reveal (§A2.3 / Checkpoint 15.5).
+ *
+ * The gate is the DTO, not a check inside the handler: a request without a
+ * category, or with a justification below the minimum, never reaches the
+ * controller, so "reveal first, justify later" is not a state this route can be
+ * driven into.
+ */
+export class BreakGlassRevealDto extends createZodDto(BreakGlassRevealRequestSchema) {}

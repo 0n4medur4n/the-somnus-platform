@@ -20,6 +20,7 @@ const input: AuditRecordInput = {
   subjectType: "assessment",
   subjectId: "a1",
   data: { routes: ["INS"], count: 2 },
+  justification: null,
 };
 
 beforeEach(async () => {
@@ -47,5 +48,33 @@ describe("AuditRepository", () => {
 
   it("returns null for an unknown event id", async () => {
     expect(await repo.findByEventId("00000000-0000-0000-0000-000000000000")).toBeNull();
+  });
+
+  /**
+   * Checkpoint 15.5. Asserted against the real migrated schema, because the
+   * whole privacy argument for putting the justification in a COLUMN rather
+   * than in `data` rests on that column existing.
+   */
+  it("stores a break-glass justification in its own column, beside an untouched `data`", async () => {
+    await repo.create({
+      ...input,
+      eventId: "44444444-4444-4444-4444-444444444444",
+      eventType: "admin.break_glass.accessed.v1",
+      subjectType: "user",
+      subjectId: "subject-1",
+      data: { adminId: "admin-1", category: "safety" },
+      justification: "Safeguarding escalation raised by the on-call clinician this morning.",
+    });
+
+    const row = await repo.findByEventId("44444444-4444-4444-4444-444444444444");
+    expect(row?.justification).toBe(
+      "Safeguarding escalation raised by the on-call clinician this morning.",
+    );
+    expect(row?.data).toEqual({ adminId: "admin-1", category: "safety" });
+  });
+
+  it("leaves the column null for every other event type", async () => {
+    await repo.create(input);
+    expect((await repo.findByEventId(input.eventId))?.justification).toBeNull();
   });
 });

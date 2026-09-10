@@ -73,6 +73,21 @@ export {
   AuthorizationReasonCodeSchema,
 } from "./authorization.js";
 export {
+  BREAK_GLASS_CATEGORIES,
+  BREAK_GLASS_EVENT_TYPE,
+  BREAK_GLASS_JUSTIFICATION_MAX_LENGTH,
+  BREAK_GLASS_JUSTIFICATION_MIN_LENGTH,
+  type BreakGlassCategory,
+  BreakGlassCategorySchema,
+  type BreakGlassEventData,
+  BreakGlassEventDataSchema,
+  BreakGlassJustificationSchema,
+  type BreakGlassRevealRequest,
+  BreakGlassRevealRequestSchema,
+  type BreakGlassRevealResponse,
+  BreakGlassRevealResponseSchema,
+} from "./break-glass.js";
+export {
   type Invitation,
   type InvitationAcceptRequest,
   InvitationAcceptRequestSchema,

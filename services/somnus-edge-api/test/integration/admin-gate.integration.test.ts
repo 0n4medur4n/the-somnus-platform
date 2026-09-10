@@ -16,7 +16,10 @@ import {
   EDGE_EVENT_PUBLISHER,
   type EventPublisher,
 } from "../../src/infrastructure/events/event-publisher.js";
-import { IDENTITY_CLIENT } from "../../src/infrastructure/internal-clients/internal-clients.module.js";
+import {
+  IDENTITY_CLIENT,
+  MORPHEO_CLIENT,
+} from "../../src/infrastructure/internal-clients/internal-clients.module.js";
 import { SessionGuard } from "../../src/modules/sessions/session.guard.js";
 import type { SessionRecord } from "../../src/modules/sessions/session.service.js";
 import { makeFakeIdentityClient, type RecordedRequest } from "../support/fake-identity.js";
@@ -160,9 +163,19 @@ describe("admin console gate (/admin/v1/*)", () => {
       },
     };
 
+    // Break-glass reaches morpheo for the clinical records (§7). The gate is
+    // what is under test here, so morpheo answers with a valid empty result and
+    // any 4xx can only have come from the guard.
+    const morpheoStub = {
+      get: async () => ({ status: 200, body: {} }),
+      post: async () => ({ status: 200, body: { snapshots: [] } }),
+    };
+
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(IDENTITY_CLIENT)
       .useValue(fake.client)
+      .overrideProvider(MORPHEO_CLIENT)
+      .useValue(morpheoStub)
       .overrideProvider(EDGE_EVENT_PUBLISHER)
       .useValue(capturingPublisher)
       .overrideGuard(SessionGuard)
@@ -364,6 +377,15 @@ describe("admin console gate (/admin/v1/*)", () => {
         url: "/admin/v1/audit/export",
         capability: "admin_audit_export",
       },
+      // Checkpoint 15.5 -- break-glass. §A2.2 grants admin_break_glass to
+      // clinical_governance_reviewer, platform_admin and platform_super_admin;
+      // support_agent and professional_verifier are refused by the parametrized
+      // run below, along with every external role by the sweep above.
+      {
+        method: "POST",
+        url: "/admin/v1/break-glass/reveal",
+        capability: "admin_break_glass",
+      },
     ];
 
     /** Bodies that satisfy each route's contract, so a 4xx can only be the gate. */
@@ -380,6 +402,11 @@ describe("admin console gate (/admin/v1/*)", () => {
       "POST /admin/v1/roles/assign": {
         targetUserId: "018f0000-0000-7000-8000-0000000000ff",
         roleKey: "support_agent",
+      },
+      "POST /admin/v1/break-glass/reveal": {
+        subjectUserId: "018f0000-0000-7000-8000-0000000000fe",
+        category: "safety",
+        justification: "Safeguarding escalation raised by the on-call clinician this morning.",
       },
     };
 

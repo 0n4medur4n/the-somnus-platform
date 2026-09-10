@@ -74,7 +74,8 @@
     "roles": "Internal roles",
     "contentReview": "AI content review",
     "statistics": "Statistics",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "breakGlass": "Break-glass access"
   },
   "users": {
     "title": "Users",
@@ -175,7 +176,8 @@
     "breakGlass": "Break-glass accesses per admin",
     "breakGlassPending": "Zero until Checkpoint 15.5: the panel is wired, the feature does not exist yet.",
     "unavailable": "Metrics nothing currently measures",
-    "unavailableIntro": "§A2.4 asks for these, but no event carries them. Shown as gaps rather than zero: a zero is a measurement."
+    "unavailableIntro": "§A2.4 asks for these, but no event carries them. Shown as gaps rather than zero: a zero is a measurement.",
+    "breakGlassNone": "Nobody has used break-glass in this window."
   },
   "audit": {
     "title": "Audit log",
@@ -190,7 +192,8 @@
     "exportHint": "Platform super admin only.",
     "exported": "Exported {{count}} rows.",
     "empty": "No entries match.",
-    "occurredAt": "When"
+    "occurredAt": "When",
+    "justification": "Justification"
   },
   "roles": {
     "title": "Internal roles",
@@ -210,5 +213,33 @@
     "nurse": "Nursing",
     "pharmacist": "Pharmacy",
     "therapist": "Therapy"
+  },
+  "breakGlass": {
+    "title": "Break-glass access",
+    "intro": "Recorded access to one person's clinical answers and results. Administrative access and clinical access are different things (§A2.3): this is not part of ordinary operational access.",
+    "warning": "Every reveal is recorded immutably with your identity, the record opened, the category and your justification, and is counted on the statistics dashboard.",
+    "subjectLabel": "Person's identifier",
+    "subjectHint": "The opaque identifier shown on the person's record.",
+    "categoryLabel": "Category",
+    "categoryPlaceholder": "Choose a category",
+    "category": {
+      "support": "Support",
+      "safety": "Safety",
+      "legal": "Legal",
+      "other": "Other"
+    },
+    "justificationLabel": "Justification",
+    "justificationHint": "At least {{min}} characters. Someone else will read this to judge the access.",
+    "charactersShort": "{{count}} characters short.",
+    "reveal": "Reveal the record",
+    "revealedAt": "Revealed at {{at}}. For this session only: nothing stays unlocked.",
+    "auditReference": "Audit event: {{id}}",
+    "empty": "This person has no saved assessments.",
+    "role": "Role",
+    "level": "Level",
+    "routes": "Modules",
+    "rules": "Triggered rules",
+    "versions": "Workflow {{workflow}} · content {{content}}",
+    "close": "Close"
   }
 }

@@ -141,11 +141,29 @@ export function AuditViewerScreen({ canExport }: { canExport: boolean }) {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.eventId} className="border-t border-somnus-border">
+                <tr key={row.eventId} className="border-t border-somnus-border align-top">
                   <td className="py-1 whitespace-nowrap">{row.occurredAt}</td>
                   <td className="py-1">{row.eventType}</td>
                   <td className="py-1 font-mono text-xs">{row.actorId ?? "—"}</td>
-                  <td className="py-1">{row.subjectType}</td>
+                  <td className="py-1">
+                    <span className="font-mono text-xs">{row.subjectId || row.subjectType}</span>
+                    {/* Break-glass is the one event type that carries a written
+                        reason (§A2.3 point 3), and it is shown beside the row
+                        rather than hidden behind a click: an audited access
+                        nobody reads the reason for is not really audited. */}
+                    {row.justification ? (
+                      <p className="mt-1 max-w-prose text-xs text-somnus-text">
+                        <span className="text-somnus-subtle">
+                          {t("audit.justification")}
+                          {typeof row.data["category"] === "string"
+                            ? ` (${row.data["category"]})`
+                            : ""}
+                          :{" "}
+                        </span>
+                        {row.justification}
+                      </p>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>
