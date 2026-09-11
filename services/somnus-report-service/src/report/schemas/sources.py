@@ -16,6 +16,10 @@ class ClinicalSourceDTO:
     citation: str
     url: str
     use: str
+    # The safety rules that cite this source (Checkpoint 11.3 Stage 4). Defaulted
+    # so the many test fixtures that predate the field still construct, and empty
+    # is the honest value for them: a source no rule cites.
+    cited_by_rules: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

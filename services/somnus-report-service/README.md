@@ -58,16 +58,41 @@ wording is Morpheo's approved content (§14a); this service only lays it out.
   por `tests/unit/test_rewriter.py`
   (`test_residual_risk_a_paraphrased_claim_is_not_caught...`) y por los cuatro
   vectores de inyección parametrizados en el mismo archivo.
-- **Grounding con RAG (§3.6b): solo explicativo, fuera de la ruta de decisión.**
-  Para la salida profesional, el report recupera por similitud (coseno sobre el
-  corpus embebido, `text-embedding-3-large` 3072-dim) la(s) fuente(s) clínica(s)
-  y adjunta su cita en una sección propia (`Fuentes clínicas`). La recuperación
+- **Grounding (§3.6b / §14b): solo explicativo, fuera de la ruta de decisión, y en
+  dos capas con un orden de precedencia estricto.**
+
+  **Por id, primero y normalmente la única.** §14b promete que el report recupera
+  "la fuente clínica aprobada que la regla determinista ya citó". Eso significa
+  que la cita la decide el **artefacto** vía `safety_rules[].sources`, no una
+  búsqueda estadística. `CitationResolver` hace exactamente ese lookup: sin
+  embedder, sin clave, sin red — así que la garantía de §14b se cumple también en
+  entornos sin OpenAI configurado. El mapeo viaja desde el artefacto en
+  `citedByRules` (respuesta `/internal/v1/clinical-sources` de morpheo) y se
+  persiste en `clinical_sources.cited_by_rules`, versionado por `content_version`
+  igual que la cita que selecciona.
+
+  **Por similitud, solo cuando no hay nada que resolver.** Un informe puede no
+  disparar ninguna regla (un L4 llano); ahí no existe fuente citada por regla y se
+  mantiene el coseno sobre los nombres de módulo, sin cambios.
+
+  Invertir ese orden era el defecto que cerró el Stage 4 de 11.3: con solo
+  similitud, un informe que disparó SAFE-006 (cita SRC-02 y SRC-03) podía
+  renderizarse citando SRC-01, porque su texto quedaba más cerca del nombre del
+  módulo en el espacio de embeddings. Ni el nivel ni el enrutamiento estuvieron
+  nunca en riesgo — la recuperación no los toca — pero la cita atribuía la decisión
+  a evidencia que no la respaldaba. Fijado por
+  `tests/unit/test_citation_resolution.py`, que demuestra el fallo y luego lo
+  demuestra corregido.
+
+  La recuperación
   **nunca cambia el nivel, el enrutamiento ni ninguna decisión**: alimenta solo esa
   sección, está **role-gated** (solo `professional`), consulta **solo términos
   aprobados** (nombres de módulo — nunca PII ni texto de salud), y **cualquier fallo
   degrada a sin citas** (`RenderService._citations`, guardado). Fijado por
   `tests/unit/test_render_determinism.py` (misma decisión con recuperación correcta,
-  errónea, vacía o nula) y `tests/unit/test_retrieval.py`. Los embeddings pasan por
+  errónea, vacía o nula), `tests/unit/test_render_service.py`
+  (`test_render_survives_a_failing_retriever...`, el caso que lanza) y
+  `tests/unit/test_retrieval.py`. Los embeddings pasan por
   la abstracción de proveedor (sin llamadas directas al SDK) y se desactivan solos
   si no hay clave configurada.
 

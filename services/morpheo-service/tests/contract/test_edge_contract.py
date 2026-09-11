@@ -208,6 +208,22 @@ def test_clinical_sources_from_artifacts_conforms() -> None:
     assert payload["contentVersion"] == "1.3"
     assert all(source["citation"] and source["use"] for source in payload["sources"])
 
+    # `citedByRules` is the field the report resolves a citation BY (Checkpoint
+    # 11.3 Stage 4), so it is reconciled against the artifact rather than merely
+    # asserted present: every rule->source edge in `safety_rules[].sources` has
+    # to appear, and no edge may be invented.
+    expected: dict[str, set[str]] = {source.id: set() for source in BUNDLE.workflows.sources}
+    for rule in BUNDLE.workflows.safety_rules:
+        for source_id in rule.sources:
+            expected[source_id].add(rule.id)
+    actual = {source["id"]: set(source["citedByRules"]) for source in payload["sources"]}
+    assert actual == expected
+    # Sorted, so one artifact always yields one response and a report grounded
+    # twice cites in the same order both times.
+    assert all(
+        source["citedByRules"] == sorted(source["citedByRules"]) for source in payload["sources"]
+    )
+
 
 # --- the engine's real output maps to a conforming result DTO ---
 

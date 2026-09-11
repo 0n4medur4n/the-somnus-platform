@@ -29,6 +29,12 @@ class ClinicalSourceRow(Base):
     citation: Mapped[str] = mapped_column(Text, nullable=False)
     url: Mapped[str] = mapped_column(Text, nullable=False)
     use_text: Mapped[str] = mapped_column("use_text", Text, nullable=False)
+    # JSON array of the safety-rule ids that cite this source (Checkpoint 11.3
+    # Stage 4). Persisted with the row rather than looked up per render: it is
+    # version-keyed exactly like the citation text it selects, so a report
+    # rendered against an older `content_version` resolves that version's mapping
+    # and not today's. Nullable for rows written before the column existed.
+    cited_by_rules: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Populated by the indexer (Checkpoint 11.3 Stage 3); JSON array of floats.
     embedding: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
     embedding_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
