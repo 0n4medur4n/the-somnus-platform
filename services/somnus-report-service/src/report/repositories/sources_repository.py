@@ -33,6 +33,7 @@ class SourcesRepository:
                 citation=source.citation,
                 url=source.url,
                 use_text=source.use,
+                cited_by_rules=json.dumps(list(source.cited_by_rules)),
             )
             for source in sources
         )
@@ -52,6 +53,7 @@ class SourcesRepository:
                 citation=entry.source.citation,
                 url=entry.source.url,
                 use_text=entry.source.use,
+                cited_by_rules=json.dumps(list(entry.source.cited_by_rules)),
                 embedding=json.dumps(entry.vector),
                 embedding_model=model,
             )

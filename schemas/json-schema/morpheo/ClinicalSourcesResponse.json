@@ -26,13 +26,21 @@
           "use": {
             "type": "string",
             "minLength": 1
+          },
+          "citedByRules": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^SAFE-\\d{3}$"
+            }
           }
         },
         "required": [
           "id",
           "citation",
           "url",
-          "use"
+          "use",
+          "citedByRules"
         ],
         "additionalProperties": false
       }

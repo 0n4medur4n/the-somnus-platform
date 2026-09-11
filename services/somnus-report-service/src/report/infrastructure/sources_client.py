@@ -28,6 +28,11 @@ def _to_sources(raw: dict[str, Any]) -> ClinicalSourcesDTO:
                 citation=source["citation"],
                 url=source["url"],
                 use=source["use"],
+                # Required by the contract; read strictly so a morpheo that has
+                # not been redeployed fails loudly here rather than silently
+                # indexing a corpus with no rule mapping, which would put the
+                # citation path back on similarity without anyone noticing.
+                cited_by_rules=tuple(source["citedByRules"]),
             )
             for source in raw["sources"]
         ],

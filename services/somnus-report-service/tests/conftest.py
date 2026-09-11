@@ -101,6 +101,11 @@ def make_request() -> RequestBuilder:
         routes: tuple[str, ...] = ("INS",),
         stop: bool = False,
         role: str = "adult",
+        # Which safety rules fired. The by-id citation path (Checkpoint 11.3
+        # Stage 4) resolves from these; empty means no rule fired, which is the
+        # ordinary case for a plain L4 and the only case that still falls back
+        # to similarity.
+        triggered_rules: tuple[str, ...] = (),
     ) -> ReportRenderRequestDTO:
         return ReportRenderRequestDTO(
             assessment_id="assess-123",
@@ -110,7 +115,7 @@ def make_request() -> RequestBuilder:
             role=role,
             level=level,
             stop=stop,
-            triggered_rules=[],
+            triggered_rules=list(triggered_rules),
             routes=list(routes),
             completed_at="2026-08-17T12:00:00Z",
         )

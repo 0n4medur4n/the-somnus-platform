@@ -13,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 from report.application.ai_rewrite import AiRewriteDisabledError
-from report.application.retrieval import SourceRetriever
+from report.application.retrieval import CitationResolver, SourceRetriever
 from report.infrastructure.morpheo_client import ContentProvider
 from report.infrastructure.pdf import PdfRenderer
 from report.infrastructure.storage import StorageBackend
@@ -48,6 +48,7 @@ class RenderService:
         storage: StorageBackend,
         signed_url_ttl: timedelta,
         ai_rewrite_enabled: bool = False,
+        citations: CitationResolver | None = None,
         retriever: SourceRetriever | None = None,
         review: ApprovedCandidateSource | None = None,
     ) -> None:
@@ -57,7 +58,12 @@ class RenderService:
         self._ttl = signed_url_ttl
         # Master switch for AI rewriting (§15); off by default. See ai_rewrite.
         self._ai_rewrite_enabled = ai_rewrite_enabled
-        # Explanation-only grounding (§3.6b); optional. None -> no citations.
+        # The by-id path (§14b / Checkpoint 11.3 Stage 4): the sources the fired
+        # rule actually cited. Needs no embedder and no key, so it is wired in
+        # every environment.
+        self._citation_resolver = citations
+        # The similarity fallback (§3.6b), for reports that fired no rule at all.
+        # Optional: no embedding key -> None -> those reports carry no citations.
         self._retriever = retriever
         # The human review queue (Checkpoint 15.3). Consulted only when the flag
         # above is on; None means "no approvals reachable", which the gate treats
@@ -67,14 +73,44 @@ class RenderService:
     def _citations(
         self, request: ReportRenderRequestDTO, content: ClinicalContentDTO
     ) -> list[RetrievedSource]:
-        """Retrieve grounding citations for the professional output (§3.6b).
+        """Grounding citations for the professional output (§3.6b / §14b).
 
-        Guarded so retrieval can NEVER affect the decision: it runs only for the
-        professional role, queries only approved terms (module names — no PII or
-        health text), and ANY failure degrades to no citations. The level and the
-        routing are unaffected regardless of what retrieval returns or raises.
+        Two paths, in a fixed order, and the order is the correctness property:
+
+        1. **By id.** The sources the fired rules cited, looked up from
+           `citedByRules`. This is what §14b means by "the approved clinical
+           source that the deterministic rule already cited". Exact, not ranked.
+        2. **By similarity**, ONLY when step 1 found nothing to resolve — a
+           report that fired no rule, or fired rules that cite no source. There
+           is no rule-cited source to be exact about in that case, so ranking the
+           routed module names is the best available grounding rather than a
+           worse alternative to something better.
+
+        A rule-cited report never reaches step 2, which is the whole point: it
+        cannot end up citing a plausible source instead of the named one.
+
+        Guarded so neither path can affect the decision: both run only for the
+        professional role, query only approved terms, and ANY failure degrades to
+        no citations. The level and the routing are unaffected regardless of what
+        either returns or raises.
         """
-        if self._retriever is None or request.role != "professional":
+        if request.role != "professional":
+            return []
+
+        if self._citation_resolver is not None:
+            try:
+                cited = list(
+                    self._citation_resolver.resolve(
+                        request.content_version, list(request.triggered_rules)
+                    )
+                )
+            except Exception:
+                logger.warning("clinical-source citation lookup failed; trying similarity")
+                cited = []
+            if cited:
+                return cited
+
+        if self._retriever is None:
             return []
         modules_by_id = {module.id: module for module in content.modules}
         queries = [

@@ -11,7 +11,7 @@ import json
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
-from report.application.retrieval import VectorStoreRetriever
+from report.application.retrieval import CitationResolver, VectorStoreRetriever
 from report.infrastructure.llm.provider import EmbeddingRequest, EmbeddingResponse
 from report.infrastructure.models import ClinicalSourceRow
 from report.repositories.sources_repository import SourcesRepository
@@ -20,9 +20,13 @@ from report.schemas.sources import ClinicalSourceDTO, EmbeddedSourceDTO
 
 _EMBEDDED = [
     EmbeddedSourceDTO(
-        ClinicalSourceDTO("SRC-01", "Riemann D. Insomnia.", "u1", "Insomnio."), [1.0, 0.0]
+        ClinicalSourceDTO("SRC-01", "Riemann D. Insomnia.", "u1", "Insomnio.", ()),
+        [1.0, 0.0],
     ),
-    EmbeddedSourceDTO(ClinicalSourceDTO("SRC-02", "Kapur VK. OSA.", "u2", "AOS."), [0.0, 1.0]),
+    EmbeddedSourceDTO(
+        ClinicalSourceDTO("SRC-02", "Kapur VK. OSA.", "u2", "AOS.", ("SAFE-006",)),
+        [0.0, 1.0],
+    ),
 ]
 
 
@@ -57,6 +61,50 @@ def test_retrieval_reads_stored_vectors_and_ranks_by_cosine(engine: Engine) -> N
         results = retriever.retrieve("1.3", [RetrievalQuery("INS", "Dificultad para dormir")])
         assert [source.source_id for source in results] == ["SRC-01"]
         assert results[0].citation == "Riemann D. Insomnia."
+
+        session.query(ClinicalSourceRow).delete()
+        session.commit()
+
+
+def test_the_rule_mapping_round_trips_and_resolves_by_id(engine: Engine) -> None:
+    """Checkpoint 11.3 Stage 4, against the real migrated schema.
+
+    The by-id path is only as good as the column behind it, so this runs over
+    MySQL rather than a fake loader: the mapping has to survive `replace_embedded`
+    and come back out of `list_version` intact, and the resolver has to pick the
+    source the rule cited over the one that ranks highest.
+    """
+    with Session(engine) as session:
+        session.query(ClinicalSourceRow).delete()
+        session.commit()
+        SourcesRepository(session).replace_embedded("1.3", _EMBEDDED, "text-embedding-3-large")
+        session.commit()
+
+        rows = {row.source_id: row for row in SourcesRepository(session).list_version("1.3")}
+        assert json.loads(rows["SRC-02"].cited_by_rules or "[]") == ["SAFE-006"]
+        assert json.loads(rows["SRC-01"].cited_by_rules or "[]") == []
+
+        def loader(content_version: str) -> list[CorpusEntry]:
+            return [
+                CorpusEntry(
+                    row.source_id,
+                    row.citation,
+                    row.url,
+                    json.loads(row.embedding or "[]"),
+                    tuple(json.loads(row.cited_by_rules or "[]")),
+                )
+                for row in SourcesRepository(session).list_version(content_version)
+            ]
+
+        resolved = CitationResolver(loader).resolve("1.3", ["SAFE-006"])
+        assert [source.source_id for source in resolved] == ["SRC-02"]
+        assert resolved[0].resolved_by == "rule"
+
+        # And the source that would have won on similarity is NOT cited.
+        ranked = VectorStoreRetriever(
+            _FakeEmbedder([0.9, 0.1]), loader, model="text-embedding-3-large", dimensions=3072
+        ).retrieve("1.3", [RetrievalQuery("INS", "Dificultad para dormir")])
+        assert [source.source_id for source in ranked] == ["SRC-01"]
 
         session.query(ClinicalSourceRow).delete()
         session.commit()

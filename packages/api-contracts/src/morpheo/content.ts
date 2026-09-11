@@ -93,6 +93,27 @@ export const ClinicalSourceSchema = z
     citation: z.string().min(1),
     url: z.string().min(1),
     use: z.string().min(1),
+    /**
+     * The safety rules that cite this source, from `safety_rules[].sources` in
+     * the clinical artifact (Checkpoint 11.3 Stage 4).
+     *
+     * This is what lets the report cite the source the fired rule ACTUALLY
+     * named, rather than whichever source a similarity search happened to rank
+     * first. §14b promises exactly that ("the approved clinical source that the
+     * deterministic rule already cited") and until this field existed nothing
+     * implemented it: the report embedded the routed module's NAME and took the
+     * cosine top-1 over the whole corpus, which can and does pick a different
+     * source than the rule cited.
+     *
+     * Inverted relative to the artifact (which maps rule -> sources) because the
+     * consumer stores sources, not rules: carrying it per source means the
+     * mapping rides the row that is already persisted and version-keyed, with no
+     * second table and no second fetch.
+     *
+     * May be empty: a source no rule cites is still part of the corpus and is
+     * still reachable by similarity.
+     */
+    citedByRules: z.array(z.string().regex(/^SAFE-\d{3}$/)),
   })
   .strict();
 export type ClinicalSource = z.infer<typeof ClinicalSourceSchema>;

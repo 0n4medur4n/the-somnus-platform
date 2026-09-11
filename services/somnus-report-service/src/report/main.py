@@ -22,7 +22,11 @@ from report.api.reports import router as reports_router
 from report.api.version import router as version_router
 from report.application.content_review import ContentReviewService
 from report.application.render_service import RenderService
-from report.application.retrieval import SourceRetriever, VectorStoreRetriever
+from report.application.retrieval import (
+    CitationResolver,
+    SourceRetriever,
+    VectorStoreRetriever,
+)
 from report.infrastructure.correlation import CorrelationIdMiddleware
 from report.infrastructure.db import create_engine_from_url
 from report.infrastructure.errors import register_exception_handlers
@@ -63,27 +67,34 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     session_factory = sessionmaker(bind=engine, expire_on_commit=False)
     app.state.session_factory = session_factory
 
-    # Clinical grounding (§3.6b), explanation-only and optional: wired only when an
-    # embedding key is configured. It attaches citations to the professional output
-    # and can never affect the level or routing (guarded in RenderService). No key
-    # -> no retriever -> reports render deterministically with no citations.
+    # Clinical grounding (§3.6b / §14b), explanation-only. It attaches citations to
+    # the professional output and can never affect the level or routing (guarded in
+    # RenderService).
+
+    def _corpus_loader(content_version: str) -> list[CorpusEntry]:
+        with session_factory() as session:
+            rows = SourcesRepository(session).list_version(content_version)
+            return [
+                CorpusEntry(
+                    source_id=row.source_id,
+                    citation=row.citation,
+                    url=row.url,
+                    vector=json.loads(row.embedding) if row.embedding else [],
+                    cited_by_rules=tuple(json.loads(row.cited_by_rules or "[]")),
+                )
+                for row in rows
+            ]
+
+    # By id: the sources the fired rule cited. No embedder, no key, no network, so
+    # §14b's guarantee holds in every environment rather than only where OpenAI is
+    # configured. This is the primary path and normally the only one.
+    citations = CitationResolver(_corpus_loader)
+
+    # By similarity: the fallback, for reports that fired no rule at all. Wired
+    # only when an embedding key is configured; no key -> no fallback -> those
+    # reports render deterministically with no citations.
     retriever: SourceRetriever | None = None
     if settings.openai_api_key:
-
-        def _corpus_loader(content_version: str) -> list[CorpusEntry]:
-            with session_factory() as session:
-                rows = SourcesRepository(session).list_version(content_version)
-                return [
-                    CorpusEntry(
-                        source_id=row.source_id,
-                        citation=row.citation,
-                        url=row.url,
-                        vector=json.loads(row.embedding),
-                    )
-                    for row in rows
-                    if row.embedding
-                ]
-
         retriever = VectorStoreRetriever(
             OpenAiEmbeddingAdapter(settings.openai_api_key),
             _corpus_loader,
@@ -112,6 +123,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ),
         signed_url_ttl=timedelta(seconds=settings.signed_url_ttl_seconds),
         ai_rewrite_enabled=settings.ai_rewrite_enabled,
+        citations=citations,
         retriever=retriever,
         review=_ApprovedCandidates(),
     )
