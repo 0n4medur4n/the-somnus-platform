@@ -12,21 +12,18 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from report.application.retrieval import CitationResolver, VectorStoreRetriever
+from report.application.source_indexer import text_hash
 from report.infrastructure.llm.provider import EmbeddingRequest, EmbeddingResponse
 from report.infrastructure.models import ClinicalSourceRow
 from report.repositories.sources_repository import SourcesRepository
 from report.schemas.retrieval import CorpusEntry, RetrievalQuery
-from report.schemas.sources import ClinicalSourceDTO, EmbeddedSourceDTO
+from report.schemas.sources import ClinicalSourceDTO, IndexedEntry
 
+_SRC_01 = ClinicalSourceDTO("SRC-01", "Riemann D. Insomnia.", "u1", "Insomnio.", ())
+_SRC_02 = ClinicalSourceDTO("SRC-02", "Kapur VK. OSA.", "u2", "AOS.", ("SAFE-006",))
 _EMBEDDED = [
-    EmbeddedSourceDTO(
-        ClinicalSourceDTO("SRC-01", "Riemann D. Insomnia.", "u1", "Insomnio.", ()),
-        [1.0, 0.0],
-    ),
-    EmbeddedSourceDTO(
-        ClinicalSourceDTO("SRC-02", "Kapur VK. OSA.", "u2", "AOS.", ("SAFE-006",)),
-        [0.0, 1.0],
-    ),
+    IndexedEntry(_SRC_01, text_hash(_SRC_01), [1.0, 0.0]),
+    IndexedEntry(_SRC_02, text_hash(_SRC_02), [0.0, 1.0]),
 ]
 
 
@@ -44,7 +41,7 @@ def test_retrieval_reads_stored_vectors_and_ranks_by_cosine(engine: Engine) -> N
     with Session(engine) as session:
         session.query(ClinicalSourceRow).delete()
         session.commit()
-        SourcesRepository(session).replace_embedded("1.3", _EMBEDDED, "text-embedding-3-large")
+        SourcesRepository(session).write_indexed("1.3", _EMBEDDED, "text-embedding-3-large")
         session.commit()
 
         def loader(content_version: str) -> list[CorpusEntry]:
@@ -70,14 +67,14 @@ def test_the_rule_mapping_round_trips_and_resolves_by_id(engine: Engine) -> None
     """Checkpoint 11.3 Stage 4, against the real migrated schema.
 
     The by-id path is only as good as the column behind it, so this runs over
-    MySQL rather than a fake loader: the mapping has to survive `replace_embedded`
+    MySQL rather than a fake loader: the mapping has to survive `write_indexed`
     and come back out of `list_version` intact, and the resolver has to pick the
     source the rule cited over the one that ranks highest.
     """
     with Session(engine) as session:
         session.query(ClinicalSourceRow).delete()
         session.commit()
-        SourcesRepository(session).replace_embedded("1.3", _EMBEDDED, "text-embedding-3-large")
+        SourcesRepository(session).write_indexed("1.3", _EMBEDDED, "text-embedding-3-large")
         session.commit()
 
         rows = {row.source_id: row for row in SourcesRepository(session).list_version("1.3")}

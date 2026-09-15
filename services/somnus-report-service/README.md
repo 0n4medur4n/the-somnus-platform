@@ -96,6 +96,26 @@ wording is Morpheo's approved content (§14a); this service only lays it out.
   la abstracción de proveedor (sin llamadas directas al SDK) y se desactivan solos
   si no hay clave configurada.
 
+## Indexación de las fuentes clínicas (Checkpoint 16.0)
+
+`python -m report.jobs.index_sources` es la **única** vía por la que se embeben
+las quince fuentes: un paso manual tras subir `content_version`, nunca en el
+arranque (con mínimo de instancias a cero, el servicio arranca constantemente) y
+nunca automático. Hasta 16.0 `SourceIndexer` no tenía ningún punto de entrada.
+
+- **Idempotente** por `(content_version, src_id, text_hash)`: re-ejecutar una
+  versión ya indexada hace **cero** llamadas de embedding y no escribe nada.
+- **Una subida de versión cuesta solo lo que cambió**: una fuente con el mismo
+  texto reutiliza el vector ya almacenado.
+- **Nunca sobrescribe**: las versiones anteriores se conservan intactas, y el
+  propio repositorio se niega a reemplazar un vector almacenado.
+- **Todo o nada**, en una transacción; el aborto por recuento de Stage 3 sigue
+  igual.
+- **Rechaza** una versión indexada cuyo texto cambió sin subir `content_version`.
+
+Procedimiento completo, requisitos y confirmación en
+`docs/runbooks/deploy-dev.md`, sección *Indexing the clinical-source corpus*.
+
 ## Layout
 
 `src/report/{main, api, infrastructure, schemas, settings}` — the same shell as

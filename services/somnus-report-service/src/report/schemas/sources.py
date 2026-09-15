@@ -29,6 +29,24 @@ class ClinicalSourcesDTO:
 
 
 @dataclass(frozen=True)
-class EmbeddedSourceDTO:
+class IndexedRow:
+    """What the store already holds for one source in one version (Checkpoint 16.0)."""
+
+    source_id: str
+    text_hash: str | None
+    embedding_model: str | None
+    has_vector: bool
+
+
+@dataclass(frozen=True)
+class IndexedEntry:
+    """One source ready to be written: its approved fields, text hash and vector.
+
+    Plain data, and in `schemas` rather than beside the indexer on purpose: the
+    repository needs this shape, the web app imports the repository, and nothing
+    on the boot path may import the indexer (`test_index_sources_job.py`).
+    """
+
     source: ClinicalSourceDTO
+    text_hash: str
     vector: list[float]

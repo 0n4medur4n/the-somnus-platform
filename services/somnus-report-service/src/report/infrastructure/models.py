@@ -37,6 +37,11 @@ class ClinicalSourceRow(Base):
     cited_by_rules: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Populated by the indexer (Checkpoint 11.3 Stage 3); JSON array of floats.
     embedding: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
+    # SHA-256 of exactly the text the vector above was produced from (Checkpoint
+    # 16.0). What makes re-indexing idempotent: a source whose text hashes the same
+    # is never embedded twice. NULL on rows written before the column existed --
+    # provenance unknown, so never reused and never overwritten.
+    text_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     embedding_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False

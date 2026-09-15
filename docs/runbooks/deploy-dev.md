@@ -215,7 +215,8 @@ depends on them is rolled out.
   with no mapping. That is deliberate — a silent empty mapping would put every
   report back on similarity-only citations, which is the defect Stage 4 closed,
   and nobody would see it. Order: deploy morpheo, apply the migration, deploy the
-  report service, then re-run the indexer. The existing corpus keeps working
+  report service, then re-run the indexer (see *Indexing the clinical-source
+  corpus* below; `0004_source_text_hash.py` has to be applied first). The existing corpus keeps working
   throughout: rows written before the column read back as "cited by no rule",
   which is exactly the previous behaviour.
 - **Invitation emails do not send yet.** The Checkpoint 14.2 accept flow is
@@ -225,6 +226,86 @@ depends on them is rolled out.
   token is read from the organization's invitations screen and handed to the
   invitee directly. Do not describe invitations as self-service to an operator
   before that gap closes.
+
+---
+
+## Indexing the clinical-source corpus (Index A)
+
+The fifteen clinical sources (SRC-01…SRC-15) that professional reports cite are
+embedded into `clinical_sources` in `somnus_reporting` (Addendum B §B2a.1,
+Checkpoint 16.0). This is how that happens, and the only way it does.
+
+**It is never run automatically.** Not on service boot, not from a migration, not
+from a deploy job, not from CI. Minimum instances are zero everywhere, so the
+report service boots on every cold start; indexing there would call the OpenAI API
+constantly and make the index depend on which instance started first. The service
+image starts `report.main`, which does not even load the indexer module —
+`tests/unit/test_index_sources_job.py` checks that by importing the app in a clean
+interpreter. It is an operator step, by hand, **after a `content_version` bump** in
+`morpheo_workflows_v1.json`.
+
+### What it does, and refuses to do
+
+- Fetches the corpus from morpheo's `/internal/v1/clinical-sources` and embeds only
+  each source's approved `citation` and `use` — never an assessment, never PII.
+- **Idempotent**, keyed on `(content_version, src_id, text_hash)`. Re-running for a
+  version that is already indexed makes **zero** embedding calls and writes
+  nothing; running it twice is a no-op, not a second bill.
+- **A bump costs only what changed.** A source whose `citation` and `use` hash the
+  same as in any earlier version reuses that stored vector. Changing one source's
+  text embeds that one source; re-wiring which rules cite a source embeds nothing.
+- **Never overwrites.** Each version's rows are written once and earlier versions
+  are never touched, so a report grounded under an older `content_version` still
+  resolves exactly what grounded it. The store itself refuses to replace a stored
+  vector, independently of the indexer.
+- **All or nothing.** One transaction. A provider error, a wrong vector count
+  (the Checkpoint 11.3 Stage 3 abort, unchanged) or a failed insert leaves the
+  store exactly as it was — no partial version.
+- **Refuses a version whose text changed without a bump.** If `1.3` is indexed and
+  a source's text under `1.3` is now different, the artifact was edited without
+  bumping `content_version`. It exits non-zero before any call: bump the version.
+  The same refusal applies to a source dropped from an indexed version and to a
+  change of `EMBEDDING_MODEL` under the same version.
+- Prints one JSON line of counts on success (`embedded`, `reused`, `unchanged`,
+  `indexed`). Never prints the key, the database URL, or source text.
+
+### Prerequisites
+
+1. **Migrations `0003_source_cited_by_rules` and `0004_source_text_hash` applied**
+   to `somnus_reporting` (`uv run alembic upgrade head` from
+   `services/somnus-report-service`, against the target database).
+2. **A reachable morpheo serving the same artifact that is deployed.** The sources
+   client sends no identity token — the same as the running report service — so a
+   private Cloud Run morpheo is not reachable from a workstation. The corpus comes
+   from `morpheo_workflows_v1.json`, not from morpheo's database, so a local
+   morpheo **checked out at the deployed commit** serves the identical corpus:
+   ```bash
+   cd services/morpheo-service
+   uv run uvicorn morpheo.main:app --host 127.0.0.1 --port 8082
+   ```
+3. **An OpenAI key — only if something needs embedding.** Not provisioned in
+   Terraform or Secret Manager today; the operator supplies it for the run. Without
+   one, a re-run of an already-indexed version still succeeds, and a run that needs
+   vectors fails before writing anything.
+
+### Run it
+
+```bash
+cd services/somnus-report-service
+DATABASE_URL='<somnus_reporting connection string>' \
+MORPHEO_BASE_URL=http://127.0.0.1:8082 \
+OPENAI_API_KEY='<key, only when embedding is needed>' \
+uv run python -m report.jobs.index_sources
+```
+
+Exit status `0` with a JSON line means the version is fully indexed. Anything else
+means nothing was written; the one-line reason is on stderr.
+
+### Confirm it
+
+Run it **a second time** with the same environment. The line must report
+`"embedded": 0, "reused": 0` and `"unchanged"` equal to `"indexed"`. That is the
+idempotency guarantee checked against the real database, and it costs nothing.
 
 ---
 
