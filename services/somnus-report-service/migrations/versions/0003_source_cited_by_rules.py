@@ -1,6 +1,6 @@
 """Checkpoint 11.3 Stage 4: which safety rules cite each clinical source
 
-Revision ID: 0003_clinical_source_cited_by_rules
+Revision ID: 0003_source_cited_by_rules
 Revises: 0002_ai_content_review_items
 Create Date: 2026-09-11
 
@@ -25,7 +25,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "0003_clinical_source_cited_by_rules"
+revision: str = "0003_source_cited_by_rules"
 down_revision: str | Sequence[str] | None = "0002_ai_content_review_items"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

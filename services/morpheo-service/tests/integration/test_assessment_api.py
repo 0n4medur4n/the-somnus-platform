@@ -102,8 +102,15 @@ def test_clinical_sources_endpoint_serves_the_approved_corpus(client: TestClient
     assert body["contentVersion"] == "1.3"
     assert {source["id"] for source in body["sources"]} == {f"SRC-{n:02d}" for n in range(1, 16)}
     first = body["sources"][0]
-    assert set(first) == {"id", "citation", "url", "use"}
+    # The exact wire shape, pinned. `citedByRules` joined it in Checkpoint 11.3
+    # Stage 4: it is what lets the report cite the source the fired rule named
+    # rather than the nearest one by similarity (§14b).
+    assert set(first) == {"id", "citation", "url", "use", "citedByRules"}
     assert first["citation"] and first["use"]
+    # Every rule in the artifact cites at least one source, so the mapping is
+    # never uniformly empty -- an empty one would mean the report silently falls
+    # back to similarity for every report.
+    assert any(source["citedByRules"] for source in body["sources"])
 
 
 def test_create_blocked_on_missing_consent(client: TestClient) -> None:
