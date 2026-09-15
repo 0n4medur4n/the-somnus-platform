@@ -206,7 +206,7 @@ depends on them is rolled out.
   before applying it breaks registration outright — `POST
   /internal/v1/users/provision` fails on the unknown columns. Apply it first;
   `0002_registration_role_branch.down.sql` reverses it.
-- **`0003_clinical_source_cited_by_rules.py` (report service) and morpheo must
+- **`0003_source_cited_by_rules.py` (report service) and morpheo must
   go out together, morpheo first.** Checkpoint 11.3 Stage 4 makes the report cite
   the source the fired rule actually named, and the mapping arrives in the
   `citedByRules` field of morpheo's `/internal/v1/clinical-sources` response. The
