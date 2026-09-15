@@ -29,4 +29,8 @@ def test_downgrade_then_upgrade_restores_the_schema(engine: Engine) -> None:
         "embedding",
         "embedding_model",
         "created_at",
+        # 0003: which safety rules cite the source (Checkpoint 11.3 Stage 4).
+        "cited_by_rules",
+        # 0004: the hash of the text the vector came from (Checkpoint 16.0).
+        "text_hash",
     } <= columns
