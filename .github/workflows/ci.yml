@@ -706,7 +706,7 @@ jobs:
         run: uv run mypy src
 
       - name: Pytest (coverage gate)
-        run: uv run pytest -q
+        run: uv run pytest -q -rA
 
   report-service:
     name: Report service (ruff, mypy, pytest)
@@ -775,7 +775,7 @@ jobs:
         run: uv run mypy src
 
       - name: Pytest (coverage gate)
-        run: uv run pytest -q
+        run: uv run pytest -q -rA
         env:
           DATABASE_URL: mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_reporting
 
