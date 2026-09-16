@@ -10,6 +10,7 @@ propagation, no production stack traces.
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from datetime import timedelta
 from pathlib import Path
 
@@ -29,6 +30,10 @@ from report.application.retrieval import (
     VectorStoreRetriever,
 )
 from report.corpus.db import create_corpus_engine
+from report.corpus.embedding_gate import CorpusEmbeddingGate
+from report.corpus.indexer import CorpusIndexer
+from report.corpus.repository import CorpusRepository, DocumentScope, ScopedDocument
+from report.corpus.retrieval import CorpusRetriever
 from report.infrastructure.correlation import CorrelationIdMiddleware
 from report.infrastructure.db import create_engine_from_url
 from report.infrastructure.errors import register_exception_handlers
@@ -75,11 +80,42 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # as the one above: the service must boot without either database reachable.
     corpus_engine = create_corpus_engine(settings.content_database_url)
     app.state.corpus_engine = corpus_engine
-    app.state.corpus_session_factory = sessionmaker(bind=corpus_engine, expire_on_commit=False)
+    corpus_session_factory = sessionmaker(bind=corpus_engine, expire_on_commit=False)
+    app.state.corpus_session_factory = corpus_session_factory
     # §B3.1's read-only half: the clinical artifact's own fields, fetched from the
     # service that owns them rather than mirrored here, so the console has nothing
     # local it could write. Constructed eagerly, connects on first call only.
     app.state.corpus_sources_provider = MorpheoSourcesClient(settings.morpheo_base_url)
+
+    # Index B (Addendum B §B3.1 / Checkpoint 16.4): supporting material for the
+    # professional report, scoped to what the deterministic result activated.
+    # Wired in every environment -- with no embedding key it still retrieves the
+    # scoped, locale-matching set and simply cannot rank it. It reaches no
+    # citation by construction: it returns GroundingMaterial, and the citation
+    # path takes RetrievedSource.
+    def _scoped_loader(locale: str, scopes: Sequence[DocumentScope]) -> list[ScopedDocument]:
+        with corpus_session_factory() as session:
+            return CorpusRepository(session).scoped_documents(locale=locale, scopes=scopes)
+
+    corpus_retriever = CorpusRetriever(
+        _scoped_loader,
+        embedder=OpenAiEmbeddingAdapter(settings.openai_api_key)
+        if settings.openai_api_key
+        else None,
+        model=settings.embedding_model,
+        dimensions=settings.embedding_dimensions,
+    )
+    # Publishing a document embeds it (§B5 16.4), through §B4's gate and the same
+    # Checkpoint 11.3 adapter. No key -> no indexer -> publish still publishes.
+    app.state.corpus_indexer = (
+        CorpusIndexer(
+            CorpusEmbeddingGate(OpenAiEmbeddingAdapter(settings.openai_api_key)),
+            model=settings.embedding_model,
+            dimensions=settings.embedding_dimensions,
+        )
+        if settings.openai_api_key
+        else None
+    )
 
     # Clinical grounding (§3.6b / §14b), explanation-only. It attaches citations to
     # the professional output and can never affect the level or routing (guarded in
@@ -140,6 +176,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         citations=citations,
         retriever=retriever,
         review=_ApprovedCandidates(),
+        grounding=corpus_retriever,
     )
 
     app.add_middleware(CorrelationIdMiddleware)

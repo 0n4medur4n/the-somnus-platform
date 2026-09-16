@@ -19,7 +19,12 @@ from report.infrastructure.pdf import PdfRenderer
 from report.infrastructure.storage import StorageBackend
 from report.rendering.renderer import render_html
 from report.schemas.render import ClinicalContentDTO, ReportRefDTO, ReportRenderRequestDTO
-from report.schemas.retrieval import RetrievalQuery, RetrievedSource
+from report.schemas.retrieval import (
+    GroundingMaterial,
+    GroundingRequest,
+    RetrievalQuery,
+    RetrievedSource,
+)
 
 logger = logging.getLogger("report.render")
 
@@ -40,6 +45,20 @@ class ApprovedCandidateSource(Protocol):
     def approved_candidate(self, report_id: str) -> str | None: ...
 
 
+class GroundingSource(Protocol):
+    """Index B, as the render pipeline is allowed to see it (§B3.1 / 16.4).
+
+    It returns `GroundingMaterial` and there is no overload that returns a
+    `RetrievedSource`. That is the §B3.1 guarantee expressed as a type: the
+    citation resolves from Index A, and this protocol gives no one a way to say
+    otherwise, whatever Index B contains or does.
+    """
+
+    def retrieve(
+        self, request: GroundingRequest, queries: tuple[RetrievalQuery, ...] = ()
+    ) -> list[GroundingMaterial]: ...
+
+
 class RenderService:
     def __init__(
         self,
@@ -51,6 +70,7 @@ class RenderService:
         citations: CitationResolver | None = None,
         retriever: SourceRetriever | None = None,
         review: ApprovedCandidateSource | None = None,
+        grounding: GroundingSource | None = None,
     ) -> None:
         self._content = content_provider
         self._pdf = pdf_renderer
@@ -69,6 +89,10 @@ class RenderService:
         # above is on; None means "no approvals reachable", which the gate treats
         # exactly like no approval existing.
         self._review = review
+        # Index B (Addendum B §B3.1). Supporting material only, and optional in
+        # every sense: unwired, empty, wrong or raising, it changes no citation,
+        # no level and no route. See `_grounding`.
+        self._grounding = grounding
 
     def _citations(
         self, request: ReportRenderRequestDTO, content: ClinicalContentDTO
@@ -126,6 +150,50 @@ class RenderService:
             logger.warning("clinical-source retrieval failed; rendering without citations")
             return []
 
+    def _grounding_material(
+        self,
+        request: ReportRenderRequestDTO,
+        content: ClinicalContentDTO,
+        cited: list[RetrievedSource],
+    ) -> list[GroundingMaterial]:
+        """Supporting material from Index B (Addendum B §B3.1, Checkpoint 16.4).
+
+        Called AFTER `_citations` and given its result, which is the ordering that
+        makes §B3.1 true: Index A decides the citation, and Index B is then asked
+        for enrichment scoped to the sources Index A already named. Index B
+        follows the citation; it never has a chance to influence it.
+
+        Scoped to what the deterministic result activated and nothing else — the
+        routed modules, the fired rules, and the SRC entries those rules cited.
+        Every failure mode ends in an empty list, because §B3.1 says a missing or
+        empty enrichment "degrades the richness of the explanation and nothing
+        else".
+        """
+        if request.role != "professional" or self._grounding is None:
+            return []
+
+        modules_by_id = {module.id: module for module in content.modules}
+        queries = tuple(
+            RetrievalQuery(module_id=route, text=modules_by_id[route].name)
+            for route in request.routes
+            if route in modules_by_id
+        )
+        try:
+            return list(
+                self._grounding.retrieve(
+                    GroundingRequest(
+                        locale=request.locale,
+                        module_ids=tuple(request.routes),
+                        rule_ids=tuple(request.triggered_rules),
+                        source_ids=tuple(source.source_id for source in cited),
+                    ),
+                    queries,
+                )
+            )
+        except Exception:
+            logger.warning("corpus grounding lookup failed; rendering without supporting material")
+            return []
+
     def _finalize_html(self, html: str, report_id: str) -> str:
         """The one seam where AI rewriting could ever enter the pipeline (§15).
 
@@ -159,7 +227,12 @@ class RenderService:
     def render(self, request: ReportRenderRequestDTO) -> ReportRefDTO:
         content = self._content.get_content()
         citations = self._citations(request, content)
-        rendered = render_html(request, content, citations=citations)
+        rendered = render_html(
+            request,
+            content,
+            citations=citations,
+            grounding=self._grounding_material(request, content, citations),
+        )
         # Minted before finalizing so the AI gate can ask the review queue about
         # THIS report. Nothing is stored under it until the gate has allowed the
         # render to proceed.

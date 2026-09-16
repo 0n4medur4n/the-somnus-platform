@@ -269,6 +269,18 @@ def publish_document(
             # here, on purpose: one rule, one place, used by publish and by the
             # embedding boundary alike.
             version = repository.publish(document_id, by=actor, changelog=body.changelog)
+            # Checkpoint 16.4: publishing is what triggers indexing, and this is
+            # the only place the two are connected. It runs inside the same
+            # transaction, so a provider failure rolls the publish back and
+            # leaves a draft -- never a published document that is silently
+            # absent from retrieval (§B2a.1's all-or-nothing, applied to Index B).
+            #
+            # `None` when no embedding key is configured. Publishing still
+            # publishes; the document carries no vectors and §B3.1 already says
+            # what that costs: richness of an explanation, never a citation.
+            indexer = getattr(request.app.state, "corpus_indexer", None)
+            if indexer is not None:
+                indexer.index(repository, document_id)
         except (CorpusStateError, RightsError) as error:
             raise _refuse(error) from error
         session.commit()
