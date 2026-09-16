@@ -59,9 +59,7 @@ def upgrade() -> None:
         sa.Column("citations", sa.Text(), nullable=False),
         # JSON array of the Index B document ids the report rendered.
         sa.Column("document_ids", sa.Text(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
     )
 
 
