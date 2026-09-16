@@ -16,7 +16,7 @@ one database must never require touching another.
 | `somnus_consent` | Consent module | P1 (legal gate) |
 | `somnus_morpheo` | morpheo-service | P1 (assessment core) |
 | `somnus_reporting` | report-service | P2 |
-| `somnus_content` | content | P2 (re-seedable from artifacts) |
+| `somnus_content` | report-service (isolated corpus module) | **P1 from Phase 16** (admin-authored; NOT re-derivable) |
 | `somnus_notifications` | Notification module | P3 |
 | `somnus_audit` | Audit module | P2 (append-only, retained) |
 | GCS report bucket | report-service | P2 |
@@ -30,9 +30,13 @@ one database must never require touching another.
   cluster/branch**; you never overwrite the live cluster in place.
 - **Cloud Storage** — report bucket has **object versioning** enabled and is in
   `europe-west3`. Deletes/overwrites are recoverable within the versioning window.
-- **Content is re-seedable** — `somnus_content` is derived from the checked-in
-  clinical artifacts via Alembic seed migrations, so it has a second recovery
-  path independent of backups.
+- **Content is NO LONGER re-seedable.** This said `somnus_content` was derived
+  from the checked-in clinical artifacts and so had a recovery path independent of
+  backups. Addendum B Phase 16 ends that: the reference corpus is authored by a
+  `platform_super_admin` in the admin console at runtime (§B1), and nothing in the
+  repository can reproduce it. A restore is the only way back, which is why the
+  table above now rates it P1 rather than P2. The clinical sources it sits beside
+  (`somnus_reporting`) remain artifact-derived and re-indexable.
 
 All connections are TLS. Backups inherit the cluster's EU region.
 

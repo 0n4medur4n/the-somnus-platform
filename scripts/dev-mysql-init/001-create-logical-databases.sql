@@ -14,3 +14,9 @@ CREATE DATABASE IF NOT EXISTS somnus_morpheo
 
 CREATE DATABASE IF NOT EXISTS somnus_consent
   CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
+-- The reference corpus, owned by the report service's isolated corpus module
+-- (Addendum B Phase 16 / ADR 0010). A second logical database for the same
+-- deployable, with its own Alembic history (alembic_content.ini).
+CREATE DATABASE IF NOT EXISTS somnus_content
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;

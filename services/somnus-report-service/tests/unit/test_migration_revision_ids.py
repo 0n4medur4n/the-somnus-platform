@@ -16,24 +16,33 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-VERSIONS = Path(__file__).resolve().parents[2] / "migrations" / "versions"
+SERVICE = Path(__file__).resolve().parents[2]
+# Both Alembic histories: the report service's own (`somnus_reporting`) and the
+# corpus module's (`somnus_content`, Checkpoint 16.1). A guard that knew about
+# only one would let the other reintroduce exactly this bug.
+VERSION_DIRS = (SERVICE / "migrations" / "versions", SERVICE / "migrations_content" / "versions")
 ALEMBIC_VERSION_NUM_LENGTH = 32
 _REVISION = re.compile(r'^revision: str = "([^"]+)"', re.MULTILINE)
 
 
 def _revision_ids() -> dict[str, str]:
     found: dict[str, str] = {}
-    for path in sorted(VERSIONS.glob("*.py")):
-        match = _REVISION.search(path.read_text(encoding="utf-8"))
-        if match:
-            found[path.name] = match.group(1)
+    for directory in VERSION_DIRS:
+        for path in sorted(directory.glob("*.py")):
+            match = _REVISION.search(path.read_text(encoding="utf-8"))
+            if match:
+                found[f"{directory.parent.name}/{path.name}"] = match.group(1)
     return found
 
 
 def test_there_are_migrations_to_check() -> None:
     # A pattern that silently stopped matching would make the test below pass
     # by checking nothing.
-    assert len(_revision_ids()) >= 3
+    found = _revision_ids()
+    assert len(found) >= 5
+    # And both histories are actually being read, not just the first.
+    assert any(name.startswith("migrations/") for name in found)
+    assert any(name.startswith("migrations_content/") for name in found)
 
 
 def test_every_revision_id_fits_alembic_version_num() -> None:

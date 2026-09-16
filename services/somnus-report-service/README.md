@@ -116,6 +116,30 @@ nunca automático. Hasta 16.0 `SourceIndexer` no tenía ningún punto de entrada
 Procedimiento completo, requisitos y confirmación en
 `docs/runbooks/deploy-dev.md`, sección *Indexing the clinical-source corpus*.
 
+## Corpus de referencia — módulo aislado (Checkpoint 16.1)
+
+`src/report/corpus/` es un **módulo aislado** (ADR 0010) dentro de este servicio:
+posee la base lógica `somnus_content`, con su propio engine, su propia base
+declarativa y su **propio historial de Alembic** (`alembic_content.ini` +
+`migrations_content/`, variable `CONTENT_DATABASE_URL`). Nada fuera del módulo
+toca esas tablas; se entra por `CorpusRepository`.
+
+Vive aquí y no en un servicio nuevo porque §B3.1 hace que el render mezcle el
+Índice A (`somnus_reporting`) con el Índice B (este corpus), y un servicio no lee
+la base de otro (§7 / ADR 0003): lo posee quien lo lee. El mapa de desplegables no
+cambia.
+
+- **Añadir y retirar, nunca borrar.** No existe método de borrado. Retirar
+  conserva la fila y estampa `corpus_version_retired`, que es lo que permite
+  responder qué documentos estaban vivos en una versión anterior.
+- **`corpus_version` sube en cada publicación y en cada retirada**, siempre con
+  changelog; un borrador no crea versión.
+- Sin consola (16.3), sin puerta de derechos (16.2) y sin embeddings (16.4).
+
+```bash
+uv run alembic -c alembic_content.ini upgrade head
+```
+
 ## Layout
 
 `src/report/{main, api, infrastructure, schemas, settings}` — the same shell as
