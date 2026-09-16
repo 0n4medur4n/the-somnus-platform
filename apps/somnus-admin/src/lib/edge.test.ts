@@ -56,6 +56,32 @@ describe("edge (admin console surface)", () => {
           targetUserId: "018f0000-0000-7000-8000-0000000000ff",
           roleKey: "support_agent",
         }),
+      () => edge.contentReviewQueue(),
+      () => edge.decideContentReview("i1", { decision: "approve", reason: "why" }),
+      () => edge.statistics(),
+      () => edge.auditQuery({ limit: 10 }),
+      () => edge.auditExport({ limit: 10 }),
+      () =>
+        edge.breakGlassReveal({
+          subjectUserId: "018f0000-0000-7000-8000-0000000000fe",
+          category: "safety",
+          justification: "Safeguarding escalation raised by the on-call clinician this morning.",
+        }),
+      // Checkpoint 16.3 -- the reference corpus.
+      () => edge.searchCorpus(),
+      () => edge.corpusDocument("doc-1"),
+      () =>
+        edge.createCorpusDocument({
+          title: "Higiene del sue\u00f1o",
+          citation: "The Somnus (2026).",
+          sourceType: "guideline",
+          locale: "es",
+          scopes: [{ scopeType: "module", scopeKey: "INS" }],
+        }),
+      () => edge.editCorpusDocument("doc-1", { title: "Revisada" }),
+      () => edge.publishCorpusDocument("doc-1", { changelog: "Alta." }),
+      () => edge.retireCorpusDocument("doc-1", { reason: "Obsoleta.", changelog: "Retirada." }),
+      () => edge.corpusSources(),
       () => edge.adminMe(),
       () => edge.createSession("token"),
       () => edge.logout(),
@@ -72,5 +98,26 @@ describe("edge (admin console surface)", () => {
       const allowed = path.startsWith("/admin/v1/") || SHARED_SESSION_ROUTES.includes(path);
       expect(allowed, `${path} is outside the console's surface`).toBe(true);
     }
+  });
+
+  /**
+   * Addendum B §B3: append and retire, never delete.
+   *
+   * Asserted on the client rather than only on the screen, because a screen can
+   * be changed by anyone with a text editor. There is no method here to call,
+   * and `api.del` is reached by exactly one thing -- signing out.
+   */
+  it("has no way to delete a corpus document", () => {
+    const methods = Object.keys(edge);
+    expect(methods.filter((name) => /delete|remove|purge/i.test(name))).toEqual([]);
+    expect(methods).toContain("retireCorpusDocument");
+
+    for (const spy of [get, post, patch, del]) spy.mockClear();
+    void edge.retireCorpusDocument("doc-1", { reason: "Obsoleta.", changelog: "Retirada." });
+    expect(del).not.toHaveBeenCalled();
+    expect(post).toHaveBeenCalledWith("/admin/v1/corpus/documents/doc-1/retire", {
+      reason: "Obsoleta.",
+      changelog: "Retirada.",
+    });
   });
 });

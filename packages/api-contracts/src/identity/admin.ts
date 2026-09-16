@@ -50,6 +50,15 @@ export const ADMIN_CAPABILITIES = [
   "admin_break_glass",
   /** System health (service status, queue depths, error rates). */
   "admin_system_health",
+  /**
+   * Reference-corpus management (Addendum B §B5 Checkpoint 16.3).
+   *
+   * `platform_super_admin` ALONE, decided in §B6 item 4 with no separate review
+   * gate: the single-role restriction is the control. Deliberately the narrowest
+   * row in the matrix apart from internal role assignment, because a published
+   * corpus document is what an AI wording step grounds in.
+   */
+  "admin_corpus_manage",
 ] as const;
 
 export const AdminCapabilitySchema = z.enum(ADMIN_CAPABILITIES);

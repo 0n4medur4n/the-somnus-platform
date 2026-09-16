@@ -2,6 +2,7 @@ import type { ExecutionContext } from "@nestjs/common";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { Test } from "@nestjs/testing";
 import {
+  ADMIN_CAPABILITIES,
   type EventEnvelope,
   EventEnvelopeSchema,
   INTERNAL_ROLE_KEYS,
@@ -19,6 +20,7 @@ import {
 import {
   IDENTITY_CLIENT,
   MORPHEO_CLIENT,
+  REPORT_CLIENT,
 } from "../../src/infrastructure/internal-clients/internal-clients.module.js";
 import { SessionGuard } from "../../src/modules/sessions/session.guard.js";
 import type { SessionRecord } from "../../src/modules/sessions/session.service.js";
@@ -69,7 +71,15 @@ const CAPABILITIES_BY_ROLE: Record<string, string[]> = {
     "admin_break_glass",
     "admin_system_health",
   ],
-  platform_super_admin: ["admin_users_read", "admin_roles_assign", "admin_break_glass"],
+  platform_super_admin: [
+    "admin_users_read",
+    "admin_roles_assign",
+    "admin_break_glass",
+    // Addendum B §B6 item 4: corpus management is this role's alone. There is
+    // no separate clinical-review gate on it, which is exactly why no other role
+    // may reach it.
+    "admin_corpus_manage",
+  ],
 };
 
 describe("admin console gate (/admin/v1/*)", () => {
@@ -79,6 +89,12 @@ describe("admin console gate (/admin/v1/*)", () => {
   let published: EventEnvelope[];
   /** The roles identity will report for the acting session. */
   let actorRoles: RoleKey[];
+  /**
+   * Capabilities to report regardless of role. Used only by the "every
+   * capability but this one" test, which has to describe an actor the A2.2
+   * matrix cannot produce.
+   */
+  let capabilityOverride: string[] | null;
   /** Every `/admin/v1/*` route Nest actually registered. */
   const adminRoutes: Array<{ method: string; url: string }> = [];
 
@@ -86,7 +102,8 @@ describe("admin console gate (/admin/v1/*)", () => {
     const fake = makeFakeIdentityClient((req) => {
       if (req.path === "/internal/v1/authorization/admin-context") {
         const internal = actorRoles.filter((r) => INTERNAL_ROLE_KEYS.has(r));
-        const capabilities = internal.flatMap((r) => CAPABILITIES_BY_ROLE[r] ?? []);
+        const capabilities =
+          capabilityOverride ?? internal.flatMap((r) => CAPABILITIES_BY_ROLE[r] ?? []);
         return {
           status: 200,
           body: { roleKeys: internal, capabilities: [...new Set(capabilities)] },
@@ -95,7 +112,10 @@ describe("admin console gate (/admin/v1/*)", () => {
       if (req.path === "/internal/v1/authorization/admin-check") {
         const { capability } = JSON.parse(req.body ?? "{}") as { capability: string };
         const internal = actorRoles.filter((r) => INTERNAL_ROLE_KEYS.has(r));
-        const allowed = internal.some((r) => (CAPABILITIES_BY_ROLE[r] ?? []).includes(capability));
+        const allowed =
+          capabilityOverride !== null
+            ? internal.length > 0 && capabilityOverride.includes(capability)
+            : internal.some((r) => (CAPABILITIES_BY_ROLE[r] ?? []).includes(capability));
         return {
           status: 200,
           body: {
@@ -171,11 +191,21 @@ describe("admin console gate (/admin/v1/*)", () => {
       post: async () => ({ status: 200, body: { snapshots: [] } }),
     };
 
+    // The review queue (15.3) and the reference corpus (16.3) both live behind
+    // the report service. Stubbed for the same reason morpheo is: the gate is
+    // what is under test, so a 4xx here can only have come from the guard.
+    const reportStub = {
+      get: async () => ({ status: 200, body: {} }),
+      post: async () => ({ status: 200, body: {} }),
+    };
+
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(IDENTITY_CLIENT)
       .useValue(fake.client)
       .overrideProvider(MORPHEO_CLIENT)
       .useValue(morpheoStub)
+      .overrideProvider(REPORT_CLIENT)
+      .useValue(reportStub)
       .overrideProvider(EDGE_EVENT_PUBLISHER)
       .useValue(capturingPublisher)
       .overrideGuard(SessionGuard)
@@ -213,6 +243,7 @@ describe("admin console gate (/admin/v1/*)", () => {
     requests.length = 0;
     published.length = 0;
     actorRoles = [];
+    capabilityOverride = null;
   });
 
   it("registered an admin route table to test against", () => {
@@ -386,6 +417,45 @@ describe("admin console gate (/admin/v1/*)", () => {
         url: "/admin/v1/break-glass/reveal",
         capability: "admin_break_glass",
       },
+      // Addendum B Checkpoint 16.3 -- reference-corpus management. §B6 item 4
+      // gives admin_corpus_manage to platform_super_admin alone, so the
+      // parametrized run below refuses clinical_governance_reviewer and
+      // platform_admin on every one of these, reads included.
+      {
+        method: "POST",
+        url: "/admin/v1/corpus/documents/search",
+        capability: "admin_corpus_manage",
+      },
+      {
+        method: "GET",
+        url: "/admin/v1/corpus/documents/doc1",
+        capability: "admin_corpus_manage",
+      },
+      {
+        method: "POST",
+        url: "/admin/v1/corpus/documents",
+        capability: "admin_corpus_manage",
+      },
+      {
+        method: "POST",
+        url: "/admin/v1/corpus/documents/doc1/edit",
+        capability: "admin_corpus_manage",
+      },
+      {
+        method: "POST",
+        url: "/admin/v1/corpus/documents/doc1/publish",
+        capability: "admin_corpus_manage",
+      },
+      {
+        method: "POST",
+        url: "/admin/v1/corpus/documents/doc1/retire",
+        capability: "admin_corpus_manage",
+      },
+      {
+        method: "GET",
+        url: "/admin/v1/corpus/sources",
+        capability: "admin_corpus_manage",
+      },
     ];
 
     /** Bodies that satisfy each route's contract, so a 4xx can only be the gate. */
@@ -408,11 +478,25 @@ describe("admin console gate (/admin/v1/*)", () => {
         category: "safety",
         justification: "Safeguarding escalation raised by the on-call clinician this morning.",
       },
+      "POST /admin/v1/corpus/documents/search": { limit: 5 },
+      "POST /admin/v1/corpus/documents": {
+        title: "Higiene del sueño",
+        citation: "The Somnus (2026).",
+        sourceType: "guideline",
+        locale: "es",
+        scopes: [{ scopeType: "module", scopeKey: "INS" }],
+      },
+      "POST /admin/v1/corpus/documents/doc1/edit": { title: "Higiene del sueño (rev.)" },
+      "POST /admin/v1/corpus/documents/doc1/publish": { changelog: "Alta de la guía." },
+      "POST /admin/v1/corpus/documents/doc1/retire": {
+        reason: "Sustituida por la edición de 2027.",
+        changelog: "Retirada.",
+      },
     };
 
     it("covers every route the router actually registered", () => {
       const declared = ROUTE_CAPABILITY.map(
-        (r) => `${r.method} ${r.url.replace(/\/(u1|o1|c1|d1)/g, "/:p")}`,
+        (r) => `${r.method} ${r.url.replace(/\/(u1|o1|c1|d1|doc1)/g, "/:p")}`,
       );
       const registered = adminRoutes.map(
         (r) => `${r.method} ${r.url.replace(/:[A-Za-z]+/g, ":p")}`,
@@ -451,6 +535,69 @@ describe("admin console gate (/admin/v1/*)", () => {
         });
       });
     }
+
+    /**
+     * Addendum B Checkpoint 16.3: "an actor with all capabilities but this one is
+     * refused".
+     *
+     * The parametrized run above shows that no OTHER role reaches the corpus, but
+     * each of those roles is missing several capabilities at once, so it cannot
+     * show WHICH absence did the refusing. This describes an actor holding every
+     * admin capability the platform defines except `admin_corpus_manage` -- and
+     * still refused on all seven routes.
+     */
+    it("an actor holding every capability but admin_corpus_manage is refused", async () => {
+      actorRoles = ["platform_super_admin"];
+      capabilityOverride = ADMIN_CAPABILITIES.filter((c) => c !== "admin_corpus_manage");
+      expect(capabilityOverride).not.toContain("admin_corpus_manage");
+      expect(capabilityOverride.length).toBe(ADMIN_CAPABILITIES.length - 1);
+
+      const corpusRoutes = ROUTE_CAPABILITY.filter((r) => r.capability === "admin_corpus_manage");
+      expect(corpusRoutes.length).toBeGreaterThan(0);
+
+      for (const route of corpusRoutes) {
+        const payload = BODIES[`${route.method} ${route.url}`];
+        const res = await server.inject({
+          method: route.method,
+          url: route.url,
+          ...(payload !== undefined
+            ? { payload: JSON.stringify(payload), headers: { "content-type": "application/json" } }
+            : {}),
+        });
+        expect(res.statusCode, `${route.method} ${route.url}`).toBe(403);
+        expect(res.json()).toMatchObject({
+          error: { details: { reasonCode: "DENIED_CAPABILITY_NOT_GRANTED" } },
+        });
+      }
+
+      // The same actor, given that one capability back, gets through -- so what
+      // refused them was the missing capability and nothing else.
+      capabilityOverride = [...ADMIN_CAPABILITIES];
+      const allowed = await server.inject({ method: "GET", url: "/admin/v1/corpus/sources" });
+      expect(allowed.statusCode).not.toBe(403);
+    });
+
+    /**
+     * §B3: append and retire, never delete. Asserted against the route table
+     * Fastify actually registered, so it stays true for routes added later.
+     */
+    it("exposes a retire route and no delete route at all", () => {
+      const corpus = adminRoutes.filter((r) => r.url.startsWith("/admin/v1/corpus"));
+      expect(corpus.length).toBeGreaterThan(0);
+      expect(corpus.some((r) => r.url.endsWith("/retire"))).toBe(true);
+
+      for (const route of corpus) {
+        expect(route.method, `${route.method} ${route.url}`).not.toBe("DELETE");
+        expect(route.url.toLowerCase()).not.toContain("delete");
+      }
+    });
+
+    it("cannot be asked to delete a corpus document", async () => {
+      actorRoles = ["platform_super_admin"];
+      const res = await server.inject({ method: "DELETE", url: "/admin/v1/corpus/documents/doc1" });
+      // Not hidden by the UI, not refused by the guard: not routed at all.
+      expect(res.statusCode).toBe(404);
+    });
 
     it("only platform_super_admin may reach the role-assignment route", async () => {
       for (const role of INTERNAL_ROLES) {

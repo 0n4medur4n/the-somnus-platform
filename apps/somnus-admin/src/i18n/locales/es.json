@@ -54,7 +54,9 @@
     "admin_audit_read": "Registro de auditoría",
     "admin_consent_read": "Registros de consentimiento",
     "admin_break_glass": "Acceso de emergencia a datos clínicos",
-    "admin_system_health": "Estado del sistema"
+    "admin_system_health": "Estado del sistema",
+    "admin_corpus_manage": "Gestionar el corpus de referencia",
+    "admin_audit_export": "Exportar el registro de auditoría"
   },
   "errors": {
     "required": "Este campo es obligatorio.",
@@ -75,7 +77,9 @@
     "contentReview": "Revisión de contenido IA",
     "statistics": "Estadísticas",
     "audit": "Registro de auditoría",
-    "breakGlass": "Acceso de emergencia"
+    "breakGlass": "Acceso de emergencia",
+    "corpus": "Corpus de referencia",
+    "corpusSources": "Fuentes clínicas"
   },
   "users": {
     "title": "Personas usuarias",
@@ -241,5 +245,114 @@
     "rules": "Reglas activadas",
     "versions": "Flujo {{workflow}} · contenido {{content}}",
     "close": "Cerrar"
+  },
+  "corpus": {
+    "title": "Corpus de referencia",
+    "intro": "Documentos de referencia que el sistema puede citar al explicar un resultado. Nunca cambian el nivel ni la derivación: solo enriquecen la explicación.",
+    "noDeleteNote": "Un documento se añade y se retira, nunca se borra. Retirarlo conserva el registro, que es lo único que permite explicar informes anteriores.",
+    "currentVersion": "Versión actual del corpus: {{version}}",
+    "searchTitle": "Buscar",
+    "queryLabel": "Título o cita",
+    "statusLabel": "Estado",
+    "anyStatus": "Cualquier estado",
+    "anyScope": "Cualquier ámbito",
+    "scopeTypeLabel": "Tipo de ámbito",
+    "scopeKeyLabel": "Clave del ámbito",
+    "search": "Buscar",
+    "listTitle": "Documentos",
+    "empty": "No hay documentos que coincidan.",
+    "createTitle": "Nuevo documento (borrador)",
+    "editTitle": "Editar borrador",
+    "titleLabel": "Título",
+    "citationLabel": "Cita",
+    "citationHint": "Cómo se citará este documento en un informe.",
+    "sourceTypeLabel": "Tipo de fuente",
+    "localeLabel": "Idioma",
+    "localeHint": "La recuperación respeta el idioma: un documento solo se usa en el suyo.",
+    "textLabel": "Texto aprobado",
+    "textHint": "Se divide en fragmentos al guardarlo. Con «solo cita» hay un límite de longitud y el texto se rechaza entero si lo supera, nunca se recorta.",
+    "scopesTitle": "Ámbito",
+    "scopesIntro": "Dónde puede usarse este documento: un módulo, una regla de seguridad, una fuente clínica o, excepcionalmente, todo.",
+    "scopeLocked": "Ámbito fijado: fuente clínica {{scope}}.",
+    "addScope": "Añadir ámbito",
+    "removeScope": "Quitar",
+    "generalScopeNote": "«General» debería ser raro: un documento sin ámbito se recupera para todo.",
+    "rightsTitle": "Derechos",
+    "rightsIntro": "Sin una declaración de derechos con su evidencia, el documento no se publica ni se indexa. Lo decide el servicio, no esta pantalla.",
+    "rightsLabel": "Situación de derechos",
+    "rightsPlaceholder": "Selecciona una situación",
+    "rightsUnset": "Sin declarar",
+    "chunkCountLabel": "Fragmentos",
+    "scopesLabel": "Ámbitos",
+    "versionAddedLabel": "Alta en versión",
+    "versionRetiredLabel": "Retirado en versión",
+    "retiredReason": "Motivo de la retirada: {{reason}}",
+    "changelogLabel": "Nota de cambios",
+    "changelogHint": "Queda en el historial del corpus. Mínimo 3 caracteres.",
+    "retireReasonLabel": "Motivo de la retirada",
+    "evidenceHint": "Se guarda como evidencia de la declaración.",
+    "create": "Crear borrador",
+    "save": "Guardar borrador",
+    "cancelEdit": "Cancelar",
+    "edit": "Editar",
+    "publish": "Publicar",
+    "retire": "Retirar",
+    "created": "Borrador creado.",
+    "saved": "Borrador guardado.",
+    "published": "Documento publicado.",
+    "retired": "Documento retirado.",
+    "status": {
+      "draft": "Borrador",
+      "published": "Publicado",
+      "retired": "Retirado"
+    },
+    "scopeType": {
+      "module": "Módulo",
+      "safety_rule": "Regla de seguridad",
+      "clinical_source": "Fuente clínica",
+      "general": "General"
+    },
+    "scopeKeyHint": {
+      "module": "Por ejemplo, INS.",
+      "safety_rule": "Por ejemplo, SAFE-006.",
+      "clinical_source": "Por ejemplo, SRC-05.",
+      "general": "Sin clave: se aplica a todo."
+    },
+    "rights": {
+      "own_document": "Documento propio",
+      "open_access": "Acceso abierto",
+      "licensed": "Con licencia",
+      "citation_only": "Solo cita"
+    },
+    "rightsMeaning": {
+      "own_document": "Escrito por The Somnus. No requiere evidencia adicional.",
+      "open_access": "Publicado con una licencia abierta. Indica la licencia y el enlace.",
+      "licensed": "Cubierto por una suscripción o compra institucional. Indica la licencia y quién la posee.",
+      "citation_only": "Solo la cita y un resumen breve. La plataforma no guarda el texto completo."
+    },
+    "rightsWarning": {
+      "licensed": "Ojo: declarar «con licencia» afirma que existe una suscripción o compra real que cubre este uso. Si no la hay, el texto acabará enviado a un proveedor externo sin derecho a ello.",
+      "citation_only": "Ojo: «solo cita» afirma que aquí no hay texto completo. Hay un límite de longitud y un texto más largo se rechaza entero, no se recorta: si necesitas el artículo completo, declara los derechos que lo permitan."
+    },
+    "evidence": {
+      "licence": "Licencia",
+      "url": "Enlace",
+      "holder": "Titular de la licencia"
+    }
+  },
+  "corpusSources": {
+    "title": "Fuentes clínicas",
+    "intro": "Las quince fuentes clínicas aprobadas, con lo que la consola puede añadir debajo de cada una.",
+    "artifactNote": "La cita, el enlace, el uso y las reglas que citan cada fuente pertenecen al artefacto clínico (morpheo_workflows_v1.json) y se muestran aquí solo para leerlos. No hay ninguna ruta de la consola capaz de escribirlos.",
+    "contentVersion": "Versión de contenido {{version}}",
+    "citation": "Cita",
+    "url": "Enlace",
+    "use": "Uso",
+    "citedByRules": "Reglas que la citan",
+    "citedByNone": "Ninguna regla la cita.",
+    "readOnlyNote": "Campos del artefacto clínico: solo lectura.",
+    "enrichmentsTitle": "Documentos añadidos por la consola",
+    "noEnrichments": "Todavía no hay documentos añadidos para esta fuente.",
+    "addEnrichment": "Añadir documento a esta fuente"
   }
 }

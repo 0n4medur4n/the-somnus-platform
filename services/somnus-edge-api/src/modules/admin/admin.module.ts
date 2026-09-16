@@ -7,6 +7,8 @@ import { AdminBreakGlassService } from "./admin-break-glass.service.js";
 import { AdminCapabilityGuard } from "./admin-capability.guard.js";
 import { AdminContentReviewController } from "./admin-content-review.controller.js";
 import { AdminContentReviewService } from "./admin-content-review.service.js";
+import { AdminCorpusController } from "./admin-corpus.controller.js";
+import { AdminCorpusService } from "./admin-corpus.service.js";
 import { AdminInsightsController } from "./admin-insights.controller.js";
 import { AdminInsightsService } from "./admin-insights.service.js";
 import { AdminMeController } from "./admin-me.controller.js";
@@ -28,6 +30,7 @@ import { AdminOperationsController } from "./admin-operations.controller.js";
     AdminContentReviewController,
     AdminInsightsController,
     AdminBreakGlassController,
+    AdminCorpusController,
   ],
   providers: [
     AdminProxyService,
@@ -38,6 +41,10 @@ import { AdminOperationsController } from "./admin-operations.controller.js";
     // Checkpoint 15.5: assessment results are morpheo's data (§7), so this
     // proxy targets morpheo rather than identity or the worker.
     AdminBreakGlassService,
+    // Checkpoint 16.3: the reference corpus lives in `somnus_content`, owned by
+    // the report service's isolated corpus module (ADR 0010), so this proxy
+    // targets the report service too.
+    AdminCorpusService,
     AdminCapabilityGuard,
     AdminAuditInterceptor,
   ],

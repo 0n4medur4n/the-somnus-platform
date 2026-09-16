@@ -17,6 +17,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import sessionmaker
 
 from report.api.content_review import router as content_review_router
+from report.api.corpus_admin import router as corpus_admin_router
 from report.api.health import router as health_router
 from report.api.reports import router as reports_router
 from report.api.version import router as version_router
@@ -27,6 +28,7 @@ from report.application.retrieval import (
     SourceRetriever,
     VectorStoreRetriever,
 )
+from report.corpus.db import create_corpus_engine
 from report.infrastructure.correlation import CorrelationIdMiddleware
 from report.infrastructure.db import create_engine_from_url
 from report.infrastructure.errors import register_exception_handlers
@@ -34,6 +36,7 @@ from report.infrastructure.llm.openai_embedding_adapter import OpenAiEmbeddingAd
 from report.infrastructure.logging import configure_logging
 from report.infrastructure.morpheo_client import MorpheoContentClient
 from report.infrastructure.pdf import WeasyPrintPdfRenderer
+from report.infrastructure.sources_client import MorpheoSourcesClient
 from report.infrastructure.storage import LocalStorageBackend
 from report.repositories.content_review_repository import ContentReviewRepositorySql
 from report.repositories.sources_repository import SourcesRepository
@@ -66,6 +69,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.engine = engine
     session_factory = sessionmaker(bind=engine, expire_on_commit=False)
     app.state.session_factory = session_factory
+
+    # The reference corpus (Addendum B §B3) is a SECOND logical database with its
+    # own engine, user and migration history (§3.9 / §8). Lazy for the same reason
+    # as the one above: the service must boot without either database reachable.
+    corpus_engine = create_corpus_engine(settings.content_database_url)
+    app.state.corpus_engine = corpus_engine
+    app.state.corpus_session_factory = sessionmaker(bind=corpus_engine, expire_on_commit=False)
+    # §B3.1's read-only half: the clinical artifact's own fields, fetched from the
+    # service that owns them rather than mirrored here, so the console has nothing
+    # local it could write. Constructed eagerly, connects on first call only.
+    app.state.corpus_sources_provider = MorpheoSourcesClient(settings.morpheo_base_url)
 
     # Clinical grounding (§3.6b / §14b), explanation-only. It attaches citations to
     # the professional output and can never affect the level or routing (guarded in
@@ -135,6 +149,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(version_router)
     app.include_router(reports_router)
     app.include_router(content_review_router)
+    app.include_router(corpus_admin_router)
 
     return app
 

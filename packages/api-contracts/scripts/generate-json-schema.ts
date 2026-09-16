@@ -14,10 +14,12 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { MORPHEO_CONTRACT_SCHEMAS } from "../src/morpheo/index.js";
 import { REPORT_CONTRACT_SCHEMAS } from "../src/report/index.js";
+import { CORPUS_CONTRACT_SCHEMAS } from "../src/reporting/index.js";
 
 const GROUPS: Record<string, Record<string, z.ZodType>> = {
   morpheo: MORPHEO_CONTRACT_SCHEMAS,
   report: REPORT_CONTRACT_SCHEMAS,
+  corpus: CORPUS_CONTRACT_SCHEMAS,
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
