@@ -21,16 +21,50 @@ from report.application.content_review import (
     ReviewDecisionError,
 )
 from report.repositories.content_review_repository import ContentReviewRepositorySql
+from report.repositories.provenance_repository import ProvenanceRepository
 from report.schemas.content_review import (
     ContentReviewDecisionDTO,
     ContentReviewItemDTO,
     ContentReviewQueueDTO,
+    ProvenanceCitationDTO,
+    ProvenanceDocumentDTO,
+    ReportProvenanceDTO,
 )
+from report.schemas.provenance import ResolvedProvenance
 
 router = APIRouter(prefix="/internal/v1/admin/content-review", tags=["content-review"])
 
 
-def _to_dto(item: ContentReviewItem) -> ContentReviewItemDTO:
+def _provenance_dto(resolved: ResolvedProvenance) -> ReportProvenanceDTO:
+    return ReportProvenanceDTO(
+        corpus_version=resolved.corpus_version,
+        content_version=resolved.content_version,
+        citations=[
+            ProvenanceCitationDTO(
+                source_id=citation.source_id,
+                citation=citation.citation,
+                url=citation.url,
+                resolved_by=citation.resolved_by,
+            )
+            for citation in resolved.citations
+        ],
+        documents=[
+            ProvenanceDocumentDTO(
+                document_id=document.document_id,
+                title=document.title,
+                citation=document.citation,
+                locale=document.locale,
+                corpus_version_added=document.corpus_version_added,
+                retired_since=document.retired_since,
+            )
+            for document in resolved.documents
+        ],
+    )
+
+
+def _to_dto(
+    item: ContentReviewItem, provenance: ReportProvenanceDTO | None = None
+) -> ContentReviewItemDTO:
     return ContentReviewItemDTO(
         item_id=item.item_id,
         report_id=item.report_id,
@@ -45,6 +79,7 @@ def _to_dto(item: ContentReviewItem) -> ContentReviewItemDTO:
         decided_at=item.decided_at,
         reason=item.reason,
         created_at=item.created_at,
+        provenance=provenance,
     )
 
 
@@ -54,11 +89,34 @@ def _to_dto(item: ContentReviewItem) -> ContentReviewItemDTO:
     summary="The pending AI content review queue.",
 )
 def list_queue(request: Request, limit: int = 50) -> ContentReviewQueueDTO:
-    """Only `pending_review` items. Decided ones are not a queue."""
+    """Only `pending_review` items. Decided ones are not a queue.
+
+    Each item carries the corpus provenance of the report its candidate
+    paraphrases (Addendum B §B5 Checkpoint 16.5), so a reviewer judging wording
+    can see what the deterministic result was grounded in rather than having to
+    take the candidate's word for it.
+
+    Provenance never fails the queue. It is read in one query for the whole page,
+    resolved through the corpus module, and any item without a record — or a
+    corpus that cannot be reached at all — simply carries none. A reviewer with
+    less context can still do the job; a reviewer staring at an error screen
+    cannot.
+    """
     session_factory = request.app.state.session_factory
+    resolver = getattr(request.app.state, "provenance_resolver", None)
     with session_factory() as session:
         service = ContentReviewService(ContentReviewRepositorySql(session))
-        return ContentReviewQueueDTO(items=[_to_dto(item) for item in service.pending(limit=limit)])
+        items = service.pending(limit=limit)
+        records = ProvenanceRepository(session).get_many([item.report_id for item in items])
+
+    provenance: dict[str, ReportProvenanceDTO] = {}
+    if resolver is not None:
+        for report_id, record in records.items():
+            provenance[report_id] = _provenance_dto(resolver.resolve(record))
+
+    return ContentReviewQueueDTO(
+        items=[_to_dto(item, provenance.get(item.report_id)) for item in items]
+    )
 
 
 @router.post(

@@ -59,6 +59,26 @@ class GroundingSource(Protocol):
     ) -> list[GroundingMaterial]: ...
 
 
+class ProvenanceSink(Protocol):
+    """Where a report's corpus provenance is stamped (§B5 Checkpoint 16.5).
+
+    One method, and it only writes. The render pipeline has no way to read a
+    provenance record back, let alone revise one: provenance is written once, at
+    generation, and a pipeline that could rewrite it would make "what grounded
+    this report" a question with more than one answer.
+    """
+
+    def record(
+        self,
+        report_id: str,
+        *,
+        content_version: str,
+        locale: str,
+        citations: list[RetrievedSource],
+        grounding: list[GroundingMaterial],
+    ) -> None: ...
+
+
 class RenderService:
     def __init__(
         self,
@@ -71,6 +91,7 @@ class RenderService:
         retriever: SourceRetriever | None = None,
         review: ApprovedCandidateSource | None = None,
         grounding: GroundingSource | None = None,
+        provenance: ProvenanceSink | None = None,
     ) -> None:
         self._content = content_provider
         self._pdf = pdf_renderer
@@ -93,6 +114,11 @@ class RenderService:
         # every sense: unwired, empty, wrong or raising, it changes no citation,
         # no level and no route. See `_grounding`.
         self._grounding = grounding
+        # Checkpoint 16.5: what grounded this report, stamped as it is generated.
+        # Optional like the rest of the grounding chain -- a report renders
+        # whether or not its provenance could be written, because the report is
+        # the clinical artefact and the provenance is a record about it.
+        self._provenance = provenance
 
     def _citations(
         self, request: ReportRenderRequestDTO, content: ClinicalContentDTO
@@ -194,6 +220,39 @@ class RenderService:
             logger.warning("corpus grounding lookup failed; rendering without supporting material")
             return []
 
+    def _record_provenance(
+        self,
+        report_id: str,
+        request: ReportRenderRequestDTO,
+        citations: list[RetrievedSource],
+        grounding: list[GroundingMaterial],
+    ) -> None:
+        """Stamp what grounded this report (Addendum B §B5 Checkpoint 16.5).
+
+        Recorded after the render rather than before it, so what is stamped is
+        what the report actually carries — the citations rendered into it and the
+        supporting material rendered beside them, not what retrieval happened to
+        return on the way.
+
+        A failure here is logged and swallowed. The report is the thing the
+        clinician reads; the provenance is a record about it, and losing the
+        record must never cost the report. The reverse — a report with no
+        provenance — is visible in the review queue as an absent panel rather
+        than as a wrong one.
+        """
+        if self._provenance is None:
+            return
+        try:
+            self._provenance.record(
+                report_id,
+                content_version=request.content_version,
+                locale=request.locale,
+                citations=citations,
+                grounding=grounding,
+            )
+        except Exception:
+            logger.warning("corpus provenance could not be recorded for this report")
+
     def _finalize_html(self, html: str, report_id: str) -> str:
         """The one seam where AI rewriting could ever enter the pipeline (§15).
 
@@ -227,18 +286,15 @@ class RenderService:
     def render(self, request: ReportRenderRequestDTO) -> ReportRefDTO:
         content = self._content.get_content()
         citations = self._citations(request, content)
-        rendered = render_html(
-            request,
-            content,
-            citations=citations,
-            grounding=self._grounding_material(request, content, citations),
-        )
+        grounding = self._grounding_material(request, content, citations)
+        rendered = render_html(request, content, citations=citations, grounding=grounding)
         # Minted before finalizing so the AI gate can ask the review queue about
         # THIS report. Nothing is stored under it until the gate has allowed the
         # render to proceed.
         report_id = uuid.uuid4().hex
         html = self._finalize_html(rendered.html, report_id)
         pdf_bytes = self._pdf.to_pdf(html)
+        self._record_provenance(report_id, request, citations, grounding)
 
         html_key = f"{report_id}/{request.locale}/report.html"
         pdf_key = f"{report_id}/{request.locale}/report.pdf"

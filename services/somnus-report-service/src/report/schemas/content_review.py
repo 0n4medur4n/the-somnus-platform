@@ -20,6 +20,36 @@ from pydantic import Field
 from report.schemas.base import ContractModel
 
 
+class ProvenanceCitationDTO(ContractModel):
+    source_id: str
+    citation: str
+    url: str
+    resolved_by: str
+
+
+class ProvenanceDocumentDTO(ContractModel):
+    document_id: str
+    title: str
+    citation: str
+    locale: str
+    corpus_version_added: int | None
+    retired_since: bool
+
+
+class ReportProvenanceDTO(ContractModel):
+    """What grounded the report this candidate paraphrases (§B5 Checkpoint 16.5).
+
+    Present on a queue item only when the report recorded one. Absent rather than
+    empty when it did not: a reviewer should be able to tell "nothing grounded
+    this beyond the artifact" apart from "we did not record what did".
+    """
+
+    corpus_version: int
+    content_version: str
+    citations: list[ProvenanceCitationDTO]
+    documents: list[ProvenanceDocumentDTO]
+
+
 class ContentReviewItemDTO(ContractModel):
     item_id: str
     report_id: str
@@ -35,6 +65,8 @@ class ContentReviewItemDTO(ContractModel):
     decided_at: datetime | None = None
     reason: str | None = None
     created_at: datetime
+    # Checkpoint 16.5. Null when the report recorded no provenance.
+    provenance: ReportProvenanceDTO | None = None
 
 
 class ContentReviewQueueDTO(ContractModel):

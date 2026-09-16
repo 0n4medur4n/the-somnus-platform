@@ -8,6 +8,12 @@ export {
   ContentReviewQueueSchema,
   type ContentReviewStatus,
   ContentReviewStatusSchema,
+  type ProvenanceCitation,
+  ProvenanceCitationSchema,
+  type ProvenanceDocument,
+  ProvenanceDocumentSchema,
+  type ReportProvenance,
+  ReportProvenanceSchema,
 } from "./content-review.js";
 export {
   CORPUS_CONTRACT_SCHEMAS,
