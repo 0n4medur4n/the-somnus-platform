@@ -156,7 +156,19 @@
     "reasonHint": "Obligatorio también al aprobar: queda registrado con tu identidad y no se puede modificar después.",
     "consequence": "Aprobar hace que este texto sea elegible para renderizarse. Rechazar lo excluye de forma definitiva.",
     "scannerNote": "Los candidatos con afirmaciones prohibidas no llegan a esta cola: se descartan antes de mostrarse.",
-    "decided": "Decisión registrada."
+    "decided": "Decisión registrada.",
+    "provenanceTitle": "En qué se apoyó este informe",
+    "provenanceIntro": "El material que fundamentó el resultado determinista que este candidato parafrasea. Se registró al generarse el informe y no se modifica después.",
+    "corpusVersion": "Versión del corpus",
+    "contentVersion": "Versión de contenido",
+    "provenanceCitations": "Fuentes clínicas citadas (Índice A)",
+    "provenanceDocuments": "Material de apoyo del corpus (Índice B)",
+    "provenanceNoDocuments": "Sin material de apoyo. El informe se apoyó únicamente en las fuentes clínicas citadas arriba.",
+    "provenanceNoCitations": "Ninguna regla de seguridad citó una fuente en este informe.",
+    "provenanceMissing": "Este informe no registró procedencia del corpus. Se generó antes de que se registrara, o el registro no pudo escribirse.",
+    "provenanceRetired": "retirado desde entonces",
+    "provenanceUntitled": "(documento no resoluble)",
+    "provenanceAddedIn": "alta en la versión {{version}}"
   },
   "stats": {
     "title": "Estadísticas de plataforma",

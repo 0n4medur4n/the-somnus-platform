@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, String, Text, func
+from sqlalchemy import DateTime, Index, Integer, String, Text, func
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -90,4 +90,37 @@ class AiContentReviewItemRow(Base):
         # for one report; both are the hot paths.
         Index("ix_ai_content_review_status_created", "status", "created_at"),
         Index("ix_ai_content_review_report_status", "report_id", "status"),
+    )
+
+
+class ReportCorpusProvenanceRow(Base):
+    """What grounded one generated report (Addendum B §B5 Checkpoint 16.5).
+
+    Written once, at generation, and never again. The primary key on `report_id`
+    is what enforces that at the schema level; the repository has no update
+    method, so there is no code path that could edit one either. This is the same
+    discipline every stamped-at-generation field in the platform follows (§17,
+    §14a/§14b): a record that can be revised afterwards answers a different
+    question from the one it was written to answer.
+
+    `document_ids` says WHICH Index B documents the report rendered — not which
+    existed at the time. Their titles are not copied here on purpose: they resolve
+    at display time through `documents_live_at(corpus_version)` in the corpus
+    module, so a document retired since generation is still described as it was
+    when the report was made.
+    """
+
+    __tablename__ = "report_corpus_provenance"
+
+    report_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    corpus_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    locale: Mapped[str] = mapped_column(String(5), nullable=False)
+    # JSON array of the Index A citations as rendered (§B3.1: the citation is the
+    # one thing that never depends on anything resolved later).
+    citations: Mapped[str] = mapped_column(Text, nullable=False)
+    # JSON array of the Index B document ids as rendered.
+    document_ids: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
     )

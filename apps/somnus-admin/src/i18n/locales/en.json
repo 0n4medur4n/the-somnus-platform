@@ -156,7 +156,19 @@
     "reasonHint": "Required when approving too: it is recorded with your identity and cannot be changed afterwards.",
     "consequence": "Approving makes this text eligible for rendering. Rejecting excludes it for good.",
     "scannerNote": "Candidates carrying prohibited claims never reach this queue: they are discarded before being shown.",
-    "decided": "Decision recorded."
+    "decided": "Decision recorded.",
+    "provenanceTitle": "What this report was grounded in",
+    "provenanceIntro": "The material behind the deterministic result this candidate paraphrases. Recorded when the report was generated and never changed afterwards.",
+    "corpusVersion": "Corpus version",
+    "contentVersion": "Content version",
+    "provenanceCitations": "Clinical sources cited (Index A)",
+    "provenanceDocuments": "Corpus supporting material (Index B)",
+    "provenanceNoDocuments": "No supporting material. The report was grounded in the clinical sources cited above and nothing else.",
+    "provenanceNoCitations": "No safety rule cited a source in this report.",
+    "provenanceMissing": "This report recorded no corpus provenance. It was generated before provenance was recorded, or the record could not be written.",
+    "provenanceRetired": "retired since",
+    "provenanceUntitled": "(document could not be resolved)",
+    "provenanceAddedIn": "added in version {{version}}"
   },
   "stats": {
     "title": "Platform statistics",

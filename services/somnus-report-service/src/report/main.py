@@ -23,6 +23,7 @@ from report.api.health import router as health_router
 from report.api.reports import router as reports_router
 from report.api.version import router as version_router
 from report.application.content_review import ContentReviewService
+from report.application.provenance import ProvenanceRecorder, ProvenanceResolver
 from report.application.render_service import RenderService
 from report.application.retrieval import (
     CitationResolver,
@@ -45,6 +46,7 @@ from report.infrastructure.sources_client import MorpheoSourcesClient
 from report.infrastructure.storage import LocalStorageBackend
 from report.repositories.content_review_repository import ContentReviewRepositorySql
 from report.repositories.sources_repository import SourcesRepository
+from report.schemas.provenance import ProvenanceDocument
 from report.schemas.retrieval import CorpusEntry
 from report.settings.config import Settings, load_settings
 
@@ -117,6 +119,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         else None
     )
 
+    # Checkpoint 16.5. Two halves, in two logical databases, meeting only here:
+    # the record is written to `somnus_reporting` as a report is generated, and
+    # the Index B documents it names are described from `somnus_content` when a
+    # reviewer looks at them.
+    def _current_corpus_version() -> int:
+        with corpus_session_factory() as corpus_session:
+            return CorpusRepository(corpus_session).current_version()
+
+    def _live_documents(corpus_version: int) -> dict[str, ProvenanceDocument]:
+        """The corpus as it was at `corpus_version` (Checkpoint 16.1's resolution).
+
+        `documents_live_at` is reused rather than reimplemented, which is what
+        makes a document retired since generation still describable: retiring
+        keeps the row, so it is still live *at that version*.
+        """
+        with corpus_session_factory() as corpus_session:
+            return {
+                document.id: ProvenanceDocument(
+                    document_id=document.id,
+                    title=document.title,
+                    citation=document.citation,
+                    locale=document.locale,
+                    corpus_version_added=document.corpus_version_added,
+                    retired_since=document.corpus_version_retired is not None,
+                )
+                for document in CorpusRepository(corpus_session).documents_live_at(corpus_version)
+            }
+
+    app.state.provenance_resolver = ProvenanceResolver(_live_documents)
+
     # Clinical grounding (§3.6b / §14b), explanation-only. It attaches citations to
     # the professional output and can never affect the level or routing (guarded in
     # RenderService).
@@ -177,6 +209,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         retriever=retriever,
         review=_ApprovedCandidates(),
         grounding=corpus_retriever,
+        provenance=ProvenanceRecorder(session_factory, _current_corpus_version),
     )
 
     app.add_middleware(CorrelationIdMiddleware)

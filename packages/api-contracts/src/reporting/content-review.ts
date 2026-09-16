@@ -19,6 +19,48 @@ export const CONTENT_REVIEW_STATUSES = ["pending_review", "approved", "rejected"
 export const ContentReviewStatusSchema = z.enum(CONTENT_REVIEW_STATUSES);
 export type ContentReviewStatus = z.infer<typeof ContentReviewStatusSchema>;
 
+/**
+ * What grounded the report a candidate paraphrases (Addendum B §B5, 16.5).
+ *
+ * The citations come straight from the immutable record stamped at generation.
+ * The documents are resolved at read time against the corpus as it was at that
+ * `corpusVersion`, which is why `retiredSince` can be true: the material is still
+ * what grounded this report, and is no longer what would ground a new one.
+ */
+export const ProvenanceCitationSchema = z
+  .object({
+    sourceId: z.string(),
+    citation: z.string(),
+    url: z.string(),
+    /** "rule" when the fired rule named it, "similarity" for the fallback. */
+    resolvedBy: z.string(),
+  })
+  .strict();
+export type ProvenanceCitation = z.infer<typeof ProvenanceCitationSchema>;
+
+export const ProvenanceDocumentSchema = z
+  .object({
+    documentId: z.string(),
+    title: z.string(),
+    citation: z.string(),
+    locale: z.string(),
+    corpusVersionAdded: z.number().int().nullish(),
+    retiredSince: z.boolean(),
+  })
+  .strict();
+export type ProvenanceDocument = z.infer<typeof ProvenanceDocumentSchema>;
+
+export const ReportProvenanceSchema = z
+  .object({
+    /** 0 is a real answer: nothing had been published when the report was made. */
+    corpusVersion: z.number().int().nonnegative(),
+    contentVersion: z.string(),
+    citations: z.array(ProvenanceCitationSchema),
+    documents: z.array(ProvenanceDocumentSchema),
+  })
+  .strict();
+export type ReportProvenance = z.infer<typeof ReportProvenanceSchema>;
+
 export const ContentReviewItemSchema = z
   .object({
     itemId: z.string().min(1).max(32),
@@ -41,6 +83,14 @@ export const ContentReviewItemSchema = z
     decidedAt: z.iso.datetime().nullable(),
     reason: z.string().nullable(),
     createdAt: z.iso.datetime(),
+    /**
+     * Checkpoint 16.5. Null when the report recorded none — which is different
+     * from an empty one, and a reviewer should be able to tell the two apart:
+     * "nothing grounded this beyond the artifact" is not "we did not record what
+     * did". `.nullish()` because the provider is Pydantic and serializes an
+     * unset optional as an explicit null.
+     */
+    provenance: ReportProvenanceSchema.nullish(),
   })
   .strict();
 export type ContentReviewItem = z.infer<typeof ContentReviewItemSchema>;
