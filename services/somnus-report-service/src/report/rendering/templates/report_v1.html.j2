@@ -80,6 +80,21 @@
       </ul>
     </section>
     {% endif %}
+    {#- Addendum B §B3.1: supporting material from the reference corpus. A
+        separate section on purpose. The block above is what the fired rule
+        cited; this one is background an admin published, and conflating the two
+        would attribute a clinical decision to material no rule named. -#}
+    {% if grounding %}
+    <section class="supporting-material">
+      <h2>{{ strings.supportingMaterial }}</h2>
+      <ul>
+        {% for material in grounding %}
+        <li class="material" data-document-id="{{ material.document_id }}"
+            data-scope="{{ material.matched_scope_type }}:{{ material.matched_scope_key }}">{{ material.citation }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
     {% endif %}
     <section class="limits">
       <h2>{{ strings.limits }}</h2>

@@ -16,13 +16,15 @@ Two properties this class is responsible for, both from §B3:
 
 from __future__ import annotations
 
+import json
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select, tuple_
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import ColumnElement
 
 from report.corpus.chunking import chunk_text
 from report.corpus.models import (
@@ -70,6 +72,33 @@ class ReferenceDocument:
     retired_reason: str | None
     scopes: tuple[DocumentScope, ...]
     chunk_count: int = 0
+
+
+@dataclass(frozen=True)
+class CorpusChunk:
+    """One stored chunk, with its vector if it has been embedded (16.4)."""
+
+    id: str
+    chunk_index: int
+    text: str
+    vector: list[float]
+
+
+@dataclass(frozen=True)
+class ScopedDocument:
+    """A published document that a report's activated scopes reached (§B3 / 16.4).
+
+    Carries the scopes that MATCHED, not every scope the document declares, so a
+    caller can say which activation pulled it in without asking again.
+    """
+
+    id: str
+    title: str
+    citation: str
+    locale: str
+    corpus_version_added: int | None
+    matched_scopes: tuple[DocumentScope, ...]
+    chunks: tuple[CorpusChunk, ...]
 
 
 @dataclass(frozen=True)
@@ -293,6 +322,121 @@ class CorpusRepository:
             self._session.flush()
             self._store_chunks(document_id, chunks)
 
+    def store_embeddings(
+        self,
+        document_id: str,
+        vectors: Sequence[Sequence[float]],
+        *,
+        model: str,
+        dimensions: int,
+    ) -> None:
+        """Attach vectors to a document's chunks — all of them, or none (16.4).
+
+        The count must match the chunk count exactly. §B2a.1 makes Index A
+        all-or-nothing for the same reason this is: a document with vectors on
+        some chunks and not others is retrievable, looks indexed, and silently
+        grounds on a fraction of itself. Refusing is recoverable; a partial index
+        is a wrong answer nobody can see.
+        """
+        chunks = self._chunk_rows(document_id)
+        if len(vectors) != len(chunks):
+            raise CorpusStateError(
+                f"document {document_id} has {len(chunks)} chunks but {len(vectors)} vectors "
+                "were offered; a partially embedded document is never stored"
+            )
+        embedded_at = datetime.now(UTC).replace(tzinfo=None)
+        for row, vector in zip(chunks, vectors, strict=True):
+            row.embedding = json.dumps(list(vector))
+            row.embedded_at = embedded_at
+            row.embedding_model = model
+            row.embedding_dimensions = dimensions
+        self._session.flush()
+
+    def scoped_documents(
+        self,
+        *,
+        locale: str,
+        scopes: Sequence[DocumentScope],
+        include_general: bool = True,
+        embedded_only: bool = False,
+    ) -> list[ScopedDocument]:
+        """Published documents this report's activated scopes reach (§B3 / §B3.1).
+
+        The filter is a hard one and it narrows only: `published`, this exact
+        locale, and a scope the deterministic result actually activated. §B3 puts
+        it plainly — a document scoped to `BRE` can never surface in a report that
+        only routed to `INS` — so scope is a WHERE clause here rather than a
+        ranking input. Whatever a caller does with vectors afterwards, it can only
+        reorder this set, never widen it.
+
+        Locale is exact. §B3 allows falling back to another locale only as "a
+        deliberate, logged decision"; there is no such decision here, so there is
+        no fallback to make silently.
+
+        `general` is the one scope no result activates, which is what `general`
+        means. It is included by default and the console flags it as rare.
+        """
+        wanted = {(scope.scope_type, scope.scope_key) for scope in scopes}
+        if not wanted and not include_general:
+            return []
+
+        scope_match: list[ColumnElement[bool]] = []
+        if wanted:
+            scope_match.append(
+                tuple_(
+                    ReferenceDocumentScopeRow.scope_type, ReferenceDocumentScopeRow.scope_key
+                ).in_(sorted(wanted))
+            )
+        if include_general:
+            scope_match.append(ReferenceDocumentScopeRow.scope_type == SCOPE_GENERAL)
+
+        reachable = select(ReferenceDocumentScopeRow.document_id).where(or_(*scope_match))
+        statement = (
+            select(ReferenceDocumentRow)
+            .where(
+                ReferenceDocumentRow.status == STATUS_PUBLISHED,
+                ReferenceDocumentRow.locale == locale,
+                ReferenceDocumentRow.id.in_(reachable),
+            )
+            # Deterministic without consulting a single vector: same corpus, same
+            # order, every render.
+            .order_by(ReferenceDocumentRow.corpus_version_added, ReferenceDocumentRow.id)
+        )
+
+        found: list[ScopedDocument] = []
+        for row in self._session.scalars(statement):
+            chunks = tuple(
+                CorpusChunk(
+                    id=chunk.id,
+                    chunk_index=chunk.chunk_index,
+                    text=chunk.text,
+                    vector=json.loads(chunk.embedding) if chunk.embedding else [],
+                )
+                for chunk in self._chunk_rows(row.id)
+            )
+            if embedded_only:
+                chunks = tuple(chunk for chunk in chunks if chunk.vector)
+            if not chunks:
+                continue
+            matched = tuple(
+                DocumentScope(scope.scope_type, scope.scope_key)
+                for scope in sorted(self._scopes(row.id), key=lambda s: (s.scope_type, s.scope_key))
+                if (scope.scope_type, scope.scope_key) in wanted
+                or (include_general and scope.scope_type == SCOPE_GENERAL)
+            )
+            found.append(
+                ScopedDocument(
+                    id=row.id,
+                    title=row.title,
+                    citation=row.citation,
+                    locale=row.locale,
+                    corpus_version_added=row.corpus_version_added,
+                    matched_scopes=matched,
+                    chunks=chunks,
+                )
+            )
+        return found
+
     # --- reads -------------------------------------------------------------
 
     def search(
@@ -401,6 +545,15 @@ class CorpusRepository:
         )
         self._session.flush()
         return version
+
+    def _chunk_rows(self, document_id: str) -> list[ReferenceDocumentChunkRow]:
+        return list(
+            self._session.scalars(
+                select(ReferenceDocumentChunkRow)
+                .where(ReferenceDocumentChunkRow.document_id == document_id)
+                .order_by(ReferenceDocumentChunkRow.chunk_index)
+            )
+        )
 
     def _chunk_count(self, document_id: str) -> int:
         return (

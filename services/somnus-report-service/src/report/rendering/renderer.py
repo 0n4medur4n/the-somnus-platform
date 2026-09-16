@@ -16,7 +16,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from report.rendering.i18n import strings_for
 from report.schemas.render import ClinicalContentDTO, ReportRenderRequestDTO
-from report.schemas.retrieval import RetrievedSource
+from report.schemas.retrieval import GroundingMaterial, RetrievedSource
 
 TEMPLATE_VERSION = "report_v1"
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -48,6 +48,7 @@ def render_html(
     content: ClinicalContentDTO,
     template_version: str = TEMPLATE_VERSION,
     citations: Sequence[RetrievedSource] = (),
+    grounding: Sequence[GroundingMaterial] = (),
 ) -> RenderedReport:
     modules_by_id = {module.id: module for module in content.modules}
     routed = [modules_by_id[route] for route in request.routes if route in modules_by_id]
@@ -73,6 +74,10 @@ def render_html(
         # output. They render into their own section and NEVER affect the level,
         # the routing, or any other content — proven by the determinism test.
         citations=citations,
+        # Index B (Addendum B §B3.1). Rendered in its OWN block, below the
+        # citations and never merged into them: this is supporting material for
+        # an already-decided result, not evidence a rule cited.
+        grounding=grounding,
         template_version=template_version,
     )
     return RenderedReport(
