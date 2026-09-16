@@ -1,9 +1,14 @@
 """The reference corpus, against MySQL (Addendum B §B3 / Checkpoint 16.1).
 
-Storage and versioning only: no console (16.3), no rights gate (16.2), no
-embedding (16.4). What is proven here is the property the later checkpoints rest
-on — the corpus is append-and-retire, so a report stamped with an older
-`corpus_version` stays explainable after the corpus has moved on.
+Storage and versioning: no console (16.3) and no embedding (16.4). What is proven
+here is the property the later checkpoints rest on — the corpus is
+append-and-retire, so a report stamped with an older `corpus_version` stays
+explainable after the corpus has moved on.
+
+Drafts here declare `own_document` because Checkpoint 16.2's rights gate now
+stands between a draft and `published`. That keeps these tests about versioning;
+the gate itself is proven in `test_corpus_rights_gate_db.py` and in the unit
+suites for rights, chunking and the embedding boundary.
 """
 
 from __future__ import annotations
@@ -25,6 +30,7 @@ from report.corpus.repository import (
     CorpusStateError,
     DocumentScope,
 )
+from report.corpus.rights import RIGHTS_OWN_DOCUMENT
 
 ADMIN = "018f0000-0000-7000-8000-0000000000aa"
 
@@ -43,6 +49,11 @@ def repo(corpus_session: Session) -> CorpusRepository:
 
 
 def _draft(repo: CorpusRepository, title: str, *, locale: str = "es", scope: str = "INS") -> str:
+    """A draft that Checkpoint 16.2's rights gate will let through.
+
+    `own_document` needs no evidence, so these stay about versioning rather than
+    about rights; the gate itself is exercised in `test_corpus_rights_gate_db.py`.
+    """
     return repo.add_draft(
         title=title,
         citation=f"{title}. Revista, 2026.",
@@ -50,6 +61,7 @@ def _draft(repo: CorpusRepository, title: str, *, locale: str = "es", scope: str
         locale=locale,
         added_by=ADMIN,
         scopes=[DocumentScope("module", scope)],
+        rights_status=RIGHTS_OWN_DOCUMENT,
     )
 
 
@@ -165,7 +177,7 @@ def test_live_documents_can_be_narrowed_by_locale(repo: CorpusRepository) -> Non
 
 def test_chunks_are_stored_in_order_and_unembedded(repo: CorpusRepository) -> None:
     document_id = _draft(repo, "Con fragmentos")
-    repo.add_chunks(document_id, ["primero", "segundo", "tercero"])
+    repo.add_text(document_id, "primero\n\nsegundo\n\ntercero")
     assert repo.chunk_texts(document_id) == ["primero", "segundo", "tercero"]
 
 
@@ -178,7 +190,7 @@ def test_the_state_machine_refuses_the_transitions_it_should(repo: CorpusReposit
     with pytest.raises(CorpusStateError, match="not a draft"):
         repo.publish(document_id, by=ADMIN, changelog="Otra vez")
     with pytest.raises(CorpusStateError, match="only added to a draft"):
-        repo.add_chunks(document_id, ["tarde"])
+        repo.add_text(document_id, "tarde")
 
     repo.retire(document_id, by=ADMIN, reason="x", changelog="Retirada")
     with pytest.raises(CorpusStateError, match="not published"):
@@ -194,4 +206,5 @@ def test_an_unknown_scope_type_is_refused(repo: CorpusRepository) -> None:
             locale="es",
             added_by=ADMIN,
             scopes=[DocumentScope("module_or_something", "INS")],
+            rights_status=RIGHTS_OWN_DOCUMENT,
         )

@@ -24,12 +24,14 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from report.corpus.chunking import chunk_text
 from report.corpus.models import (
     CorpusVersionRow,
     ReferenceDocumentChunkRow,
     ReferenceDocumentRow,
     ReferenceDocumentScopeRow,
 )
+from report.corpus.rights import require_publishable
 
 STATUS_DRAFT = "draft"
 STATUS_PUBLISHED = "published"
@@ -149,14 +151,23 @@ class CorpusRepository:
         self._session.flush()
         return document_id
 
-    def add_chunks(self, document_id: str, texts: Sequence[str]) -> list[str]:
-        """Store a document's text, unembedded. Chunking policy is 16.2's; this
-        only persists what it is given, positionally."""
+    def add_text(self, document_id: str, text: str) -> list[str]:
+        """Chunk and store a document's approved text (Checkpoint 16.2).
+
+        The per-status cap is enforced here, at the moment the text would be
+        stored: a `citation_only` document carrying more than an abstract is
+        refused outright, never cut down to fit (`corpus.chunking`).
+        """
         row = self._row(document_id)
         if row.status != STATUS_DRAFT:
             raise CorpusStateError(
-                f"document {document_id} is {row.status}; chunks are only added to a draft"
+                f"document {document_id} is {row.status}; text is only added to a draft"
             )
+        # Raises before anything is added to the session, so a refusal writes
+        # nothing at all.
+        return self._store_chunks(document_id, chunk_text(text, rights_status=row.rights_status))
+
+    def _store_chunks(self, document_id: str, texts: Sequence[str]) -> list[str]:
         ids: list[str] = []
         for index, text in enumerate(texts):
             chunk_id = str(uuid.uuid4())
@@ -170,10 +181,17 @@ class CorpusRepository:
         return ids
 
     def publish(self, document_id: str, *, by: str, changelog: str) -> int:
-        """Publish a draft, bumping the corpus version (§B5 Checkpoint 16.1)."""
+        """Publish a draft, bumping the corpus version (§B5 16.1) — if its rights allow.
+
+        §B4's gate, the first of its two independent checks: a document with no
+        rights declaration, an unknown one, or one whose evidence is missing or
+        blank cannot become published. Raised BEFORE the version is created, so a
+        refused publish leaves no orphan version behind it.
+        """
         row = self._row(document_id)
         if row.status != STATUS_DRAFT:
             raise CorpusStateError(f"document {document_id} is {row.status}, not a draft")
+        require_publishable(row.rights_status, row.rights_evidence)
         version = self._next_version(by=by, changelog=changelog)
         row.status = STATUS_PUBLISHED
         row.corpus_version_added = version
