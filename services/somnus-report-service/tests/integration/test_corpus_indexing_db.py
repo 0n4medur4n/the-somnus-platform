@@ -159,6 +159,9 @@ def test_a_partial_vector_set_is_refused_and_stores_nothing(
     """
     document_id = _publishable(repo)
     repo.publish(document_id, by=ADMIN, changelog="Alta.")
+    # Committed first, so the rollback below undoes the refused write and not
+    # the document it was refused for.
+    corpus_session.commit()
 
     with pytest.raises(CorpusStateError, match="partially embedded"):
         repo.store_embeddings(document_id, [[1.0, 0.0]], model=MODEL, dimensions=2)
@@ -185,6 +188,9 @@ def test_a_document_that_could_not_be_published_is_never_indexed(
     not touch a draft, and the provider is never called on either path.
     """
     document_id = _publishable(repo, rights_status="open_access", rights_evidence=None)
+    # The draft is committed before the refused publish, so what the rollback
+    # discards is the failed transition alone.
+    corpus_session.commit()
     embedder = _FakeEmbedder()
 
     with pytest.raises(RightsError):
@@ -220,8 +226,12 @@ def test_an_embedding_failure_leaves_the_publish_rolled_back(
 ) -> None:
     """Publish and index are one transaction: no half-indexed published document."""
     document_id = _publishable(repo)
-    repo.publish(document_id, by=ADMIN, changelog="Alta.")
+    # The draft is durable; the publish that follows is not yet. That is exactly
+    # the situation the route is in when it publishes and indexes in one
+    # transaction, so the rollback here undoes what the route's rollback would.
+    corpus_session.commit()
 
+    repo.publish(document_id, by=ADMIN, changelog="Alta.")
     with pytest.raises(RuntimeError, match="provider unavailable"):
         _indexer(_FailingEmbedder()).index(repo, document_id)
     corpus_session.rollback()
