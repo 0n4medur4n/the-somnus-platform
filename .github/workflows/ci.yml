@@ -759,11 +759,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libgdk-pixbuf-2.0-0 libffi-dev
 
-      # The report logical database (build plan §3.9), for the grounding corpus.
-      - name: Create reporting database
+      # Two logical databases, because the report service owns two: its own
+      # (`somnus_reporting`) and the isolated corpus module's (`somnus_content`,
+      # Addendum B Phase 16), each with its own Alembic history (build plan §3.9).
+      - name: Create reporting databases
         run: |
           docker exec ${{ job.services.mysql.id }} mysql -uroot -prootpw -e \
-            "CREATE DATABASE IF NOT EXISTS somnus_reporting CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+            "CREATE DATABASE IF NOT EXISTS somnus_reporting CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+             CREATE DATABASE IF NOT EXISTS somnus_content CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
       - name: Ruff lint
         run: uv run ruff check .
@@ -778,6 +781,7 @@ jobs:
         run: uv run pytest -q -rA
         env:
           DATABASE_URL: mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_reporting
+          CONTENT_DATABASE_URL: mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_content
 
   worker-service:
     name: Worker service (build, tests)

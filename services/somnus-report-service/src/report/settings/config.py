@@ -22,6 +22,10 @@ LogFormat = Literal["json", "text"]
 # database (build plan §3.9 / §8); never used in staging/production, where
 # DATABASE_URL is injected from Secret Manager.
 DEFAULT_LOCAL_DATABASE_URL = "mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_reporting"
+# The reference-corpus module's own logical database (Addendum B §B3 / ADR 0010).
+# Separate from the one above on purpose: §3.9 gives each logical database its own
+# user, credentials and migration history.
+DEFAULT_LOCAL_CONTENT_DATABASE_URL = "mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_content"
 
 
 class Settings(BaseSettings):
@@ -38,6 +42,11 @@ class Settings(BaseSettings):
     log_format: LogFormat = Field(default="json", alias="LOG_FORMAT")
     database_url: str = Field(
         default=DEFAULT_LOCAL_DATABASE_URL, min_length=1, alias="DATABASE_URL"
+    )
+    # The reference corpus (Addendum B Phase 16), owned by the isolated corpus
+    # module. A second logical database, never the same one as DATABASE_URL.
+    content_database_url: str = Field(
+        default=DEFAULT_LOCAL_CONTENT_DATABASE_URL, min_length=1, alias="CONTENT_DATABASE_URL"
     )
     # The private morpheo service, source of the approved clinical content (§5.5).
     morpheo_base_url: str = Field(default="http://127.0.0.1:8080", alias="MORPHEO_BASE_URL")

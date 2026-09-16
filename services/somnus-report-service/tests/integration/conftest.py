@@ -15,6 +15,7 @@ from alembic.config import Config
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session
 
+from report.corpus.db import create_corpus_engine
 from report.settings.config import load_settings
 
 
@@ -31,4 +32,26 @@ def engine() -> Iterator[Engine]:
 @pytest.fixture
 def db_session(engine: Engine) -> Iterator[Session]:
     with Session(engine) as session:
+        yield session
+
+
+@pytest.fixture(scope="session")
+def corpus_engine() -> Iterator[Engine]:
+    """`somnus_content`, migrated by the corpus module's OWN Alembic history.
+
+    A second engine, a second config, a second history (build plan §3.9 / §8).
+    Pointing either history at the other's database would create its tables in the
+    wrong place, which is what independent histories exist to prevent.
+    """
+    command.upgrade(Config("alembic_content.ini"), "head")
+    eng = create_corpus_engine(load_settings().content_database_url)
+    try:
+        yield eng
+    finally:
+        eng.dispose()
+
+
+@pytest.fixture
+def corpus_session(corpus_engine: Engine) -> Iterator[Session]:
+    with Session(corpus_engine) as session:
         yield session

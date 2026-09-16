@@ -1,0 +1,9 @@
+The reference-corpus module's own Alembic history, against `somnus_content`
+(build plan §3.9 / §8: independent migration history per logical database;
+ADR 0010: isolated module). Driven by alembic_content.ini and CONTENT_DATABASE_URL.
+
+  uv run alembic -c alembic_content.ini upgrade head
+  uv run alembic -c alembic_content.ini downgrade base
+
+The report service's own tables (`somnus_reporting`) live in ../migrations,
+driven by alembic.ini and DATABASE_URL. The two never mix.
