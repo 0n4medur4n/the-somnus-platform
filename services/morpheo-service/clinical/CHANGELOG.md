@@ -36,6 +36,13 @@ content-only additions bump `content_version` (reviewed by the Safety Committee)
   clínico pendiente"): SAFE-004 escalation criteria (blocked on new signals),
   SAFE-002 human escalation pathway (product/operations decision).
 
+### Approval record
+- `Morpheo_Preguntas_Seguridad_Respondidas.docx` is the clinical lead's approval
+  of the 22 safety-signal questions above. The approved wording was loaded into
+  `morpheo_safety_prompts_v1_es.json` directly in the session that added it; this
+  file is the audit trail of that approval, not a source the service reads. It is
+  kept here, with the artifacts it approves, rather than at the repository root.
+
 ### Wording flags raised for the clinical lead to confirm before this is permanent
 - `sleepiness_near_miss`: contains the typo "dormirdo" (for "dormido"), loaded
   verbatim as provided.
