@@ -316,20 +316,36 @@ def _evidence_json(evidence: dict[str, str | None]) -> str:
 # --- what the API cannot do ---------------------------------------------------
 
 
+def _served_operations(client: TestClient) -> list[tuple[str, str]]:
+    """Every (path, method) the assembled application serves.
+
+    Read from the generated OpenAPI document rather than walked off
+    `app.routes`: this FastAPI version keeps each included router as one opaque
+    entry there, so the flat list holds the docs routes and nothing else. The
+    OpenAPI document is also the better thing to assert against — it is what the
+    service publishes as its surface, so "there is no delete" is a statement
+    about what anyone can call, not about one router object's contents.
+    """
+    paths = client.app.openapi()["paths"]  # type: ignore[attr-defined]
+    return [(path, method.upper()) for path, methods in paths.items() for method in methods]
+
+
 def test_no_route_deletes_anything(client: TestClient) -> None:
     """Retire is reachable; delete is not a route that exists (§B3)."""
-    corpus_routes = [
-        (route.path, sorted(route.methods))
-        for route in client.app.routes
-        if getattr(route, "path", "").startswith(CORPUS)
-    ]
-    assert corpus_routes, "the corpus router did not register"
+    served = _served_operations(client)
+    assert served, "the application serves nothing at all"
 
-    for path, methods in corpus_routes:
-        assert "DELETE" not in methods, f"{path} accepts DELETE"
+    corpus = [(path, method) for path, method in served if path.startswith(CORPUS)]
+    assert len(corpus) == 7, f"expected the seven corpus routes, got {sorted(corpus)}"
+
+    # Nothing anywhere in this service deletes, not just nothing in the corpus:
+    # §B3's rule is about the data, and a delete route elsewhere would reach the
+    # same rows.
+    for path, method in served:
+        assert method != "DELETE", f"{method} {path} exists"
         assert "delete" not in path.lower(), f"{path} looks like a delete route"
 
-    assert any(path.endswith("/retire") for path, _ in corpus_routes)
+    assert any(path.endswith("/retire") for path, _ in corpus)
 
     draft = _create(client)
     # Not "the UI hides it": the method is not routed at all.
