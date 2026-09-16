@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "document": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 36
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "citation": {
+          "type": "string"
+        },
+        "sourceType": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "locale": {
+          "type": "string",
+          "maxLength": 5
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "published",
+            "retired"
+          ]
+        },
+        "rightsStatus": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "own_document",
+                "open_access",
+                "licensed",
+                "citation_only"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rightsEvidence": {
+          "type": "object",
+          "properties": {
+            "licence": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "url": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "holder": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "addedBy": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "corpusVersionAdded": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "corpusVersionRetired": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retiredReason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "scopeType": {
+                "type": "string",
+                "enum": [
+                  "module",
+                  "safety_rule",
+                  "clinical_source",
+                  "general"
+                ]
+              },
+              "scopeKey": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "scopeType",
+              "scopeKey"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "chunkCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "citation",
+        "sourceType",
+        "locale",
+        "status",
+        "rightsStatus",
+        "rightsEvidence",
+        "addedBy",
+        "corpusVersionAdded",
+        "corpusVersionRetired",
+        "retiredReason",
+        "scopes",
+        "chunkCount"
+      ],
+      "additionalProperties": false
+    },
+    "chunks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "document",
+    "chunks"
+  ],
+  "additionalProperties": false
+}

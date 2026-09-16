@@ -17,7 +17,7 @@ import {
  *
  * The expectation below is transcribed independently from the addendum's table
  * rather than imported from the policy -- a test that read the same table it is
- * checking would assert nothing. Every one of the 12 capabilities x 11 roles
+ * checking would assert nothing. Every one of the 14 capabilities x 11 roles
  * cells is then asserted, so a cell cannot be widened without this failing.
  */
 const EXPECTED: Readonly<Record<AdminCapability, ReadonlyArray<RoleKey>>> = {
@@ -46,6 +46,10 @@ const EXPECTED: Readonly<Record<AdminCapability, ReadonlyArray<RoleKey>>> = {
   admin_consent_read: ["support_agent", "platform_admin", "platform_super_admin"],
   admin_break_glass: ["clinical_governance_reviewer", "platform_admin", "platform_super_admin"],
   admin_system_health: ["platform_admin", "platform_super_admin"],
+  // Checkpoint 16.3 (Addendum B §B6 item 4): super admin alone. Narrower than
+  // admin_content_review -- clinical_governance_reviewer does NOT hold this one,
+  // and neither does platform_admin. The per-role loop below asserts both.
+  admin_corpus_manage: ["platform_super_admin"],
 };
 
 const EXTERNAL_ROLES = ROLE_KEYS.filter((key) => !INTERNAL_ROLE_KEYS.has(key));

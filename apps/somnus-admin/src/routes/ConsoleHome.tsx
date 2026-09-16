@@ -7,6 +7,8 @@ import { ConsoleLayout } from "../layouts/ConsoleLayout.js";
 import { AuditViewerScreen } from "../screens/AuditViewerScreen.js";
 import { BreakGlassScreen } from "../screens/BreakGlassScreen.js";
 import { ContentReviewScreen } from "../screens/ContentReviewScreen.js";
+import { CorpusScreen } from "../screens/CorpusScreen.js";
+import { CorpusSourcesScreen } from "../screens/CorpusSourcesScreen.js";
 import { DeletionRequestsScreen } from "../screens/DeletionRequestsScreen.js";
 import { OrganizationsScreen } from "../screens/OrganizationsScreen.js";
 import { RolesScreen } from "../screens/RolesScreen.js";
@@ -24,6 +26,8 @@ type ViewId =
   | "statistics"
   | "audit"
   | "breakGlass"
+  | "corpus"
+  | "corpusSources"
   | "roles";
 
 /**
@@ -52,6 +56,12 @@ const VIEW_CAPABILITY: Record<Exclude<ViewId, "overview">, AdminCapability> = {
   // that row, so for them this section is not rendered, not listed in the nav,
   // and has no URL -- structurally absent rather than disabled.
   breakGlass: "admin_break_glass",
+  // Addendum B §B6 item 4: the reference corpus is platform_super_admin's
+  // alone. clinical_governance_reviewer reviews AI wording; deciding what the
+  // corpus contains is a different question, and §B6 puts no second review gate
+  // in front of it.
+  corpus: "admin_corpus_manage",
+  corpusSources: "admin_corpus_manage",
   roles: "admin_roles_assign",
 };
 
@@ -109,6 +119,9 @@ export function ConsoleHome({ me }: { me: AdminMeResponse }) {
       {/* The CSV export is its own capability (super admin only, §A4). */}
       {view === "audit" ? <AuditViewerScreen canExport={held.has("admin_audit_export")} /> : null}
       {view === "breakGlass" ? <BreakGlassScreen /> : null}
+      {/* §B3: draft, publish, retire. No delete control exists on either. */}
+      {view === "corpus" ? <CorpusScreen /> : null}
+      {view === "corpusSources" ? <CorpusSourcesScreen /> : null}
       {view === "roles" ? <RolesScreen actingAdminUserId={me.user.id} /> : null}
     </ConsoleLayout>
   );

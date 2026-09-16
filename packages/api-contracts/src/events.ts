@@ -148,6 +148,16 @@ const PHASE_15_EVENT_TYPES: ReadonlyArray<string> = [
   // Checkpoint 15.5. The one admin action that reaches an individual's clinical
   // data, and the reason §A2.3 exists.
   "admin.break_glass.accessed.v1",
+  // Checkpoint 16.3: reference-corpus management. There is no
+  // `admin.corpus_document.deleted.v1` because there is no delete (§B3: append
+  // and retire) -- the vocabulary says so as plainly as the routes do.
+  "admin.corpus_document.listed.v1",
+  "admin.corpus_document.viewed.v1",
+  "admin.corpus_document.created.v1",
+  "admin.corpus_document.edited.v1",
+  "admin.corpus_document.published.v1",
+  "admin.corpus_document.retired.v1",
+  "admin.corpus_sources.viewed.v1",
 ];
 
 const ALL_EVENT_TYPES: ReadonlyArray<string> = [

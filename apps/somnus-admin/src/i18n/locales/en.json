@@ -54,7 +54,9 @@
     "admin_audit_read": "Audit log",
     "admin_consent_read": "Consent records",
     "admin_break_glass": "Break-glass access to clinical data",
-    "admin_system_health": "System health"
+    "admin_system_health": "System health",
+    "admin_corpus_manage": "Manage the reference corpus",
+    "admin_audit_export": "Export the audit log"
   },
   "errors": {
     "required": "This field is required.",
@@ -75,7 +77,9 @@
     "contentReview": "AI content review",
     "statistics": "Statistics",
     "audit": "Audit log",
-    "breakGlass": "Break-glass access"
+    "breakGlass": "Break-glass access",
+    "corpus": "Reference corpus",
+    "corpusSources": "Clinical sources"
   },
   "users": {
     "title": "Users",
@@ -241,5 +245,114 @@
     "rules": "Triggered rules",
     "versions": "Workflow {{workflow}} · content {{content}}",
     "close": "Close"
+  },
+  "corpus": {
+    "title": "Reference corpus",
+    "intro": "Reference documents the platform may cite when explaining a result. They never change the level or the routing: they only enrich the explanation.",
+    "noDeleteNote": "A document is added and retired, never deleted. Retiring keeps the record, which is the only thing that keeps older reports explainable.",
+    "currentVersion": "Current corpus version: {{version}}",
+    "searchTitle": "Search",
+    "queryLabel": "Title or citation",
+    "statusLabel": "Status",
+    "anyStatus": "Any status",
+    "anyScope": "Any scope",
+    "scopeTypeLabel": "Scope type",
+    "scopeKeyLabel": "Scope key",
+    "search": "Search",
+    "listTitle": "Documents",
+    "empty": "No documents match.",
+    "createTitle": "New document (draft)",
+    "editTitle": "Edit draft",
+    "titleLabel": "Title",
+    "citationLabel": "Citation",
+    "citationHint": "How this document will be cited in a report.",
+    "sourceTypeLabel": "Source type",
+    "localeLabel": "Language",
+    "localeHint": "Retrieval respects language: a document is only used in its own.",
+    "textLabel": "Approved text",
+    "textHint": "Split into chunks when saved. Under “citation only” there is a length cap, and text above it is refused whole rather than trimmed.",
+    "scopesTitle": "Scope",
+    "scopesIntro": "Where this document may be used: a module, a safety rule, a clinical source or, exceptionally, everything.",
+    "scopeLocked": "Scope fixed: clinical source {{scope}}.",
+    "addScope": "Add scope",
+    "removeScope": "Remove",
+    "generalScopeNote": "“General” should be rare: a document with no scope is retrieved for everything.",
+    "rightsTitle": "Rights",
+    "rightsIntro": "Without a rights declaration and its evidence, a document is neither published nor indexed. The service decides that, not this screen.",
+    "rightsLabel": "Rights status",
+    "rightsPlaceholder": "Choose a status",
+    "rightsUnset": "Not declared",
+    "chunkCountLabel": "Chunks",
+    "scopesLabel": "Scopes",
+    "versionAddedLabel": "Added in version",
+    "versionRetiredLabel": "Retired in version",
+    "retiredReason": "Reason for retiring: {{reason}}",
+    "changelogLabel": "Changelog note",
+    "changelogHint": "Kept in the corpus history. At least 3 characters.",
+    "retireReasonLabel": "Reason for retiring",
+    "evidenceHint": "Stored as evidence for the declaration.",
+    "create": "Create draft",
+    "save": "Save draft",
+    "cancelEdit": "Cancel",
+    "edit": "Edit",
+    "publish": "Publish",
+    "retire": "Retire",
+    "created": "Draft created.",
+    "saved": "Draft saved.",
+    "published": "Document published.",
+    "retired": "Document retired.",
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "retired": "Retired"
+    },
+    "scopeType": {
+      "module": "Module",
+      "safety_rule": "Safety rule",
+      "clinical_source": "Clinical source",
+      "general": "General"
+    },
+    "scopeKeyHint": {
+      "module": "For example, INS.",
+      "safety_rule": "For example, SAFE-006.",
+      "clinical_source": "For example, SRC-05.",
+      "general": "No key: it applies to everything."
+    },
+    "rights": {
+      "own_document": "Own document",
+      "open_access": "Open access",
+      "licensed": "Licensed",
+      "citation_only": "Citation only"
+    },
+    "rightsMeaning": {
+      "own_document": "Written by The Somnus. No further evidence needed.",
+      "open_access": "Published under an open licence. Give the licence and the link.",
+      "licensed": "Covered by an institutional subscription or purchase. Give the licence and who holds it.",
+      "citation_only": "The citation and a short summary only. The platform holds no full text."
+    },
+    "rightsWarning": {
+      "licensed": "Careful: declaring “licensed” asserts that a real subscription or purchase covers this use. If none does, the text ends up sent to an external provider with no right to it.",
+      "citation_only": "Careful: “citation only” asserts there is no full text here. There is a length cap, and longer text is refused whole rather than trimmed: if you need the full article, declare the rights that permit it."
+    },
+    "evidence": {
+      "licence": "Licence",
+      "url": "Link",
+      "holder": "Licence holder"
+    }
+  },
+  "corpusSources": {
+    "title": "Clinical sources",
+    "intro": "The fifteen approved clinical sources, with what the console may add beneath each one.",
+    "artifactNote": "The citation, link, use and citing rules of each source belong to the clinical artifact (morpheo_workflows_v1.json) and appear here to be read only. No console route is able to write them.",
+    "contentVersion": "Content version {{version}}",
+    "citation": "Citation",
+    "url": "Link",
+    "use": "Use",
+    "citedByRules": "Rules citing it",
+    "citedByNone": "No rule cites it.",
+    "readOnlyNote": "Clinical-artifact fields: read only.",
+    "enrichmentsTitle": "Documents added by the console",
+    "noEnrichments": "Nothing has been added for this source yet.",
+    "addEnrichment": "Add a document to this source"
   }
 }

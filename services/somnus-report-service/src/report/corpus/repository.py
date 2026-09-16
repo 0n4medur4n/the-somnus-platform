@@ -21,7 +21,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from report.corpus.chunking import chunk_text
@@ -69,6 +69,7 @@ class ReferenceDocument:
     corpus_version_retired: int | None
     retired_reason: str | None
     scopes: tuple[DocumentScope, ...]
+    chunk_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -79,7 +80,9 @@ class CorpusVersion:
 
 
 def _document(
-    row: ReferenceDocumentRow, scopes: Sequence[ReferenceDocumentScopeRow]
+    row: ReferenceDocumentRow,
+    scopes: Sequence[ReferenceDocumentScopeRow],
+    chunk_count: int = 0,
 ) -> ReferenceDocument:
     return ReferenceDocument(
         id=row.id,
@@ -98,6 +101,7 @@ def _document(
             DocumentScope(scope.scope_type, scope.scope_key)
             for scope in sorted(scopes, key=lambda s: (s.scope_type, s.scope_key))
         ),
+        chunk_count=chunk_count,
     )
 
 
@@ -213,10 +217,130 @@ class CorpusRepository:
         self._session.flush()
         return version
 
+    def edit_draft(
+        self,
+        document_id: str,
+        *,
+        title: str | None = None,
+        citation: str | None = None,
+        source_type: str | None = None,
+        locale: str | None = None,
+        rights_status: str | None = None,
+        rights_evidence: str | None = None,
+        scopes: Sequence[DocumentScope] | None = None,
+        text: str | None = None,
+    ) -> None:
+        """Edit a DRAFT (Checkpoint 16.3).
+
+        Only a draft. A published document belongs to a corpus version that some
+        report may already be stamped with, and editing it in place would change
+        what that version means (§B1). The way to change a published document is
+        to retire it and publish another, which is what the history is for.
+
+        Text is replaced wholesale, through the same capped chunker `add_text`
+        uses, so an edit cannot smuggle text past §B4's cap.
+        """
+        row = self._row(document_id)
+        if row.status != STATUS_DRAFT:
+            raise CorpusStateError(
+                f"document {document_id} is {row.status}; only a draft can be edited"
+            )
+        if scopes is not None:
+            for scope in scopes:
+                if scope.scope_type not in SCOPE_TYPES:
+                    raise CorpusStateError(f"unknown scope type {scope.scope_type!r}")
+
+        if title is not None:
+            row.title = title
+        if citation is not None:
+            row.citation = citation
+        if source_type is not None:
+            row.source_type = source_type
+        if locale is not None:
+            row.locale = locale
+        if rights_status is not None:
+            row.rights_status = rights_status
+        if rights_evidence is not None:
+            row.rights_evidence = rights_evidence
+        self._session.flush()
+
+        if scopes is not None:
+            self._session.execute(
+                delete(ReferenceDocumentScopeRow).where(
+                    ReferenceDocumentScopeRow.document_id == document_id
+                )
+            )
+            self._session.flush()
+            for scope in scopes:
+                self._session.add(
+                    ReferenceDocumentScopeRow(
+                        document_id=document_id,
+                        scope_type=scope.scope_type,
+                        scope_key=scope.scope_key,
+                    )
+                )
+            self._session.flush()
+
+        if text is not None:
+            # Chunked FIRST, so text over §B4's cap raises before the existing
+            # chunks are removed: a refused edit leaves the draft as it was.
+            chunks = chunk_text(text, rights_status=row.rights_status)
+            self._session.execute(
+                delete(ReferenceDocumentChunkRow).where(
+                    ReferenceDocumentChunkRow.document_id == document_id
+                )
+            )
+            self._session.flush()
+            self._store_chunks(document_id, chunks)
+
     # --- reads -------------------------------------------------------------
 
+    def search(
+        self,
+        *,
+        query: str | None = None,
+        status: str | None = None,
+        locale: str | None = None,
+        scope_type: str | None = None,
+        scope_key: str | None = None,
+        limit: int = 50,
+    ) -> list[ReferenceDocument]:
+        """List and search, for the console (§B5 Checkpoint 16.3).
+
+        Every filter only narrows, so a malformed request returns less rather than
+        more. Retired documents are included unless a status filter excludes them:
+        they are part of the history the console exists to show.
+        """
+        statement = select(ReferenceDocumentRow)
+        if status is not None:
+            statement = statement.where(ReferenceDocumentRow.status == status)
+        if locale is not None:
+            statement = statement.where(ReferenceDocumentRow.locale == locale)
+        if query:
+            like = f"%{query}%"
+            statement = statement.where(
+                ReferenceDocumentRow.title.like(like) | ReferenceDocumentRow.citation.like(like)
+            )
+        if scope_type is not None:
+            scoped = select(ReferenceDocumentScopeRow.document_id).where(
+                ReferenceDocumentScopeRow.scope_type == scope_type
+            )
+            if scope_key is not None:
+                scoped = scoped.where(ReferenceDocumentScopeRow.scope_key == scope_key)
+            statement = statement.where(ReferenceDocumentRow.id.in_(scoped))
+        statement = statement.order_by(
+            ReferenceDocumentRow.added_at.desc(), ReferenceDocumentRow.id
+        ).limit(limit)
+
+        return [
+            _document(row, self._scopes(row.id), self._chunk_count(row.id))
+            for row in self._session.scalars(statement)
+        ]
+
     def get(self, document_id: str) -> ReferenceDocument:
-        return _document(self._row(document_id), self._scopes(document_id))
+        return _document(
+            self._row(document_id), self._scopes(document_id), self._chunk_count(document_id)
+        )
 
     def documents_live_at(
         self, version: int, *, locale: str | None = None
@@ -241,7 +365,7 @@ class CorpusRepository:
         if locale is not None:
             statement = statement.where(ReferenceDocumentRow.locale == locale)
         rows = list(self._session.scalars(statement))
-        return [_document(row, self._scopes(row.id)) for row in rows]
+        return [_document(row, self._scopes(row.id), self._chunk_count(row.id)) for row in rows]
 
     def chunk_texts(self, document_id: str) -> list[str]:
         return list(
@@ -277,6 +401,16 @@ class CorpusRepository:
         )
         self._session.flush()
         return version
+
+    def _chunk_count(self, document_id: str) -> int:
+        return (
+            self._session.scalar(
+                select(func.count())
+                .select_from(ReferenceDocumentChunkRow)
+                .where(ReferenceDocumentChunkRow.document_id == document_id)
+            )
+            or 0
+        )
 
     def _row(self, document_id: str) -> ReferenceDocumentRow:
         row = self._session.get(ReferenceDocumentRow, document_id)

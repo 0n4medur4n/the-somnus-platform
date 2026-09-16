@@ -76,6 +76,13 @@ const CAPABILITY_ROLES: Readonly<Record<AdminCapability, ReadonlySet<RoleKey>>> 
   ]),
   // System health (service status, queue depths, error rates)
   admin_system_health: new Set<RoleKey>(["platform_admin", "platform_super_admin"]),
+  // Reference-corpus management -- super admin ONLY (Addendum B §B5 Checkpoint
+  // 16.3, decided in §B6 item 4). The narrowest row in this table apart from
+  // role assignment, and narrower than `admin_content_review`:
+  // `clinical_governance_reviewer` does NOT hold it, nor does `platform_admin`.
+  // A published corpus document is what an AI wording step grounds in, and §B6
+  // chose a single-role restriction over a separate review gate.
+  admin_corpus_manage: new Set<RoleKey>(["platform_super_admin"]),
 });
 
 export type AdminCapabilityInput = {

@@ -9,6 +9,11 @@ import {
   AuditQueryRequestSchema,
   BreakGlassRevealRequestSchema,
   ContentReviewDecisionRequestSchema,
+  CorpusDocumentCreateRequestSchema,
+  CorpusDocumentEditRequestSchema,
+  CorpusPublishRequestSchema,
+  CorpusRetireRequestSchema,
+  CorpusSearchRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
@@ -52,3 +57,18 @@ export class AdminDashboardWindowDto extends createZodDto(AdminDashboardWindowSc
  * driven into.
  */
 export class BreakGlassRevealDto extends createZodDto(BreakGlassRevealRequestSchema) {}
+
+/**
+ * Reference-corpus management (Addendum B §B3 / Checkpoint 16.3).
+ *
+ * Note what is absent: no delete body, because there is no delete route, and no
+ * field anywhere that names an SRC's identifier, citation, `use` or citing rules.
+ * These schemas are `.strict()`, so a request carrying one of those is refused
+ * here, before any handler runs -- which is what makes §B3.1's "read-only" a
+ * property of the boundary rather than of the screen.
+ */
+export class CorpusSearchDto extends createZodDto(CorpusSearchRequestSchema) {}
+export class CorpusDocumentCreateDto extends createZodDto(CorpusDocumentCreateRequestSchema) {}
+export class CorpusDocumentEditDto extends createZodDto(CorpusDocumentEditRequestSchema) {}
+export class CorpusPublishDto extends createZodDto(CorpusPublishRequestSchema) {}
+export class CorpusRetireDto extends createZodDto(CorpusRetireRequestSchema) {}

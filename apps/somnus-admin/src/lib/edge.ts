@@ -21,8 +21,18 @@ import type {
   ContentReviewDecisionRequest,
   ContentReviewItem,
   ContentReviewQueue,
+  CorpusDocument,
+  CorpusDocumentCreateRequest,
+  CorpusDocumentDetail,
+  CorpusDocumentEditRequest,
+  CorpusDocumentPage,
+  CorpusPublishRequest,
+  CorpusRetireRequest,
+  CorpusSearchRequest,
+  CorpusVersionResult,
   Dashboards,
   SessionResponse,
+  SrcEnrichmentPage,
 } from "@somnus/api-contracts";
 import { api } from "./api.js";
 
@@ -115,6 +125,45 @@ export const edge = {
   // fetching the record and explaining it afterwards.
   breakGlassReveal: (body: BreakGlassRevealRequest): Promise<BreakGlassRevealResponse> =>
     api.post<BreakGlassRevealResponse>("/admin/v1/break-glass/reveal", body),
+
+  // Addendum B Checkpoint 16.3 -- the reference corpus (admin_corpus_manage,
+  // platform_super_admin only per §B6 item 4).
+  //
+  // There is no `deleteCorpusDocument` here, and there is nothing to call if
+  // there were: §B3 allows append and retire, so retire is the only terminal
+  // action and the API exposes no other.
+  searchCorpus: (body: CorpusSearchRequest = {}): Promise<CorpusDocumentPage> =>
+    api.post<CorpusDocumentPage>("/admin/v1/corpus/documents/search", body),
+  corpusDocument: (documentId: string): Promise<CorpusDocumentDetail> =>
+    api.get<CorpusDocumentDetail>(`/admin/v1/corpus/documents/${encodeURIComponent(documentId)}`),
+  createCorpusDocument: (body: CorpusDocumentCreateRequest): Promise<CorpusDocument> =>
+    api.post<CorpusDocument>("/admin/v1/corpus/documents", body),
+  editCorpusDocument: (
+    documentId: string,
+    body: CorpusDocumentEditRequest,
+  ): Promise<CorpusDocument> =>
+    api.post<CorpusDocument>(
+      `/admin/v1/corpus/documents/${encodeURIComponent(documentId)}/edit`,
+      body,
+    ),
+  publishCorpusDocument: (
+    documentId: string,
+    body: CorpusPublishRequest,
+  ): Promise<CorpusVersionResult> =>
+    api.post<CorpusVersionResult>(
+      `/admin/v1/corpus/documents/${encodeURIComponent(documentId)}/publish`,
+      body,
+    ),
+  retireCorpusDocument: (
+    documentId: string,
+    body: CorpusRetireRequest,
+  ): Promise<CorpusVersionResult> =>
+    api.post<CorpusVersionResult>(
+      `/admin/v1/corpus/documents/${encodeURIComponent(documentId)}/retire`,
+      body,
+    ),
+  corpusSources: (): Promise<SrcEnrichmentPage> =>
+    api.get<SrcEnrichmentPage>("/admin/v1/corpus/sources"),
 
   // --- Internal roles (admin_roles_assign, platform_super_admin only) ---
   assignRole: (body: AdminRoleAssignRequest): Promise<AdminRoleAssignResponse> =>
