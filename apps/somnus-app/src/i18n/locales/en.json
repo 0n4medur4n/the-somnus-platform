@@ -35,7 +35,12 @@
     "title": "Completing sign-in",
     "verifying": "Verifying your sign-in link…",
     "error": "The link is invalid or has expired. Please request a new one.",
-    "errorGeneric": "We could not complete sign-in. Please try again in a moment."
+    "errorGeneric": "We could not complete sign-in. Please try again in a moment.",
+    "emailTitle": "Confirm your email",
+    "emailIntro": "You opened the link in a different browser or tab from the one where you requested it, so we need you to confirm which address we sent it to.",
+    "emailHint": "The same address the link arrived at.",
+    "emailSubmit": "Continue",
+    "emailMismatch": "That address does not match the link. Check it and try again -- the link is still valid."
   },
   "register": {
     "title": "Create your account",

@@ -35,7 +35,12 @@
     "title": "Completant l'accés",
     "verifying": "Verificant el teu enllaç d'accés…",
     "error": "L'enllaç no és vàlid o ha caducat. Torna a sol·licitar-ne un.",
-    "errorGeneric": "No hem pogut completar l'accés. Torna-ho a provar en uns instants."
+    "errorGeneric": "No hem pogut completar l'accés. Torna-ho a provar en uns instants.",
+    "emailTitle": "Confirma el teu correu",
+    "emailIntro": "Has obert l'enllaç en un navegador o una pestanya diferent d'on el vas demanar, així que necessitem que ens confirmis a quina adreça el vam enviar.",
+    "emailHint": "La mateixa adreça on va arribar l'enllaç.",
+    "emailSubmit": "Continua",
+    "emailMismatch": "Aquesta adreça no coincideix amb l'enllaç. Revisa-la i torna-ho a provar: l'enllaç continua sent vàlid."
   },
   "register": {
     "title": "Crea el teu compte",

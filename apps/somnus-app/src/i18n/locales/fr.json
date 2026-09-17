@@ -35,7 +35,12 @@
     "title": "Finalisation de la connexion",
     "verifying": "Vérification de votre lien de connexion…",
     "error": "Le lien est invalide ou a expiré. Veuillez en demander un nouveau.",
-    "errorGeneric": "Nous n'avons pas pu finaliser la connexion. Veuillez réessayer dans un instant."
+    "errorGeneric": "Nous n'avons pas pu finaliser la connexion. Veuillez réessayer dans un instant.",
+    "emailTitle": "Confirmez votre adresse e-mail",
+    "emailIntro": "Vous avez ouvert le lien dans un navigateur ou un onglet différent de celui où vous l'avez demandé. Confirmez-nous l'adresse à laquelle nous l'avons envoyé.",
+    "emailHint": "La même adresse que celle où le lien est arrivé.",
+    "emailSubmit": "Continuer",
+    "emailMismatch": "Cette adresse ne correspond pas au lien. Vérifiez-la et réessayez : le lien reste valide."
   },
   "register": {
     "title": "Créez votre compte",

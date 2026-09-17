@@ -35,7 +35,12 @@
     "title": "Completando el acceso",
     "verifying": "Verificando tu enlace de acceso…",
     "error": "El enlace no es válido o ha caducado. Vuelve a solicitar uno.",
-    "errorGeneric": "No hemos podido completar el acceso. Vuelve a intentarlo en unos instantes."
+    "errorGeneric": "No hemos podido completar el acceso. Vuelve a intentarlo en unos instantes.",
+    "emailTitle": "Confirma tu correo",
+    "emailIntro": "Has abierto el enlace en un navegador o una pestaña distinta de donde lo pediste, así que necesitamos que nos confirmes a qué dirección lo enviamos.",
+    "emailHint": "La misma dirección a la que llegó el enlace.",
+    "emailSubmit": "Continuar",
+    "emailMismatch": "Esa dirección no coincide con el enlace. Revísala e inténtalo de nuevo: el enlace sigue siendo válido."
   },
   "register": {
     "title": "Crea tu cuenta",
