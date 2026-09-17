@@ -119,6 +119,9 @@ try {
     SERVICE_NAME: "somnus-edge-api",
     NODE_ENV: "development",
     FIREBASE_PROJECT_ID: "somnus-dev-test",
+    // Sessions live in their own project (see edge-config). Set explicitly so
+    // the stack does not depend on the default matching.
+    FIRESTORE_PROJECT_ID: "somnus-dev-test",
     FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099",
     FIRESTORE_EMULATOR_HOST: "127.0.0.1:9098",
     IDENTITY_BASE_URL: "http://localhost:3001",

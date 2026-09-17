@@ -16,6 +16,12 @@ import { z } from "zod";
 export const EdgeConfigSchema = z.object({
   // Firebase
   FIREBASE_PROJECT_ID: z.string().min(1).default("somnus-dev"),
+  // The project whose Firestore holds server-side sessions. SEPARATE from
+  // FIREBASE_PROJECT_ID on purpose: Auth lives in the Firebase project, the
+  // sessions database lives in the platform's own project. It deliberately does
+  // not fall back to FIREBASE_PROJECT_ID -- that coupling is what pointed every
+  // session write at a project with no Firestore database in it.
+  FIRESTORE_PROJECT_ID: z.string().min(1).default("somnus-dev"),
   // When set, firebase-admin talks to the local Auth emulator instead
   // of real Firebase (host:port, e.g. "127.0.0.1:4400"). firebase-admin
   // reads this env var itself; we surface it here only to validate it.

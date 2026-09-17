@@ -11,7 +11,10 @@ import { FirebaseService } from "./firebase.service.js";
   providers: [
     {
       provide: FirebaseService,
-      useFactory: () => new FirebaseService(loadEdgeConfig(process.env).FIREBASE_PROJECT_ID),
+      useFactory: () => {
+        const config = loadEdgeConfig(process.env);
+        return new FirebaseService(config.FIREBASE_PROJECT_ID, config.FIRESTORE_PROJECT_ID);
+      },
     },
   ],
   exports: [FirebaseService],

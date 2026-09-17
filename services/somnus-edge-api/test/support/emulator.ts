@@ -9,6 +9,17 @@
 
 export const TEST_PROJECT_ID = process.env["FIREBASE_PROJECT_ID"] ?? "somnus-dev-test";
 
+/**
+ * The project the Firestore emulator namespaces session documents under.
+ *
+ * Distinct from TEST_PROJECT_ID because the service now uses two projects: Auth
+ * in the Firebase project, Firestore in the platform's own. Clearing the Auth
+ * project's documents would wipe a namespace nothing writes to and leave real
+ * sessions behind between tests. Mirrors `FIRESTORE_PROJECT_ID`'s default in
+ * `edge-config.ts`; if that default changes, change this with it.
+ */
+export const TEST_FIRESTORE_PROJECT_ID = process.env["FIRESTORE_PROJECT_ID"] ?? "somnus-dev";
+
 function authHost(): string {
   const host = process.env["FIREBASE_AUTH_EMULATOR_HOST"];
   if (!host) {
@@ -86,7 +97,7 @@ export async function clearAuthEmulator(): Promise<void> {
 /** Wipe all Firestore emulator documents between tests. */
 export async function clearFirestoreEmulator(): Promise<void> {
   await fetch(
-    `http://${firestoreHost()}/emulator/v1/projects/${TEST_PROJECT_ID}/databases/(default)/documents`,
+    `http://${firestoreHost()}/emulator/v1/projects/${TEST_FIRESTORE_PROJECT_ID}/databases/(default)/documents`,
     { method: "DELETE" },
   );
 }
