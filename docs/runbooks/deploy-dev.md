@@ -18,6 +18,62 @@ checkpoint wires up Firestore from a backend service, that service's
 service account will need an explicit `roles/datastore.user` grant on
 `the-somnuss` at that point -- not guessed here.
 
+
+## The five Cloud Run services are edited through Terraform only
+
+**In force from 2026-09-17.** Nothing changes the environment variables, secret
+mounts, scaling, or service accounts of `somnus-edge-api`,
+`somnus-identity-service`, `morpheo-service`, `somnus-report-service` or
+`somnus-worker` except a change to
+`infrastructure/terraform/environments/dev/main.tf` followed by
+`terraform apply`. No `gcloud run services update`, no `--set-env-vars`, no
+console edit.
+
+Everything before that date is exactly why this rule exists. On 2026-09-17 a
+routine `terraform plan` -- run to add one secret -- proposed deleting **21
+environment variables across all five services**: every database URL,
+`COOKIE_SECRET`, `CORS_ORIGINS`, `INTERNAL_AUTH_MODE`, the three `*_DB_SSL`
+flags and every internal service URL. Applying it would have taken the whole dev
+environment down. Terraform had not lost them; they had been set out of band
+after the last apply, so Terraform had never known about them, and a declarative
+tool asked to reconcile deletes what nobody declared.
+
+Two things hid it for weeks:
+
+- **CI deploys do not surface it.** `gcloud run deploy --image ...` with no env
+  flags preserves existing configuration, so every image deploy looked fine. That
+  protection was never Terraform's.
+- **The plan summary understates it.** `2 to add, 5 to change` reads as routine.
+  The five "changes" were the five services losing their configuration. Read the
+  resource bodies, not the summary line.
+
+### If you need a value changed on one of these services
+
+1. Edit `main.tf`.
+2. `terraform plan` and read the body of every changed resource, not the count.
+3. `terraform apply`.
+
+### If something was already changed out of band
+
+Do not apply over it. Reconcile first: `gcloud run services describe <service>
+--region=europe-west3 --format=json`, bring every live value into `main.tf`, and
+confirm a fresh plan reports **0 to change** before doing anything else.
+
+### Secrets are not managed here
+
+Every secret -- the seven database and cookie secrets, `BOOTSTRAP_SUPER_ADMIN_EMAIL`
+and `OPENAI_API_KEY` -- is created by hand in Secret Manager and referenced by id.
+Terraform owns none of them, which is deliberate: no secret value belongs in this
+repository, and importing one is dangerous. Replication policy is immutable, the
+`secret-manager` module pins `user_managed` to the region, and both
+`BOOTSTRAP_SUPER_ADMIN_EMAIL` and `OPENAI_API_KEY` are AUTOMATIC -- so an import
+would make Terraform plan to destroy and recreate a live secret.
+
+Accessor bindings are the exception worth knowing: most were granted by hand, and
+`google_secret_manager_secret_iam_member.report_openai_api_key` is managed in
+Terraform. Both are the same shape -- one service account, one secret, no project
+role.
+
 ## Prerequisites
 
 - `gcloud`, authenticated as an account with **Owner** or (**Editor** +
