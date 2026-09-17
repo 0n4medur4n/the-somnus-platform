@@ -253,12 +253,26 @@ module "run_report" {
     LOG_FORMAT       = "json"
     MORPHEO_BASE_URL = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
   }
+  # OPENAI_API_KEY is the embedding key, and nothing else.
+  #
+  # AI_REWRITE_ENABLED is deliberately NOT set here. It is a separate setting
+  # with its own env var, defaulting to false in `report.settings.config`, and
+  # the chat adapter it would need is constructed by nothing in the service.
+  # Mounting this key enables embedding and cannot enable AI rewriting; that
+  # remains a separate, explicit decision (build plan §15 / Addendum A 15.3).
   secret_env_vars = {
-    DATABASE_URL = { secret_id = "report-db-url", version = "latest" }
+    DATABASE_URL   = { secret_id = "report-db-url", version = "latest" }
+    OPENAI_API_KEY = { secret_id = "OPENAI_API_KEY", version = "latest" }
   }
   labels = { app = "somnus", service = "report", env = var.env }
 
-  depends_on = [module.project_apis_backend]
+  # The IAM binding must exist before a revision that mounts the secret starts:
+  # Cloud Run resolves `value_source` at deploy time, and a revision whose
+  # service account cannot read the secret fails to come up.
+  depends_on = [
+    module.project_apis_backend,
+    google_secret_manager_secret_iam_member.report_openai_api_key,
+  ]
 }
 
 module "run_worker" {
@@ -392,6 +406,33 @@ module "hosting_app" {
 #
 # Nothing at runtime reads BOOTSTRAP_SUPER_ADMIN_EMAIL: only the manually invoked
 # `bootstrap:super-admin` script does, with the operator's own credentials.
+
+# --- Read access to the embedding key (build plan §3.6b / Addendum B §B2a) ---
+#
+# Least privilege, and narrower than the project: `local.baseline_roles` grants
+# no Secret Manager access to any runtime service account, and this does not
+# change that. It grants ONE service account read on ONE secret -- the same shape
+# the seven database/cookie secrets already have, which were granted by hand.
+#
+# Only the report service embeds: the Index A batch job (Checkpoint 11.3/16.0)
+# and the Index B corpus indexer (Checkpoint 16.4) both read OPENAI_API_KEY
+# through `report.settings.config`. No other service has any use for it, so no
+# other service account is named here.
+#
+# The secret itself is referenced, never created -- see the secrets note above.
+# This is the one binding that does not exist yet, so it is the one thing in this
+# change that a plan should propose.
+data "google_secret_manager_secret" "openai_api_key" {
+  project   = var.project_id
+  secret_id = "OPENAI_API_KEY"
+}
+
+resource "google_secret_manager_secret_iam_member" "report_openai_api_key" {
+  project   = var.project_id
+  secret_id = data.google_secret_manager_secret.openai_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = module.sa_report.member
+}
 
 # --- Cost guardrail (build plan §2) ---
 # One budget per project: Firebase Hosting/Auth free-tier usage means
