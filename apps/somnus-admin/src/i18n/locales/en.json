@@ -20,7 +20,12 @@
   "callback": {
     "verifying": "Verifying your sign-in link…",
     "title": "Completing sign-in",
-    "error": "This link is not valid or has expired. Request a new one."
+    "error": "This link is not valid or has expired. Request a new one.",
+    "emailTitle": "Confirm your email",
+    "emailIntro": "You opened the link in a different browser or tab from the one where you requested it, so we need you to confirm which address we sent it to.",
+    "emailHint": "The same address the link arrived at.",
+    "emailSubmit": "Continue",
+    "emailMismatch": "That address does not match the link. Check it and try again -- the link is still valid."
   },
   "denied": {
     "title": "You do not have console access",
