@@ -20,7 +20,12 @@
   "callback": {
     "verifying": "Verificando tu enlace de acceso…",
     "title": "Completando el acceso",
-    "error": "El enlace no es válido o ha caducado. Vuelve a solicitar uno."
+    "error": "El enlace no es válido o ha caducado. Vuelve a solicitar uno.",
+    "emailTitle": "Confirma tu correo",
+    "emailIntro": "Has abierto el enlace en un navegador o una pestaña distinta de donde lo pediste, así que necesitamos que nos confirmes a qué dirección lo enviamos.",
+    "emailHint": "La misma dirección a la que llegó el enlace.",
+    "emailSubmit": "Continuar",
+    "emailMismatch": "Esa dirección no coincide con el enlace. Revísala e inténtalo de nuevo: el enlace sigue siendo válido."
   },
   "denied": {
     "title": "No tienes acceso a la consola",
