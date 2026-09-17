@@ -105,12 +105,16 @@ module "artifact_registry" {
 # --- Service accounts (one per Cloud Run service, least privilege) ---
 
 module "sa_edge_api" {
-  source        = "../../modules/service-account"
-  project_id    = var.project_id
-  account_id    = "somnus-edge-api"
-  display_name  = "somnus-edge-api runtime"
-  description   = "Public BFF: Firebase token verification, session cookies, composition. No TiDB connection (build plan §5.3)."
-  project_roles = local.baseline_roles
+  source       = "../../modules/service-account"
+  project_id   = var.project_id
+  account_id   = "somnus-edge-api"
+  display_name = "somnus-edge-api runtime"
+  description  = "Public BFF: Firebase token verification, session cookies, composition. No TiDB connection (build plan §5.3)."
+  # `datastore.user` reads and writes documents and nothing else -- not
+  # `datastore.owner`, which could drop indexes or the database. edge-api is the
+  # only service that touches Firestore (build plan §9: session lookup state), so
+  # it is the only account that gets this.
+  project_roles = concat(local.baseline_roles, ["roles/datastore.user"])
 
   depends_on = [module.project_apis_backend]
 }
@@ -185,6 +189,11 @@ module "run_edge_api" {
     IDENTITY_BASE_URL   = "https://somnus-identity-service-lx3fvb5r5q-ey.a.run.app"
     REPORT_BASE_URL     = "https://somnus-report-service-lx3fvb5r5q-ey.a.run.app"
     CORS_ORIGINS        = "https://the-somnus-app.web.app,https://the-somnus-app.firebaseapp.com,https://the-somnuss.web.app,https://the-somnuss.firebaseapp.com,https://app.thesomnus.com"
+    # Auth lives in the Firebase project; Firestore lives here. Two separate
+    # variables so the Firestore client cannot silently follow the Auth project
+    # id again -- which is what pointed session writes at a project with no
+    # database in it.
+    FIRESTORE_PROJECT_ID = var.project_id
   }
   secret_env_vars = {
     COOKIE_SECRET = { secret_id = "edge-cookie-secret", version = "latest" }
@@ -480,6 +489,37 @@ resource "google_secret_manager_secret_iam_member" "report_openai_api_key" {
   secret_id = data.google_secret_manager_secret.openai_api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = module.sa_report.member
+}
+
+# --- Sessions store (build plan §9 / ADR 0006) ---
+#
+# edge-api holds server-side sessions in Firestore: the cookie carries an opaque
+# id and all state lives here, so revoking a session is immediate rather than
+# waiting for a token to expire (§5.3 / §10). Enabling firestore.googleapis.com
+# does not create a database, and until this resource existed there was none in
+# either project -- every `POST /v1/sessions` failed with gRPC 5 NOT_FOUND on the
+# first write, which is how this was found on 2026-09-17.
+#
+# In `the-somnus`, the service's OWN project, deliberately. `the-somnuss` exists
+# because Firebase Hosting and Auth need a Firebase project, not because the
+# platform lives there -- TiDB, Secret Manager and all five service accounts are
+# here. Same-project access also needs no cross-project grant, which the header
+# comment above had flagged as the thing to add "at that checkpoint, not guessed
+# now". This is that checkpoint, and the answer is that no cross-project grant is
+# needed at all.
+resource "google_firestore_database" "sessions" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.region
+  type        = "FIRESTORE_NATIVE"
+
+  # Sessions are short-lived by design and hold no record of clinical value, so
+  # the documented `terraform destroy` path in the dev runbook stays usable.
+  # Staging and production should NOT copy this without a deliberate decision.
+  delete_protection_state = "DELETE_PROTECTION_DISABLED"
+  deletion_policy         = "DELETE"
+
+  depends_on = [module.project_apis_backend]
 }
 
 # --- Cost guardrail (build plan §2) ---
