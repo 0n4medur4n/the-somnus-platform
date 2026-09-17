@@ -9,7 +9,17 @@ resource "google_cloud_run_v2_service" "this" {
   # Public for the edge API only; every other service is reachable
   # solely from other Cloud Run services in this project (build plan
   # §5.3: "no direct calls to internal services" from anywhere else).
-  ingress = var.public ? "INGRESS_TRAFFIC_ALL" : "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  #
+  # That last sentence describes the INTENT (ADR 0008) and not what the
+  # `internal` ingress setting actually delivers -- see `var.ingress`.
+  # Derived from `public` unless a caller declares it. The override exists
+  # because "internal" does NOT mean what the comment above assumed: Cloud Run
+  # is not on the list of sources Google counts as internal ingress, so one
+  # Cloud Run service calling another over its run.app URL with no VPC routing
+  # is blocked, not permitted. See the note on `var.ingress`.
+  ingress = var.ingress != null ? var.ingress : (
+    var.public ? "INGRESS_TRAFFIC_ALL" : "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  )
 
   labels = var.labels
 

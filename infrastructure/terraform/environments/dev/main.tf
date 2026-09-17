@@ -201,6 +201,22 @@ module "run_identity" {
   service_name          = "somnus-identity-service"
   service_account_email = module.sa_identity.email
   public                = false
+  # ADR 0008 wants this service private, and it is not, deliberately and
+  # temporarily. `INTERNAL_ONLY` would block somnus-edge-api, which reaches this
+  # service over its run.app URL with no VPC routing: Cloud Run is not a source
+  # Google counts as internal ingress, and the rejection happens before the
+  # `run.invoker` binding edge-api holds is ever consulted (verified against
+  # Google's ingress documentation, 2026-09-17; the live services had already
+  # been flipped to ALL out of band, which is most likely why).
+  #
+  # So this declares what is running rather than proposing an outage. ADR 0008's
+  # intent is UNMET and needs a real connectivity decision -- Direct VPC egress
+  # on edge-api, or an internal Application Load Balancer -- which is an
+  # architecture change, not a flag.
+  #
+  # IAM is unaffected: `public` stays false, so allUsers gets nothing and only
+  # edge-api's service account can invoke this.
+  ingress = "INGRESS_TRAFFIC_ALL"
   env_vars = {
     LOG_LEVEL      = "info"
     LOG_FORMAT     = "json"
@@ -225,6 +241,22 @@ module "run_morpheo" {
   service_name          = "morpheo-service"
   service_account_email = module.sa_morpheo.email
   public                = false
+  # ADR 0008 wants this service private, and it is not, deliberately and
+  # temporarily. `INTERNAL_ONLY` would block somnus-edge-api, which reaches this
+  # service over its run.app URL with no VPC routing: Cloud Run is not a source
+  # Google counts as internal ingress, and the rejection happens before the
+  # `run.invoker` binding edge-api holds is ever consulted (verified against
+  # Google's ingress documentation, 2026-09-17; the live services had already
+  # been flipped to ALL out of band, which is most likely why).
+  #
+  # So this declares what is running rather than proposing an outage. ADR 0008's
+  # intent is UNMET and needs a real connectivity decision -- Direct VPC egress
+  # on edge-api, or an internal Application Load Balancer -- which is an
+  # architecture change, not a flag.
+  #
+  # IAM is unaffected: `public` stays false, so allUsers gets nothing and only
+  # edge-api's service account can invoke this.
+  ingress = "INGRESS_TRAFFIC_ALL"
   env_vars = {
     ENV          = "production"
     LOG_LEVEL    = "info"
@@ -246,6 +278,22 @@ module "run_report" {
   service_name          = "somnus-report-service"
   service_account_email = module.sa_report.email
   public                = false
+  # ADR 0008 wants this service private, and it is not, deliberately and
+  # temporarily. `INTERNAL_ONLY` would block somnus-edge-api, which reaches this
+  # service over its run.app URL with no VPC routing: Cloud Run is not a source
+  # Google counts as internal ingress, and the rejection happens before the
+  # `run.invoker` binding edge-api holds is ever consulted (verified against
+  # Google's ingress documentation, 2026-09-17; the live services had already
+  # been flipped to ALL out of band, which is most likely why).
+  #
+  # So this declares what is running rather than proposing an outage. ADR 0008's
+  # intent is UNMET and needs a real connectivity decision -- Direct VPC egress
+  # on edge-api, or an internal Application Load Balancer -- which is an
+  # architecture change, not a flag.
+  #
+  # IAM is unaffected: `public` stays false, so allUsers gets nothing and only
+  # edge-api's service account can invoke this.
+  ingress = "INGRESS_TRAFFIC_ALL"
   env_vars = {
     ENV              = "production"
     LOG_LEVEL        = "info"

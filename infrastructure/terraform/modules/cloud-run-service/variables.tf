@@ -28,6 +28,33 @@ variable "image" {
   default     = "us-docker.pkg.dev/cloudrun/container/hello:latest"
 }
 
+variable "ingress" {
+  description = <<-EOT
+    Explicit Cloud Run ingress, overriding the value derived from `public`.
+    Null (the default) keeps the derived behaviour: ALL when public,
+    INTERNAL_ONLY otherwise.
+
+    This exists because INTERNAL_ONLY does not do what ADR 0008 assumed it
+    did. Google's ingress documentation enumerates what counts as internal --
+    internal Application Load Balancer, VPC Service Controls perimeters, VPC
+    networks in the same project, shared VPC, and a closed list of products
+    (Cloud Scheduler, Cloud Tasks, Dialogflow CX, Eventarc, Gemini
+    Enterprise, Pub/Sub, synthetic monitors, Workflows, BigQuery). **Cloud Run
+    is not on that list.** A Cloud Run service calling another over its
+    run.app URL, with no VPC connector and no Direct VPC egress, is therefore
+    external traffic and is rejected at the network layer -- before IAM is
+    consulted, so a `run.invoker` binding does not rescue it.
+
+    Setting this to INGRESS_TRAFFIC_ALL is NOT the same as setting
+    `public = true`: `public` additionally grants allUsers `run.invoker`,
+    which would make the service publicly invokable. Ingress alone leaves IAM
+    closed, so the service stays reachable only by a caller holding an
+    explicit binding.
+  EOT
+  type        = string
+  default     = null
+}
+
 variable "public" {
   description = "If true, ingress allows all traffic and allUsers gets run.invoker (only somnus-edge-api should set this). If false, ingress is internal-only and callers need an explicit IAM binding (see the cloud-run-iam module)."
   type        = bool
