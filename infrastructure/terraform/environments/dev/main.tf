@@ -173,10 +173,21 @@ module "run_edge_api" {
   service_account_email = module.sa_edge_api.email
   public                = true
   env_vars = {
-    SERVICE_NAME = "somnus-edge-api"
-    NODE_ENV     = "production"
-    LOG_LEVEL    = "info"
-    LOG_FORMAT   = "json"
+    LOG_LEVEL           = "info"
+    LOG_FORMAT          = "json"
+    NODE_ENV            = "production"
+    SERVICE_NAME        = "somnus-edge-api"
+    INTERNAL_AUTH_MODE  = "gcp"
+    FIREBASE_PROJECT_ID = "the-somnuss"
+    COOKIE_SECURE       = "true"
+    COOKIE_SAMESITE     = "none"
+    MORPHEO_BASE_URL    = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
+    IDENTITY_BASE_URL   = "https://somnus-identity-service-lx3fvb5r5q-ey.a.run.app"
+    REPORT_BASE_URL     = "https://somnus-report-service-lx3fvb5r5q-ey.a.run.app"
+    CORS_ORIGINS        = "https://the-somnus-app.web.app,https://the-somnus-app.firebaseapp.com,https://the-somnuss.web.app,https://the-somnuss.firebaseapp.com,https://app.thesomnus.com"
+  }
+  secret_env_vars = {
+    COOKIE_SECRET = { secret_id = "edge-cookie-secret", version = "latest" }
   }
   labels = { app = "somnus", service = "edge-api", env = var.env }
 
@@ -191,10 +202,16 @@ module "run_identity" {
   service_account_email = module.sa_identity.email
   public                = false
   env_vars = {
-    SERVICE_NAME = "somnus-identity-service"
-    NODE_ENV     = "production"
-    LOG_LEVEL    = "info"
-    LOG_FORMAT   = "json"
+    LOG_LEVEL      = "info"
+    LOG_FORMAT     = "json"
+    NODE_ENV       = "production"
+    SERVICE_NAME   = "somnus-identity-service"
+    DB_SSL         = "true"
+    CONSENT_DB_SSL = "true"
+  }
+  secret_env_vars = {
+    DATABASE_URL         = { secret_id = "identity-db-url", version = "latest" }
+    CONSENT_DATABASE_URL = { secret_id = "consent-db-url", version = "latest" }
   }
   labels = { app = "somnus", service = "identity", env = var.env }
 
@@ -209,10 +226,13 @@ module "run_morpheo" {
   service_account_email = module.sa_morpheo.email
   public                = false
   env_vars = {
-    SERVICE_NAME = "morpheo-service"
     ENV          = "production"
     LOG_LEVEL    = "info"
     LOG_FORMAT   = "json"
+    SERVICE_NAME = "morpheo-service"
+  }
+  secret_env_vars = {
+    DATABASE_URL = { secret_id = "morpheo-db-url", version = "latest" }
   }
   labels = { app = "somnus", service = "morpheo", env = var.env }
 
@@ -227,10 +247,14 @@ module "run_report" {
   service_account_email = module.sa_report.email
   public                = false
   env_vars = {
-    SERVICE_NAME = "somnus-report-service"
-    ENV          = "production"
-    LOG_LEVEL    = "info"
-    LOG_FORMAT   = "json"
+    ENV              = "production"
+    LOG_LEVEL        = "info"
+    SERVICE_NAME     = "somnus-report-service"
+    LOG_FORMAT       = "json"
+    MORPHEO_BASE_URL = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
+  }
+  secret_env_vars = {
+    DATABASE_URL = { secret_id = "report-db-url", version = "latest" }
   }
   labels = { app = "somnus", service = "report", env = var.env }
 
@@ -245,10 +269,17 @@ module "run_worker" {
   service_account_email = module.sa_worker.email
   public                = false
   env_vars = {
-    SERVICE_NAME = "somnus-worker"
-    NODE_ENV     = "production"
-    LOG_LEVEL    = "info"
-    LOG_FORMAT   = "json"
+    LOG_LEVEL            = "info"
+    SERVICE_NAME         = "somnus-worker"
+    LOG_FORMAT           = "json"
+    NODE_ENV             = "production"
+    NOTIFICATIONS_DB_SSL = "true"
+    AUDIT_DB_SSL         = "true"
+    ENV                  = "production"
+  }
+  secret_env_vars = {
+    NOTIFICATIONS_DATABASE_URL = { secret_id = "notifications-db-url", version = "latest" }
+    AUDIT_DATABASE_URL         = { secret_id = "audit-db-url", version = "latest" }
   }
   labels = { app = "somnus", service = "worker", env = var.env }
 
@@ -344,29 +375,23 @@ module "hosting_app" {
   depends_on = [google_firebase_project.this]
 }
 
-# --- Platform bootstrap secret (Addendum A §A5.4) ---
+# --- Secrets: managed outside Terraform (build plan: no secret values in code) ---
 #
-# An EMPTY secret container. Terraform creates the container and never the
-# value: the address of the first `platform_super_admin` is set out of band
-# (`gcloud secrets versions add`) and appears nowhere in this repository.
+# Every secret this project uses -- the seven database/cookie secrets the services
+# mount, BOOTSTRAP_SUPER_ADMIN_EMAIL, and OPENAI_API_KEY -- was created by hand in
+# Secret Manager and is NOT managed here. Terraform references them by id where a
+# service mounts one, and owns none of them.
 #
-# No service account is granted access. Nothing at runtime reads it -- only the
-# one-time, manually-invoked `bootstrap:super-admin` script does, with the
-# operator's own credentials. Granting a runtime SA access to it would widen the
-# blast radius of that service for a secret it never uses.
-module "bootstrap_secret" {
-  source     = "../../modules/secret-manager"
-  project_id = var.project_id
-  region     = var.region
-
-  secrets = {
-    BOOTSTRAP_SUPER_ADMIN_EMAIL = {
-      accessor_members = []
-    }
-  }
-
-  depends_on = [module.project_apis_backend]
-}
+# There used to be a `module "bootstrap_secret"` that declared
+# BOOTSTRAP_SUPER_ADMIN_EMAIL as a resource. It had never been applied (no
+# google_secret_manager_secret exists in state), the secret already existed, so
+# applying it would have failed with 409 -- and importing it instead would have
+# been worse: the secret-manager module pins `user_managed` replication to
+# var.region, the live secret is AUTOMATIC, and replication is immutable, so
+# Terraform would have planned to DESTROY AND RECREATE a live secret.
+#
+# Nothing at runtime reads BOOTSTRAP_SUPER_ADMIN_EMAIL: only the manually invoked
+# `bootstrap:super-admin` script does, with the operator's own credentials.
 
 # --- Cost guardrail (build plan §2) ---
 # One budget per project: Firebase Hosting/Auth free-tier usage means
