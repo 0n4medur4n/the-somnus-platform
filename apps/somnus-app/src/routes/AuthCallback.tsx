@@ -8,7 +8,7 @@ import {
   RegistrationRequestSchema,
   type SupportedLocale,
 } from "@somnus/api-contracts";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -31,7 +31,7 @@ import { edge } from "../lib/edge.js";
 import { pendingInvitation } from "../lib/invitation.js";
 import { reportError } from "../lib/report-error.js";
 
-type Phase = "verifying" | "register" | "error";
+type Phase = "verifying" | "needs-email" | "register" | "error";
 
 export function AuthCallback() {
   const { t, i18n } = useTranslation();
@@ -41,22 +41,27 @@ export function AuthCallback() {
   const [failure, setFailure] = useState<CallbackFailure>("generic");
   const started = useRef(false);
 
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    void (async () => {
-      // Which of the three steps we are in. The screen used to blame the emailed
-      // link for all of them; the log now says which one actually failed, so the
-      // next incident is diagnosable from a console rather than from a trace.
-      let stage: "sign-in" | "session" | "account" = "account";
+  /**
+   * Redeem the emailed link, exchange it for a session, load the account.
+   *
+   * Which of the three steps we are in is tracked because the screen used to
+   * blame the emailed link for all of them; the log now says which one actually
+   * failed, so the next incident is diagnosable from a console rather than from
+   * a trace.
+   *
+   * `onRecoverable` is how the confirmation form keeps someone on the screen for
+   * a failure they can fix themselves. A mistyped address fails at `sign-in`
+   * with a code that is deliberately NOT `link-invalid` (see `auth-failure.ts`:
+   * the link has not expired and is not consumed), so the honest response is
+   * "check the address", not a terminal error that strands them.
+   */
+  const redeem = useCallback(
+    async (email: string, onRecoverable?: (message: string) => void) => {
+      let stage: "sign-in" | "session" | "account" = "sign-in";
       try {
-        if (isEmailLink(window.location.href)) {
-          stage = "sign-in";
-          const email = storedEmail() ?? window.prompt(t("login.emailLabel")) ?? "";
-          const idToken = await completeEmailLinkSignIn(email, window.location.href);
-          stage = "session";
-          await edge.createSession(idToken);
-        }
+        const idToken = await completeEmailLinkSignIn(email, window.location.href);
+        stage = "session";
+        await edge.createSession(idToken);
         stage = "account";
         await refresh();
       } catch (error) {
@@ -64,12 +69,44 @@ export function AuthCallback() {
         // "request a new one" copy. Anything else says something went wrong
         // without inventing a cause -- sending someone for a fresh link when the
         // session endpoint is failing just loops them through the same error.
-        setFailure(classifyCallbackFailure(error));
+        const classified = classifyCallbackFailure(error);
         reportError("auth-callback", { stage, ...describeCallbackFailure(error) });
+        if (onRecoverable && classified !== "link-invalid" && stage === "sign-in") {
+          onRecoverable(t("callback.emailMismatch"));
+          return;
+        }
+        setFailure(classified);
+        setPhase("error");
+      }
+    },
+    [refresh, t],
+  );
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void (async () => {
+      if (isEmailLink(window.location.href)) {
+        const email = storedEmail();
+        if (email === null) {
+          // Cross-device, or simply a different tab: Firebase requires the
+          // address to be re-supplied, and this context's sessionStorage does
+          // not have it. Ask for it on a real screen.
+          setPhase("needs-email");
+          return;
+        }
+        await redeem(email);
+        return;
+      }
+      try {
+        await refresh();
+      } catch (error) {
+        setFailure(classifyCallbackFailure(error));
+        reportError("auth-callback", { stage: "account", ...describeCallbackFailure(error) });
         setPhase("error");
       }
     })();
-  }, [refresh, t]);
+  }, [redeem, refresh]);
 
   // An invitation parked before the magic link (Addendum A Checkpoint 14.2)
   // sends the person back to the accept screen instead of straight to the app.
@@ -98,6 +135,10 @@ export function AuthCallback() {
     );
   }
 
+  if (phase === "needs-email") {
+    return <ConfirmEmailStep onConfirm={redeem} />;
+  }
+
   if (phase === "register") {
     const locale: SupportedLocale = isSupportedLocale(i18n.resolvedLanguage)
       ? i18n.resolvedLanguage
@@ -115,6 +156,81 @@ export function AuthCallback() {
   }
 
   return <FullPageStatus message={t("callback.verifying")} />;
+}
+
+// Messages are i18n keys, translated at render so validation is localized --
+// the same shape the Login screen and the registration steps use.
+const ConfirmEmailSchema = z.object({
+  email: z.string().trim().min(1, "errors.required").email("errors.invalidEmail"),
+});
+type ConfirmEmailForm = z.infer<typeof ConfirmEmailSchema>;
+
+/**
+ * Cross-device confirmation: the address, asked for on a screen.
+ *
+ * Firebase requires the email to be re-supplied when a magic link is opened
+ * where it was not requested, and this used to be a raw `window.prompt` lifted
+ * from Firebase's own example -- a browser dialog titled with the origin, in the
+ * browser's language rather than the app's, with no validation and no way back
+ * from a typo. The Firebase call underneath is untouched; only the UI asking for
+ * the address changed.
+ *
+ * A wrong address is recoverable and is treated that way: the error lands on the
+ * field and the person tries again, because the link is still valid and has not
+ * been consumed.
+ */
+function ConfirmEmailStep({
+  onConfirm,
+}: {
+  onConfirm: (email: string, onRecoverable: (message: string) => void) => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [rejected, setRejected] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ConfirmEmailForm>({ resolver: zodResolver(ConfirmEmailSchema) });
+
+  const validationError = errors.email ? t(errors.email.message ?? "errors.generic") : "";
+  const fieldError = validationError || rejected || "";
+  const summary: FieldError[] = fieldError
+    ? [{ fieldId: "callback-email", message: fieldError }]
+    : [];
+
+  return (
+    <AuthLayout>
+      <div className="rounded-2xl border border-somnus-subtle/15 bg-somnus-surface p-6 shadow-lg shadow-black/20">
+        <form
+          noValidate
+          className="flex flex-col gap-4"
+          onSubmit={handleSubmit(async ({ email }) => {
+            setRejected(null);
+            await onConfirm(email, setRejected);
+          })}
+        >
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold text-somnus-text">{t("callback.emailTitle")}</h1>
+            <p className="text-somnus-subtle">{t("callback.emailIntro")}</p>
+          </div>
+          <ErrorSummary errors={summary} />
+          <Field
+            id="callback-email"
+            label={t("login.emailLabel")}
+            hint={t("callback.emailHint")}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            {...(fieldError ? { error: fieldError } : {})}
+            {...register("email")}
+          />
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {t("callback.emailSubmit")}
+          </Button>
+        </form>
+      </div>
+    </AuthLayout>
+  );
 }
 
 /**
