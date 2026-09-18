@@ -317,3 +317,96 @@ describe("AuthCallback failures (the error screen must not assert a cause)", () 
     expect(screen.queryByText(t("callback.error"))).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Cross-device sign-in: the link opened where it was not requested.
+ *
+ * `storedEmail()` is null because sessionStorage belongs to the context that
+ * asked for the link, so Firebase needs the address supplied again. Until
+ * 2026-09-18 that was a `window.prompt`; it is now a form, and this is the path
+ * that had NO test at all -- the mocks above default `isEmailLink` to false, so
+ * every existing case went down the "not a magic link" branch.
+ *
+ * The regression these cover is specific: the auth provider calls `/v1/me` on
+ * page load, every visitor arrives without a session, so the state is
+ * `unauthenticated` while the form is on screen. A guard that treats
+ * "unauthenticated and not verifying" as failure turns the form into the error
+ * screen before the person can type anything -- which is exactly what shipped and
+ * what a real sign-in from Gmail hit.
+ */
+describe("cross-device confirmation (the link opened in another context)", () => {
+  beforeEach(() => {
+    // Reset call history as well as return values: these mocks are module-level
+    // and the suites above leave calls on them, which would make
+    // "was never called" assertions here read the previous test's work.
+    createSession.mockReset();
+    completeEmailLinkSignIn.mockReset();
+    isEmailLink.mockReturnValue(true);
+    storedEmail.mockReturnValue(null);
+  });
+
+  it("asks for the email on a screen instead of failing", async () => {
+    renderWithProviders(<AuthCallback />);
+
+    // The form, not the error screen -- with the default `unauthenticated` auth
+    // state, which is what a real page load produces.
+    expect(await screen.findByText(t("callback.emailTitle"))).toBeInTheDocument();
+    expect(screen.getByLabelText(t("login.emailLabel"))).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    // Nothing was redeemed: there was no address to redeem with.
+    expect(completeEmailLinkSignIn).not.toHaveBeenCalled();
+  });
+
+  it("redeems the link with the address the person types", async () => {
+    completeEmailLinkSignIn.mockResolvedValue("id-token");
+    createSession.mockResolvedValue(undefined);
+
+    renderWithProviders(<AuthCallback />);
+    await screen.findByText(t("callback.emailTitle"));
+
+    await userEvent.type(screen.getByLabelText(t("login.emailLabel")), "ada@example.org");
+    await userEvent.click(screen.getByRole("button", { name: t("callback.emailSubmit") }));
+
+    await waitFor(() =>
+      expect(completeEmailLinkSignIn).toHaveBeenCalledWith("ada@example.org", window.location.href),
+    );
+    expect(createSession).toHaveBeenCalledWith("id-token");
+  });
+
+  it("keeps the person on the form when the address does not match the link", async () => {
+    // `auth/invalid-email` is deliberately NOT `link-invalid` (see
+    // auth-failure.ts): the link is still valid and unconsumed, so a typo is
+    // recoverable and must not end the flow.
+    completeEmailLinkSignIn.mockRejectedValue(
+      Object.assign(new Error("bad email"), { code: "auth/invalid-email" }),
+    );
+
+    renderWithProviders(<AuthCallback />);
+    await screen.findByText(t("callback.emailTitle"));
+
+    await userEvent.type(screen.getByLabelText(t("login.emailLabel")), "wrong@example.org");
+    await userEvent.click(screen.getByRole("button", { name: t("callback.emailSubmit") }));
+
+    // Twice, as every other field error in this app appears: once in the error
+    // summary that links to the field, once beside the field itself.
+    expect(await screen.findAllByText(t("callback.emailMismatch"))).toHaveLength(2);
+    // Still the form, and still usable.
+    expect(screen.getByLabelText(t("login.emailLabel"))).toBeInTheDocument();
+    expect(screen.queryByText(t("callback.errorGeneric"))).not.toBeInTheDocument();
+  });
+
+  it("ends the flow when the link itself is dead", async () => {
+    completeEmailLinkSignIn.mockRejectedValue(
+      Object.assign(new Error("expired"), { code: "auth/expired-action-code" }),
+    );
+
+    renderWithProviders(<AuthCallback />);
+    await screen.findByText(t("callback.emailTitle"));
+
+    await userEvent.type(screen.getByLabelText(t("login.emailLabel")), "ada@example.org");
+    await userEvent.click(screen.getByRole("button", { name: t("callback.emailSubmit") }));
+
+    // Retrying cannot help here, so this one IS terminal.
+    expect(await screen.findByRole("alert")).toHaveTextContent(t("callback.error"));
+  });
+});
