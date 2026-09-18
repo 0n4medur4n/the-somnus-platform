@@ -121,7 +121,19 @@ export function AuthCallback() {
         : "/app";
       navigate(target, { replace: true });
     } else if (state.status === "needs-registration") setPhase("register");
-    else if (state.status === "unauthenticated" && phase !== "verifying") setPhase("error");
+    else if (
+      state.status === "unauthenticated" &&
+      phase !== "verifying" &&
+      // `needs-email` is waiting for the person to type the address the link was
+      // sent to -- no sign-in has been ATTEMPTED yet, so being unauthenticated is
+      // the expected state, not a failure. Without this the provider's own
+      // `/v1/me` 401 on page load (every visitor arrives without a session) flips
+      // the confirmation form straight to the error screen, and the person never
+      // gets to answer. A terminal failure during redemption sets `error` itself.
+      phase !== "needs-email"
+    ) {
+      setPhase("error");
+    }
   }, [state.status, navigate, phase, invitationToken]);
 
   if (phase === "error") {
