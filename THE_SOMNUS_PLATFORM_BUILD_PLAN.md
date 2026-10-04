@@ -201,7 +201,9 @@ somnus_audit
 
 Each logical database has its own database user, password, schema-scoped access, independent migration history, and service-specific pool configuration. Services (and isolated modules) never read or write another database's tables.
 
-Local development uses MySQL 8 in Docker as a TiDB stand-in; the TiDB Cloud dev cluster is used by integration tests in CI.
+Local development uses MySQL 8 in Docker as a TiDB stand-in. CI's integration tests use a per-run MySQL 8.4 service container, on loopback, for all five services; TiDB Cloud is not reachable from any push-triggered job.
+
+This was not always so. Until 2026-09-19 the identity job ran against the shared TiDB Cloud dev cluster, and because its `globalSetup` drops every table in its target database, every push to `main` deleted the accounts people had registered in dev -- including any `platform_super_admin` grant. The rule is therefore stated as a property, not a preference: **a job that runs destructive setup must target a database that dies with the run.** Real-TiDB coverage, if it is ever wanted, is a deliberate `workflow_dispatch`-only job, never part of the push path.
 
 ---
 

@@ -443,14 +443,37 @@ curl -s -X POST "$IDENTITY_URL/internal/v1/authorization/admin-context" \
 `roleKeys` must contain `platform_super_admin`, and `capabilities` must list all
 twelve of the §A2.2 capabilities.
 
-### Warning: dev's identity database is wiped by the test suite
+### A bootstrap grant now persists in dev (changed 2026-09-19)
 
-`services/somnus-identity-service/test/global-setup.ts` drops **every table** in
-`somnus_identity` before a test run, and CI runs the identity suite on every
-push. A bootstrap grant made against dev therefore survives only until the next
-test run, and the account itself is deleted with it.
+**This section used to say the opposite.** It warned that
+`services/somnus-identity-service/test/global-setup.ts` drops every table in
+`somnus_identity`, that CI ran the identity suite against the dev cluster on
+every push, and that a bootstrap grant therefore survived only until the next
+test run -- concluding that "dev is not a place to keep a standing admin".
 
-That is fine for proving the flow, and it means **dev is not a place to keep a
-standing admin**. In staging and production the identity database is not shared
-with CI, and the grant persists. Re-run the script after a dev wipe; it is
-refused only while a super admin actually exists.
+That was accurate, and it was the bug. It was not a limitation to work around:
+it meant a routine push silently deleted a real person's account. It was found
+on 2026-09-19, when an admin console sign-in dead-ended because the account
+behind `BOOTSTRAP_SUPER_ADMIN_EMAIL` no longer existed.
+
+CI's identity job now runs against a per-run MySQL 8.4 service container on
+loopback (`.github/workflows/ci.yml`), and `TIDB_DEV_DATABASE_URL` is not
+referenced by any job. **No push-triggered job can reach the dev identity
+database.** A bootstrap grant made against dev persists until someone
+deliberately removes it.
+
+Three things enforce that, so it does not quietly regress:
+
+- `test/destructive-guard.ts` refuses any non-loopback target that is not
+  explicitly allowlisted, and nothing allowlists one any more.
+- `test/architecture/ci-destructive-guard-wiring.test.ts` asserts the workflow
+  hands the destructive suite a loopback target, declares no `environment:`,
+  and mentions `TIDB_DEV_DATABASE_URL` nowhere.
+- Build plan §3.9 states the property: a job that runs destructive setup must
+  target a database that dies with the run.
+
+If real-TiDB coverage is wanted again, it is a `workflow_dispatch`-only job and
+a deliberate decision -- not something added back to the push path.
+
+The script itself is unchanged: it is still refused while a super admin already
+exists, so re-running it is safe and is a conflict, not a second grant.

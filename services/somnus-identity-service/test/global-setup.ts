@@ -44,12 +44,21 @@ async function dropAllTables(pool: Pool): Promise<void> {
  * a disposable target, before a pool is opened. See destructive-guard.ts for
  * why a secret's name in one workflow line was not a control.
  *
- * Clean slate first: the CI TiDB cluster is shared and persistent, and
- * `globalSetup` has no teardown, so a previous run that crashed mid-test
- * (e.g. on a serverless connection flake) leaves its tables behind. On
- * the next run `migrate()` then collides with the existing schema
- * (`ER_TABLE_EXISTS_ERROR`) and every run stays red. Dropping all tables
- * before migrating makes each run self-heal from any leftover state.
+ * Clean slate first: `globalSetup` has no teardown, so a previous run that
+ * crashed mid-test leaves its tables behind, and on the next run `migrate()`
+ * collides with the existing schema (`ER_TABLE_EXISTS_ERROR`). Dropping all
+ * tables before migrating makes each run self-heal from leftover state. That
+ * matters locally, where docker-compose MySQL outlives a run; in CI the
+ * container is new every time and there is nothing left to heal from.
+ *
+ * On what this is allowed to point at: until 2026-09-19 CI ran this against the
+ * shared TiDB Cloud dev cluster, which meant every push to `main` dropped every
+ * table in the same `somnus_identity` real people register into -- no account,
+ * and no `platform_super_admin` grant, could outlive the next commit. CI now
+ * uses a per-run MySQL 8.4 service container on loopback. `destructive-guard.ts`
+ * is what keeps it that way, and
+ * `test/architecture/ci-destructive-guard-wiring.test.ts` asserts the workflow
+ * still hands this a loopback target.
  */
 export default async function setup(): Promise<void> {
   const config = loadDbConfig(process.env);

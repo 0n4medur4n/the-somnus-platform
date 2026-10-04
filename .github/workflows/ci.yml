@@ -81,46 +81,66 @@ jobs:
         run: node scripts/check-terraform-least-privilege.mjs
 
   identity-service:
-    name: Identity service (TiDB dev cluster)
+    name: Identity service (MySQL 8.4)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # A dedicated, ref-independent group: this job hits a single shared
-    # external TiDB Cloud dev cluster (no per-run namespace), so two PRs'
-    # runs must queue rather than race -- resetTables() in the test
-    # suite would otherwise let one run truncate another's in-flight data.
-    # Distinct from the workflow-level concurrency group above, which
-    # only cancels older runs on the SAME ref.
-    concurrency:
-      group: identity-service-tidb-dev
-      cancel-in-progress: false
-    # This is the ONLY job in the platform that runs a destructive test setup
-    # (test/global-setup.ts drops every table in its target database). Binding it
-    # to the `dev` Environment is what scopes its database credential: with
-    # TIDB_DEV_DATABASE_URL held as a `dev` Environment secret rather than a
-    # repository secret, no job that does not declare this Environment can read
-    # it at all.
+    # This job runs the platform's ONLY destructive test setup
+    # (test/global-setup.ts drops every table in its target database), and that
+    # is exactly why its target is a container that dies with the run.
     #
-    # Read the limit honestly: `environment:` does NOT hide the repository's
-    # other secrets from this job -- GitHub merges repository and Environment
-    # secrets. What it buys is that the DESTRUCTIVE credential is reachable from
-    # exactly one declared place, and that a future production credential kept in
-    # a `production` Environment is unreachable from here by construction.
+    # It used to point at the shared TiDB Cloud dev cluster. On 2026-09-19 that
+    # was found to be deleting real dev accounts: every push to main dropped
+    # every table in the same `somnus_identity` that people register into, so no
+    # account -- and no `platform_super_admin` grant -- could outlive the next
+    # commit. A per-run loopback container cannot do that to anyone.
     #
-    # The `dev` Environment must carry NO required reviewers and NO deployment
-    # branch policy: those apply to any job referencing an Environment, so a
-    # protection rule here would hang or fail the identity job on every pull
-    # request. See docs/runbooks/promotion-pipeline.md.
-    environment: dev
+    # Two further properties fall out of the move, both deliberate:
+    #   - No `environment: dev` and no reference to TIDB_DEV_DATABASE_URL. The
+    #     destructive job no longer holds a credential to any real database, so
+    #     the question "could CI wipe dev again?" is answered by construction
+    #     rather than by configuration.
+    #   - No cross-PR concurrency group. The old `identity-service-tidb-dev`
+    #     queue existed because one external cluster was shared by every run.
+    #     A per-run container is not shared, so runs stop waiting on each other.
+    #
+    # MySQL 8 as the TiDB stand-in is build plan §3.9, and is already what
+    # morpheo, report, worker and the app E2E job use. identity was the last
+    # job still reaching for the real cluster.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpw"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
     env:
-      DATABASE_URL: ${{ secrets.TIDB_DEV_DATABASE_URL }}
-      DB_SSL: "true"
-      # The destructive setup refuses to run without BOTH of these, whatever the
-      # DSN says (services/somnus-identity-service/test/destructive-guard.ts).
-      # The host list is a `dev` Environment *variable*, not a secret: a hostname
-      # is not a credential, and keeping it in the Environment is what stops a
-      # differently-scoped run from inheriting permission to drop tables there.
+      # Loopback and literal. These match the defaults in db.config.ts and
+      # consent-db.config.ts exactly; they are written out anyway so the
+      # database this job destroys is readable here, in the workflow, instead of
+      # being inherited silently from a schema default.
+      #
+      # Two distinct databases: test/destructive-guard.ts refuses the pair if
+      # they ever collapse into one (assertTargetsAreDistinct), because the
+      # consent pass would otherwise drop what the identity pass just migrated.
+      DATABASE_URL: mysql://root:rootpw@127.0.0.1:3306/somnus_identity
+      CONSENT_DATABASE_URL: mysql://root:rootpw@127.0.0.1:3306/somnus_consent
+      # The service container speaks no TLS; TiDB Cloud's public endpoint did.
+      DB_SSL: "false"
+      CONSENT_DB_SSL: "false"
+      # test/destructive-guard.ts still refuses to drop anything without this.
+      #
+      # Its companion SOMNUS_DESTRUCTIVE_TEST_HOSTS is deliberately NOT set. The
+      # guard short-circuits on loopback before it ever reads the host
+      # allowlist, so a list here would be dead configuration -- and a variable
+      # named "destructive test hosts" holding a real dev hostname is precisely
+      # what made the 2026-09-19 data loss reachable. With it absent the guard
+      # fails closed: any future non-loopback target is refused, not allowed.
       SOMNUS_ALLOW_DESTRUCTIVE_TESTS: "1"
-      SOMNUS_DESTRUCTIVE_TEST_HOSTS: ${{ vars.TIDB_DEV_HOST }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -143,55 +163,15 @@ jobs:
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
-      # Consent (build plan §13 / ADR 0010) is a genuinely separate
-      # logical database, but in dev/CI it lives on the same TiDB
-      # cluster/user as identity's -- only the database name differs.
-      # Derived here (never echoed) rather than a second GitHub
-      # secret, since it's the same credential with one path segment
-      # changed; production provisions a real, independent user for
-      # somnus_consent (build plan §8), not this derivation.
-      - name: Derive CONSENT_DATABASE_URL
+      # Consent is a genuinely separate logical database (build plan §13 /
+      # ADR 0010), so it is created as one here rather than shared with
+      # identity's. docker exec into the service because the image ships the
+      # mysql client and the runner may not.
+      - name: Create logical databases
         run: |
-          set -euo pipefail
-
-          # This derivation is one substitution away from opening the same
-          # database twice: `sed` against a path that is not /somnus_identity is
-          # a no-op, both variables come out identical, and global-setup.ts then
-          # drops the identity tables it has just migrated. Not hypothetical --
-          # it is how this job stayed red from 2026-08-26 to 2026-09-07, dying
-          # ~130s into the suite on a table that no longer existed.
-          #
-          # test/destructive-guard.ts still refuses that pair before any drop and
-          # is unchanged. This is the earlier, cheaper layer: it names the problem
-          # here, in about three seconds, instead of after a full install + run.
-          #
-          # Only the host and database name are ever printed. Everything before
-          # the last '@' is the credential and never reaches the log.
-          if [ -z "${DATABASE_URL:-}" ]; then
-            echo "::error::DATABASE_URL is empty -- the dev Environment secret TIDB_DEV_DATABASE_URL is missing, or unreadable from this job."
-            exit 1
-          fi
-
-          rest="${DATABASE_URL#*://}"
-          rest="${rest##*@}"
-          host="${rest%%/*}"
-          database="${rest#*/}"
-          database="${database%%[?]*}"
-
-          if [ "$database" != "somnus_identity" ]; then
-            echo "::error::DATABASE_URL names database '${database}' on ${host}, not somnus_identity. CONSENT_DATABASE_URL is derived by substituting /somnus_identity, so this would be a no-op and both pools would open one database. Fix the dev Environment secret TIDB_DEV_DATABASE_URL so its path is /somnus_identity."
-            exit 1
-          fi
-
-          consent="$(printf '%s' "$DATABASE_URL" | sed 's#/somnus_identity#/somnus_consent#')"
-
-          if [ "$consent" = "$DATABASE_URL" ]; then
-            echo "::error::the CONSENT_DATABASE_URL derivation changed nothing; identity and consent would both open ${host}/${database}."
-            exit 1
-          fi
-
-          echo "CONSENT_DATABASE_URL=$consent" >> "$GITHUB_ENV"
-          echo "CONSENT_DB_SSL=true" >> "$GITHUB_ENV"
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -prootpw -e \
+            "CREATE DATABASE IF NOT EXISTS somnus_identity CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; \
+             CREATE DATABASE IF NOT EXISTS somnus_consent CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
       # identity-service depends on the built dist/ of these workspace
       # packages (each package.json's "main" points at dist/, not src/).
@@ -205,16 +185,12 @@ jobs:
       - name: Generate OpenAPI document
         run: pnpm --filter @somnus/identity-service generate:openapi
 
-      # TiDB Serverless scales to zero when idle; the first query pays a
-      # resume cost that intermittently exceeded even a 120s per-test
-      # timeout. Resume the cluster with a retried SELECT 1 first, so the
-      # suite starts warm (the cluster resume is cluster-wide, so this
-      # warms the consent database on the same cluster too).
-      - name: Warm up TiDB (resume the serverless cluster)
-        run: pnpm --filter @somnus/identity-service exec node scripts/warmup-db.mjs
-
       # Includes the immutable negative-authorization suite (build plan
       # §20 Checkpoint 6.3) and enforces coverage thresholds.
+      #
+      # No warm-up step precedes this any more: the old one resumed a
+      # scaled-to-zero TiDB Serverless cluster, and the service container's
+      # health check already gates the job on a database that answers.
       - name: Test identity-service
         run: pnpm --filter @somnus/identity-service test:coverage
 
