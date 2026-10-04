@@ -1,6 +1,7 @@
-import type { ArgumentsHost } from "@nestjs/common";
+import { type ArgumentsHost, Logger } from "@nestjs/common";
 import { ErrorCode, SomnusError } from "@somnus/errors";
-import { describe, expect, it } from "vitest";
+import { DrizzleQueryError } from "drizzle-orm";
+import { describe, expect, it, vi } from "vitest";
 import { SomnusExceptionFilter } from "../src/common/filters/somnus-exception.filter.js";
 
 type Sent = { status: number; body: unknown } | null;
@@ -66,6 +67,46 @@ describe("SomnusExceptionFilter (unit)", () => {
     expect(body.error.code).toBe("INTERNAL");
     expect(body.error.message).toBe("An internal error occurred.");
     expect(body.error).not.toHaveProperty("stack");
+  });
+
+  it("logs a database failure's driver code, and never its params or a credential", () => {
+    // What reaches the operator log, captured at the logger itself -- not what
+    // the helper returns. Until 2026-10 this line was `exception.message`:
+    // Drizzle's `Failed query: … params: …`, which printed every bound value
+    // and none of the driver's diagnosis.
+    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+    try {
+      const filter = new SomnusExceptionFilter();
+      const { host, getSent } = makeHost();
+      const cause = Object.assign(
+        new Error(
+          "Access denied for user '4JdTF3GpJN7acjW.root'@'10.0.0.7' (using password: YES) " +
+            "connecting to mysql://4JdTF3GpJN7acjW.root:S3cretPassw0rd@gateway01.example.com:4000/somnus_identity",
+        ),
+        { code: "ER_ACCESS_DENIED_ERROR", errno: 1045, sqlState: "28000" },
+      );
+      const exc = new DrizzleQueryError(
+        "select `id` from `users` where `users`.`email` = ? limit ?",
+        ["alice@example.com", 1],
+        cause,
+      );
+
+      filter.catch(exc, host("c-db"));
+
+      expect(getSent()?.status).toBe(500);
+      const logged = warn.mock.calls.map((call) => String(call[0])).join(" ");
+
+      expect(logged).toContain("code=ER_ACCESS_DENIED_ERROR");
+      expect(logged).toContain("errno=1045");
+      expect(logged).toContain("sqlState=28000");
+
+      expect(logged).not.toContain("S3cretPassw0rd");
+      expect(logged).not.toContain("4JdTF3GpJN7acjW.root");
+      expect(logged).not.toContain("alice@example.com");
+      expect(logged).not.toContain("params:");
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("falls back to 'unknown' correlationId when the request has none", () => {

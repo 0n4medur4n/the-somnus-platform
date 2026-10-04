@@ -13,6 +13,7 @@ import {
   toHttpResponse,
 } from "@somnus/errors";
 import type { FastifyReply } from "fastify";
+import { describeUnhandledError } from "./describe-unhandled-error.js";
 
 /**
  * Maps every thrown error to the §16 API response shape.
@@ -20,7 +21,9 @@ import type { FastifyReply } from "fastify";
  * - A `SomnusError` keeps its code, message, correlationId, and details.
  * - A Nest `HttpException` maps to a stable error code per status.
  * - Anything else maps to `INTERNAL` with a generic message and the
- *   real error logged once at warn level for the operator.
+ *   real error logged once at warn level for the operator -- described by
+ *   `describeUnhandledError`, which reads the driver code off `.cause` and
+ *   never logs query params, credentials or a stack.
  *
  * In production, no stack trace ever reaches the response body.
  */
@@ -49,9 +52,7 @@ export class SomnusExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    this.nestLogger.warn(
-      `unhandled error: ${exception instanceof Error ? exception.message : String(exception)}`,
-    );
+    this.nestLogger.warn(`unhandled error: ${describeUnhandledError(exception)}`);
     const body = toHttpResponse("INTERNAL" satisfies ErrorCodeType, correlationId, {});
     this.send(reply, 500, body);
   }
