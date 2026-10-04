@@ -144,31 +144,39 @@ invitation.
 **CI protection:** `.github/workflows/ci.yml` has an `identity-service`
 job that runs `pnpm --filter @somnus/identity-service test:coverage`
 (the full suite, including this file, with coverage thresholds
-enforced) against the TiDB Cloud dev cluster on every push and pull
-request to `main`. It uses a dedicated concurrency group
-(`identity-service-tidb-dev`, `cancel-in-progress: false`) so two PRs'
-runs queue instead of racing -- the cluster is a single shared external
-resource, and this suite's `resetTables()` would otherwise let one run
-truncate another's in-flight data. The migration + full test run
-(including this suite) has been verified end to end against the real
-cluster, not just against local docker-compose MySQL. The job reads
-its connection string from the `TIDB_DEV_DATABASE_URL` secret held on
-the **`dev` GitHub Environment** (the job declares `environment: dev`,
-which is what scopes that credential: a job that does not declare the
-Environment cannot read it at all) and sets `DB_SSL=true` so `db.client.ts` negotiates TLS (see
-`DbConfigSchema`'s `DB_SSL` field, off by default for local dev, since
-docker-compose MySQL doesn't speak TLS at all) -- this only becomes a
-live required check once that secret is present on the `dev`
-Environment (Settings -> Secrets and variables -> Actions ->
-Environments -> dev), together with the `TIDB_DEV_HOST` Environment
-variable the destructive guard requires. The `dev` Environment must
-carry no required reviewers and no deployment branch policy, or this
-job will hang or fail on every pull request. `CONSENT_DATABASE_URL`/`CONSENT_DB_SSL`
-for the consent module (Phase 7.1) are derived from that same secret
-in the workflow (same cluster/user, `/somnus_identity` swapped for
-`/somnus_consent`) rather than needing a second one -- see that
-section's "Local dev vs. production" note for why this is a dev/CI-only
-simplification.
+enforced) on every push and pull request to `main`, against a per-run
+**MySQL 8.4 service container** on loopback -- the same pattern the
+morpheo, report, worker and app-E2E jobs use (build plan §3.9). Both
+logical databases are created in that container by the "Create logical
+databases" step, and `DATABASE_URL`/`CONSENT_DATABASE_URL` are literal
+loopback DSNs written out in the workflow. `DB_SSL`/`CONSENT_DB_SSL`
+are `"false"`: the container does not speak TLS.
+
+**Why it is not the TiDB dev cluster any more (2026-09-19).** It used
+to be, and that was a data-loss bug, not a nuance. This suite's
+`globalSetup` drops **every table** in its target database, so every
+push to `main` was deleting the accounts people had registered in dev,
+along with any `platform_super_admin` grant on them -- the reason a
+console sign-in dead-ended for a whole evening. Nothing was
+misconfigured; the cluster was on the destructive host allowlist
+deliberately. The fix is to remove the remote target, not to guard it
+better:
+
+- the job declares **no `environment:`**, so it cannot read the `dev`
+  Environment's `TIDB_DEV_DATABASE_URL` -- that secret is no longer
+  referenced anywhere in `ci.yml`;
+- it sets **no `SOMNUS_DESTRUCTIVE_TEST_HOSTS`**, because
+  `destructive-guard.ts` short-circuits on loopback before it reads
+  one. Absent, the guard fails closed on any future non-loopback
+  target;
+- the `identity-service-tidb-dev` concurrency group is gone. It existed
+  only because one external cluster was shared by every run; a per-run
+  container is not shared.
+
+`test/architecture/ci-destructive-guard-wiring.test.ts` asserts all
+three, so a revert cannot pass review quietly. Real-TiDB coverage, if
+it is ever wanted again, belongs in a `workflow_dispatch`-only job --
+a separate decision, and never part of the push path.
 
 Two lockfile/CI incidents worth knowing about if `pnpm install
 --frozen-lockfile` ever starts failing in this repo again: (1) `pnpm`
@@ -408,18 +416,33 @@ any `DATABASE_URL` whose path is not exactly `/somnus_identity` leaves the
 substitution a no-op and collapses the two into one.
 
 The flip side of a guard that fails closed is that CI depends on something
-supplying those two variables, and nothing in the TypeScript build would notice
-if `ci.yml` stopped doing so: the job would simply go red, with an error about a
+supplying the opt-in, and nothing in the TypeScript build would notice if
+`ci.yml` stopped doing so: the job would simply go red, with an error about a
 variable nobody had touched. `test/architecture/ci-destructive-guard-wiring.test.ts`
-closes that loop. It reads `.github/workflows/ci.yml` and asserts that every job
-invoking this suite declares `environment: dev`, sets the opt-in to exactly the
-string `"1"`, and feeds `SOMNUS_DESTRUCTIVE_TEST_HOSTS` from a `${{ vars.* }}`
-expression -- currently `vars.TIDB_DEV_HOST`. It imports the variable *names*
-from `test/destructive-guard.ts` rather than repeating them, so renaming a
-constant without updating the workflow fails here, by name, instead of in a CI
-run tomorrow. Note this checks the wiring, not the value: whether
-`TIDB_DEV_HOST` is actually set on the `dev` Environment, and set to the right
-hostname, is GitHub-side configuration no test in this repository can see.
+closes that loop. It reads `.github/workflows/ci.yml` and asserts, of every job
+invoking this suite, that it sets the opt-in to exactly the string `"1"`.
+
+Since 2026-09-19 it also asserts a stronger property, and the reason is worth
+keeping: the previous version of this test could not have caught the incident
+that prompted it. It checked that the remote target was *allowed*, and the
+shared TiDB dev cluster was allowed -- deliberately, by a variable named
+`TIDB_DEV_HOST` that someone had set correctly. Every assertion passed while
+every push to `main` deleted real dev accounts. So the test no longer asks
+whether a remote target is permitted; it asserts there is no remote target:
+
+- both `DATABASE_URL` and `CONSENT_DATABASE_URL` resolve to a host in the
+  guard's own `LOOPBACK_HOSTS` (imported, not retyped), and are distinct from
+  each other;
+- the job declares no `environment:`, so no GitHub Environment credential is
+  within its reach;
+- `SOMNUS_DESTRUCTIVE_TEST_HOSTS` is **absent**, not merely well-formed;
+- `TIDB_DEV_DATABASE_URL` appears nowhere in the workflow at all.
+
+That last check runs against the workflow with full-line comments stripped: the
+job carries comments explaining why these names are absent, and a comment cannot
+wire a credential into anything. It still imports the names from
+`test/destructive-guard.ts` rather than repeating them, so renaming a constant
+fails here, by name, instead of in a CI run tomorrow.
 
 The test suite includes:
 
