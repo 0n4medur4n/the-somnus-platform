@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, HttpCode, Post, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Post, Res, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import type { SessionResponse } from "@somnus/api-contracts";
+import type { CsrfTokenResponse, SessionResponse } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import type { FastifyReply } from "fastify";
 import { type EdgeConfig, loadEdgeConfig } from "../../config/edge-config.js";
@@ -10,8 +10,17 @@ import { SessionCreateDto } from "./session.dto.js";
 import { SessionGuard } from "./session.guard.js";
 import { type SessionRecord, SessionService } from "./session.service.js";
 
-/** Readable (non-HttpOnly) cookie carrying the CSRF token for the SPA to echo in a header (double-submit). */
-const CSRF_TOKEN_COOKIE = "somnus_csrf";
+/**
+ * The cookie that used to carry the CSRF token to the SPA. No longer set: a
+ * page can only read cookies of its own site, and the SPA never shares a site
+ * with this API in a deployed environment, so the token now travels in the
+ * response body (see `CsrfTokenResponseSchema`). Still cleared on logout, so a
+ * browser that holds one from before the change does not keep it forever.
+ */
+const LEGACY_CSRF_TOKEN_COOKIE = "somnus_csrf";
+
+/** The HttpOnly signed cookie @fastify/csrf-protection keeps the secret in. */
+const CSRF_SECRET_COOKIE = "_csrf";
 
 @ApiTags("sessions")
 @Controller({ path: "v1/sessions" })
@@ -63,17 +72,29 @@ export class SessionsController {
       this.sessionCookieOptions(),
     );
 
-    // Issue a CSRF token bound to this session. generateCsrf sets the
-    // HttpOnly secret cookie; we hand the token to the SPA via a
-    // readable cookie it echoes back in the x-csrf-token header.
-    const csrfToken = reply.generateCsrf(this.csrfSecretCookieOptions());
-    reply.setCookie(CSRF_TOKEN_COOKIE, csrfToken, this.csrfTokenCookieOptions());
-
     return {
       firebaseUid: session.firebaseUid,
       email: session.email,
       expiresAt: session.expiresAt.toISOString(),
+      csrfToken: this.issueCsrfToken(reply),
     };
+  }
+
+  /**
+   * A CSRF token for the current session.
+   *
+   * The SPA holds the token in memory, so a reload loses it while the session
+   * cookie lives on; this is how it gets one back without signing in again.
+   * Session-guarded, so it never mints a token for nobody. A GET, so the CSRF
+   * gate does not apply -- and does not need to: a cross-site page can make
+   * the browser send this request but cannot read the response, because CORS
+   * admits only the listed origins.
+   */
+  @Get("csrf")
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: "Issue a CSRF token for the current session." })
+  csrf(@Res({ passthrough: true }) reply: FastifyReply): CsrfTokenResponse {
+    return { csrfToken: this.issueCsrfToken(reply) };
   }
 
   /**
@@ -92,8 +113,21 @@ export class SessionsController {
   ): Promise<void> {
     if (session) await this.sessions.revoke(session.sessionId);
     reply.clearCookie(this.config.SESSION_COOKIE_NAME, this.clearCookieOptions());
-    reply.clearCookie(CSRF_TOKEN_COOKIE, this.clearCookieOptions(false));
-    reply.clearCookie("_csrf", this.clearCookieOptions());
+    reply.clearCookie(CSRF_SECRET_COOKIE, this.clearCookieOptions());
+    reply.clearCookie(LEGACY_CSRF_TOKEN_COOKIE, this.clearCookieOptions(false));
+  }
+
+  /**
+   * A token bound to the CSRF secret cookie. `generateCsrf` reuses the secret
+   * the request already carries and only sets a new one when there is none, so
+   * asking again (after a reload) does not invalidate a token already in use.
+   *
+   * `no-store`, because a token sitting in a shared or browser cache is a token
+   * someone else can read.
+   */
+  private issueCsrfToken(reply: FastifyReply): string {
+    reply.header("cache-control", "no-store");
+    return reply.generateCsrf(this.csrfSecretCookieOptions());
   }
 
   private sessionCookieOptions() {
@@ -115,18 +149,6 @@ export class SessionsController {
       secure: this.config.COOKIE_SECURE,
       sameSite: this.config.COOKIE_SAMESITE,
       path: "/",
-      ...(this.config.COOKIE_DOMAIN ? { domain: this.config.COOKIE_DOMAIN } : {}),
-    } as const;
-  }
-
-  /** The CSRF token cookie: readable by the SPA (httpOnly:false) so it can echo it in a header. */
-  private csrfTokenCookieOptions() {
-    return {
-      httpOnly: false,
-      secure: this.config.COOKIE_SECURE,
-      sameSite: this.config.COOKIE_SAMESITE,
-      path: "/",
-      maxAge: this.config.SESSION_TTL_SECONDS,
       ...(this.config.COOKIE_DOMAIN ? { domain: this.config.COOKIE_DOMAIN } : {}),
     } as const;
   }
