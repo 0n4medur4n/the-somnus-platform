@@ -19,7 +19,7 @@ type Init = {
   method?: string;
   headers: Record<string, string>;
   credentials?: string;
-  body?: string;
+  body?: string | Blob;
 };
 type Reply = { status: number; body?: unknown };
 type Call = { method: string; path: string; init: Init };
@@ -301,6 +301,27 @@ describe("api client", () => {
     vi.stubGlobal("fetch", fn);
     await api.get("/v1/me");
     expect(fn.mock.calls[0]?.[0]).toBe("/v1/me");
+  });
+
+  it("sends a binary body as-is, with its own content type and the CSRF token", async () => {
+    const { api, BinaryBody } = await loadApi();
+    const calls = routeFetch({
+      "GET /v1/sessions/csrf": { status: 200, body: { csrfToken: "tok-1" } },
+      "PUT /v1/me/photo": { status: 204 },
+    });
+    const image = new Blob([new Uint8Array([1, 2, 3])], { type: "image/webp" });
+
+    await api.put("/v1/me/photo", new BinaryBody(image, "image/webp"));
+
+    const put = calls.find((call) => call.method === "PUT");
+    expect(put?.init.headers["content-type"]).toBe("image/webp");
+    expect(put?.init.headers["x-csrf-token"]).toBe("tok-1");
+    expect(put?.init.body).toBe(image);
+  });
+
+  it("builds absolute URLs for elements the browser loads itself", async () => {
+    const { api } = await loadApi();
+    expect(api.url("/v1/me/photo?v=1")).toBe(`${BASE}/v1/me/photo?v=1`);
   });
 
   it("throws ApiRequestError carrying the §16 stable code on failure", async () => {

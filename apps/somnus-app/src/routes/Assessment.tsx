@@ -1,22 +1,58 @@
-import type {
-  AssessmentCreateRequest,
-  AssessmentResult,
-  GateReason,
-  RoleId,
+import {
+  type AssessmentCreateRequest,
+  type AssessmentResult,
+  ageOnDate,
+  type GateReason,
+  type MeResponse,
+  type RoleId,
 } from "@somnus/api-contracts";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { ResultView } from "../assessment/ResultView.js";
+import { accountViewOf } from "../auth/account-view.js";
 import { useAuth } from "../auth/useAuth.js";
 import { Button } from "../components/Button.js";
+import { FullPageStatus } from "../components/FullPageStatus.js";
+import { MorpheoLayout } from "../layouts/MorpheoLayout.js";
 import { edge } from "../lib/edge.js";
+import { ASSESSMENT_CONTENT_QUERY, OWN_ASSESSMENTS_QUERY } from "./MorpheoHome.js";
 
 type Step = "role" | "consent" | "safety" | "concern" | "result";
 type SafetyAnswer = "yes" | "no" | "unknown";
 const ROLES: RoleId[] = ["adult", "parent", "professional"];
+/** A Morpheo user assesses themselves or a minor in their care; the professional path is not theirs. */
+const MORPHEO_USER_ROLES: RoleId[] = ["adult", "parent"];
 const SAFETY_OPTIONS: SafetyAnswer[] = ["yes", "no", "unknown"];
+
+/**
+ * `/assessment`. A signed-in Morpheo user takes the questionnaire inside their
+ * own space; everyone else gets the public page.
+ */
+export function AssessmentRoute() {
+  const { t } = useTranslation();
+  const { state } = useAuth();
+  if (state.status === "loading") return <FullPageStatus message={t("common.loading")} />;
+  if (state.status === "authenticated" && accountViewOf(state.me).isMorpheoUser) {
+    return (
+      <MorpheoLayout>
+        <Assessment embedded me={state.me} />
+      </MorpheoLayout>
+    );
+  }
+  return <Assessment />;
+}
+
+/** The role a Morpheo user registered for, and their age when it is known. */
+function presetFor(me: MeResponse | undefined): { role: RoleId | null; age: string } {
+  if (!me) return { role: null, age: "" };
+  const kind = accountViewOf(me).kind;
+  const role = kind === "adult" || kind === "parent" ? kind : null;
+  const dateOfBirth = me.individualProfile?.dateOfBirth;
+  const age = role === "adult" && dateOfBirth ? String(ageOnDate(dateOfBirth, new Date())) : "";
+  return { role, age };
+}
 
 /**
  * The anonymous assessment flow (build plan §20 Checkpoint 10.3, state machine
@@ -25,19 +61,30 @@ const SAFETY_OPTIONS: SafetyAnswer[] = ["yes", "no", "unknown"];
  * every clinical string come from the morpheo content endpoint — the SPA never
  * authors clinical text. "No lo sé" maps to unknown, never No (§14).
  */
-export function Assessment() {
+export function Assessment({
+  embedded = false,
+  me,
+}: {
+  /** Inside the Morpheo user's own space (which owns the page's main landmark). */
+  embedded?: boolean;
+  /** The signed-in Morpheo user, when embedded. */
+  me?: MeResponse;
+} = {}) {
   const { t } = useTranslation();
   const { state } = useAuth();
+  const queryClient = useQueryClient();
   const isAuthenticated = state.status === "authenticated";
+  const preset = useMemo(() => presetFor(me), [me]);
+  const roleOptions = me ? MORPHEO_USER_ROLES : ROLES;
 
   const contentQuery = useQuery({
-    queryKey: ["assessment-content"],
+    queryKey: ASSESSMENT_CONTENT_QUERY,
     queryFn: edge.getAssessmentContent,
   });
 
   const [step, setStep] = useState<Step>("role");
-  const [role, setRole] = useState<RoleId | null>(null);
-  const [ageYears, setAgeYears] = useState("");
+  const [role, setRole] = useState<RoleId | null>(preset.role);
+  const [ageYears, setAgeYears] = useState(preset.age);
   const [guardianshipConfirmed, setGuardianshipConfirmed] = useState(false);
   const [professionalConfirmed, setProfessionalConfirmed] = useState(false);
   const [containsIdentifiableData, setContainsIdentifiableData] = useState(false);
@@ -51,6 +98,9 @@ export function Assessment() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+  /** The session already saved (or being saved), so a result is saved once. */
+  const savingFor = useRef<string | null>(null);
 
   const complaintOptions = useMemo(
     () =>
@@ -85,8 +135,8 @@ export function Assessment() {
 
   function restart() {
     setStep("role");
-    setRole(null);
-    setAgeYears("");
+    setRole(preset.role);
+    setAgeYears(preset.age);
     setGuardianshipConfirmed(false);
     setProfessionalConfirmed(false);
     setContainsIdentifiableData(false);
@@ -98,6 +148,8 @@ export function Assessment() {
     setSessionId(null);
     setSubmitError(false);
     setSaved(false);
+    setSaveFailed(false);
+    savingFor.current = null;
   }
 
   async function startSession() {
@@ -169,17 +221,33 @@ export function Assessment() {
     }
   }
 
-  async function save() {
+  const save = useCallback(async () => {
     if (sessionId === null) return;
+    savingFor.current = sessionId;
+    setSaveFailed(false);
     try {
       const { token } = await edge.requestAssessmentClaimToken(sessionId);
       const outcome = await edge.claimAssessment(token);
-      if (outcome.success) setSaved(true);
-      else setSubmitError(true);
+      if (outcome.success) {
+        setSaved(true);
+        await queryClient.invalidateQueries({ queryKey: OWN_ASSESSMENTS_QUERY });
+      } else {
+        setSaveFailed(true);
+      }
     } catch {
-      setSubmitError(true);
+      setSaveFailed(true);
     }
-  }
+  }, [sessionId, queryClient]);
+
+  // Inside their own space, a result is saved to the account as soon as it is
+  // shown -- the history is the point of having one. Once per session.
+  useEffect(() => {
+    if (embedded && step === "result" && result && sessionId && savingFor.current !== sessionId) {
+      void save();
+    }
+  }, [embedded, step, result, sessionId, save]);
+
+  const Wrapper = embedded ? "section" : "main";
 
   if (contentQuery.isPending) {
     return <p role="status">{t("assessment.loadingContent")}</p>;
@@ -194,10 +262,13 @@ export function Assessment() {
 
   return (
     // The public route has no app-shell layout, so the page owns its `main`
-    // landmark (a11y baseline: one main landmark per document).
-    <main
+    // landmark (a11y baseline: one main landmark per document). Embedded in
+    // the Morpheo space, the layout owns it.
+    <Wrapper
       aria-labelledby="assessment-heading"
-      className="mx-auto flex max-w-2xl flex-col gap-6 p-6"
+      className={
+        embedded ? "flex max-w-2xl flex-col gap-6" : "mx-auto flex max-w-2xl flex-col gap-6 p-6"
+      }
     >
       <div>
         <h1 id="assessment-heading" className="text-2xl font-semibold">
@@ -209,7 +280,7 @@ export function Assessment() {
       {step === "role" ? (
         <fieldset className="flex flex-col gap-3">
           <legend className="text-lg font-medium">{t("assessment.role.legend")}</legend>
-          {ROLES.map((option) => (
+          {roleOptions.map((option) => (
             <label key={option} className="flex items-center gap-2">
               <input
                 type="radio"
@@ -398,20 +469,62 @@ export function Assessment() {
           ) : result ? (
             <>
               <ResultView result={result} content={contentQuery.data} complaints={complaints} />
-              <div className="flex flex-col gap-2 border-t border-somnus-muted/30 pt-4">
-                <p className="text-sm text-somnus-subtle">{t("assessment.result.saveHint")}</p>
-                {saved ? (
-                  <p role="status" aria-live="polite" className="text-somnus-success">
-                    {t("assessment.result.saved")}
-                  </p>
-                ) : isAuthenticated ? (
-                  <Button onClick={save}>{t("assessment.actions.save")}</Button>
-                ) : (
-                  <Link to="/login" className="text-somnus-primary underline underline-offset-2">
-                    {t("assessment.actions.login")}
-                  </Link>
-                )}
-              </div>
+              {embedded ? (
+                <div className="flex flex-col gap-3 border-t border-somnus-muted/30 pt-4">
+                  {saved ? (
+                    <>
+                      <p role="status" aria-live="polite" className="text-somnus-success">
+                        {t("assessment.result.autoSaved")}
+                      </p>
+                      <div>
+                        <Link
+                          to="/app"
+                          className="inline-flex items-center justify-center rounded-md bg-somnus-primary-strong px-4 py-2 font-medium text-white hover:brightness-110"
+                        >
+                          {t("assessment.actions.goToSpace")}
+                        </Link>
+                      </div>
+                    </>
+                  ) : saveFailed ? (
+                    <div className="flex flex-col gap-2">
+                      <p role="alert" className="text-somnus-danger">
+                        {t("assessment.result.saveFailed")}
+                      </p>
+                      <div>
+                        <Button onClick={() => void save()}>
+                          {t("assessment.actions.retrySave")}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p role="status" aria-live="polite" className="text-somnus-subtle">
+                      {t("assessment.result.autoSaving")}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 border-t border-somnus-muted/30 pt-4">
+                  <p className="text-sm text-somnus-subtle">{t("assessment.result.saveHint")}</p>
+                  {saved ? (
+                    <p role="status" aria-live="polite" className="text-somnus-success">
+                      {t("assessment.result.saved")}
+                    </p>
+                  ) : isAuthenticated ? (
+                    <>
+                      <Button onClick={() => void save()}>{t("assessment.actions.save")}</Button>
+                      {saveFailed ? (
+                        <p role="alert" className="text-somnus-danger">
+                          {t("assessment.submitError")}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <Link to="/login" className="text-somnus-primary underline underline-offset-2">
+                      {t("assessment.actions.login")}
+                    </Link>
+                  )}
+                </div>
+              )}
             </>
           ) : null}
           <div>
@@ -421,6 +534,6 @@ export function Assessment() {
           </div>
         </div>
       ) : null}
-    </main>
+    </Wrapper>
   );
 }

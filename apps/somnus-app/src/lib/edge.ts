@@ -17,11 +17,12 @@ import type {
   MeResponse,
   Organization,
   OrganizationCreateRequest,
+  OwnAssessmentsResponse,
   ProfilePatchRequest,
   RegistrationRequest,
   SessionResponse,
 } from "@somnus/api-contracts";
-import { api } from "./api.js";
+import { api, BinaryBody } from "./api.js";
 
 /**
  * Typed edge-api surface (the only backend the SPA talks to, build plan
@@ -36,6 +37,12 @@ export const edge = {
     api.post<MeResponse>("/v1/registration", body),
   patchProfile: (body: ProfilePatchRequest): Promise<void> =>
     api.patch<void>("/v1/me/profile", body),
+  /** A re-encoded image (see lib/photo.ts): image/webp or image/jpeg, at most 1 MB. */
+  uploadPhoto: (image: Blob): Promise<void> =>
+    api.put<void>("/v1/me/photo", new BinaryBody(image, image.type)),
+  removePhoto: (): Promise<void> => api.del<void>("/v1/me/photo"),
+  /** The photo URL; `version` (the photo's change time) keeps a new photo from showing stale. */
+  photoUrl: (version: string): string => api.url(`/v1/me/photo?v=${encodeURIComponent(version)}`),
   logout: (): Promise<void> => api.del<void>("/v1/sessions/current"),
   createOrganization: (body: OrganizationCreateRequest): Promise<Organization> =>
     api.post<Organization>("/v1/organizations", body),
@@ -69,5 +76,10 @@ export const edge = {
   claimAssessment: (token: string): Promise<AssessmentClaimResponse> =>
     api.post<AssessmentClaimResponse>("/v1/assessments/claim", { token }),
   getAssessmentSnapshot: (sessionId: string): Promise<AssessmentSnapshotResponse> =>
-    api.get<AssessmentSnapshotResponse>(`/v1/assessments/${sessionId}/snapshot`),
+    api.get<AssessmentSnapshotResponse>(
+      `/v1/assessments/${encodeURIComponent(sessionId)}/snapshot`,
+    ),
+  /** The signed-in person's own saved assessments, newest first. */
+  getOwnAssessments: (): Promise<OwnAssessmentsResponse> =>
+    api.get<OwnAssessmentsResponse>("/v1/assessments/mine"),
 };

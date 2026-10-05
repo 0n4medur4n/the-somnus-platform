@@ -19,6 +19,7 @@ export default defineConfig({
       include: [
         "src/lib/**/*.ts",
         "src/auth/AuthProvider.tsx",
+        "src/auth/account-view.ts",
         "src/auth/firebase-auth.ts",
         "src/auth/useAuth.ts",
         "src/i18n/index.ts",

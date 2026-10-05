@@ -39,7 +39,8 @@ async function registerOwner(page: Page, locale: string, email: string): Promise
   await page.getByLabel(t.register.consentTerms, { exact: true }).check();
   await page.getByLabel(t.register.consentPrivacy, { exact: true }).check();
   await page.getByRole("button", { name: t.register.submit }).click();
-  await page.waitForURL("**/app");
+  // An adult registers as a Morpheo user and starts with the questionnaire.
+  await page.waitForURL("**/assessment");
 }
 
 for (const locale of ["es", "ca"] as const) {

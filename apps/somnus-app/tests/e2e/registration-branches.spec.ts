@@ -76,9 +76,10 @@ for (const locale of ["es", "ca"] as const) {
     await acceptBothConsents(page, locale);
     await page.getByRole("button", { name: t.register.submit }).click();
 
-    await page.waitForURL("**/app");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(t.app.homeTitle);
-    await expect(page.getByText("Ada", { exact: false })).toBeVisible();
+    // A Morpheo user starts with the questionnaire, on the branch they registered for.
+    await page.waitForURL("**/assessment");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(t.assessment.title);
+    await expect(page.getByLabel(t.assessment.role.adult, { exact: true })).toBeChecked();
 
     await context.close();
   });
@@ -99,9 +100,10 @@ for (const locale of ["es", "ca"] as const) {
     await acceptBothConsents(page, locale);
     await page.getByRole("button", { name: t.register.submit }).click();
 
-    await page.waitForURL("**/app");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(t.app.homeTitle);
-    await expect(page.getByText("Marie", { exact: false })).toBeVisible();
+    // The guardian starts with the questionnaire about the minor in their care.
+    await page.waitForURL("**/assessment");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(t.assessment.title);
+    await expect(page.getByLabel(t.assessment.role.parent, { exact: true })).toBeChecked();
 
     await context.close();
   });

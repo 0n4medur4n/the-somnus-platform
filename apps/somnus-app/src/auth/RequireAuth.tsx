@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 import { Navigate, Outlet } from "react-router";
 import { FullPageStatus } from "../components/FullPageStatus.js";
 import { AppLayout } from "../layouts/AppLayout.js";
+import { MorpheoLayout } from "../layouts/MorpheoLayout.js";
+import { accountViewOf } from "./account-view.js";
 import { useAuth } from "./useAuth.js";
 
 /**
@@ -18,9 +20,12 @@ export function RequireAuth() {
   if (state.status === "unauthenticated") return <Navigate to="/login" replace />;
   if (state.status === "needs-registration") return <Navigate to="/auth/callback" replace />;
 
+  // A Morpheo user gets their own space; professionals and organization
+  // members keep the general shell.
+  const Layout = accountViewOf(state.me).isMorpheoUser ? MorpheoLayout : AppLayout;
   return (
-    <AppLayout>
+    <Layout>
       <Outlet />
-    </AppLayout>
+    </Layout>
   );
 }

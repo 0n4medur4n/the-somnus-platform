@@ -48,7 +48,8 @@ async function signInAndRegister(
   await page.getByLabel(t.register.consentPrivacy, { exact: true }).check();
   await page.getByRole("button", { name: t.register.submit }).click();
 
-  await page.waitForURL("**/app");
+  // A Morpheo user starts with the questionnaire.
+  await page.waitForURL("**/assessment");
 }
 
 async function expectNoTokenInStorage(page: Page): Promise<void> {
@@ -85,7 +86,7 @@ for (const locale of ["es", "ca"] as const) {
     expect(loginA11y.violations).toEqual([]);
 
     await signInAndRegister(owner, t, locale, ownerEmail, "Ada", "Lovelace");
-    await expect(owner.getByRole("heading", { level: 1 })).toHaveText(t.app.homeTitle);
+    await expect(owner.getByRole("heading", { level: 1 })).toHaveText(t.assessment.title);
     await expectNoTokenInStorage(owner);
 
     // Edit profile + accessibility baseline on the profile screen. Wait for the

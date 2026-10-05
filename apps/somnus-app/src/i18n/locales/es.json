@@ -8,7 +8,8 @@
     "signOut": "Cerrar sesión",
     "skipToContent": "Saltar al contenido",
     "language": "Idioma",
-    "menu": "Menú principal"
+    "menu": "Menú principal",
+    "opensInNewTab": "se abre en una pestaña nueva"
   },
   "nav": {
     "home": "Inicio",
@@ -17,7 +18,11 @@
     "professional": "Portal profesional",
     "organization": "Organización",
     "members": "Miembros",
-    "invitations": "Invitaciones"
+    "invitations": "Invitaciones",
+    "mySpace": "Mi espacio",
+    "newAssessment": "Nueva evaluación",
+    "myProfile": "Mi perfil",
+    "console": "Consola de administración"
   },
   "login": {
     "title": "Iniciar sesión",
@@ -136,16 +141,81 @@
   },
   "app": {
     "homeTitle": "Inicio",
-    "welcome": "Bienvenida, {{name}}",
-    "welcomeNoName": "Bienvenida"
+    "welcome": "Hola, {{name}}",
+    "welcomeNoName": "Hola"
+  },
+  "space": {
+    "title": "Mi espacio",
+    "greeting": "Hola, {{name}}",
+    "greetingNoName": "Hola",
+    "accountType": {
+      "adult": "Cuenta personal",
+      "parent": "Cuenta de madre, padre o tutor legal",
+      "professional": "Cuenta profesional",
+      "individual": "Cuenta personal"
+    },
+    "editProfile": "Editar perfil",
+    "completeProfile": "Completa tu perfil: añade tu foto, tu fecha de nacimiento y un teléfono.",
+    "completeProfileLink": "Completar perfil",
+    "stats": {
+      "first": "Primera evaluación",
+      "last": "Última evaluación",
+      "count": "Evaluaciones guardadas"
+    },
+    "newAssessment": {
+      "title": "Nueva evaluación",
+      "body": "Vuelve a valorar tu descanso cuando quieras. Tus evaluaciones anteriores se quedan guardadas.",
+      "bodyParent": "Vuelve a valorar el descanso del menor a tu cargo cuando quieras. Las evaluaciones anteriores se quedan guardadas.",
+      "start": "Hacer una nueva evaluación"
+    },
+    "history": {
+      "title": "Tus evaluaciones",
+      "forSelf": "Sobre ti",
+      "forMinor": "Sobre el menor a tu cargo",
+      "level": "Nivel de atención",
+      "view": "Ver resultado",
+      "viewNamed": "Ver el resultado del {{date}}"
+    },
+    "loading": "Cargando tus evaluaciones…",
+    "error": "No hemos podido cargar tus evaluaciones. Inténtalo de nuevo."
+  },
+  "resultPage": {
+    "title": "Resultado de tu evaluación",
+    "savedOn": "Guardada el {{date}}",
+    "back": "Volver a mi espacio",
+    "error": "No hemos podido cargar este resultado."
   },
   "profile": {
-    "title": "Tu perfil",
+    "title": "Mi perfil",
     "firstName": "Nombre",
     "lastName": "Apellidos",
     "phone": "Teléfono",
     "saved": "Perfil actualizado correctamente.",
-    "error": "No hemos podido guardar los cambios."
+    "error": "No hemos podido guardar los cambios.",
+    "photoTitle": "Foto de perfil",
+    "photoAlt": "Tu foto de perfil",
+    "choosePhoto": "Elegir una foto",
+    "changePhoto": "Cambiar la foto",
+    "removePhoto": "Quitar la foto",
+    "photoHint": "La recortamos en cuadrado y eliminamos los datos ocultos de la imagen, como la ubicación donde se hizo.",
+    "photoUploading": "Guardando la foto…",
+    "photoSaved": "Foto actualizada.",
+    "photoRemoved": "Foto eliminada.",
+    "photoError": "No hemos podido guardar la foto. Prueba con otra imagen.",
+    "photoTooBig": "La imagen es demasiado grande. Elige una de menos de 15 MB.",
+    "photoNotImage": "Ese archivo no es una imagen.",
+    "accountTitle": "Tu cuenta",
+    "email": "Correo electrónico",
+    "accountType": "Tipo de cuenta",
+    "emailHint": "El correo es tu forma de acceder y no se puede cambiar desde aquí.",
+    "detailsTitle": "Tus datos",
+    "dateOfBirth": "Fecha de nacimiento",
+    "optional": "Opcional.",
+    "language": "Idioma preferido",
+    "errors": {
+      "phone": "Introduce un teléfono válido: solo números, espacios, guiones y el signo +.",
+      "dateOfBirth": "Introduce una fecha válida. La cuenta debe ser de una persona mayor de edad."
+    }
   },
   "security": {
     "title": "Seguridad",
@@ -222,7 +292,9 @@
       "seeResult": "Ver orientación",
       "restart": "Empezar de nuevo",
       "save": "Guardar resultado",
-      "login": "Inicia sesión para guardar"
+      "login": "Inicia sesión para guardar",
+      "goToSpace": "Ir a mi espacio",
+      "retrySave": "Volver a intentarlo"
     },
     "result": {
       "title": "Tu orientación",
@@ -243,7 +315,10 @@
         "privacy_block": "No se puede continuar con datos identificables. Anonimiza el caso e inténtalo de nuevo.",
         "consent_required": "Necesitas dar tu consentimiento para continuar.",
         "ineligible": "No se cumplen los requisitos para esta orientación."
-      }
+      },
+      "autoSaving": "Guardando el resultado en tu cuenta…",
+      "autoSaved": "Resultado guardado en tu cuenta.",
+      "saveFailed": "No hemos podido guardar el resultado en tu cuenta."
     }
   },
   "errors": {

@@ -2,5 +2,6 @@
   "VITE_EDGE_API_URL": "same-origin",
   "VITE_FIREBASE_API_KEY": "AIzaSyAhuMkmbC3FtHQX99gcwMMRgPGDdCJFbTk",
   "VITE_FIREBASE_AUTH_DOMAIN": "the-somnus-30c48.firebaseapp.com",
-  "VITE_FIREBASE_PROJECT_ID": "the-somnus"
+  "VITE_FIREBASE_PROJECT_ID": "the-somnus",
+  "VITE_ADMIN_CONSOLE_URL": "https://console.thesomnus.com"
 }
