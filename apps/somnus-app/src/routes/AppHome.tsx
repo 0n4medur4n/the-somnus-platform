@@ -1,7 +1,18 @@
 import { useTranslation } from "react-i18next";
+import { accountViewOf } from "../auth/account-view.js";
 import { useAuth } from "../auth/useAuth.js";
+import { MorpheoHome } from "./MorpheoHome.js";
 
 export function AppHome() {
+  const { state } = useAuth();
+  if (state.status === "authenticated" && accountViewOf(state.me).isMorpheoUser) {
+    return <MorpheoHome />;
+  }
+  return <GeneralHome />;
+}
+
+/** The home of everyone who is not a Morpheo user (professionals, organizations). */
+function GeneralHome() {
   const { t } = useTranslation();
   const { state } = useAuth();
   const firstName =

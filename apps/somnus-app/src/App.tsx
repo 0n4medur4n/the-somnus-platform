@@ -5,7 +5,8 @@ import { AuthProvider } from "./auth/AuthProvider.js";
 import { RequireAuth } from "./auth/RequireAuth.js";
 import { OrgProvider } from "./org/OrgContext.js";
 import { AppHome } from "./routes/AppHome.js";
-import { Assessment } from "./routes/Assessment.js";
+import { AssessmentRoute } from "./routes/Assessment.js";
+import { AssessmentDetail } from "./routes/AssessmentDetail.js";
 import { AuthCallback } from "./routes/AuthCallback.js";
 import { InvitationAccept } from "./routes/InvitationAccept.js";
 import { Login } from "./routes/Login.js";
@@ -24,7 +25,8 @@ const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   { path: "/auth/callback", element: <AuthCallback /> },
   // Public: the anonymous assessment flow needs no session (build plan §14).
-  { path: "/assessment", element: <Assessment /> },
+  // Signed-in Morpheo users take it inside their own space (AssessmentRoute).
+  { path: "/assessment", element: <AssessmentRoute /> },
   // Public: the invitation accept flow is reached from the invitation email,
   // before the invited person has any session (Addendum A Checkpoint 14.2).
   // This is the ONLY entry point into a Nox organization -- there is no Nox
@@ -35,6 +37,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/app", element: <AppHome /> },
       { path: "/app/profile", element: <Profile /> },
+      { path: "/app/assessments/:sessionId", element: <AssessmentDetail /> },
       { path: "/app/security", element: <Security /> },
       { path: "/professional", element: <Professional /> },
       { path: "/professional/profile", element: <ProfessionalProfile /> },

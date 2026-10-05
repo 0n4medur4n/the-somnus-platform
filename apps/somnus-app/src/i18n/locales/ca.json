@@ -8,7 +8,8 @@
     "signOut": "Tanca la sessió",
     "skipToContent": "Vés al contingut",
     "language": "Idioma",
-    "menu": "Menú principal"
+    "menu": "Menú principal",
+    "opensInNewTab": "s'obre en una pestanya nova"
   },
   "nav": {
     "home": "Inici",
@@ -17,7 +18,11 @@
     "professional": "Portal professional",
     "organization": "Organització",
     "members": "Membres",
-    "invitations": "Invitacions"
+    "invitations": "Invitacions",
+    "mySpace": "El meu espai",
+    "newAssessment": "Nova avaluació",
+    "myProfile": "El meu perfil",
+    "console": "Consola d'administració"
   },
   "login": {
     "title": "Inicia la sessió",
@@ -136,16 +141,81 @@
   },
   "app": {
     "homeTitle": "Inici",
-    "welcome": "Benvinguda, {{name}}",
-    "welcomeNoName": "Benvinguda"
+    "welcome": "Hola, {{name}}",
+    "welcomeNoName": "Hola"
+  },
+  "space": {
+    "title": "El meu espai",
+    "greeting": "Hola, {{name}}",
+    "greetingNoName": "Hola",
+    "accountType": {
+      "adult": "Compte personal",
+      "parent": "Compte de mare, pare o tutor legal",
+      "professional": "Compte professional",
+      "individual": "Compte personal"
+    },
+    "editProfile": "Editar el perfil",
+    "completeProfile": "Completa el teu perfil: afegeix la teva foto, la data de naixement i un telèfon.",
+    "completeProfileLink": "Completar el perfil",
+    "stats": {
+      "first": "Primera avaluació",
+      "last": "Darrera avaluació",
+      "count": "Avaluacions desades"
+    },
+    "newAssessment": {
+      "title": "Nova avaluació",
+      "body": "Torna a valorar el teu descans quan vulguis. Les teves avaluacions anteriors queden desades.",
+      "bodyParent": "Torna a valorar el descans del menor que tens a càrrec quan vulguis. Les avaluacions anteriors queden desades.",
+      "start": "Fer una nova avaluació"
+    },
+    "history": {
+      "title": "Les teves avaluacions",
+      "forSelf": "Sobre tu",
+      "forMinor": "Sobre el menor que tens a càrrec",
+      "level": "Nivell d'atenció",
+      "view": "Veure el resultat",
+      "viewNamed": "Veure el resultat del {{date}}"
+    },
+    "loading": "S'estan carregant les teves avaluacions…",
+    "error": "No hem pogut carregar les teves avaluacions. Torna-ho a provar."
+  },
+  "resultPage": {
+    "title": "Resultat de la teva avaluació",
+    "savedOn": "Desada el {{date}}",
+    "back": "Tornar al meu espai",
+    "error": "No hem pogut carregar aquest resultat."
   },
   "profile": {
-    "title": "El teu perfil",
+    "title": "El meu perfil",
     "firstName": "Nom",
     "lastName": "Cognoms",
     "phone": "Telèfon",
     "saved": "Perfil actualitzat correctament.",
-    "error": "No hem pogut desar els canvis."
+    "error": "No hem pogut desar els canvis.",
+    "photoTitle": "Foto de perfil",
+    "photoAlt": "La teva foto de perfil",
+    "choosePhoto": "Triar una foto",
+    "changePhoto": "Canviar la foto",
+    "removePhoto": "Treure la foto",
+    "photoHint": "La retallem en quadrat i n'eliminem les dades ocultes, com ara la ubicació on es va fer.",
+    "photoUploading": "S'està desant la foto…",
+    "photoSaved": "Foto actualitzada.",
+    "photoRemoved": "Foto eliminada.",
+    "photoError": "No hem pogut desar la foto. Prova-ho amb una altra imatge.",
+    "photoTooBig": "La imatge és massa gran. Tria'n una de menys de 15 MB.",
+    "photoNotImage": "Aquest fitxer no és una imatge.",
+    "accountTitle": "El teu compte",
+    "email": "Correu electrònic",
+    "accountType": "Tipus de compte",
+    "emailHint": "El correu és la teva manera d'accedir i no es pot canviar des d'aquí.",
+    "detailsTitle": "Les teves dades",
+    "dateOfBirth": "Data de naixement",
+    "optional": "Opcional.",
+    "language": "Idioma preferit",
+    "errors": {
+      "phone": "Introdueix un telèfon vàlid: només números, espais, guions i el signe +.",
+      "dateOfBirth": "Introdueix una data vàlida. El compte ha de ser d'una persona major d'edat."
+    }
   },
   "security": {
     "title": "Seguretat",
@@ -222,7 +292,9 @@
       "seeResult": "Veure l'orientació",
       "restart": "Torna a començar",
       "save": "Desa el resultat",
-      "login": "Inicia la sessió per desar"
+      "login": "Inicia la sessió per desar",
+      "goToSpace": "Anar al meu espai",
+      "retrySave": "Torna-ho a provar"
     },
     "result": {
       "title": "La teva orientació",
@@ -243,7 +315,10 @@
         "privacy_block": "No es pot continuar amb dades identificables. Anonimitza el cas i torna-ho a provar.",
         "consent_required": "Necessites donar el teu consentiment per continuar.",
         "ineligible": "No es compleixen els requisits per a aquesta orientació."
-      }
+      },
+      "autoSaving": "S'està desant el resultat al teu compte…",
+      "autoSaved": "Resultat desat al teu compte.",
+      "saveFailed": "No hem pogut desar el resultat al teu compte."
     }
   },
   "errors": {

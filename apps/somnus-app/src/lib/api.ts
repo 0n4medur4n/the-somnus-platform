@@ -51,6 +51,17 @@ type ApiErrorBody = { error?: { code?: string; message?: string; details?: { rea
 
 type RawResponse = { status: number; data: unknown };
 
+/**
+ * A request body sent as-is rather than as JSON -- the profile photo. It rides
+ * the same CSRF token and retry as every other mutation.
+ */
+export class BinaryBody {
+  constructor(
+    readonly data: Blob,
+    readonly contentType: string,
+  ) {}
+}
+
 /** "" when the API is same-origin (a relative `/v1/...` request), else the configured base URL. */
 function apiBase(): string {
   return env.VITE_EDGE_API_URL === SAME_ORIGIN ? "" : env.VITE_EDGE_API_URL;
@@ -63,7 +74,8 @@ async function send(
   token?: string,
 ): Promise<RawResponse> {
   const headers: Record<string, string> = { "x-correlation-id": crypto.randomUUID() };
-  if (body !== undefined) headers["content-type"] = "application/json";
+  if (body instanceof BinaryBody) headers["content-type"] = body.contentType;
+  else if (body !== undefined) headers["content-type"] = "application/json";
   if (token !== undefined) headers["x-csrf-token"] = token;
 
   const init: RequestInit = {
@@ -73,7 +85,8 @@ async function send(
     // reads or stores it (build plan §5.2).
     credentials: "include",
   };
-  if (body !== undefined) init.body = JSON.stringify(body);
+  if (body instanceof BinaryBody) init.body = body.data;
+  else if (body !== undefined) init.body = JSON.stringify(body);
 
   const response = await fetch(`${apiBase()}${path}`, init);
   if (response.status === 204) return { status: 204, data: undefined };
@@ -164,6 +177,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export const api = {
   get: <T>(path: string): Promise<T> => request<T>("GET", path),
   post: <T>(path: string, body?: unknown): Promise<T> => request<T>("POST", path, body),
+  put: <T>(path: string, body?: unknown): Promise<T> => request<T>("PUT", path, body),
   patch: <T>(path: string, body?: unknown): Promise<T> => request<T>("PATCH", path, body),
   del: <T>(path: string): Promise<T> => request<T>("DELETE", path),
+  /** An absolute URL for elements the browser loads itself, such as `<img src>`. */
+  url: (path: string): string => `${apiBase()}${path}`,
 };

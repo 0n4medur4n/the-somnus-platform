@@ -8,7 +8,8 @@
     "signOut": "Sign out",
     "skipToContent": "Skip to content",
     "language": "Language",
-    "menu": "Main menu"
+    "menu": "Main menu",
+    "opensInNewTab": "opens in a new tab"
   },
   "nav": {
     "home": "Home",
@@ -17,7 +18,11 @@
     "professional": "Professional portal",
     "organization": "Organization",
     "members": "Members",
-    "invitations": "Invitations"
+    "invitations": "Invitations",
+    "mySpace": "My space",
+    "newAssessment": "New assessment",
+    "myProfile": "My profile",
+    "console": "Admin console"
   },
   "login": {
     "title": "Sign in",
@@ -136,16 +141,81 @@
   },
   "app": {
     "homeTitle": "Home",
-    "welcome": "Welcome, {{name}}",
-    "welcomeNoName": "Welcome"
+    "welcome": "Hello, {{name}}",
+    "welcomeNoName": "Hello"
+  },
+  "space": {
+    "title": "My space",
+    "greeting": "Hello, {{name}}",
+    "greetingNoName": "Hello",
+    "accountType": {
+      "adult": "Personal account",
+      "parent": "Parent or legal guardian account",
+      "professional": "Professional account",
+      "individual": "Personal account"
+    },
+    "editProfile": "Edit profile",
+    "completeProfile": "Complete your profile: add your photo, date of birth and a phone number.",
+    "completeProfileLink": "Complete profile",
+    "stats": {
+      "first": "First assessment",
+      "last": "Latest assessment",
+      "count": "Saved assessments"
+    },
+    "newAssessment": {
+      "title": "New assessment",
+      "body": "Assess your sleep again whenever you like. Your earlier assessments stay saved.",
+      "bodyParent": "Assess the sleep of the child in your care again whenever you like. Earlier assessments stay saved.",
+      "start": "Take a new assessment"
+    },
+    "history": {
+      "title": "Your assessments",
+      "forSelf": "About you",
+      "forMinor": "About the child in your care",
+      "level": "Level of care",
+      "view": "View result",
+      "viewNamed": "View the result from {{date}}"
+    },
+    "loading": "Loading your assessments…",
+    "error": "We could not load your assessments. Please try again."
+  },
+  "resultPage": {
+    "title": "Your assessment result",
+    "savedOn": "Saved on {{date}}",
+    "back": "Back to my space",
+    "error": "We could not load this result."
   },
   "profile": {
-    "title": "Your profile",
+    "title": "My profile",
     "firstName": "First name",
     "lastName": "Last name",
     "phone": "Phone",
     "saved": "Profile updated successfully.",
-    "error": "We couldn't save your changes."
+    "error": "We couldn't save your changes.",
+    "photoTitle": "Profile photo",
+    "photoAlt": "Your profile photo",
+    "choosePhoto": "Choose a photo",
+    "changePhoto": "Change photo",
+    "removePhoto": "Remove photo",
+    "photoHint": "We crop it to a square and remove the hidden data in the image, such as where it was taken.",
+    "photoUploading": "Saving the photo…",
+    "photoSaved": "Photo updated.",
+    "photoRemoved": "Photo removed.",
+    "photoError": "We could not save the photo. Try another image.",
+    "photoTooBig": "The image is too large. Choose one under 15 MB.",
+    "photoNotImage": "That file is not an image.",
+    "accountTitle": "Your account",
+    "email": "Email",
+    "accountType": "Account type",
+    "emailHint": "Your email is how you sign in and cannot be changed here.",
+    "detailsTitle": "Your details",
+    "dateOfBirth": "Date of birth",
+    "optional": "Optional.",
+    "language": "Preferred language",
+    "errors": {
+      "phone": "Enter a valid phone number: digits, spaces, dashes and + only.",
+      "dateOfBirth": "Enter a valid date. The account must belong to an adult."
+    }
   },
   "security": {
     "title": "Security",
@@ -222,7 +292,9 @@
       "seeResult": "See orientation",
       "restart": "Start over",
       "save": "Save result",
-      "login": "Log in to save"
+      "login": "Log in to save",
+      "goToSpace": "Go to my space",
+      "retrySave": "Try again"
     },
     "result": {
       "title": "Your orientation",
@@ -243,7 +315,10 @@
         "privacy_block": "We can't continue with identifiable data. Anonymize the case and try again.",
         "consent_required": "You need to give your consent to continue.",
         "ineligible": "The requirements for this orientation are not met."
-      }
+      },
+      "autoSaving": "Saving the result to your account…",
+      "autoSaved": "Result saved to your account.",
+      "saveFailed": "We could not save the result to your account."
     }
   },
   "errors": {

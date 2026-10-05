@@ -8,7 +8,8 @@
     "signOut": "Se déconnecter",
     "skipToContent": "Aller au contenu",
     "language": "Langue",
-    "menu": "Menu principal"
+    "menu": "Menu principal",
+    "opensInNewTab": "s'ouvre dans un nouvel onglet"
   },
   "nav": {
     "home": "Accueil",
@@ -17,7 +18,11 @@
     "professional": "Portail professionnel",
     "organization": "Organisation",
     "members": "Membres",
-    "invitations": "Invitations"
+    "invitations": "Invitations",
+    "mySpace": "Mon espace",
+    "newAssessment": "Nouvelle évaluation",
+    "myProfile": "Mon profil",
+    "console": "Console d'administration"
   },
   "login": {
     "title": "Se connecter",
@@ -136,16 +141,81 @@
   },
   "app": {
     "homeTitle": "Accueil",
-    "welcome": "Bienvenue, {{name}}",
-    "welcomeNoName": "Bienvenue"
+    "welcome": "Bonjour, {{name}}",
+    "welcomeNoName": "Bonjour"
+  },
+  "space": {
+    "title": "Mon espace",
+    "greeting": "Bonjour, {{name}}",
+    "greetingNoName": "Bonjour",
+    "accountType": {
+      "adult": "Compte personnel",
+      "parent": "Compte de parent ou tuteur légal",
+      "professional": "Compte professionnel",
+      "individual": "Compte personnel"
+    },
+    "editProfile": "Modifier le profil",
+    "completeProfile": "Complétez votre profil : ajoutez votre photo, votre date de naissance et un téléphone.",
+    "completeProfileLink": "Compléter le profil",
+    "stats": {
+      "first": "Première évaluation",
+      "last": "Dernière évaluation",
+      "count": "Évaluations enregistrées"
+    },
+    "newAssessment": {
+      "title": "Nouvelle évaluation",
+      "body": "Évaluez à nouveau votre sommeil quand vous le souhaitez. Vos évaluations précédentes restent enregistrées.",
+      "bodyParent": "Évaluez à nouveau le sommeil de l'enfant dont vous avez la charge quand vous le souhaitez. Les évaluations précédentes restent enregistrées.",
+      "start": "Faire une nouvelle évaluation"
+    },
+    "history": {
+      "title": "Vos évaluations",
+      "forSelf": "Vous concernant",
+      "forMinor": "Concernant l'enfant dont vous avez la charge",
+      "level": "Niveau de prise en charge",
+      "view": "Voir le résultat",
+      "viewNamed": "Voir le résultat du {{date}}"
+    },
+    "loading": "Chargement de vos évaluations…",
+    "error": "Nous n'avons pas pu charger vos évaluations. Veuillez réessayer."
+  },
+  "resultPage": {
+    "title": "Résultat de votre évaluation",
+    "savedOn": "Enregistrée le {{date}}",
+    "back": "Retour à mon espace",
+    "error": "Nous n'avons pas pu charger ce résultat."
   },
   "profile": {
-    "title": "Votre profil",
+    "title": "Mon profil",
     "firstName": "Prénom",
     "lastName": "Nom",
     "phone": "Téléphone",
     "saved": "Profil mis à jour avec succès.",
-    "error": "Nous n'avons pas pu enregistrer vos modifications."
+    "error": "Nous n'avons pas pu enregistrer vos modifications.",
+    "photoTitle": "Photo de profil",
+    "photoAlt": "Votre photo de profil",
+    "choosePhoto": "Choisir une photo",
+    "changePhoto": "Changer la photo",
+    "removePhoto": "Retirer la photo",
+    "photoHint": "Nous la recadrons en carré et supprimons les données cachées de l'image, comme le lieu de la prise de vue.",
+    "photoUploading": "Enregistrement de la photo…",
+    "photoSaved": "Photo mise à jour.",
+    "photoRemoved": "Photo supprimée.",
+    "photoError": "Nous n'avons pas pu enregistrer la photo. Essayez une autre image.",
+    "photoTooBig": "L'image est trop grande. Choisissez-en une de moins de 15 Mo.",
+    "photoNotImage": "Ce fichier n'est pas une image.",
+    "accountTitle": "Votre compte",
+    "email": "Adresse e-mail",
+    "accountType": "Type de compte",
+    "emailHint": "Votre adresse e-mail vous sert à vous connecter et ne peut pas être modifiée ici.",
+    "detailsTitle": "Vos informations",
+    "dateOfBirth": "Date de naissance",
+    "optional": "Facultatif.",
+    "language": "Langue préférée",
+    "errors": {
+      "phone": "Saisissez un numéro valide : chiffres, espaces, tirets et signe + uniquement.",
+      "dateOfBirth": "Saisissez une date valide. Le compte doit appartenir à une personne majeure."
+    }
   },
   "security": {
     "title": "Sécurité",
@@ -222,7 +292,9 @@
       "seeResult": "Voir l'orientation",
       "restart": "Recommencer",
       "save": "Enregistrer le résultat",
-      "login": "Connectez-vous pour enregistrer"
+      "login": "Connectez-vous pour enregistrer",
+      "goToSpace": "Aller à mon espace",
+      "retrySave": "Réessayer"
     },
     "result": {
       "title": "Votre orientation",
@@ -243,7 +315,10 @@
         "privacy_block": "Impossible de continuer avec des données identifiables. Anonymisez le cas et réessayez.",
         "consent_required": "Vous devez donner votre consentement pour continuer.",
         "ineligible": "Les conditions de cette orientation ne sont pas remplies."
-      }
+      },
+      "autoSaving": "Enregistrement du résultat dans votre compte…",
+      "autoSaved": "Résultat enregistré dans votre compte.",
+      "saveFailed": "Nous n'avons pas pu enregistrer le résultat dans votre compte."
     }
   },
   "errors": {
