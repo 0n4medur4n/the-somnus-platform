@@ -1,7 +1,8 @@
 import type { MeResponse } from "@somnus/api-contracts";
+import { useQueryClient } from "@tanstack/react-query";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Route, Routes } from "react-router";
+import { Route, Routes, useNavigate } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthContextValue } from "../auth/AuthContext.js";
 import { i18n, renderWithProviders } from "../test/utils.js";
@@ -23,7 +24,7 @@ vi.mock("../config/env.js", () => ({
 }));
 
 const { Assessment } = await import("./Assessment.js");
-const { MorpheoHome } = await import("./MorpheoHome.js");
+const { MorpheoHome, OWN_ASSESSMENTS_QUERY } = await import("./MorpheoHome.js");
 const { AssessmentDetail } = await import("./AssessmentDetail.js");
 const { MorpheoLayout } = await import("../layouts/MorpheoLayout.js");
 
@@ -202,6 +203,40 @@ describe("MorpheoHome (the user's own space)", () => {
       { auth, route: "/app" },
     );
   }
+
+  it("after the first saved result, opens the space instead of bouncing back on a stale empty list", async () => {
+    // Registration lands on /app with no assessments (cached as empty) and is
+    // sent to the questionnaire; the result is saved and the list invalidated;
+    // back on /app the cached empty list must not redirect again.
+    edge.getOwnAssessments.mockResolvedValueOnce({ assessments: [] }).mockResolvedValue(HISTORY);
+
+    function SaveAndReturn() {
+      const queryClient = useQueryClient();
+      const navigate = useNavigate();
+      return (
+        <button
+          type="button"
+          onClick={async () => {
+            await queryClient.invalidateQueries({ queryKey: OWN_ASSESSMENTS_QUERY });
+            await navigate("/app");
+          }}
+        >
+          saved, go to my space
+        </button>
+      );
+    }
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/app" element={<MorpheoHome />} />
+        <Route path="/assessment" element={<SaveAndReturn />} />
+      </Routes>,
+      { auth: authFor(), route: "/app" },
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "saved, go to my space" }));
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(t("space.title"));
+  });
 
   it("sends someone with no saved assessment to the questionnaire", async () => {
     edge.getOwnAssessments.mockResolvedValue({ assessments: [] });
