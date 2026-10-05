@@ -48,14 +48,18 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
       });
 
       expect(res.statusCode).toBe(201);
-      const body = res.json() as { firebaseUid: string; email: string | null };
+      const body = res.json() as { firebaseUid: string; email: string | null; csrfToken: string };
       expect(body.firebaseUid).toBe(uid);
       expect(body.email).toBe("happy@example.com");
+      // The CSRF token travels in the body: the SPA lives on another site and
+      // can never read a cookie this API sets (2026-10-05 registration 403).
+      expect(typeof body.csrfToken).toBe("string");
+      expect(body.csrfToken.length).toBeGreaterThan(0);
+      expect(res.headers["cache-control"]).toBe("no-store");
 
       const cookies = res.cookies as Cookie[];
       expect(findCookie(cookies, "somnus_session")).toBeDefined();
-      // The CSRF token cookie is issued so the SPA can echo it in a header.
-      expect(findCookie(cookies, "somnus_csrf")).toBeDefined();
+      expect(findCookie(cookies, "somnus_csrf")).toBeUndefined();
     });
 
     it("rejects a forged token with 401", async () => {
@@ -94,7 +98,7 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
   });
 
   describe("session cookie attributes (build plan §21)", () => {
-    it("the session cookie is HttpOnly, Path=/, SameSite=Lax; the CSRF token cookie is readable", async () => {
+    it("the session cookie is HttpOnly, Path=/, SameSite=Lax; no cookie is readable by script", async () => {
       const { idToken } = await signUpTestUser("attrs@example.com");
       const res = await server.inject({
         method: "POST",
@@ -104,16 +108,18 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
       });
       const setCookies = ([] as string[]).concat(res.headers["set-cookie"] ?? []);
       const sessionCookie = setCookies.find((c) => c.startsWith("somnus_session="));
-      const csrfTokenCookie = setCookies.find((c) => c.startsWith("somnus_csrf="));
-      if (!sessionCookie || !csrfTokenCookie) throw new Error("expected cookies not set");
+      if (!sessionCookie) throw new Error("expected session cookie not set");
 
       expect(sessionCookie).toMatch(/HttpOnly/i);
       expect(sessionCookie).toMatch(/Path=\//i);
       expect(sessionCookie).toMatch(/SameSite=Lax/i);
       // COOKIE_SECURE=false in test (plain HTTP), so no Secure flag here.
       expect(sessionCookie).not.toMatch(/Secure/i);
-      // The token cookie must be readable by the SPA (not HttpOnly).
-      expect(csrfTokenCookie).not.toMatch(/HttpOnly/i);
+      // Every cookie this API sets is HttpOnly. The CSRF token used to ride a
+      // script-readable cookie, which the SPA could never read cross-site; it is
+      // in the response body now, so nothing here needs to be readable.
+      expect(setCookies.length).toBeGreaterThan(0);
+      for (const cookie of setCookies) expect(cookie).toMatch(/HttpOnly/i);
     });
   });
 
@@ -127,7 +133,7 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
         payload: JSON.stringify({ idToken }),
       });
       const cookies = res.cookies as Cookie[];
-      const csrfToken = findCookie(cookies, "somnus_csrf")?.value ?? "";
+      const csrfToken = (res.json() as { csrfToken: string }).csrfToken;
       return { cookies, csrfToken };
     }
 
@@ -147,6 +153,23 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
         method: "DELETE",
         url: "/v1/sessions/current",
         headers: { cookie: cookieHeader(cookies) }, // no x-csrf-token
+      });
+      expect(res.statusCode).toBe(403);
+      // FORBIDDEN, marked as a CSRF rejection so the SPA refreshes its token
+      // and retries once -- and never retries a 403 that means "not allowed".
+      const body = res.json() as { error: { code: string; details: Record<string, unknown> } };
+      expect(body.error.code).toBe("FORBIDDEN");
+      expect(body.error.details).toEqual({ reason: "csrf" });
+    });
+
+    it("rejects a token issued to a different session (403)", async () => {
+      const a = await loginAndCollect("csrf-a@example.com");
+      const b = await loginAndCollect("csrf-b@example.com");
+      const res = await server.inject({
+        method: "DELETE",
+        url: "/v1/sessions/current",
+        // B's cookies, A's token: the token is bound to the secret cookie.
+        headers: { cookie: cookieHeader(b.cookies), "x-csrf-token": a.csrfToken },
       });
       expect(res.statusCode).toBe(403);
     });
@@ -180,6 +203,49 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
       // No _csrf secret cookie => CSRF gate rejects first (403); either
       // way an unauthenticated caller cannot revoke. Accept 401 or 403.
       expect([401, 403]).toContain(res.statusCode);
+    });
+  });
+
+  describe("GET /v1/sessions/csrf (token after a reload)", () => {
+    async function login(email: string) {
+      const { idToken } = await signUpTestUser(email);
+      const res = await server.inject({
+        method: "POST",
+        url: "/v1/sessions",
+        headers: { "content-type": "application/json" },
+        payload: JSON.stringify({ idToken }),
+      });
+      return res.cookies as Cookie[];
+    }
+
+    it("refuses without a session (401): it never mints a token for nobody", async () => {
+      const res = await server.inject({ method: "GET", url: "/v1/sessions/csrf" });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("returns a no-store token that authorizes a mutation, as after a reload", async () => {
+      // The body token from login is deliberately discarded: a reload keeps
+      // the cookies and loses what the SPA held in memory.
+      const cookies = await login("reload@example.com");
+
+      const tokenRes = await server.inject({
+        method: "GET",
+        url: "/v1/sessions/csrf",
+        headers: { cookie: cookieHeader(cookies) },
+      });
+      expect(tokenRes.statusCode).toBe(200);
+      expect(tokenRes.headers["cache-control"]).toBe("no-store");
+      const { csrfToken } = tokenRes.json() as { csrfToken: string };
+      expect(csrfToken.length).toBeGreaterThan(0);
+      // It reuses the existing secret, so it sets no new one.
+      expect(findCookie(tokenRes.cookies as Cookie[], "_csrf")).toBeUndefined();
+
+      const res = await server.inject({
+        method: "DELETE",
+        url: "/v1/sessions/current",
+        headers: { cookie: cookieHeader(cookies), "x-csrf-token": csrfToken },
+      });
+      expect(res.statusCode).toBe(204);
     });
   });
 

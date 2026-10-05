@@ -13,6 +13,7 @@ import {
   toHttpResponse,
 } from "@somnus/errors";
 import type { FastifyReply } from "fastify";
+import { wasRejectedByCsrf } from "../../bootstrap/csrf-state.js";
 
 /**
  * Maps every thrown error to the §16 API response shape.
@@ -44,7 +45,7 @@ export class SomnusExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const code = httpStatusToErrorCode(status);
-      const body = toHttpResponse(code, correlationId, {});
+      const body = toHttpResponse(code, correlationId, csrfDetails(request, status));
       this.send(reply, status, body);
       return;
     }
@@ -56,7 +57,7 @@ export class SomnusExceptionFilter implements ExceptionFilter {
     const statusCode = extractStatusCode(exception);
     if (statusCode !== null) {
       const code = httpStatusToErrorCode(statusCode);
-      const body = toHttpResponse(code, correlationId, {});
+      const body = toHttpResponse(code, correlationId, csrfDetails(request, statusCode));
       this.send(reply, statusCode, body);
       return;
     }
@@ -76,6 +77,23 @@ export class SomnusExceptionFilter implements ExceptionFilter {
       reply.status(status).send(body);
     }
   }
+}
+
+/**
+ * `{ reason: "csrf" }` when the CSRF gate rejected this request, `{}` otherwise.
+ *
+ * The SPA keeps its CSRF token in memory, so after a reload, a new browser
+ * session or a rotated secret it can legitimately hold a stale or missing one.
+ * It needs to tell that 403 -- fetch a fresh token and retry once -- from a 403
+ * that means "you may not", which it must never retry. The code stays
+ * FORBIDDEN either way; this only names which kind it is.
+ *
+ * Decided by the gate's own record (csrf-state.ts), not by the error: by the
+ * time a CSRF rejection gets here Nest has turned it into a bare
+ * `HttpException(403)` and the plugin's error code is gone.
+ */
+function csrfDetails(request: object, status: number): Record<string, unknown> {
+  return status === 403 && wasRejectedByCsrf(request) ? { reason: "csrf" } : {};
 }
 
 /** A numeric HTTP status carried on a plain Fastify-plugin error, or null. */

@@ -1,4 +1,6 @@
 export {
+  type CsrfTokenResponse,
+  CsrfTokenResponseSchema,
   type SessionCreateRequest,
   SessionCreateRequestSchema,
   type SessionResponse,

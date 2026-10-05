@@ -6,6 +6,7 @@ import rateLimit from "@fastify/rate-limit";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { EdgeConfig } from "../config/edge-config.js";
+import { markCsrfCheckPassed, markCsrfCheckPending } from "./csrf-state.js";
 
 /** Methods that mutate state and therefore require CSRF protection. */
 const STATE_CHANGING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -75,8 +76,11 @@ export async function applyHardening(
     timeWindow: config.RATE_LIMIT_WINDOW_MS,
   });
 
-  // The SPA echoes the CSRF token in the x-csrf-token header (the token
-  // is delivered via the readable somnus_csrf cookie on login).
+  // The SPA echoes the CSRF token in the x-csrf-token header. It receives the
+  // token in the body of POST /v1/sessions and GET /v1/sessions/csrf -- never
+  // through a cookie it reads, because the SPA and this API are on different
+  // sites in every deployed environment and a page cannot read another site's
+  // cookies. The secret stays in the HttpOnly signed cookie configured below.
   await app.register(csrf, {
     getToken: (req: FastifyRequest) => {
       const header = req.headers["x-csrf-token"];
@@ -95,7 +99,14 @@ export async function applyHardening(
   fastify.addHook("preHandler", (req: FastifyRequest, reply: FastifyReply, done: () => void) => {
     const path = req.url.split("?")[0] ?? req.url;
     if (STATE_CHANGING.has(req.method) && !isCsrfExempt(path)) {
-      fastify.csrfProtection(req, reply, done);
+      // The plugin calls back only when the token verifies; otherwise it ends
+      // the request with a 403. The pending mark is how the exception filter
+      // knows which 403s were CSRF rejections (see csrf-state.ts).
+      markCsrfCheckPending(req);
+      fastify.csrfProtection(req, reply, () => {
+        markCsrfCheckPassed(req);
+        done();
+      });
       return;
     }
     done();
