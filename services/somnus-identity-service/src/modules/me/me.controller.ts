@@ -1,8 +1,8 @@
-import { Body, Controller, Get, HttpCode, Patch } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Patch, Put } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { MeResponse } from "@somnus/api-contracts";
 import { CurrentActorId } from "../../common/decorators/current-actor.decorator.js";
-import { ProfilePatchDto } from "../../common/dto/identity.dto.js";
+import { ProfilePatchDto, ProfilePhotoStateDto } from "../../common/dto/identity.dto.js";
 import { MeService } from "./me.service.js";
 
 @ApiTags("me")
@@ -24,5 +24,17 @@ export class MeController {
     @Body() body: ProfilePatchDto,
   ): Promise<void> {
     await this.meService.patchProfile(actorId, body);
+  }
+
+  @Put("profile/photo")
+  @HttpCode(204)
+  @ApiOperation({
+    summary: "Record whether the actor has a profile photo (edge-api stores the image itself).",
+  })
+  async setPhotoState(
+    @CurrentActorId() actorId: string,
+    @Body() body: ProfilePhotoStateDto,
+  ): Promise<void> {
+    await this.meService.setPhotoState(actorId, body.present);
   }
 }

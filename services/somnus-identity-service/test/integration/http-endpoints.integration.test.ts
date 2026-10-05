@@ -151,7 +151,63 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
         user: { id: userId, email: "me@example.com" },
         individualProfile: null,
         professionalProfile: null,
+        account: { registrationRole: null, internalRoles: [], organizations: [] },
       });
+    });
+
+    it("says who the account is for: staff roles, and active organizations with the roles held in each", async () => {
+      const person = await users.create({ email: "staff@example.com" });
+      const grantor = await users.create({ email: "grantor@example.com" });
+      if (!(await roles.findByKey("organization_owner"))) {
+        await roles.seedRole({
+          key: "organization_owner",
+          name: "Organization owner",
+          scope: "organization",
+          isInternal: false,
+        });
+      }
+      await roleAssignments.assign({
+        userId: person,
+        roleId: await ensureInternalRole("platform_super_admin"),
+        assignedBy: grantor,
+      });
+      await roleAssignments.assign({
+        userId: person,
+        roleId: await ensureProfessionalRole(),
+        assignedBy: grantor,
+      });
+
+      const kept = await inject(server, "POST", "/v1/organizations", {
+        actorId: person,
+        payload: { name: "Kept Clinic" },
+      });
+      const left = await inject(server, "POST", "/v1/organizations", {
+        actorId: person,
+        payload: { name: "Left Clinic" },
+      });
+      const keptId = (kept.body as { id: UUIDv7 }).id;
+      const leftId = (left.body as { id: UUIDv7 }).id;
+      const leftMembership = await memberships.findByOrgAndUser({
+        organizationId: leftId,
+        userId: person,
+      });
+      if (!leftMembership) throw new Error("membership missing");
+      await memberships.setStatus(
+        { organizationId: leftId, membershipId: leftMembership.id },
+        "removed",
+      );
+
+      const res = await inject(server, "GET", "/v1/me", { actorId: person });
+      expect(res.statusCode).toBe(200);
+      const { account } = res.body as {
+        account: { internalRoles: string[]; organizations: Array<Record<string, unknown>> };
+      };
+      // Only staff roles: `professional` is held but is not internal.
+      expect(account.internalRoles).toEqual(["platform_super_admin"]);
+      // The removed membership is gone; the kept one carries its own role only.
+      expect(account.organizations).toEqual([
+        { id: keptId, name: "Kept Clinic", status: "active", roleKeys: ["organization_owner"] },
+      ]);
     });
 
     it("404s when the actor header names a user that does not exist", async () => {
@@ -159,6 +215,95 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
         actorId: "00000000-0000-7000-8000-000000000000",
       });
       expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe("the complete profile: PATCH /v1/me/profile and PUT /v1/me/profile/photo", () => {
+    async function personWithProfile(email: string): Promise<UUIDv7> {
+      const userId = await users.create({ email });
+      await individualProfiles.create({
+        userId,
+        firstName: "Ada",
+        lastName: "Lovelace",
+        registrationRole: "adult",
+      });
+      return userId;
+    }
+
+    it("stores date of birth, phone and preferred language, and clears them with null", async () => {
+      const userId = await personWithProfile("complete@example.com");
+
+      const set = await inject(server, "PATCH", "/v1/me/profile", {
+        actorId: userId,
+        payload: { dateOfBirth: "1990-04-12", phone: "+34 600 123 456", locale: "ca" },
+      });
+      expect(set.statusCode).toBe(204);
+      const me = await inject(server, "GET", "/v1/me", { actorId: userId });
+      expect(me.body).toMatchObject({
+        user: { locale: "ca" },
+        individualProfile: { dateOfBirth: "1990-04-12", phone: "+34 600 123 456" },
+      });
+
+      const cleared = await inject(server, "PATCH", "/v1/me/profile", {
+        actorId: userId,
+        payload: { phone: null, dateOfBirth: null },
+      });
+      expect(cleared.statusCode).toBe(204);
+      const after = (await inject(server, "GET", "/v1/me", { actorId: userId })).body as {
+        individualProfile: Record<string, unknown>;
+      };
+      expect(after.individualProfile).not.toHaveProperty("phone");
+      expect(after.individualProfile).not.toHaveProperty("dateOfBirth");
+    });
+
+    it("rejects a date of birth that would make the account holder a minor", async () => {
+      const userId = await personWithProfile("minor-dob@example.com");
+      const minor = `${new Date().getUTCFullYear() - 10}-01-01`;
+      const res = await inject(server, "PATCH", "/v1/me/profile", {
+        actorId: userId,
+        payload: { dateOfBirth: minor },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it("records that a photo exists, then that it was removed", async () => {
+      const userId = await personWithProfile("photo@example.com");
+
+      const added = await inject(server, "PUT", "/v1/me/profile/photo", {
+        actorId: userId,
+        payload: { present: true },
+      });
+      expect(added.statusCode).toBe(204);
+      const withPhoto = (await inject(server, "GET", "/v1/me", { actorId: userId })).body as {
+        individualProfile: { photoUpdatedAt?: string };
+      };
+      expect(withPhoto.individualProfile.photoUpdatedAt).toMatch(/Z$/);
+
+      const removed = await inject(server, "PUT", "/v1/me/profile/photo", {
+        actorId: userId,
+        payload: { present: false },
+      });
+      expect(removed.statusCode).toBe(204);
+      const without = (await inject(server, "GET", "/v1/me", { actorId: userId })).body as {
+        individualProfile: Record<string, unknown>;
+      };
+      expect(without.individualProfile).not.toHaveProperty("photoUpdatedAt");
+    });
+
+    it("never accepts image bytes, and 404s for a user with no profile", async () => {
+      const userId = await personWithProfile("bytes@example.com");
+      const bytes = await inject(server, "PUT", "/v1/me/profile/photo", {
+        actorId: userId,
+        payload: { present: true, data: "UklGRg==" },
+      });
+      expect(bytes.statusCode).toBe(400);
+
+      const bare = await users.create({ email: "bare@example.com" });
+      const noProfile = await inject(server, "PUT", "/v1/me/profile/photo", {
+        actorId: bare,
+        payload: { present: true },
+      });
+      expect(noProfile.statusCode).toBe(404);
     });
   });
 

@@ -10,6 +10,7 @@ already-validated actor the edge injects (§5.5), never sent by the browser.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException, status
@@ -25,6 +26,8 @@ from morpheo.schemas.assessment import (
     AssessmentCreateResponseDTO,
     AssessmentResultDTO,
     AssessmentSnapshotResponseDTO,
+    OwnAssessmentDTO,
+    OwnAssessmentsResponseDTO,
     UserAssessmentSnapshotDTO,
     UserAssessmentsRequestDTO,
     UserAssessmentsResponseDTO,
@@ -38,6 +41,16 @@ _NOT_FOUND = HTTPException(
 )
 
 ActorId = Annotated[str, Header(alias="X-Somnus-Actor-Id")]
+# Optional at the HTTP layer so a missing actor reads exactly like a record that
+# is not yours: 404, never a 422 that confirms the route and the session exist.
+OptionalActorId = Annotated[str | None, Header(alias="X-Somnus-Actor-Id")]
+
+
+def _iso_utc(moment: datetime) -> str:
+    """ISO 8601 with an explicit offset. The database stores UTC without a zone;
+    a bare timestamp would be read as local time by the browser."""
+    aware = moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
+    return aware.astimezone(UTC).isoformat()
 
 
 @router.get(
@@ -47,6 +60,29 @@ ActorId = Annotated[str, Header(alias="X-Somnus-Actor-Id")]
 )
 def get_content(bundle: BundleDep) -> AssessmentContentResponseDTO:
     return build_content_response(bundle)
+
+
+@router.get(
+    "/mine",
+    response_model=OwnAssessmentsResponseDTO,
+    summary="The caller's own claimed assessments, newest first.",
+)
+def get_own_assessments(flow: FlowDep, actor_id: ActorId) -> OwnAssessmentsResponseDTO:
+    """The signed-in person's history. Scoped by the edge-injected actor, so it can
+    only ever answer about the caller -- unlike `/by-user`, which is break-glass."""
+    assessments: list[OwnAssessmentDTO] = []
+    for snapshot in flow.snapshots_for_user(actor_id):
+        result = AssessmentResultDTO.model_validate(json.loads(snapshot.result_json))
+        assessments.append(
+            OwnAssessmentDTO(
+                session_id=snapshot.session_id,
+                role=result.role,
+                level=result.level,
+                stop=result.stop,
+                created_at=_iso_utc(snapshot.created_at),
+            )
+        )
+    return OwnAssessmentsResponseDTO(assessments=assessments)
 
 
 @router.post("", response_model=AssessmentCreateResponseDTO, summary="Open an anonymous session.")
@@ -126,10 +162,15 @@ def claim_assessment(
 @router.get(
     "/{session_id}/snapshot",
     response_model=AssessmentSnapshotResponseDTO,
-    summary="The immutable snapshot frozen at claim.",
+    summary="The immutable snapshot frozen at claim, for the person who claimed it.",
 )
-def get_snapshot(session_id: str, flow: FlowDep) -> AssessmentSnapshotResponseDTO:
-    snapshot = flow.get_snapshot(session_id)
+def get_snapshot(
+    session_id: str, flow: FlowDep, actor_id: OptionalActorId = None
+) -> AssessmentSnapshotResponseDTO:
+    # Owner only. A snapshot is a person's health result; the edge resolves the
+    # signed-in person and injects them, and anyone else gets the same 404 as a
+    # session that never existed.
+    snapshot = flow.get_owned_snapshot(session_id, actor_id) if actor_id else None
     if snapshot is None:
         raise _NOT_FOUND
     result = AssessmentResultDTO.model_validate(json.loads(snapshot.result_json))

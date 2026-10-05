@@ -30,6 +30,7 @@ const ME = {
   user: { id: "u", email: "u@example.com", locale: "es", status: "active" },
   individualProfile: null,
   professionalProfile: null,
+  account: { registrationRole: null, internalRoles: [], organizations: [] },
 };
 
 describe("AuthProvider", () => {

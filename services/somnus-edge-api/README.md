@@ -27,6 +27,10 @@ non-root Dockerfile).
 | DELETE | `/v1/sessions/current` | Revoke the current session and clear its cookies (logout). |
 | GET | `/v1/me` | Current actor's user + profiles, composed from identity (8.2). |
 | PATCH | `/v1/me/profile` | Patch the individual profile via identity (8.2). |
+| PUT | `/v1/me/photo` | Upload or replace the caller's profile photo: raw `image/webp`/`image/jpeg`, 1 MB, no EXIF/XMP (ADR 0018). |
+| GET | `/v1/me/photo` | The caller's own profile photo, `Cache-Control: private`. |
+| DELETE | `/v1/me/photo` | Remove the caller's profile photo. |
+| GET | `/v1/assessments/mine` | The caller's own saved Morpheo assessments, newest first. |
 | GET | `/v1/legal-documents/current` | Public: current legal documents, proxied from consent (8.2). |
 | GET | `/v1/consents/current` | Actor's consent standing, proxied from consent (8.2). |
 | POST | `/v1/consents` | Record consent, proxied from consent (8.2). |
@@ -151,6 +155,7 @@ startup:
 | `CORS_ORIGINS` | localhost dev origins | Comma-separated Hosting origins. |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | `100` / `60000` | Global, keyed by client IP; `/health/live` counts too. Nothing in terraform, the deploy workflows or compose overrides these, so the defaults **are** the deployed limit. The Playwright stack raises `RATE_LIMIT_MAX` for itself (`scripts/e2e-stack.mjs`) because the whole suite shares one IP; `tests/e2e-rate-limit.test.ts` fails if that harness value ever stops diverging from this default. |
 | `BODY_LIMIT_BYTES` | `65536` | |
+| `PROFILE_PHOTOS_BUCKET` | (unset) | Private bucket for profile photos (ADR 0018). Unset: in memory locally; a production process refuses uploads. |
 
 ## Tests
 

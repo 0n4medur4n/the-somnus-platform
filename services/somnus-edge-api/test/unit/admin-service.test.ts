@@ -89,6 +89,11 @@ describe("AdminProxyService", () => {
             user: { id: ACTOR, email: "admin@example.com", locale: "es", status: "active" },
             individualProfile: { firstName: "Ada", lastName: "Lovelace" },
             professionalProfile: null,
+            account: {
+              registrationRole: "adult",
+              internalRoles: ["platform_admin"],
+              organizations: [],
+            },
           },
         };
       }

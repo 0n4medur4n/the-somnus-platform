@@ -169,6 +169,11 @@ describe("admin console gate (/admin/v1/*)", () => {
             user: { id: ACTOR, email: "admin@example.com", locale: "es", status: "active" },
             individualProfile: { firstName: "Ada", lastName: "Lovelace" },
             professionalProfile: null,
+            account: {
+              registrationRole: "adult",
+              internalRoles: ["platform_admin"],
+              organizations: [],
+            },
           },
         };
       }

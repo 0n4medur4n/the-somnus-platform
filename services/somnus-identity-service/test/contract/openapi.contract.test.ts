@@ -284,6 +284,7 @@ describe("OpenAPI document structure", () => {
     ["/internal/v1/authorization/check", "post", "AuthorizationCheckDto"],
     ["/v1/me", "get", undefined],
     ["/v1/me/profile", "patch", "ProfilePatchDto"],
+    ["/v1/me/profile/photo", "put", "ProfilePhotoStateDto"],
     ["/v1/organizations", "post", "OrganizationCreateDto"],
     ["/v1/organizations/{organizationId}", "get", undefined],
     ["/v1/organizations/{organizationId}", "patch", "OrganizationUpdateDto"],

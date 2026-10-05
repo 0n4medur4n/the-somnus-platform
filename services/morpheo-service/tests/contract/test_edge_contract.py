@@ -29,6 +29,8 @@ from morpheo.schemas.assessment import (
     AssessmentCreateResponseDTO,
     AssessmentResultDTO,
     AssessmentSnapshotResponseDTO,
+    OwnAssessmentDTO,
+    OwnAssessmentsResponseDTO,
     UserAssessmentSnapshotDTO,
     UserAssessmentsRequestDTO,
     UserAssessmentsResponseDTO,
@@ -69,6 +71,8 @@ def test_all_schema_artifacts_are_present() -> None:
         "UserAssessmentsRequest",
         "UserAssessmentSnapshot",
         "UserAssessmentsResponse",
+        "OwnAssessment",
+        "OwnAssessmentsResponse",
     }
     present = {path.stem for path in SCHEMA_DIR.glob("*.json")}
     assert expected <= present
@@ -163,6 +167,32 @@ def test_user_assessments_dtos_conform() -> None:
         _dump(UserAssessmentsResponseDTO(snapshots=[snapshot])),
         _schema("UserAssessmentsResponse"),
     )
+
+
+def test_own_assessments_dtos_conform() -> None:
+    item = OwnAssessmentDTO(
+        session_id="sess-1",
+        role=RoleId.PARENT,
+        level=SafetyLevelId.L3,
+        stop=False,
+        created_at=datetime(2026, 10, 5, 9, 30, tzinfo=UTC).isoformat(),
+    )
+    jsonschema.validate(_dump(item), _schema("OwnAssessment"))
+    jsonschema.validate(
+        _dump(OwnAssessmentsResponseDTO(assessments=[item])), _schema("OwnAssessmentsResponse")
+    )
+
+
+def test_own_assessment_without_a_timezone_is_rejected_by_the_shared_schema() -> None:
+    item = OwnAssessmentDTO(
+        session_id="sess-1",
+        role=RoleId.ADULT,
+        level=None,
+        stop=True,
+        created_at=datetime(2026, 10, 5, 9, 30).isoformat(),
+    )
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(_dump(item), _schema("OwnAssessment"))
 
 
 def test_content_response_from_artifacts_conforms() -> None:

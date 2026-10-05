@@ -15,6 +15,8 @@ import {
   AssessmentResultSchema,
   type AssessmentSnapshotResponse,
   AssessmentSnapshotResponseSchema,
+  type OwnAssessmentsResponse,
+  OwnAssessmentsResponseSchema,
 } from "@somnus/api-contracts";
 import type { CloudRunClient } from "@somnus/cloud-run-client";
 import { ErrorCode, SomnusError } from "@somnus/errors";
@@ -128,6 +130,20 @@ export class MorpheoProxyService {
       },
     );
     return this.parse(AssessmentSnapshotResponseSchema, response.body, correlationId);
+  }
+
+  /** The signed-in person's own saved assessments, newest first. */
+  async mine(
+    session: SessionRecord | undefined,
+    rawCorrelationId?: string,
+  ): Promise<OwnAssessmentsResponse> {
+    const correlationId = correlationOf(rawCorrelationId);
+    const actorId = await this.resolveActor(session, correlationId);
+    const response = await this.morpheo.get(`${ASSESSMENTS}/mine`, {
+      correlationId,
+      headers: { [ACTOR_ID_HEADER]: actorId },
+    });
+    return this.parse(OwnAssessmentsResponseSchema, response.body, correlationId);
   }
 
   private resolveActor(session: SessionRecord | undefined, correlationId: string): Promise<string> {

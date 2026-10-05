@@ -73,6 +73,11 @@ export class UsersRepository {
     return rows[0] ?? null;
   }
 
+  /** The person's preferred language, chosen on their profile. */
+  async setLocale(id: UUIDv7, locale: (typeof users.locale.enumValues)[number]): Promise<void> {
+    await this.db.update(users).set({ locale }).where(eq(users.id, id));
+  }
+
   /** Build plan §20 Checkpoint 6.3: fixture support for the deleted/suspended-actor negative tests. */
   async setStatus(id: UUIDv7, status: (typeof users.status.enumValues)[number]): Promise<void> {
     await this.db.update(users).set({ status }).where(eq(users.id, id));

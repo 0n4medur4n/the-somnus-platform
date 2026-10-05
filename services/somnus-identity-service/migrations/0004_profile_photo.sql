@@ -1,0 +1,1 @@
+ALTER TABLE `individual_profiles` ADD `photo_updated_at` timestamp;

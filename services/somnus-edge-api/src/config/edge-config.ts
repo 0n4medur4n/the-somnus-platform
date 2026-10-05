@@ -105,6 +105,10 @@ export const EdgeConfigSchema = z.object({
   WORKER_BASE_URL: z.string().url().default("http://127.0.0.1:3003"),
   // OIDC audience for the worker's Cloud Run URL; defaults to WORKER_BASE_URL.
   WORKER_AUDIENCE: z.string().min(1).optional(),
+  // Private Cloud Storage bucket for profile photos (build plan §388). Unset in
+  // local dev and tests, where photos live in memory; a production process with
+  // it unset refuses photo uploads rather than keeping them in memory.
+  PROFILE_PHOTOS_BUCKET: z.string().min(3).max(63).optional(),
   // How internal calls are authenticated. `gcp`: mint a real Google
   // OIDC identity token (production on Cloud Run). `insecure-dev`: send
   // a fixed dev token -- for local/docker/tests where there is no GCP

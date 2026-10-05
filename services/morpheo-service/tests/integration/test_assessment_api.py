@@ -67,7 +67,7 @@ def test_full_flow_create_answer_summary_claim_snapshot(client: TestClient) -> N
     snapshot_id = claim_body["snapshotId"]
     assert snapshot_id
 
-    snapshot = client.get(f"{BASE}/{session_id}/snapshot")
+    snapshot = client.get(f"{BASE}/{session_id}/snapshot", headers={"X-Somnus-Actor-Id": "user-1"})
     assert snapshot.status_code == 200
     snap_body = snapshot.json()
     assert snap_body["snapshotId"] == snapshot_id
@@ -218,3 +218,45 @@ def test_by_user_never_returns_another_person_s_record(client: TestClient) -> No
 
 def test_by_user_rejects_a_request_with_no_user(client: TestClient) -> None:
     assert client.post(f"{BASE}/by-user", json={}).status_code == 422
+
+
+# --- the owner's own reads: snapshot and history ---
+
+
+def test_snapshot_is_readable_only_by_the_person_who_claimed_it(client: TestClient) -> None:
+    session_id = _claim_new_assessment(client, "owner-1")
+    url = f"{BASE}/{session_id}/snapshot"
+
+    assert client.get(url, headers={"X-Somnus-Actor-Id": "owner-1"}).status_code == 200
+    # Someone else, or nobody, gets the same answer as a session that never existed.
+    assert client.get(url, headers={"X-Somnus-Actor-Id": "someone-else"}).status_code == 404
+    assert client.get(url).status_code == 404
+
+
+def test_mine_lists_only_the_callers_assessments_newest_first(client: TestClient) -> None:
+    first = _claim_new_assessment(client, "history-1")
+    second = _claim_new_assessment(client, "history-1")
+    _claim_new_assessment(client, "history-2")
+
+    response = client.get(f"{BASE}/mine", headers={"X-Somnus-Actor-Id": "history-1"})
+
+    assert response.status_code == 200
+    items = response.json()["assessments"]
+    assert {item["sessionId"] for item in items} == {first, second}
+    assert items[0]["createdAt"] >= items[1]["createdAt"]
+    for item in items:
+        assert item["role"] == "adult"
+        # An explicit offset: a bare timestamp would be read as the browser's local time.
+        assert item["createdAt"].endswith("+00:00")
+        # How and when it ended -- never the answers or the rule detail.
+        assert set(item) == {"sessionId", "role", "level", "stop", "createdAt"}
+
+
+def test_mine_is_empty_for_someone_with_no_saved_assessments(client: TestClient) -> None:
+    response = client.get(f"{BASE}/mine", headers={"X-Somnus-Actor-Id": "nobody-yet"})
+    assert response.status_code == 200
+    assert response.json() == {"assessments": []}
+
+
+def test_mine_requires_the_edge_injected_actor_header(client: TestClient) -> None:
+    assert client.get(f"{BASE}/mine").status_code == 422

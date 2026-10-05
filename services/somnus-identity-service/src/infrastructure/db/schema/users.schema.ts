@@ -54,6 +54,10 @@ export const individualProfiles = mysqlTable("individual_profiles", {
   // only record that a pediatric flow is in play.
   guardianshipConfirmed: boolean("guardianship_confirmed"),
   minorAgeBand: mysqlEnum("minor_age_band", ["0-3m", "4-11m", "1-2y", "3-5y", "6-12y", "13-17y"]),
+  // When the profile photo last changed; NULL means there is none. The image
+  // itself is in edge-api's private bucket, named by the user id -- identity
+  // records only that it exists, never the bytes or where they live.
+  photoUpdatedAt: timestamp("photo_updated_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });

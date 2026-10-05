@@ -179,6 +179,8 @@ module "run_edge_api" {
     # id again -- which is what pointed session writes at a project with no
     # database in it.
     FIRESTORE_PROJECT_ID = var.project_id
+    # Private bucket for profile photos; edge-api is its only reader/writer.
+    PROFILE_PHOTOS_BUCKET = module.profile_photos_bucket.bucket_name
   }
   secret_env_vars = {
     COOKIE_SECRET = { secret_id = "edge-cookie-secret", version = "latest" }
@@ -384,6 +386,24 @@ module "reports_bucket" {
   region         = var.region
   bucket_name    = "${var.project_id}-reports"
   writer_members = [module.sa_report.member]
+
+  depends_on = [module.project_apis_backend]
+}
+
+# --- Storage: profile photos (build plan §9 "controlled attachments") ---
+#
+# Personal data under the right to erasure: no versioning and no soft delete,
+# so removing a photo -- or the account -- removes it for good. Only edge-api
+# reads and writes it; the SPA reaches a photo through an authenticated
+# edge-api route, never the bucket.
+module "profile_photos_bucket" {
+  source                        = "../../modules/cloud-storage-bucket"
+  project_id                    = var.project_id
+  region                        = var.region
+  bucket_name                   = "${var.project_id}-profile-photos"
+  writer_members                = [module.sa_edge_api.member]
+  versioning                    = false
+  soft_delete_retention_seconds = 0
 
   depends_on = [module.project_apis_backend]
 }

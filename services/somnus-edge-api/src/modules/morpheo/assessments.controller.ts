@@ -7,6 +7,7 @@ import type {
   AssessmentCreateResponse,
   AssessmentResult,
   AssessmentSnapshotResponse,
+  OwnAssessmentsResponse,
 } from "@somnus/api-contracts";
 import { CorrelationId } from "../../common/interceptors/correlation-id.decorator.js";
 import { CurrentSession } from "../sessions/current-session.decorator.js";
@@ -25,6 +26,16 @@ import { MorpheoProxyService } from "./morpheo.service.js";
 @Controller({ path: "v1/assessments" })
 export class AssessmentsController {
   constructor(private readonly morpheo: MorpheoProxyService) {}
+
+  @Get("mine")
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: "The signed-in person's own saved assessments, newest first." })
+  mine(
+    @CurrentSession() session: SessionRecord | undefined,
+    @CorrelationId() correlationId?: string,
+  ): Promise<OwnAssessmentsResponse> {
+    return this.morpheo.mine(session, correlationId);
+  }
 
   @Get("content")
   @ApiOperation({ summary: "Localized assessment display content (approved wording)." })

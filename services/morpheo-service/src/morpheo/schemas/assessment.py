@@ -117,3 +117,21 @@ class UserAssessmentSnapshotDTO(_ContractModel):
 
 class UserAssessmentsResponseDTO(_ContractModel):
     snapshots: list[UserAssessmentSnapshotDTO]
+
+
+class OwnAssessmentDTO(_ContractModel):
+    """One of the caller's own claimed assessments: how and when it ended.
+
+    No answers and no rule detail -- the full result is the owner-scoped
+    snapshot route.
+    """
+
+    session_id: str
+    role: RoleId
+    level: SafetyLevelId | None
+    stop: bool
+    created_at: str
+
+
+class OwnAssessmentsResponseDTO(_ContractModel):
+    assessments: list[OwnAssessmentDTO]

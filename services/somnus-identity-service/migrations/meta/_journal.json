@@ -29,6 +29,13 @@
       "when": 1788567479439,
       "tag": "0003_nullable_assigned_by",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1791215052981,
+      "tag": "0004_profile_photo",
+      "breakpoints": true
     }
   ]
 }
