@@ -188,7 +188,12 @@ module "run_edge_api" {
     MORPHEO_BASE_URL    = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
     IDENTITY_BASE_URL   = "https://somnus-identity-service-lx3fvb5r5q-ey.a.run.app"
     REPORT_BASE_URL     = "https://somnus-report-service-lx3fvb5r5q-ey.a.run.app"
-    CORS_ORIGINS        = "https://the-somnus-app.web.app,https://the-somnus-app.firebaseapp.com,https://the-somnuss.web.app,https://the-somnuss.firebaseapp.com,https://app.thesomnus.com"
+    # The consumer app (both Hosting URLs + its custom domain), the marketing
+    # site, and the admin console (both Hosting URLs + console.thesomnus.com).
+    # The default *.web.app / *.firebaseapp.com URLs are listed alongside each
+    # custom domain on purpose: Firebase serves all of them, so a console opened
+    # at either default URL must reach the API too, not only the pretty one.
+    CORS_ORIGINS = "https://the-somnus-app.web.app,https://the-somnus-app.firebaseapp.com,https://the-somnuss.web.app,https://the-somnuss.firebaseapp.com,https://app.thesomnus.com,https://console.thesomnus.com,https://the-somnus-admin.web.app,https://the-somnus-admin.firebaseapp.com"
     # Auth lives in the Firebase project; Firestore lives here. Two separate
     # variables so the Firestore client cannot silently follow the Auth project
     # id again -- which is what pointed session writes at a project with no
