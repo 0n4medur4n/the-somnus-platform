@@ -1,22 +1,16 @@
 # Runbook: dev environment (Terraform)
 
 Implements build plan §20 Phase 5, Checkpoint 5.1. Applies
-`infrastructure/terraform/environments/dev` against **two** GCP
-projects, by explicit decision:
+`infrastructure/terraform/environments/dev` against **one** GCP project,
+**`the-somnus`** (`project_id`), which holds the whole environment: Cloud
+Run, Artifact Registry, service accounts, Secret Manager, Cloud Tasks,
+Pub/Sub, Cloud Scheduler, Cloud Storage, Firestore, and Firebase --
+Authentication and the three Hosting sites (ADR 0017,
+`firebase-consolidation.tf`).
 
-- **`the-somnus`** (`project_id`) -- backend infra: Cloud Run,
-  Artifact Registry, service accounts, Secret Manager, Cloud Tasks,
-  Pub/Sub, Cloud Scheduler, Cloud Storage.
-- **`the-somnuss`** (`firebase_project_id`) -- Firebase: Hosting sites,
-  Authentication, Firestore. Matches the project already referenced in
-  `.firebaserc` and `package.json`'s deploy scripts.
-
-Firebase ID-token verification (build plan §10) does not need any
-cross-project IAM grant: it validates against Google's public certs
-plus the Firebase project ID, nothing same-project-only. If a later
-checkpoint wires up Firestore from a backend service, that service's
-service account will need an explicit `roles/datastore.user` grant on
-`the-somnuss` at that point -- not guessed here.
+Until 2026-10-05 Firebase lived in a second project, `the-somnuss`. It is no
+longer managed by Terraform (`removed` blocks in `main.tf`, which drop it from
+state without destroying anything) and can be deleted by hand.
 
 
 ## The five Cloud Run services are edited through Terraform only
@@ -97,16 +91,14 @@ auth login` alone is not enough for Terraform.
 
 ```bash
 gcloud projects describe the-somnus
-gcloud projects describe the-somnuss
 gcloud billing accounts list
 ```
 
-Both projects must be linked to a billing account before `terraform
-apply` (the budget-alert modules and several APIs require it):
+The project must be linked to a billing account before `terraform apply`
+(the budget-alert module, Identity Platform and several APIs require it):
 
 ```bash
 gcloud billing projects link the-somnus --billing-account=<billing-account-id>
-gcloud billing projects link the-somnuss --billing-account=<billing-account-id>
 ```
 
 ## 3. Configure variables
@@ -114,7 +106,7 @@ gcloud billing projects link the-somnuss --billing-account=<billing-account-id>
 ```bash
 cd infrastructure/terraform/environments/dev
 cp terraform.tfvars.example terraform.tfvars
-# edit terraform.tfvars: project_id, firebase_project_id, billing_account_id
+# edit terraform.tfvars: project_id, billing_account_id
 ```
 
 `terraform.tfvars` is gitignored -- it is never committed.
@@ -128,12 +120,12 @@ terraform validate
 terraform plan -out=tfplan
 ```
 
-Review the plan. Expect, split across the two projects: ~16 APIs on
-`the-somnus` + ~7 on `the-somnuss`, 1 Artifact Registry repo, 5
+Review the plan. Expect, on `the-somnus`: ~20 APIs, 1 Artifact Registry repo, 5
 service accounts, 5 Cloud Run services (on the public placeholder
 image -- see below), 4 Cloud Run invoker bindings, 1 Cloud Storage
-bucket, 1 Firebase project link, 2 Firebase Hosting sites, 2 budgets
-(one per project), 1 monitoring alert.
+bucket, 1 Firebase project link, Authentication (Identity Platform), 1 web app,
+3 Firebase Hosting sites and their custom domains, the CI deployer service
+account with its Workload Identity Federation pool, 1 budget, 1 monitoring alert.
 
 ## 5. Apply
 
@@ -141,8 +133,7 @@ bucket, 1 Firebase project link, 2 Firebase Hosting sites, 2 budgets
 terraform apply tfplan
 ```
 
-This creates real, billable (if used) GCP resources across both
-projects. Re-run `terraform plan` with no `tfplan` file if time has
+This creates real, billable (if used) GCP resources in the project. Re-run `terraform plan` with no `tfplan` file if time has
 passed and you want a fresh diff before applying.
 
 ## About the placeholder image
@@ -191,7 +182,8 @@ them.
   describe <project-id>`) before applying.
 - **Firebase Hosting site already exists**: if it was created via the
   Firebase CLI/console before Terraform managed it, import it instead
-  of re-creating: `terraform import module.hosting_marketing.google_firebase_hosting_site.this projects/the-somnuss/sites/the-somnuss`.
+  of re-creating, e.g.
+  `terraform import google_firebase_hosting_site.app projects/the-somnus/sites/thesomnus-app`.
 
 ---
 

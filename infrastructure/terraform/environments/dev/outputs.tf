@@ -26,16 +26,3 @@ output "reports_bucket_name" {
   value = module.reports_bucket.bucket_name
 }
 
-output "firebase_hosting_sites" {
-  value = {
-    marketing = module.hosting_marketing.site_id
-    app       = module.hosting_app.site_id
-  }
-}
-
-output "firebase_hosting_urls" {
-  value = {
-    marketing = module.hosting_marketing.default_url
-    app       = module.hosting_app.default_url
-  }
-}

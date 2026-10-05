@@ -23,6 +23,15 @@
 # The custom domains move in a later step, once the new sites are verified on
 # their *.web.app URLs. var.firebase_project_id is retired after that.
 
+# Firebase on this project. Created 2026-10-05 for the api.thesomnus.com front
+# door (ADR 0016, superseded); now the base of everything below.
+resource "google_firebase_project" "backend" {
+  provider = google-beta
+  project  = var.project_id
+
+  depends_on = [module.project_apis_backend]
+}
+
 # Workload Identity Federation exchanges GitHub's OIDC token through STS.
 resource "google_project_service" "sts" {
   project            = var.project_id
@@ -46,6 +55,16 @@ resource "google_identity_platform_config" "auth" {
       enabled           = true
       password_required = false
     }
+
+    # Off, and stated: the API reports these as explicit `false`, and leaving
+    # them out made every plan propose removing them.
+    phone_number {
+      enabled = false
+    }
+  }
+
+  multi_tenant {
+    allow_tenants = false
   }
 
   # Where a sign-in link may send the browser back to.

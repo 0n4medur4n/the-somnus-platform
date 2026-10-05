@@ -1,18 +1,11 @@
 # The Somnus -- dev environment (build plan §20 Phase 5, Checkpoint 5.1).
 #
-# Two GCP projects, by explicit decision:
-#   - var.project_id          ("the-somnus")  -- backend infra: Cloud Run,
-#     Artifact Registry, service accounts, Cloud Storage, budget/monitoring.
-#   - var.firebase_project_id ("the-somnuss") -- Firebase: Hosting sites,
-#     Authentication, Firestore. Matches the project already referenced in
-#     .firebaserc and package.json's deploy scripts.
-# Firebase ID-token verification (build plan §10) needs no cross-project
-# IAM: it validates against Google's public certs plus the Firebase
-# project ID, not a same-project resource. Nothing else crosses the
-# project boundary yet -- once Firestore is actually wired into a
-# service (build plan §9/§10.2), that service's SA will need an
-# explicit `google_project_iam_member` grant on firebase_project_id
-# (roles/datastore.user), added at that checkpoint, not guessed now.
+# One GCP project, var.project_id ("the-somnus"), holds the whole environment:
+# Cloud Run, Artifact Registry, Secret Manager, Firestore, and -- since
+# 2026-10-05 (ADR 0017) -- Firebase Authentication and the three Hosting sites
+# (firebase-consolidation.tf). Dev used to split Firebase into a second project,
+# "the-somnuss"; that project is no longer managed here (see the `removed`
+# blocks below) and can be deleted.
 #
 # What this creates: project APIs (on both projects), one Artifact
 # Registry repo, one least-privilege service account per Cloud Run
@@ -60,16 +53,6 @@ locals {
     "firestore.googleapis.com",
   ]
 
-  firebase_apis = [
-    "firebase.googleapis.com",
-    "firebasehosting.googleapis.com",
-    "identitytoolkit.googleapis.com",
-    "firestore.googleapis.com",
-    "billingbudgets.googleapis.com",
-    "cloudresourcemanager.googleapis.com",
-    "serviceusage.googleapis.com",
-  ]
-
   # Baseline runtime permissions every Cloud Run service account needs
   # (write its own logs/metrics/traces). Anything beyond this is added
   # per-service, per-resource (e.g. secretmanager.secretAccessor scoped
@@ -86,12 +69,6 @@ module "project_apis_backend" {
   source     = "../../modules/project-apis"
   project_id = var.project_id
   apis       = local.backend_apis
-}
-
-module "project_apis_firebase" {
-  source     = "../../modules/project-apis"
-  project_id = var.firebase_project_id
-  apis       = local.firebase_apis
 }
 
 module "artifact_registry" {
@@ -182,22 +159,21 @@ module "run_edge_api" {
     NODE_ENV           = "production"
     SERVICE_NAME       = "somnus-edge-api"
     INTERNAL_AUTH_MODE = "gcp"
-    # Two Auth projects while Authentication moves from the-somnuss into this
-    # project (firebase-consolidation.tf): tokens from either are accepted, each
-    # verified only by the project its own `aud` names. Back to var.project_id
-    # alone once both SPAs sign in against the new project.
-    FIREBASE_PROJECT_ID = "the-somnuss,${var.project_id}"
+    # Authentication lives in this project (ADR 0017). During the move it was
+    # "the-somnuss,${var.project_id}"; edge-api still accepts a list.
+    FIREBASE_PROJECT_ID = var.project_id
     COOKIE_SECURE       = "true"
-    COOKIE_SAMESITE     = "none"
-    MORPHEO_BASE_URL    = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
-    IDENTITY_BASE_URL   = "https://somnus-identity-service-lx3fvb5r5q-ey.a.run.app"
-    REPORT_BASE_URL     = "https://somnus-report-service-lx3fvb5r5q-ey.a.run.app"
-    # The consumer app (both Hosting URLs + its custom domain), the marketing
-    # site, and the admin console (both Hosting URLs + console.thesomnus.com).
-    # The default *.web.app / *.firebaseapp.com URLs are listed alongside each
-    # custom domain on purpose: Firebase serves all of them, so a console opened
-    # at either default URL must reach the API too, not only the pretty one.
-    CORS_ORIGINS = "https://the-somnus-app.web.app,https://the-somnus-app.firebaseapp.com,https://the-somnuss.web.app,https://the-somnuss.firebaseapp.com,https://app.thesomnus.com,https://console.thesomnus.com,https://the-somnus-admin.web.app,https://the-somnus-admin.firebaseapp.com"
+    # Lax: the SPAs reach this API on their own origin through Firebase Hosting
+    # (/v1/** rewrite), so the session cookie is first-party and never needs
+    # SameSite=None.
+    COOKIE_SAMESITE   = "lax"
+    MORPHEO_BASE_URL  = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
+    IDENTITY_BASE_URL = "https://somnus-identity-service-lx3fvb5r5q-ey.a.run.app"
+    REPORT_BASE_URL   = "https://somnus-report-service-lx3fvb5r5q-ey.a.run.app"
+    # The SPAs call this API on their own origin (Hosting rewrites /v1/**), so
+    # their requests are not cross-origin and CORS does not apply to them. Only
+    # the two real origins are listed, for any direct caller.
+    CORS_ORIGINS = "https://app.thesomnus.com,https://console.thesomnus.com"
     # Auth lives in the Firebase project; Firestore lives here. Two separate
     # variables so the Firestore client cannot silently follow the Auth project
     # id again -- which is what pointed session writes at a project with no
@@ -412,47 +388,45 @@ module "reports_bucket" {
   depends_on = [module.project_apis_backend]
 }
 
-# --- Firebase Hosting (build plan §5.1, §5.2) ---
-# Lives in var.firebase_project_id, not var.project_id. Site IDs match
-# the targets already configured in .firebaserc.
-
-resource "google_firebase_project" "this" {
-  provider = google-beta
-  project  = var.firebase_project_id
-
-  # Needs both: the API must be enabled on firebase_project_id (the
-  # resource being managed) *and* on project_id (the user_project_override
-  # billing/quota project every API call is attributed to -- see versions.tf).
-  depends_on = [module.project_apis_firebase, module.project_apis_backend]
+# --- The former Firebase project, the-somnuss: no longer managed ---
+#
+# Firebase moved into var.project_id (ADR 0017, firebase-consolidation.tf).
+# These blocks drop the old project's resources from Terraform state WITHOUT
+# destroying them: the old sites and Authentication stay as they are until the
+# project itself is deleted by hand, which is the operator's call.
+removed {
+  from = module.project_apis_firebase
+  lifecycle {
+    destroy = false
+  }
 }
 
-module "hosting_marketing" {
-  source     = "../../modules/firebase-hosting-site"
-  project_id = var.firebase_project_id
-  # Reuse Firebase's required default site for the public marketing entry
-  # point instead of provisioning a redundant secondary Hosting site.
-  site_id = "the-somnuss"
-
-  providers = {
-    google-beta = google-beta
+removed {
+  from = google_firebase_project.this
+  lifecycle {
+    destroy = false
   }
-
-  depends_on = [google_firebase_project.this]
 }
 
-module "hosting_app" {
-  source     = "../../modules/firebase-hosting-site"
-  project_id = var.firebase_project_id
-  # "somnus-app" is already claimed by an unrelated Firebase project --
-  # site IDs are globally unique across all of Firebase, like GCS bucket
-  # names. the-somnus-app avoided the collision.
-  site_id = "the-somnus-app"
-
-  providers = {
-    google-beta = google-beta
+removed {
+  from = module.hosting_marketing
+  lifecycle {
+    destroy = false
   }
+}
 
-  depends_on = [google_firebase_project.this]
+removed {
+  from = module.hosting_app
+  lifecycle {
+    destroy = false
+  }
+}
+
+removed {
+  from = module.budget_alert_firebase
+  lifecycle {
+    destroy = false
+  }
 }
 
 # --- Secrets: managed outside Terraform (build plan: no secret values in code) ---
@@ -545,16 +519,6 @@ module "budget_alert_backend" {
   display_name        = "The Somnus backend (${var.project_id}) - ${var.env} monthly budget"
 
   depends_on = [module.project_apis_backend]
-}
-
-module "budget_alert_firebase" {
-  source              = "../../modules/budget-alert"
-  project_id          = var.firebase_project_id
-  billing_account_id  = var.billing_account_id
-  budget_amount_units = var.firebase_budget_amount_units
-  display_name        = "The Somnus Firebase (${var.firebase_project_id}) - ${var.env} monthly budget"
-
-  depends_on = [module.project_apis_backend, module.project_apis_firebase]
 }
 
 # --- Baseline monitoring alert ---
