@@ -21,7 +21,8 @@ the consequences.
 | 0010 | Five-service map with isolated modules, not more | Accepted | §2, §5.4, §5.7 |
 | 0011 | Pinned technical decisions | Accepted | §3, §18, §2 |
 | 0012 | Four-locale i18n from day one (es, en, ca, fr) | Accepted | §3.3, §22 |
-| 0016 | Same-site API front door through Firebase Hosting | Accepted | §10, §21 |
+| 0016 | Same-site API front door through Firebase Hosting | Superseded by ADR 0017 | §10, §21 |
+| 0017 | One GCP project per environment; the API same-origin with each SPA | Accepted | §2, §5.1, §5.2, §10 |
 
 ## Convention
 

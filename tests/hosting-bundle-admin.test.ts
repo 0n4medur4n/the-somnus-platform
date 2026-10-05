@@ -93,10 +93,14 @@ describe("the corrected build", () => {
     >;
 
     expect(config["environment"]).toBe("dev");
-    expect(config["VITE_EDGE_API_URL"]).toMatch(/^https:\/\//);
+    // Same-origin: the console calls /v1/... on its own host, which Hosting
+    // forwards to edge-api (firebase.json). Never localhost.
+    expect(config["VITE_EDGE_API_URL"]).toBe("same-origin");
     expect(config["VITE_FIREBASE_API_KEY"]).toMatch(/^AIza/);
-    expect(config["VITE_FIREBASE_PROJECT_ID"]).toBe("the-somnuss");
-    expect(config["VITE_FIREBASE_AUTH_DOMAIN"]).toBe("the-somnuss.firebaseapp.com");
+    // One project per environment since 2026-10-05. Its auth domain carries a
+    // suffix because "the-somnus.firebaseapp.com" belongs to another project.
+    expect(config["VITE_FIREBASE_PROJECT_ID"]).toBe("the-somnus");
+    expect(config["VITE_FIREBASE_AUTH_DOMAIN"]).toBe("the-somnus-30c48.firebaseapp.com");
   });
 
   it("ships no source maps", () => {

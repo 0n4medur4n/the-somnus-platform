@@ -48,12 +48,18 @@ resource "google_identity_platform_config" "auth" {
     }
   }
 
-  # Where a sign-in link may send the browser back to. The *.web.app URLs are
-  # here so the new sites can be tested before the custom domains move.
+  # Where a sign-in link may send the browser back to.
+  #
+  # The project's own Firebase domains are taken from the web app config, never
+  # written by hand: "the-somnus.firebaseapp.com" belongs to an unrelated
+  # Firebase project (the name was taken), so Firebase gave this one
+  # "the-somnus-30c48". Authorizing the hand-written name would have let a
+  # sign-in link return to someone else's site. The *.web.app URLs of the new
+  # sites are here so they can be tested before the custom domains move.
   authorized_domains = [
     "localhost",
-    "${var.project_id}.firebaseapp.com",
-    "${var.project_id}.web.app",
+    data.google_firebase_web_app_config.web.auth_domain,
+    replace(data.google_firebase_web_app_config.web.auth_domain, ".firebaseapp.com", ".web.app"),
     "${var.app_hosting_site_id}.web.app",
     "${var.app_hosting_site_id}.firebaseapp.com",
     "${var.console_hosting_site_id}.web.app",

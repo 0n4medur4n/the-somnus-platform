@@ -75,6 +75,13 @@
       "cleanUrls": true,
       "rewrites": [
         {
+          "source": "/v1/**",
+          "run": {
+            "serviceId": "somnus-edge-api",
+            "region": "europe-west3"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -131,6 +138,13 @@
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "cleanUrls": true,
       "rewrites": [
+        {
+          "source": "/v1/**",
+          "run": {
+            "serviceId": "somnus-edge-api",
+            "region": "europe-west3"
+          }
+        },
         {
           "source": "**",
           "destination": "/index.html"

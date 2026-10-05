@@ -560,43 +560,43 @@ jobs:
     # Build plan §20 Checkpoint 9.2 exit: the frontends deploy to dev Hosting
     # from CI. Three sites since Addendum A §A2.1 added the admin console on
     # its own site. PRs get a preview channel; main goes live to dev.
-    # Gated on the Firebase service-account secret so the pipeline stays
-    # green until it is configured (see docs/runbooks/deploy-dev.md).
+    #
+    # Since 2026-10-05 the sites live in the backend project (the-somnus), one
+    # project per environment (firebase-consolidation.tf), and the app and
+    # console forward /v1/** to somnus-edge-api on the same origin
+    # (firebase.json). CI authenticates through Workload Identity Federation as
+    # ci-hosting-deployer: GitHub's OIDC token is exchanged for short-lived
+    # Google credentials, so there is no service-account key anywhere -- not in
+    # a GitHub secret, not on disk. The trust is limited to this repository by
+    # numeric id (the provider's attribute condition).
+    permissions:
+      contents: read
+      id-token: write
     env:
-      FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-      FIREBASE_PROJECT: the-somnuss
+      FIREBASE_PROJECT: the-somnus
     steps:
-      - name: Note when credentials are absent
-        if: env.FIREBASE_SA == ''
-        run: echo "::notice::FIREBASE_SERVICE_ACCOUNT not set -- skipping Hosting deploy (see docs/runbooks/deploy-dev.md)."
-
       - name: Checkout
-        if: env.FIREBASE_SA != ''
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
 
       - name: Setup pnpm
-        if: env.FIREBASE_SA != ''
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
 
       - name: Setup Node.js
-        if: env.FIREBASE_SA != ''
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
       - name: Install (frozen lockfile)
-        if: env.FIREBASE_SA != ''
         run: pnpm install --frozen-lockfile
 
       - name: Build shared packages
-        if: env.FIREBASE_SA != ''
         run: pnpm --if-present -r --filter "./packages/*" run build
 
       # Both SPAs build in hosting mode: a plain `vite build` loads local .env
@@ -604,24 +604,26 @@ jobs:
       # so it produces a bundle that points at localhost. The admin console was
       # deployed that way until this was fixed.
       - name: Build the frontends
-        if: env.FIREBASE_SA != ''
         run: |
           pnpm --filter @somnus/app build:hosting --mode hosting-dev
           pnpm --filter @somnus/admin build:hosting --mode hosting-dev
           pnpm --filter @somnus/marketing build
 
-      - name: Authenticate to Firebase
-        if: env.FIREBASE_SA != ''
-        run: |
-          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/firebase-sa.json"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json" >> "$GITHUB_ENV"
+      # Fork pull requests get no OIDC token, so this step -- and the deploy --
+      # only runs for pushes and same-repository pull requests.
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/176300399480/locations/global/workloadIdentityPools/github-actions/providers/the-somnus-platform
+          service_account: ci-hosting-deployer@the-somnus.iam.gserviceaccount.com
 
       - name: Deploy preview channel (pull request)
-        if: env.FIREBASE_SA != '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: pnpm exec firebase hosting:channel:deploy "pr-${{ github.event.number }}" --project "$FIREBASE_PROJECT" --expires 7d --non-interactive
 
       - name: Deploy live to dev (push to main)
-        if: env.FIREBASE_SA != '' && github.event_name == 'push'
+        if: github.event_name == 'push'
         run: pnpm exec firebase deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive
 
   morpheo-service:

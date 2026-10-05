@@ -1,6 +1,6 @@
 # ADR 0016 — Same-site API front door through Firebase Hosting
 
-- Status: Accepted
+- Status: Superseded by ADR 0017 (one project per environment; the API same-origin with each SPA)
 - Date: 2026-10-05
 - Decides: §10 (session cookie), §21 (CSRF); refines ADR 0008 and ADR 0009
 

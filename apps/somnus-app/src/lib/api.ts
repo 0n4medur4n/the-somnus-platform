@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { SAME_ORIGIN } from "../config/env-schema.js";
 
 const STATE_CHANGING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -50,6 +51,11 @@ type ApiErrorBody = { error?: { code?: string; message?: string; details?: { rea
 
 type RawResponse = { status: number; data: unknown };
 
+/** "" when the API is same-origin (a relative `/v1/...` request), else the configured base URL. */
+function apiBase(): string {
+  return env.VITE_EDGE_API_URL === SAME_ORIGIN ? "" : env.VITE_EDGE_API_URL;
+}
+
 async function send(
   method: string,
   path: string,
@@ -69,7 +75,7 @@ async function send(
   };
   if (body !== undefined) init.body = JSON.stringify(body);
 
-  const response = await fetch(`${env.VITE_EDGE_API_URL}${path}`, init);
+  const response = await fetch(`${apiBase()}${path}`, init);
   if (response.status === 204) return { status: 204, data: undefined };
   const text = await response.text();
   return { status: response.status, data: text.length > 0 ? JSON.parse(text) : undefined };

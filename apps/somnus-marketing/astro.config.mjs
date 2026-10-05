@@ -3,7 +3,9 @@ import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 
-const SITE_URL = "https://the-somnuss.web.app";
+// The canonical public address (sitemaps, canonical links), not a Hosting
+// site's *.web.app URL: those change when a site moves between projects.
+const SITE_URL = "https://thesomnus.com";
 
 export default defineConfig({
   site: SITE_URL,
