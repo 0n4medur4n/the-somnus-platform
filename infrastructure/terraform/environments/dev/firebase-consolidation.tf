@@ -203,3 +203,35 @@ output "ci_hosting_auth" {
     service_account            = google_service_account.ci_hosting.email
   }
 }
+
+# --- Custom domains on the new sites ---
+#
+# Attaching a domain here moves no traffic: DNS decides which site serves it.
+# Firebase lists, per domain, the records to add (`custom_domain_dns_records`):
+# a TXT proving ownership and an ACME TXT let the certificate be issued before
+# the A/CNAME records are switched, so the move need not drop HTTPS. www
+# redirects to the apex, the canonical address (apps/somnus-marketing).
+locals {
+  custom_domains = {
+    "app.thesomnus.com"     = { site = google_firebase_hosting_site.app.site_id, redirect = null }
+    "console.thesomnus.com" = { site = google_firebase_hosting_site.console.site_id, redirect = null }
+    "thesomnus.com"         = { site = google_firebase_hosting_site.marketing.site_id, redirect = null }
+    "www.thesomnus.com"     = { site = google_firebase_hosting_site.marketing.site_id, redirect = "thesomnus.com" }
+  }
+}
+
+resource "google_firebase_hosting_custom_domain" "site" {
+  provider = google-beta
+  for_each = local.custom_domains
+
+  project               = var.project_id
+  site_id               = each.value.site
+  custom_domain         = each.key
+  redirect_target       = each.value.redirect
+  wait_dns_verification = false
+}
+
+output "custom_domain_dns_records" {
+  description = "Per custom domain, the DNS records Firebase wants. Add them at Cloudflare as DNS-only (grey cloud)."
+  value       = { for domain, cd in google_firebase_hosting_custom_domain.site : domain => cd.required_dns_updates }
+}
