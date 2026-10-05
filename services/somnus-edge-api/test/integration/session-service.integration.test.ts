@@ -11,7 +11,7 @@ import { clearFirestoreEmulator, TEST_PROJECT_ID } from "../support/emulator.js"
  * session guard short-circuits first.
  */
 describe("SessionService (Firestore-backed session store)", () => {
-  const firebase = new FirebaseService(TEST_PROJECT_ID);
+  const firebase = new FirebaseService(TEST_PROJECT_ID, TEST_PROJECT_ID);
   const sessions = new SessionService(firebase);
 
   beforeEach(async () => {

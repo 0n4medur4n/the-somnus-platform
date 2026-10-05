@@ -47,3 +47,33 @@ variable "api_hosting_site_id" {
   type        = string
   default     = "the-somnus-api"
 }
+
+variable "marketing_hosting_site_id" {
+  description = "Firebase Hosting site id for the marketing site, in var.project_id. Globally unique across Firebase."
+  type        = string
+  default     = "thesomnus-web"
+}
+
+variable "app_hosting_site_id" {
+  description = "Firebase Hosting site id for the app SPA, in var.project_id. Globally unique across Firebase."
+  type        = string
+  default     = "thesomnus-app"
+}
+
+variable "console_hosting_site_id" {
+  description = "Firebase Hosting site id for the admin console, in var.project_id. Globally unique across Firebase."
+  type        = string
+  default     = "thesomnus-console"
+}
+
+variable "github_repository_id" {
+  description = "Numeric id of 0n4medur4n/the-somnus-platform; the only repository whose Actions may deploy Hosting."
+  type        = string
+  default     = "1307769443"
+}
+
+variable "github_repository_owner_id" {
+  description = "Numeric id of the repository owner, checked alongside the repository id."
+  type        = string
+  default     = "126766587"
+}
