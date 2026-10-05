@@ -174,6 +174,32 @@ export const UserAssessmentsResponseSchema = z
 export type UserAssessmentsResponse = z.infer<typeof UserAssessmentsResponseSchema>;
 
 /**
+ * morpheo -> edge: the signed-in person's own claimed assessments, newest
+ * first (`GET /internal/v1/assessments/mine`, actor from the edge-injected
+ * header). The list shows when and how each one ended; the full result is the
+ * owner-scoped snapshot route. Not break-glass: it can only ever answer about
+ * the caller.
+ */
+export const OwnAssessmentSchema = z
+  .object({
+    sessionId: z.string().min(1),
+    role: RoleIdSchema,
+    level: SafetyLevelIdSchema.nullable(),
+    stop: z.boolean(),
+    /** When the result was saved to the account (ISO 8601 with offset). */
+    createdAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+export type OwnAssessment = z.infer<typeof OwnAssessmentSchema>;
+
+export const OwnAssessmentsResponseSchema = z
+  .object({
+    assessments: z.array(OwnAssessmentSchema),
+  })
+  .strict();
+export type OwnAssessmentsResponse = z.infer<typeof OwnAssessmentsResponseSchema>;
+
+/**
  * The named set of schemas exported as JSON Schema artifacts. The generator
  * (scripts/generate-json-schema.ts) and the drift-guard test iterate this same
  * record, so the checked-in files can never silently fall out of sync.
@@ -195,4 +221,6 @@ export const MORPHEO_CONTRACT_SCHEMAS = {
   UserAssessmentsRequest: UserAssessmentsRequestSchema,
   UserAssessmentSnapshot: UserAssessmentSnapshotSchema,
   UserAssessmentsResponse: UserAssessmentsResponseSchema,
+  OwnAssessment: OwnAssessmentSchema,
+  OwnAssessmentsResponse: OwnAssessmentsResponseSchema,
 } as const;

@@ -14,6 +14,13 @@ resource "google_storage_bucket" "this" {
     enabled = var.versioning
   }
 
+  dynamic "soft_delete_policy" {
+    for_each = var.soft_delete_retention_seconds == null ? [] : [var.soft_delete_retention_seconds]
+    content {
+      retention_duration_seconds = soft_delete_policy.value
+    }
+  }
+
   # Old noncurrent versions age out; current objects are governed by
   # each service's own retention logic, not a blanket bucket rule.
   lifecycle_rule {

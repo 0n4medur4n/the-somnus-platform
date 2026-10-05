@@ -159,10 +159,11 @@ module "run_edge_api" {
   service_account_email = module.sa_edge_api.email
   public                = true
   env_vars = {
-    SERVICE_NAME = "somnus-edge-api"
-    NODE_ENV     = "production"
-    LOG_LEVEL    = "info"
-    LOG_FORMAT   = "json"
+    SERVICE_NAME          = "somnus-edge-api"
+    NODE_ENV              = "production"
+    LOG_LEVEL             = "info"
+    LOG_FORMAT            = "json"
+    PROFILE_PHOTOS_BUCKET = module.profile_photos_bucket.bucket_name
   }
   labels = { app = "somnus", service = "edge-api", env = var.env }
 
@@ -302,6 +303,24 @@ module "reports_bucket" {
   region         = var.region
   bucket_name    = "${var.project_id}-reports"
   writer_members = [module.sa_report.member]
+
+  depends_on = [module.project_apis_backend]
+}
+
+# --- Storage: profile photos (build plan §9 "controlled attachments") ---
+#
+# Personal data under the right to erasure: no versioning and no soft delete,
+# so removing a photo -- or the account -- removes it for good. Only edge-api
+# reads and writes it; the SPA reaches a photo through an authenticated
+# edge-api route, never the bucket.
+module "profile_photos_bucket" {
+  source                        = "../cloud-storage-bucket"
+  project_id                    = var.project_id
+  region                        = var.region
+  bucket_name                   = "${var.project_id}-profile-photos"
+  writer_members                = [module.sa_edge_api.member]
+  versioning                    = false
+  soft_delete_retention_seconds = 0
 
   depends_on = [module.project_apis_backend]
 }

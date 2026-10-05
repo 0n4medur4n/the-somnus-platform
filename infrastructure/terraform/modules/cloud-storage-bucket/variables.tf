@@ -28,6 +28,12 @@ variable "versioning" {
   default = true
 }
 
+variable "soft_delete_retention_seconds" {
+  description = "How long Cloud Storage keeps a deleted object recoverable. null keeps Google's default (7 days); 0 turns soft delete off, so a delete is final -- what personal data under the right to erasure needs."
+  type        = number
+  default     = null
+}
+
 variable "uniform_bucket_level_access" {
   description = "Build plan §9: buckets are never public; uniform access (no per-object ACLs) is the safer default."
   type        = bool

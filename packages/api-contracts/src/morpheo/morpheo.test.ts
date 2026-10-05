@@ -25,6 +25,7 @@ import {
   AssessmentResultSchema,
   AssessmentSnapshotResponseSchema,
   MORPHEO_CONTRACT_SCHEMAS,
+  OwnAssessmentsResponseSchema,
 } from "./assessment.js";
 import { AssessmentContentResponseSchema } from "./content.js";
 import { MORPHEO_MODULES, MORPHEO_ROLES, MORPHEO_SAFETY_LEVELS } from "./enums.js";
@@ -193,6 +194,37 @@ describe("claim + snapshot responses", () => {
     expect(AssessmentClaimTokenResponseSchema.safeParse({ token: "a".repeat(65) }).success).toBe(
       false,
     );
+  });
+});
+
+describe("own assessments (the signed-in person's history)", () => {
+  const item = {
+    sessionId: "sess-1",
+    role: "adult",
+    level: "L3",
+    stop: false,
+    createdAt: "2026-10-05T09:30:00+00:00",
+  };
+
+  it("accepts a history with an offset timestamp, and an empty one", () => {
+    expect(OwnAssessmentsResponseSchema.safeParse({ assessments: [item] }).success).toBe(true);
+    expect(OwnAssessmentsResponseSchema.safeParse({ assessments: [] }).success).toBe(true);
+  });
+
+  it("rejects a timestamp without a timezone, which a browser would read as local time", () => {
+    expect(
+      OwnAssessmentsResponseSchema.safeParse({
+        assessments: [{ ...item, createdAt: "2026-10-05T09:30:00" }],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("carries no answers and no rule detail -- only how and when each one ended", () => {
+    expect(
+      OwnAssessmentsResponseSchema.safeParse({
+        assessments: [{ ...item, triggeredRules: ["SAFE-001"] }],
+      }).success,
+    ).toBe(false);
   });
 });
 

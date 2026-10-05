@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { LocaleSchema } from "../locale.js";
+import { MORPHEO_ROLES } from "../morpheo/enums.js";
 import { opaqueIdSchema } from "../uuid.js";
+import { OrganizationStatusSchema } from "./organization.js";
+import { RoleKeySchema } from "./roles.js";
 
 export const UserStatusSchema = z.enum(["active", "suspended", "deleted"]);
 
@@ -17,6 +20,12 @@ export const IndividualProfileSchema = z.object({
   lastName: z.string().min(1).max(120),
   dateOfBirth: z.string().date().optional(),
   phone: z.string().min(1).max(32).optional(),
+  /**
+   * When the profile photo last changed; absent when there is none. The app
+   * also uses it as the cache key of `GET /v1/me/photo`, so a new photo is
+   * never hidden behind the old one.
+   */
+  photoUpdatedAt: z.iso.datetime().optional(),
 });
 export type IndividualProfile = z.infer<typeof IndividualProfileSchema>;
 
@@ -39,30 +48,98 @@ export const ProfessionalProfileSchema = z.object({
 });
 export type ProfessionalProfile = z.infer<typeof ProfessionalProfileSchema>;
 
+/** An organization the person is an active member of, with the roles they hold in it. */
+export const MeOrganizationSchema = z.object({
+  id: opaqueIdSchema,
+  name: z.string(),
+  status: OrganizationStatusSchema,
+  roleKeys: z.array(RoleKeySchema),
+});
+export type MeOrganization = z.infer<typeof MeOrganizationSchema>;
+
+/**
+ * Who the account is for, so the app can show each person their own space.
+ *
+ * - `registrationRole`: the branch chosen at registration (Addendum A, A1);
+ *   null for accounts created before it was recorded.
+ * - `internalRoles`: platform staff roles (INTERNAL_ROLE_KEYS) only. Non-empty
+ *   means the person works in the admin console; what they may do there is
+ *   still decided per request by the capability matrix, never by this list.
+ * - `organizations`: active memberships only.
+ */
+export const MeAccountSchema = z.object({
+  registrationRole: z.enum(MORPHEO_ROLES).nullable(),
+  internalRoles: z.array(RoleKeySchema),
+  organizations: z.array(MeOrganizationSchema),
+});
+export type MeAccount = z.infer<typeof MeAccountSchema>;
+
 /** GET /v1/me */
 export const MeResponseSchema = z.object({
   user: UserSchema,
   individualProfile: IndividualProfileSchema.nullable(),
   professionalProfile: ProfessionalProfileSchema.nullable(),
+  account: MeAccountSchema,
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
+
+/** Every account holder is an adult: a minor never has an account (Addendum A, A1). */
+export const MIN_ACCOUNT_HOLDER_AGE = 18;
+
+/** Whole years between a calendar date of birth and `today` (both read as UTC dates). */
+export function ageOnDate(dateOfBirth: string, today: Date): number {
+  const [year, month, day] = dateOfBirth.split("-").map(Number) as [number, number, number];
+  const months = (today.getUTCMonth() + 1 - month) * 100 + (today.getUTCDate() - day);
+  return today.getUTCFullYear() - year - (months < 0 ? 1 : 0);
+}
+
+/** A date of birth an account holder can have: an adult, and a plausible one. */
+export const AccountHolderDateOfBirthSchema = z.iso.date().refine(
+  (value) => {
+    const age = ageOnDate(value, new Date());
+    return age >= MIN_ACCOUNT_HOLDER_AGE && age <= 120;
+  },
+  { message: "The account holder must be an adult." },
+);
+
+/** Digits, spaces, dashes, parentheses and an optional leading +. */
+export const PhoneSchema = z
+  .string()
+  .min(6)
+  .max(32)
+  .regex(/^\+?[0-9 ()-]+$/);
 
 /**
  * PATCH profile: individual and professional fields are mutually
  * exclusive on a single request -- a user is at most one of each kind
  * of profile, and only that profile's own fields are patchable here.
  * License/specialty changes are not included: those go through
- * verification, not a plain patch.
+ * verification, not a plain patch. `null` clears an optional field.
+ * `locale` is the person's preferred language (stored on the user).
  */
 export const ProfilePatchRequestSchema = z
   .object({
     firstName: z.string().min(1).max(120).optional(),
     lastName: z.string().min(1).max(120).optional(),
-    phone: z.string().min(1).max(32).optional(),
+    phone: PhoneSchema.nullable().optional(),
+    dateOfBirth: AccountHolderDateOfBirthSchema.nullable().optional(),
+    locale: LocaleSchema.optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: "At least one field is required." });
 export type ProfilePatchRequest = z.infer<typeof ProfilePatchRequestSchema>;
+
+/**
+ * `PUT /v1/me/profile/photo` on identity, called by edge-api only: edge-api
+ * stores the image itself (private bucket) and records here whether there is
+ * one. Identity never sees the image bytes.
+ */
+export const ProfilePhotoStateRequestSchema = z
+  .object({
+    present: z.boolean(),
+  })
+  .strict();
+export type ProfilePhotoStateRequest = z.infer<typeof ProfilePhotoStateRequestSchema>;
 
 /**
  * `POST /internal/v1/users/resolve` (build plan §20 Checkpoint 8.2):

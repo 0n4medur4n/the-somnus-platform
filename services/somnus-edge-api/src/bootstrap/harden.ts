@@ -5,6 +5,7 @@ import rateLimit from "@fastify/rate-limit";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { EdgeConfig } from "../config/edge-config.js";
+import { PROFILE_PHOTO_MAX_BYTES, PROFILE_PHOTO_TYPES } from "../modules/me/profile-photo.js";
 import { markCsrfCheckPassed, markCsrfCheckPending } from "./csrf-state.js";
 import { csrfTokenMatches } from "./csrf-token.js";
 
@@ -78,6 +79,16 @@ export async function applyHardening(
   });
 
   const fastify = app.getHttpAdapter().getInstance();
+
+  // The profile photo upload (PUT /v1/me/photo) is the one raw body edge-api
+  // accepts: the two image types, read as bytes, with their own 1 MB ceiling
+  // instead of the global JSON limit. Every other content type is still a 415.
+  fastify.addContentTypeParser(
+    [...PROFILE_PHOTO_TYPES],
+    { parseAs: "buffer", bodyLimit: PROFILE_PHOTO_MAX_BYTES },
+    (_request, body, done) => done(null, body),
+  );
+
   fastify.addHook("preHandler", (req: FastifyRequest, reply: FastifyReply, done: () => void) => {
     const path = req.url.split("?")[0] ?? req.url;
     if (STATE_CHANGING.has(req.method) && !isCsrfExempt(path)) {

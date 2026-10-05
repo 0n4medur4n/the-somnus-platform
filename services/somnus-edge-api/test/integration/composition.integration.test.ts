@@ -75,6 +75,13 @@ describe("edge-api composition routes (build plan §20 Checkpoint 8.2)", () => {
       user: { id: UUIDv7(), email: "u@example.com", locale: "es", status: "active" },
       individualProfile: null,
       professionalProfile: null,
+      account: {
+        registrationRole: "professional",
+        internalRoles: ["support_agent"],
+        organizations: [
+          { id: UUIDv7(), name: "Clinic", status: "active", roleKeys: ["organization_owner"] },
+        ],
+      },
     };
     respond = (req) => {
       expect(req.path).toBe("/v1/me");

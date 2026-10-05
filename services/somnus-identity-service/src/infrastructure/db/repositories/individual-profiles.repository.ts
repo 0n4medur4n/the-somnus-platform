@@ -25,7 +25,13 @@ export type NewIndividualProfile = UserScope & {
   minorAgeBand?: MinorAgeBand | null;
 };
 
-export type ProfilePatch = Partial<Pick<NewIndividualProfile, "firstName" | "lastName" | "phone">>;
+/** `null` clears an optional field; an absent key leaves it unchanged. */
+export type ProfilePatch = {
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+  dateOfBirth?: string | null;
+};
 
 /** Every method takes a UserScope: this is profile data that belongs to exactly one user. */
 export class IndividualProfilesRepository {
@@ -54,6 +60,14 @@ export class IndividualProfilesRepository {
       .where(eq(individualProfiles.userId, scope.userId))
       .limit(1);
     return rows[0] ?? null;
+  }
+
+  /** Records that the profile photo changed (`at`) or was removed (`null`). */
+  async setPhotoUpdatedAt(scope: UserScope, at: Date | null): Promise<void> {
+    await this.db
+      .update(individualProfiles)
+      .set({ photoUpdatedAt: at })
+      .where(eq(individualProfiles.userId, scope.userId));
   }
 
   async patch(scope: UserScope, patch: ProfilePatch): Promise<void> {

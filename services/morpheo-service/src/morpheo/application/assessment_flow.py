@@ -186,6 +186,10 @@ class AssessmentFlow:
     def get_snapshot(self, session_id: str) -> AssessmentSnapshot | None:
         return self._repo.get_snapshot(session_id)
 
+    def get_owned_snapshot(self, session_id: str, user_id: str) -> AssessmentSnapshot | None:
+        """A snapshot as its owner reads it: None unless `user_id` claimed it."""
+        return self._repo.get_owned_snapshot(session_id, user_id)
+
     def snapshots_for_user(self, user_id: str) -> list[AssessmentSnapshot]:
         """Every snapshot a user claimed (Addendum A §A2.3, break-glass reveal)."""
         return self._repo.snapshots_by_claimed_by(user_id)

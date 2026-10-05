@@ -38,6 +38,7 @@ function auth(
             user: { id: "u1", email: "invited@example.com", locale: "es", status: "active" },
             individualProfile: null,
             professionalProfile: null,
+            account: { registrationRole: "professional", internalRoles: [], organizations: [] },
           },
         } as AuthContextValue["state"])
       : ({ status } as AuthContextValue["state"]);

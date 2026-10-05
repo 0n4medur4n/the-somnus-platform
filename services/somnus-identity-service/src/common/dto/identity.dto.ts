@@ -21,11 +21,13 @@ import {
   OrganizationCreateRequestSchema,
   OrganizationStatusSchema,
   ProfilePatchRequestSchema,
+  ProfilePhotoStateRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 
 export class ProfilePatchDto extends createZodDto(ProfilePatchRequestSchema) {}
+export class ProfilePhotoStateDto extends createZodDto(ProfilePhotoStateRequestSchema) {}
 export class OrganizationCreateDto extends createZodDto(OrganizationCreateRequestSchema) {}
 
 const OrganizationUpdateRequestSchema = z

@@ -87,6 +87,18 @@ class AssessmentRepository:
         stmt = select(AssessmentSnapshot).where(AssessmentSnapshot.session_id == session_id)
         return self._s.scalars(stmt).first()
 
+    def get_owned_snapshot(self, session_id: str, user_id: str) -> AssessmentSnapshot | None:
+        """The snapshot of `session_id`, only if `user_id` claimed it.
+
+        Ownership is part of the query, not a check after it: a snapshot that is
+        somebody else's is indistinguishable from one that does not exist.
+        """
+        stmt = select(AssessmentSnapshot).where(
+            AssessmentSnapshot.session_id == session_id,
+            AssessmentSnapshot.claimed_by == user_id,
+        )
+        return self._s.scalars(stmt).first()
+
     def snapshots_by_claimed_by(self, user_id: str) -> list[AssessmentSnapshot]:
         """Every snapshot a user claimed, newest first (Addendum A §A2.3, break-glass).
 

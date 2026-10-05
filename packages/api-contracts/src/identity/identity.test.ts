@@ -17,8 +17,10 @@ import { MembershipPatchRequestSchema, MembershipSchema } from "./membership.js"
 import { OrganizationCreateRequestSchema, OrganizationSchema } from "./organization.js";
 import { RoleKeySchema } from "./roles.js";
 import {
+  ageOnDate,
   MeResponseSchema,
   ProfilePatchRequestSchema,
+  ProfilePhotoStateRequestSchema,
   RegistrationRequestSchema,
   UserProvisionRequestSchema,
   UserResolveRequestSchema,
@@ -47,13 +49,52 @@ describe("UserSchema", () => {
 });
 
 describe("MeResponseSchema", () => {
+  const user = { id: UUIDv7(), email: "a@example.com", locale: "es", status: "active" };
+  const account = { registrationRole: null, internalRoles: [], organizations: [] };
+
   it("accepts null profiles (no profile created yet)", () => {
     const r = MeResponseSchema.safeParse({
-      user: { id: UUIDv7(), email: "a@example.com", locale: "es", status: "active" },
+      user,
+      individualProfile: null,
+      professionalProfile: null,
+      account,
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("carries who the account is for: registration branch, staff roles, organizations", () => {
+    const r = MeResponseSchema.safeParse({
+      user,
+      individualProfile: null,
+      professionalProfile: null,
+      account: {
+        registrationRole: "professional",
+        internalRoles: ["platform_super_admin"],
+        organizations: [
+          { id: UUIDv7(), name: "Clinic", status: "active", roleKeys: ["organization_owner"] },
+        ],
+      },
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects a response without the account block", () => {
+    const r = MeResponseSchema.safeParse({
+      user,
       individualProfile: null,
       professionalProfile: null,
     });
-    expect(r.success).toBe(true);
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects a registration role outside Morpheo's vocabulary", () => {
+    const r = MeResponseSchema.safeParse({
+      user,
+      individualProfile: null,
+      professionalProfile: null,
+      account: { ...account, registrationRole: "guardian" },
+    });
+    expect(r.success).toBe(false);
   });
 });
 
@@ -68,6 +109,55 @@ describe("ProfilePatchRequestSchema", () => {
 
   it("rejects unknown keys", () => {
     expect(ProfilePatchRequestSchema.safeParse({ email: "new@example.com" }).success).toBe(false);
+  });
+
+  it("accepts the complete profile: date of birth, phone, preferred language", () => {
+    const r = ProfilePatchRequestSchema.safeParse({
+      dateOfBirth: "1990-04-12",
+      phone: "+34 600 123 456",
+      locale: "ca",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("clears an optional field with null", () => {
+    expect(ProfilePatchRequestSchema.safeParse({ phone: null, dateOfBirth: null }).success).toBe(
+      true,
+    );
+  });
+
+  it("rejects a date of birth that makes the account holder a minor", () => {
+    const today = new Date();
+    const minor = `${today.getUTCFullYear() - 10}-01-01`;
+    expect(ProfilePatchRequestSchema.safeParse({ dateOfBirth: minor }).success).toBe(false);
+  });
+
+  it("rejects a date of birth in the future, implausibly old, or not a calendar date", () => {
+    const nextYear = `${new Date().getUTCFullYear() + 1}-01-01`;
+    for (const dateOfBirth of [nextYear, "1850-01-01", "1990-02-30", "12/04/1990"]) {
+      expect(ProfilePatchRequestSchema.safeParse({ dateOfBirth }).success).toBe(false);
+    }
+  });
+
+  it("rejects a phone with letters and an unsupported locale", () => {
+    expect(ProfilePatchRequestSchema.safeParse({ phone: "call me" }).success).toBe(false);
+    expect(ProfilePatchRequestSchema.safeParse({ locale: "de" }).success).toBe(false);
+  });
+});
+
+describe("ageOnDate", () => {
+  it("counts whole years, turning over on the birthday itself", () => {
+    expect(ageOnDate("2000-06-15", new Date("2018-06-14T12:00:00Z"))).toBe(17);
+    expect(ageOnDate("2000-06-15", new Date("2018-06-15T00:00:00Z"))).toBe(18);
+  });
+});
+
+describe("ProfilePhotoStateRequestSchema", () => {
+  it("carries only whether there is a photo -- never the image", () => {
+    expect(ProfilePhotoStateRequestSchema.safeParse({ present: true }).success).toBe(true);
+    expect(
+      ProfilePhotoStateRequestSchema.safeParse({ present: true, data: "base64..." }).success,
+    ).toBe(false);
   });
 });
 

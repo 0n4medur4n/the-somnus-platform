@@ -16,6 +16,7 @@ const authValue: AuthContextValue = {
       user: { id: "u", email: "u@example.com", locale: "es", status: "active" },
       individualProfile: { firstName: "Ada", lastName: "Lovelace" },
       professionalProfile: null,
+      account: { registrationRole: "adult", internalRoles: [], organizations: [] },
     },
   },
   refresh: vi.fn().mockResolvedValue(undefined),
