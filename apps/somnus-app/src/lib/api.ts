@@ -26,6 +26,14 @@ const SESSION_DESTROY = "/v1/sessions/current";
  */
 let csrfToken: string | undefined;
 
+/**
+ * Set once `GET /v1/sessions/csrf` has answered 401: there is no session, so
+ * asking again before every request would only double the traffic of the
+ * anonymous flows (the assessment, the invitation preview). Cleared when a
+ * session is created; set again on logout.
+ */
+let knownSignedOut = false;
+
 /** A normalized error carrying edge-api's §16 stable `code` for i18n on the frontend. */
 export class ApiRequestError extends Error {
   constructor(
@@ -98,28 +106,52 @@ async function refreshToken(): Promise<string> {
   return csrfToken;
 }
 
+/**
+ * The token to send with a mutation, or none.
+ *
+ * "None" is a valid answer, not a failure. Some mutations are deliberately
+ * CSRF-exempt on the server because they happen before any session exists --
+ * the anonymous assessment, the invitation preview -- and must go out with no
+ * token at all. Which routes those are is the server's decision and is not
+ * repeated here: a mutation sent without a token that did need one comes back
+ * as a CSRF rejection, and `request` then fetches a token and retries.
+ */
+async function tokenForMutation(): Promise<string | undefined> {
+  if (csrfToken !== undefined) return csrfToken;
+  if (knownSignedOut) return undefined;
+  try {
+    return await refreshToken();
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 401) knownSignedOut = true;
+    return undefined;
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const needsToken = STATE_CHANGING.has(method) && path !== SESSION_CREATE;
 
-  let raw = await send(
-    method,
-    path,
-    body,
-    needsToken ? (csrfToken ?? (await refreshToken())) : undefined,
-  );
+  let raw = await send(method, path, body, needsToken ? await tokenForMutation() : undefined);
 
-  // One retry, and only for a CSRF rejection: the token can be stale after the
-  // secret cookie rotated (new browser session, logout elsewhere). A 403 that
-  // means "not allowed" is never retried, and neither is a second CSRF failure.
+  // One retry, and only for a CSRF rejection: the token was missing or stale
+  // (a reload, a new browser session, a logout elsewhere). A 403 that means
+  // "not allowed" is never retried, and neither is a second CSRF failure. If
+  // there is no session, `refreshToken` throws the 401 that says so.
   if (needsToken && isCsrfRejection(raw)) {
     csrfToken = undefined;
+    knownSignedOut = false;
     raw = await send(method, path, body, await refreshToken());
   }
 
   if (raw.status < 200 || raw.status >= 300) throw toError(raw);
 
-  if (method === "POST" && path === SESSION_CREATE) rememberToken(raw.data);
-  if (method === "DELETE" && path === SESSION_DESTROY) csrfToken = undefined;
+  if (method === "POST" && path === SESSION_CREATE) {
+    rememberToken(raw.data);
+    knownSignedOut = false;
+  }
+  if (method === "DELETE" && path === SESSION_DESTROY) {
+    csrfToken = undefined;
+    knownSignedOut = true;
+  }
   return raw.data as T;
 }
 

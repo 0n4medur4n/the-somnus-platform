@@ -56,6 +56,10 @@ function routeFetch(routes: Record<string, Reply | Reply[]>): Call[] {
 }
 
 const SESSION = { firebaseUid: "u", email: null, expiresAt: "2030-01-01T00:00:00.000Z" };
+const unauthenticated = {
+  status: 401,
+  body: { error: { code: "UNAUTHENTICATED", message: "x", correlationId: "c", details: {} } },
+};
 const csrfForbidden = {
   status: 403,
   body: {
@@ -190,40 +194,103 @@ describe("api client", () => {
     expect(calls.some((c) => c.path === "/v1/sessions/csrf")).toBe(false);
   });
 
-  it("surfaces a 401 when there is no session to get a token for", async () => {
+  it("surfaces a 401 when a protected mutation is sent with no session", async () => {
     const { api } = await loadApi();
     const calls = routeFetch({
-      "GET /v1/sessions/csrf": {
-        status: 401,
-        body: { error: { code: "UNAUTHENTICATED", message: "x", correlationId: "c", details: {} } },
-      },
+      "GET /v1/sessions/csrf": [unauthenticated, unauthenticated],
+      // No session, no token: the server's CSRF gate refuses it.
+      "POST /v1/registration": csrfForbidden,
     });
 
     await expect(api.post("/v1/registration", {})).rejects.toMatchObject({
       status: 401,
       code: "UNAUTHENTICATED",
     });
-    // The mutation itself is never sent without a token.
-    expect(calls.some((c) => c.path === "/v1/registration")).toBe(false);
+    // Sent once without a token; the retry needs a token and there is none.
+    expect(calls.filter((c) => c.path === "/v1/registration")).toHaveLength(1);
   });
 
-  it("forgets the token on logout, so the next session fetches its own", async () => {
+  /**
+   * The anonymous assessment and the invitation preview are CSRF-exempt on the
+   * server because they happen before any session exists. Requiring a token
+   * for them broke both flows in the full-stack E2E on 2026-10-05 -- the unit
+   * tests above had only ever exercised signed-in mutations.
+   */
+  it("sends a pre-login mutation without a token when there is no session", async () => {
     const { api } = await loadApi();
     const calls = routeFetch({
-      "POST /v1/sessions": { status: 201, body: { ...SESSION, csrfToken: "tok-old" } },
+      "GET /v1/sessions/csrf": unauthenticated,
+      "POST /v1/assessments": { status: 201, body: { sessionId: "s1" } },
+    });
+
+    expect(await api.post("/v1/assessments", { locale: "es" })).toEqual({ sessionId: "s1" });
+    const sent = calls.find((c) => c.path === "/v1/assessments");
+    expect(sent?.init.headers["x-csrf-token"]).toBeUndefined();
+  });
+
+  it("asks for a token once per signed-out page, not before every anonymous request", async () => {
+    const { api } = await loadApi();
+    const calls = routeFetch({
+      "GET /v1/sessions/csrf": unauthenticated,
+      "POST /v1/assessments": { status: 201, body: { sessionId: "s1" } },
+      "POST /v1/assessments/s1/answers": [
+        { status: 200, body: {} },
+        { status: 200, body: {} },
+      ],
+      "POST /v1/invitations/preview": { status: 200, body: {} },
+    });
+
+    await api.post("/v1/assessments", {});
+    await api.post("/v1/assessments/s1/answers", {});
+    await api.post("/v1/assessments/s1/answers", {});
+    await api.post("/v1/invitations/preview", { token: "t" });
+
+    expect(calls.filter((c) => c.path === "/v1/sessions/csrf")).toHaveLength(1);
+    expect(calls.every((c) => c.init.headers["x-csrf-token"] === undefined)).toBe(true);
+  });
+
+  it("uses the session's token once signed in after being signed out", async () => {
+    const { api } = await loadApi();
+    const calls = routeFetch({
+      "GET /v1/sessions/csrf": unauthenticated,
+      "POST /v1/invitations/preview": { status: 200, body: {} },
+      "POST /v1/sessions": { status: 201, body: { ...SESSION, csrfToken: "tok-after-login" } },
+      "POST /v1/registration": { status: 201, body: {} },
+    });
+
+    await api.post("/v1/invitations/preview", { token: "t" });
+    await api.post("/v1/sessions", { idToken: "x" });
+    await api.post("/v1/registration", {});
+
+    const sent = calls.find((c) => c.path === "/v1/registration");
+    expect(sent?.init.headers["x-csrf-token"]).toBe("tok-after-login");
+  });
+
+  it("forgets the token on logout: signed-out requests carry none, the next session its own", async () => {
+    const { api } = await loadApi();
+    const calls = routeFetch({
+      "POST /v1/sessions": [
+        { status: 201, body: { ...SESSION, csrfToken: "tok-old" } },
+        { status: 201, body: { ...SESSION, csrfToken: "tok-new" } },
+      ],
       "DELETE /v1/sessions/current": { status: 204 },
-      "GET /v1/sessions/csrf": { status: 200, body: { csrfToken: "tok-new" } },
+      "POST /v1/invitations/preview": { status: 200, body: {} },
       "POST /v1/registration": { status: 201, body: {} },
     });
 
     await api.post("/v1/sessions", { idToken: "x" });
     expect(await api.del("/v1/sessions/current")).toBeUndefined();
+    // Signed out: no stale token, and no pointless request for a new one.
+    await api.post("/v1/invitations/preview", { token: "t" });
+    await api.post("/v1/sessions", { idToken: "y" });
     await api.post("/v1/registration", {});
 
-    const logout = calls.find((c) => c.method === "DELETE");
-    expect(logout?.init.headers["x-csrf-token"]).toBe("tok-old");
-    const after = calls.find((c) => c.path === "/v1/registration");
-    expect(after?.init.headers["x-csrf-token"]).toBe("tok-new");
+    const header = (path: string) =>
+      calls.find((c) => c.path === path)?.init.headers["x-csrf-token"];
+    expect(calls.find((c) => c.method === "DELETE")?.init.headers["x-csrf-token"]).toBe("tok-old");
+    expect(header("/v1/invitations/preview")).toBeUndefined();
+    expect(calls.some((c) => c.path === "/v1/sessions/csrf")).toBe(false);
+    expect(header("/v1/registration")).toBe("tok-new");
   });
 
   it("throws ApiRequestError carrying the §16 stable code on failure", async () => {
