@@ -177,12 +177,16 @@ module "run_edge_api" {
   service_account_email = module.sa_edge_api.email
   public                = true
   env_vars = {
-    LOG_LEVEL           = "info"
-    LOG_FORMAT          = "json"
-    NODE_ENV            = "production"
-    SERVICE_NAME        = "somnus-edge-api"
-    INTERNAL_AUTH_MODE  = "gcp"
-    FIREBASE_PROJECT_ID = "the-somnuss"
+    LOG_LEVEL          = "info"
+    LOG_FORMAT         = "json"
+    NODE_ENV           = "production"
+    SERVICE_NAME       = "somnus-edge-api"
+    INTERNAL_AUTH_MODE = "gcp"
+    # Two Auth projects while Authentication moves from the-somnuss into this
+    # project (firebase-consolidation.tf): tokens from either are accepted, each
+    # verified only by the project its own `aud` names. Back to var.project_id
+    # alone once both SPAs sign in against the new project.
+    FIREBASE_PROJECT_ID = "the-somnuss,${var.project_id}"
     COOKIE_SECURE       = "true"
     COOKIE_SAMESITE     = "none"
     MORPHEO_BASE_URL    = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"

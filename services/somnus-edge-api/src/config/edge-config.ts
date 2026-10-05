@@ -14,7 +14,9 @@ import { z } from "zod";
  * environment.
  */
 export const EdgeConfigSchema = z.object({
-  // Firebase
+  // Firebase Auth: the project whose ID tokens are accepted. May be a
+  // comma-separated list while Authentication moves between projects; a token
+  // is verified only by the project its own `aud` names (firebase.service.ts).
   FIREBASE_PROJECT_ID: z.string().min(1).default("somnus-dev"),
   // The project whose Firestore holds server-side sessions. SEPARATE from
   // FIREBASE_PROJECT_ID on purpose: Auth lives in the Firebase project, the
