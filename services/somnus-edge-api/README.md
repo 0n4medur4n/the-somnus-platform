@@ -116,12 +116,18 @@ identically to production.
 - **rate limiting** — `@fastify/rate-limit`; over-limit 429s are mapped
   to the §16 `RATE_LIMITED` shape by the exception filter.
 - **request-size limit** — Fastify `bodyLimit` (session bodies are tiny).
-- **CSRF** — `@fastify/csrf-protection`, double-submit: login issues a
-  token via the readable `somnus_csrf` cookie; state-changing routes
-  require it echoed in the `x-csrf-token` header, validated against the
-  HttpOnly `_csrf` secret cookie. A global preHandler applies it to
-  every POST/PUT/PATCH/DELETE **except** `POST /v1/sessions` (the login
-  bootstrap, protected instead by requiring a valid ID token).
+- **CSRF** — session-bound signed double-submit (`src/bootstrap/csrf-token.ts`):
+  the token is an HMAC of the session id under a key derived from
+  `COOKIE_SECRET`. The SPA receives it in the body of `POST /v1/sessions`
+  and `GET /v1/sessions/csrf` and echoes it in `x-csrf-token`. A global
+  preHandler requires it on every POST/PUT/PATCH/DELETE **except** the
+  pre-session routes (`POST /v1/sessions`, the anonymous assessment, the
+  invitation preview). A rejection is a 403 `FORBIDDEN` with
+  `details.reason: "csrf"`, so the SPA knows to refresh and retry once.
+- **one cookie** — the API sets exactly one cookie, `__session` (signed,
+  HttpOnly). In deployed environments it is reached through Firebase
+  Hosting at `api.thesomnus.com`, which forwards no other cookie
+  (ADR 0016).
 
 Cookie `Secure` is config-driven (`COOKIE_SECURE`): on in every
 deployed environment, off for local plain-HTTP dev where a Secure
@@ -137,8 +143,8 @@ startup:
 | `FIREBASE_PROJECT_ID` | `somnus-dev` | Firebase project. |
 | `FIREBASE_AUTH_EMULATOR_HOST` | (unset) | Set → firebase-admin uses the Auth emulator. |
 | `FIRESTORE_EMULATOR_HOST` | (unset) | Set → Firestore client uses the emulator. |
-| `SESSION_COOKIE_NAME` | `somnus_session` | |
-| `COOKIE_SECRET` | dev fallback | Signs session + CSRF cookies; **required in prod**. |
+| `SESSION_COOKIE_NAME` | `__session` | The only name Firebase Hosting forwards (ADR 0016). |
+| `COOKIE_SECRET` | dev fallback | Signs the session cookie and keys the CSRF token; **required in prod**. |
 | `SESSION_TTL_SECONDS` | `604800` (7d) | |
 | `COOKIE_SECURE` | `false` | `true` in every deployed env. |
 | `COOKIE_SAMESITE` | `lax` | |

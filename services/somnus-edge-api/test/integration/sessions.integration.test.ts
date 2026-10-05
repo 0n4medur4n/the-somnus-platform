@@ -14,10 +14,6 @@ function cookieHeader(cookies: Cookie[]): string {
   return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
 }
 
-function findCookie(cookies: Cookie[], name: string): Cookie | undefined {
-  return cookies.find((c) => c.name === name);
-}
-
 describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () => {
   let testApp: TestApp;
   let server: FastifyInstance;
@@ -58,8 +54,9 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
       expect(res.headers["cache-control"]).toBe("no-store");
 
       const cookies = res.cookies as Cookie[];
-      expect(findCookie(cookies, "somnus_session")).toBeDefined();
-      expect(findCookie(cookies, "somnus_csrf")).toBeUndefined();
+      // Exactly one cookie, named `__session`: Firebase Hosting, which fronts
+      // this API at api.thesomnus.com, forwards no other cookie to Cloud Run.
+      expect(cookies.map((c) => c.name)).toEqual(["__session"]);
     });
 
     it("rejects a forged token with 401", async () => {
@@ -107,7 +104,7 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
         payload: JSON.stringify({ idToken }),
       });
       const setCookies = ([] as string[]).concat(res.headers["set-cookie"] ?? []);
-      const sessionCookie = setCookies.find((c) => c.startsWith("somnus_session="));
+      const sessionCookie = setCookies.find((c) => c.startsWith("__session="));
       if (!sessionCookie) throw new Error("expected session cookie not set");
 
       expect(sessionCookie).toMatch(/HttpOnly/i);
@@ -115,10 +112,11 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
       expect(sessionCookie).toMatch(/SameSite=Lax/i);
       // COOKIE_SECURE=false in test (plain HTTP), so no Secure flag here.
       expect(sessionCookie).not.toMatch(/Secure/i);
-      // Every cookie this API sets is HttpOnly. The CSRF token used to ride a
-      // script-readable cookie, which the SPA could never read cross-site; it is
-      // in the response body now, so nothing here needs to be readable.
-      expect(setCookies.length).toBeGreaterThan(0);
+      // The session cookie is the only cookie, and it is HttpOnly. The CSRF
+      // token is derived from the session and travels in response bodies, so
+      // nothing needs to be readable by script -- or to be a second cookie,
+      // which Firebase Hosting would strip.
+      expect(setCookies).toHaveLength(1);
       for (const cookie of setCookies) expect(cookie).toMatch(/HttpOnly/i);
     });
   });
@@ -200,7 +198,7 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
         url: "/v1/sessions/current",
         headers: { "x-csrf-token": "anything" },
       });
-      // No _csrf secret cookie => CSRF gate rejects first (403); either
+      // No session cookie => the CSRF gate rejects first (403); either
       // way an unauthenticated caller cannot revoke. Accept 401 or 403.
       expect([401, 403]).toContain(res.statusCode);
     });
@@ -237,8 +235,8 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
       expect(tokenRes.headers["cache-control"]).toBe("no-store");
       const { csrfToken } = tokenRes.json() as { csrfToken: string };
       expect(csrfToken.length).toBeGreaterThan(0);
-      // It reuses the existing secret, so it sets no new one.
-      expect(findCookie(tokenRes.cookies as Cookie[], "_csrf")).toBeUndefined();
+      // Derived from the session, so it sets no cookie at all.
+      expect(tokenRes.cookies as Cookie[]).toHaveLength(0);
 
       const res = await server.inject({
         method: "DELETE",
@@ -246,6 +244,48 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
         headers: { cookie: cookieHeader(cookies), "x-csrf-token": csrfToken },
       });
       expect(res.statusCode).toBe(204);
+    });
+  });
+
+  describe("the CSRF token is bound to the session", () => {
+    it("is stable for a session, so tabs and reloads agree", async () => {
+      const { idToken } = await signUpTestUser("stable@example.com");
+      const login = await server.inject({
+        method: "POST",
+        url: "/v1/sessions",
+        headers: { "content-type": "application/json" },
+        payload: JSON.stringify({ idToken }),
+      });
+      const cookies = login.cookies as Cookie[];
+      const fromLogin = (login.json() as { csrfToken: string }).csrfToken;
+      const again = await server.inject({
+        method: "GET",
+        url: "/v1/sessions/csrf",
+        headers: { cookie: cookieHeader(cookies) },
+      });
+      expect((again.json() as { csrfToken: string }).csrfToken).toBe(fromLogin);
+    });
+
+    it("rejects a token presented with a tampered session cookie (403)", async () => {
+      const { idToken } = await signUpTestUser("tamper@example.com");
+      const login = await server.inject({
+        method: "POST",
+        url: "/v1/sessions",
+        headers: { "content-type": "application/json" },
+        payload: JSON.stringify({ idToken }),
+      });
+      const token = (login.json() as { csrfToken: string }).csrfToken;
+      const res = await server.inject({
+        method: "DELETE",
+        url: "/v1/sessions/current",
+        headers: { cookie: "__session=forged.signature", "x-csrf-token": token },
+      });
+      expect(res.statusCode).toBe(403);
+      expect((res.json() as { error: { details: Record<string, unknown> } }).error.details).toEqual(
+        {
+          reason: "csrf",
+        },
+      );
     });
   });
 
@@ -261,7 +301,7 @@ describe("edge-api sessions & hardening (build plan §20 Checkpoint 8.1)", () =>
           payload: JSON.stringify({ idToken }),
         });
         const setCookies = ([] as string[]).concat(res.headers["set-cookie"] ?? []);
-        const sessionCookie = setCookies.find((c) => c.startsWith("somnus_session="));
+        const sessionCookie = setCookies.find((c) => c.startsWith("__session="));
         expect(sessionCookie).toMatch(/Secure/i);
       } finally {
         await secureApp.app.close();

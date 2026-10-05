@@ -217,6 +217,10 @@ configuration is versioned in `apps/somnus-app/hosting.dev.json`; ignored
 `.env.production` files are not a CI configuration source. Verified values:
 
 - Edge: `https://somnus-edge-api-lx3fvb5r5q-ey.a.run.app` (`the-somnus`, `europe-west3`).
+- API front door (ADR 0016): `https://api.thesomnus.com`, Firebase Hosting site
+  `the-somnus-api` in `the-somnus`, rewriting every path to edge-api
+  (`infrastructure/terraform/environments/dev/api-front-door.tf`). The SPAs move
+  to it once its certificate is live; until then they still call the URL above.
 - Firebase: project `the-somnuss`, auth domain `the-somnuss.firebaseapp.com`.
 - Public web app: `1:131552832912:web:f90ead739b307593ad5715`.
 

@@ -40,7 +40,7 @@ describe("SessionGuard", () => {
   it("throws UNAUTHENTICATED when the cookie signature is invalid (tampered)", async () => {
     const guard = guardWith(NEVER_VALIDATE);
     const req: FakeRequest = {
-      cookies: { somnus_session: "tampered.value" },
+      cookies: { __session: "tampered.value" },
       unsignCookie: () => ({ valid: false, renew: false, value: null }),
     };
     await expect(guard.canActivate(contextFor(req))).rejects.toSatisfy(
@@ -51,7 +51,7 @@ describe("SessionGuard", () => {
   it("throws UNAUTHENTICATED when the session is not found/valid in the store", async () => {
     const guard = guardWith(async () => null);
     const req: FakeRequest = {
-      cookies: { somnus_session: "signed.value" },
+      cookies: { __session: "signed.value" },
       unsignCookie: () => ({ valid: true, renew: false, value: "session-id" }),
     };
     await expect(guard.canActivate(contextFor(req))).rejects.toSatisfy(
@@ -70,7 +70,7 @@ describe("SessionGuard", () => {
     };
     const guard = guardWith(async () => record);
     const req: FakeRequest = {
-      cookies: { somnus_session: "signed.value" },
+      cookies: { __session: "signed.value" },
       unsignCookie: () => ({ valid: true, renew: false, value: "session-id" }),
     };
     const allowed = await guard.canActivate(contextFor(req));
