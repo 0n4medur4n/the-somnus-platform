@@ -35,3 +35,15 @@ variable "firebase_budget_amount_units" {
   type        = number
   default     = 10
 }
+
+variable "api_domain" {
+  description = "The API's same-site public hostname, fronted by Firebase Hosting (see api-front-door.tf)."
+  type        = string
+  default     = "api.thesomnus.com"
+}
+
+variable "api_hosting_site_id" {
+  description = "Firebase Hosting site id for the API front door. Globally unique across Firebase."
+  type        = string
+  default     = "the-somnus-api"
+}

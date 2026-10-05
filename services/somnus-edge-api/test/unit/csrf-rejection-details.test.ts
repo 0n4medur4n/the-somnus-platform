@@ -40,7 +40,7 @@ function run(exception: unknown, request: object): Sent {
   return sent;
 }
 
-/** What Nest hands the filter for a CSRF rejection: the plugin's code is gone. */
+/** What Nest hands the filter for a CSRF rejection: a bare HttpException(403). */
 const nestWrappedCsrf = () => new HttpException("Invalid csrf token", 403);
 
 describe("csrf-state", () => {
@@ -64,13 +64,10 @@ describe("the exception filter names CSRF rejections, and only those", () => {
     expect(sent.body.error.details).toEqual({ reason: "csrf" });
   });
 
-  it("also marks the plugin's raw error if it ever arrives unwrapped", () => {
+  it("also marks the gate's raw error if it arrives unwrapped", () => {
     const request = {};
     markCsrfCheckPending(request);
-    const raw = Object.assign(new Error("Missing csrf secret"), {
-      code: "FST_CSRF_MISSING_SECRET",
-      statusCode: 403,
-    });
+    const raw = Object.assign(new Error("CSRF token missing or invalid"), { statusCode: 403 });
     expect(run(raw, request).body.error.details).toEqual({ reason: "csrf" });
   });
 

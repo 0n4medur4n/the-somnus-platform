@@ -1,12 +1,12 @@
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
-import csrf from "@fastify/csrf-protection";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { EdgeConfig } from "../config/edge-config.js";
 import { markCsrfCheckPassed, markCsrfCheckPending } from "./csrf-state.js";
+import { csrfTokenMatches } from "./csrf-token.js";
 
 /** Methods that mutate state and therefore require CSRF protection. */
 const STATE_CHANGING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -56,8 +56,9 @@ export async function applyHardening(
 ): Promise<void> {
   await app.register(helmet, { contentSecurityPolicy: false });
 
-  // Cookies must be registered before csrf-protection (which stores its
-  // secret in a signed cookie). The secret signs the session cookie too.
+  // Signs the session cookie. The CSRF token is derived from the same secret
+  // (through a label-specific key, see csrf-token.ts), so there is no second
+  // cookie to register.
   await app.register(cookie, { secret: config.COOKIE_SECRET });
 
   await app.register(cors, {
@@ -76,39 +77,44 @@ export async function applyHardening(
     timeWindow: config.RATE_LIMIT_WINDOW_MS,
   });
 
-  // The SPA echoes the CSRF token in the x-csrf-token header. It receives the
-  // token in the body of POST /v1/sessions and GET /v1/sessions/csrf -- never
-  // through a cookie it reads, because the SPA and this API are on different
-  // sites in every deployed environment and a page cannot read another site's
-  // cookies. The secret stays in the HttpOnly signed cookie configured below.
-  await app.register(csrf, {
-    getToken: (req: FastifyRequest) => {
-      const header = req.headers["x-csrf-token"];
-      return Array.isArray(header) ? header[0] : header;
-    },
-    cookieOpts: {
-      signed: true,
-      httpOnly: true,
-      secure: config.COOKIE_SECURE,
-      sameSite: config.COOKIE_SAMESITE,
-      path: "/",
-    },
-  });
-
   const fastify = app.getHttpAdapter().getInstance();
   fastify.addHook("preHandler", (req: FastifyRequest, reply: FastifyReply, done: () => void) => {
     const path = req.url.split("?")[0] ?? req.url;
     if (STATE_CHANGING.has(req.method) && !isCsrfExempt(path)) {
-      // The plugin calls back only when the token verifies; otherwise it ends
-      // the request with a 403. The pending mark is how the exception filter
-      // knows which 403s were CSRF rejections (see csrf-state.ts).
+      // The pending mark is how the exception filter knows which 403s were
+      // CSRF rejections (see csrf-state.ts). It is cleared only when the token
+      // verifies.
       markCsrfCheckPending(req);
-      fastify.csrfProtection(req, reply, () => {
+      if (csrfTokenMatches(sessionIdOf(req, config), config.COOKIE_SECRET, csrfHeaderOf(req))) {
         markCsrfCheckPassed(req);
         done();
-      });
+        return;
+      }
+      reply.send(Object.assign(new Error("CSRF token missing or invalid"), { statusCode: 403 }));
       return;
     }
     done();
   });
+}
+
+/**
+ * The session id from the signed session cookie, or "" when there is none or
+ * its signature does not verify. `csrfTokenMatches` refuses "" outright, so a
+ * missing or forged cookie gets no further than here.
+ *
+ * The SPA's JavaScript never reads this cookie (HttpOnly). It is the only
+ * cookie the API sets, because Firebase Hosting forwards only `__session` to
+ * Cloud Run (see csrf-token.ts).
+ */
+function sessionIdOf(req: FastifyRequest, config: EdgeConfig): string {
+  const raw = req.cookies[config.SESSION_COOKIE_NAME];
+  if (!raw) return "";
+  const unsigned = req.unsignCookie(raw);
+  return unsigned.valid && unsigned.value !== null ? unsigned.value : "";
+}
+
+/** The `x-csrf-token` header; the first value if the client sent several. */
+function csrfHeaderOf(req: FastifyRequest): string | undefined {
+  const header = req.headers["x-csrf-token"];
+  return Array.isArray(header) ? header[0] : header;
 }

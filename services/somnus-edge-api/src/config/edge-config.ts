@@ -31,7 +31,9 @@ export const EdgeConfigSchema = z.object({
   FIRESTORE_EMULATOR_HOST: z.string().optional(),
 
   // Session cookie
-  SESSION_COOKIE_NAME: z.string().min(1).default("somnus_session"),
+  // `__session` because Firebase Hosting, which fronts this API at
+  // api.thesomnus.com, forwards no other cookie to Cloud Run.
+  SESSION_COOKIE_NAME: z.string().min(1).default("__session"),
   // Signs the session and CSRF cookies (@fastify/cookie). Required in
   // production; a fixed dev-only fallback keeps local/test runnable.
   COOKIE_SECRET: z.string().min(16).default("dev-only-insecure-cookie-secret-change-me"),
