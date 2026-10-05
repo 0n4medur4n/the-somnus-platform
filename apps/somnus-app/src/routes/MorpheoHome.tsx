@@ -172,6 +172,10 @@ export function MorpheoHome() {
     );
   }
   if (own.data.assessments.length === 0) {
+    // An empty list may be the stale one cached before the first result was
+    // saved; redirecting on it would bounce the person straight back to the
+    // questionnaire. Only a fresh empty answer sends them there.
+    if (own.isFetching) return <p role="status">{t("space.loading")}</p>;
     return <Navigate to="/assessment" replace />;
   }
 
