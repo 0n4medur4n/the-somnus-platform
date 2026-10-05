@@ -1,21 +1,19 @@
 {
   "projects": {
-    "default": "the-somnuss",
-    "dev": "the-somnuss",
-    "staging": "the-somnuss",
-    "prod": "the-somnuss"
+    "default": "the-somnus",
+    "dev": "the-somnus"
   },
   "targets": {
-    "the-somnuss": {
+    "the-somnus": {
       "hosting": {
         "marketing": [
-          "the-somnuss"
+          "thesomnus-web"
         ],
         "app": [
-          "the-somnus-app"
+          "thesomnus-app"
         ],
         "admin": [
-          "the-somnus-admin"
+          "thesomnus-console"
         ]
       }
     }

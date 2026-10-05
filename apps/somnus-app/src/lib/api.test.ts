@@ -293,6 +293,16 @@ describe("api client", () => {
     expect(header("/v1/registration")).toBe("tok-new");
   });
 
+  it("calls a relative /v1 path when the API is same-origin", async () => {
+    vi.resetModules();
+    vi.doMock("../config/env.js", () => ({ env: { VITE_EDGE_API_URL: "same-origin" } }));
+    const { api } = await import("./api.js");
+    const fn = vi.fn(async (_url: string) => ({ ok: true, status: 200, text: async () => "{}" }));
+    vi.stubGlobal("fetch", fn);
+    await api.get("/v1/me");
+    expect(fn.mock.calls[0]?.[0]).toBe("/v1/me");
+  });
+
   it("throws ApiRequestError carrying the §16 stable code on failure", async () => {
     const { api, ApiRequestError } = await loadApi();
     routeFetch({

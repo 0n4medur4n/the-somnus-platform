@@ -197,57 +197,60 @@ them.
 
 ## CI Hosting deploy (build plan §20 Checkpoint 9.2)
 
-CI deploys **both** frontends to dev Firebase Hosting (`the-somnuss`)
-via the `deploy-hosting` job in `.github/workflows/ci.yml`:
+Since 2026-10-05 (ADR 0017) dev is **one project**: the three Hosting sites,
+Authentication and the backend all live in `the-somnus`. CI deploys the
+marketing site, the app and the console via the `deploy-hosting` job in
+`.github/workflows/ci.yml`:
 
-- **Pull requests** deploy to a per-PR **preview channel**
-  (`hosting:channel:deploy pr-<n>`, 7-day expiry) for both the `app` and
-  `marketing` targets.
-- **Pushes to `main`** deploy **live** to dev
-  (`firebase deploy --only hosting`).
+- **Pull requests** from this repository deploy to a per-PR **preview channel**
+  (`hosting:channel:deploy pr-<n>`, 7-day expiry). Fork PRs get no OIDC token
+  and do not deploy.
+- **Pushes to `main`** deploy **live** to dev (`firebase deploy --only hosting`).
 
-The job is **gated on a secret** so the pipeline stays green until it is
-configured; when the secret is absent it emits a `::notice::` and does
-nothing.
+The job authenticates through **Workload Identity Federation** as
+`ci-hosting-deployer@the-somnus.iam.gserviceaccount.com`
+(`infrastructure/terraform/environments/dev/firebase-consolidation.tf`). There
+is no service-account key and no GitHub secret for it; the provider trusts only
+this repository, by numeric id.
 
-### One-time setup
+| Target | Site | Serves |
+|---|---|---|
+| `marketing` | `thesomnus-web` | thesomnus.com, www |
+| `app` | `thesomnus-app` | app.thesomnus.com |
+| `admin` | `thesomnus-console` | console.thesomnus.com |
 
-The SPA is built explicitly with `build:hosting --mode hosting-dev`. Public dev
-configuration is versioned in `apps/somnus-app/hosting.dev.json`; ignored
-`.env.production` files are not a CI configuration source. Verified values:
+The app and console rewrite `/v1/**` to `somnus-edge-api` (`firebase.json`), so
+the API is **same-origin** with each SPA: `VITE_EDGE_API_URL` is `"same-origin"`
+and the session cookie is first-party in every browser, Safari and iOS included.
 
-- Edge: `https://somnus-edge-api-lx3fvb5r5q-ey.a.run.app` (`the-somnus`, `europe-west3`).
-- API front door (ADR 0016): `https://api.thesomnus.com`, Firebase Hosting site
-  `the-somnus-api` in `the-somnus`, rewriting every path to edge-api
-  (`infrastructure/terraform/environments/dev/api-front-door.tf`). The SPAs move
-  to it once its certificate is live; until then they still call the URL above.
-- Firebase: project `the-somnuss`, auth domain `the-somnuss.firebaseapp.com`.
-- Public web app: `1:131552832912:web:f90ead739b307593ad5715`.
+### Public configuration
 
-Reconfirm with `gcloud run services describe somnus-edge-api --project the-somnus
---region europe-west3 --format='value(status.url)'` and `firebase apps:sdkconfig
-WEB 1:131552832912:web:f90ead739b307593ad5715 --project the-somnuss` before changing
-the file. Firebase web API keys are public client configuration, never admin
-credentials. No service-account key belongs in this file or any `VITE_*` setting.
+The SPAs are built with `build:hosting --mode hosting-dev`. Public dev
+configuration is versioned in `apps/somnus-app/hosting.dev.json` and
+`apps/somnus-admin/hosting.dev.json`; ignored `.env.production` files are not a
+CI configuration source. Values come from Terraform:
+
+```bash
+terraform -chdir=infrastructure/terraform/environments/dev output -json firebase_web_config
+```
+
+- Firebase: project `the-somnus`, auth domain `the-somnus-30c48.firebaseapp.com`
+  (`the-somnus.firebaseapp.com` belongs to an unrelated Firebase project).
+- Edge (direct, not used by the SPAs): `https://somnus-edge-api-lx3fvb5r5q-ey.a.run.app`.
+
+Firebase web API keys are public client configuration, never admin credentials.
+No service-account key belongs in these files or any `VITE_*` setting.
 
 The build and app predeploy hook both run `scripts/check-hosting-bundle.mjs`.
-For an urgent app-only redeploy, run the three commands in the SPA README.
-Verify `/v1/me` targets the real edge (401 is expected before login), its
-preflight permits the exact app origin, and `accounts:sendOobCode` returns 200
-with the real Firebase web key. Use an operator-approved recipient for the email.
+Verify on the deployed site that `/v1/me` answers from edge-api (401 before
+login) **on the site's own origin**, and that `accounts:sendOobCode` returns 200
+with the web key in `hosting.dev.json`. Use an operator-approved recipient for
+the email.
 
-1. Create (or reuse) a service account on the `the-somnuss` Firebase
-   project with the **Firebase Hosting Admin**
-   (`roles/firebasehosting.admin`) role, plus **Firebase Viewer**.
-2. Generate a JSON key for it.
-3. Add it as the GitHub Actions repository secret
-   **`FIREBASE_SERVICE_ACCOUNT`** (the raw JSON).
-
-The two Hosting sites must exist on the project — `the-somnuss`
-(marketing) and `the-somnus-app` (app) — matching the targets in
-`.firebaserc`. Create them once with
-`firebase hosting:sites:create <site-id> --project the-somnuss` (or via
-Terraform, above) if they do not yet exist.
+The Hosting sites, the deployer service account and its Workload Identity
+Federation provider are all Terraform (`firebase-consolidation.tf`). Nothing is
+created by hand and no key is ever generated: the old `FIREBASE_SERVICE_ACCOUNT`
+secret is unused and can be deleted from the repository settings.
 
 ---
 
