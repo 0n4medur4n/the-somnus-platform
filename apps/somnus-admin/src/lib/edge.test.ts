@@ -85,6 +85,7 @@ describe("edge (admin console surface)", () => {
       () => edge.adminMe(),
       () => edge.createSession("token"),
       () => edge.logout(),
+      () => edge.requestSignInLink({ email: "a@b.co", locale: "es", client: "console" }),
     ];
     for (const call of calls) void call();
 
@@ -93,7 +94,8 @@ describe("edge (admin console surface)", () => {
       .filter((path) => path !== undefined);
 
     expect(paths.length).toBe(calls.length);
-    const SHARED_SESSION_ROUTES = ["/v1/sessions", "/v1/sessions/current"];
+    // Shared with the app, all about signing in: none reads anyone's data.
+    const SHARED_SESSION_ROUTES = ["/v1/sessions", "/v1/sessions/current", "/v1/auth/email-link"];
     for (const path of paths) {
       const allowed = path.startsWith("/admin/v1/") || SHARED_SESSION_ROUTES.includes(path);
       expect(allowed, `${path} is outside the console's surface`).toBe(true);

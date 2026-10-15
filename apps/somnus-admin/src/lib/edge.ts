@@ -32,6 +32,7 @@ import type {
   CorpusVersionResult,
   Dashboards,
   SessionResponse,
+  SignInLinkRequest,
   SrcEnrichmentPage,
 } from "@somnus/api-contracts";
 import { api } from "./api.js";
@@ -51,6 +52,9 @@ export const edge = {
     api.post<SessionResponse>("/v1/sessions", { idToken }),
   adminMe: (): Promise<AdminMeResponse> => api.get<AdminMeResponse>("/admin/v1/me"),
   logout: (): Promise<void> => api.del<void>("/v1/sessions/current"),
+  /** Pre-login: The Somnus emails the sign-in link from its own domain. */
+  requestSignInLink: (body: SignInLinkRequest): Promise<void> =>
+    api.post<void>("/v1/auth/email-link", body),
 
   // --- Users (admin_users_read / admin_account_status_write) ---
   searchUsers: (body: AdminUserSearchRequest): Promise<AdminUserSearchResponse> =>

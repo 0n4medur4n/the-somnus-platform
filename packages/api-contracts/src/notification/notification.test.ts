@@ -40,7 +40,13 @@ describe("NotificationTaskSchema", () => {
 describe("SignInLinkRequestSchema", () => {
   it("normalises the address and requires a supported locale", () => {
     const parsed = SignInLinkRequestSchema.parse({ email: "  Ada@Example.COM ", locale: "ca" });
-    expect(parsed).toEqual({ email: "ada@example.com", locale: "ca" });
+    expect(parsed).toEqual({ email: "ada@example.com", locale: "ca", client: "app" });
+    expect(
+      SignInLinkRequestSchema.parse({ email: "a@b.co", locale: "es", client: "console" }).client,
+    ).toBe("console");
+    expect(
+      SignInLinkRequestSchema.safeParse({ email: "a@b.co", locale: "es", client: "evil" }).success,
+    ).toBe(false);
     expect(SignInLinkRequestSchema.safeParse({ email: "a@b.co", locale: "de" }).success).toBe(
       false,
     );

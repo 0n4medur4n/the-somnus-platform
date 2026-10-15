@@ -42,6 +42,13 @@ export const AdminEnvSchema = z.object({
   VITE_FIREBASE_AUTH_DOMAIN: z.string().min(1),
   VITE_FIREBASE_PROJECT_ID: z.string().min(1),
   VITE_AUTH_EMULATOR_URL: z.url().optional(),
+  /**
+   * Who emails the sign-in link. `somnus`: edge-api, from The Somnus's own
+   * domain (it reaches the inbox, and the link carries only a one-time code).
+   * `firebase` (default): Firebase's own email -- local development and the
+   * end-to-end suite, which read the code from the Auth emulator.
+   */
+  VITE_SIGN_IN_EMAIL: z.enum(["somnus", "firebase"]).optional(),
 });
 
 /**

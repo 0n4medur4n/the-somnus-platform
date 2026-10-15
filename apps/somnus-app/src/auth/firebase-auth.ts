@@ -33,6 +33,7 @@ export async function sendLoginLink(email: string): Promise<void> {
     await edge.requestSignInLink({
       email,
       locale: lng && isSupportedLocale(lng) ? lng : "es",
+      client: "app",
     });
   } else {
     const auth = getFirebaseAuth();

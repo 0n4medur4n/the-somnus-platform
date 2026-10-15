@@ -25,7 +25,10 @@ export type SignInLinkOutcome = "sent" | "throttled";
  */
 @Injectable()
 export class AuthEmailLinkService {
-  private readonly callbackUrl = loadEdgeConfig(process.env).SIGN_IN_CALLBACK_URL;
+  private readonly callbacks = (() => {
+    const config = loadEdgeConfig(process.env);
+    return { app: config.SIGN_IN_CALLBACK_URL, console: config.SIGN_IN_CONSOLE_CALLBACK_URL };
+  })();
 
   constructor(
     private readonly firebase: FirebaseService,
@@ -39,10 +42,12 @@ export class AuthEmailLinkService {
     // somebody else's inbox. A throttled request is answered like any other.
     if (!(await this.claimSendSlot(request.email))) return "throttled";
 
+    // Only our two configured callbacks: the client picks which, never the URL.
+    const callbackUrl = this.callbacks[request.client];
     let link: string;
     try {
-      const generated = await this.firebase.generateSignInLink(request.email, this.callbackUrl);
-      link = cleanSignInLink(generated, this.callbackUrl, request.locale);
+      const generated = await this.firebase.generateSignInLink(request.email, callbackUrl);
+      link = cleanSignInLink(generated, callbackUrl, request.locale);
     } catch {
       throw new SomnusError(ErrorCode.UPSTREAM_UNAVAILABLE, "Could not create a sign-in link.", {
         correlationId,
