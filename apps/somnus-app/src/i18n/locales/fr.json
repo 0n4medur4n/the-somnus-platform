@@ -114,7 +114,9 @@
       "specialtyRequired": "Sélectionnez votre spécialité.",
       "consentRequired": "Vous devez l'accepter pour continuer."
     },
-    "lockedNotice": "Vous rejoignez sur invitation d'une organisation, votre compte est donc créé comme compte professionnel."
+    "lockedNotice": "Vous rejoignez sur invitation d'une organisation, votre compte est donc créé comme compte professionnel.",
+    "readTerms": "Lire les Conditions d'utilisation",
+    "readPrivacy": "Lire la Politique de confidentialité"
   },
   "invitation": {
     "title": "Invitation à The Somnus",
@@ -185,6 +187,45 @@
     "back": "Retour à mon espace",
     "error": "Nous n'avons pas pu charger ce résultat."
   },
+  "legal": {
+    "title": {
+      "terms_acceptance": "Conditions d'utilisation",
+      "privacy_policy_acknowledgement": "Politique de confidentialité",
+      "health_data_processing": "Consentement au traitement des données de santé",
+      "professional_sharing": "Partage des données avec des professionnels",
+      "marketing": "Communications commerciales",
+      "research_participation": "Participation à la recherche"
+    },
+    "versionLine": "Version {{version}} · en vigueur depuis le {{date}}",
+    "signedOn": "Accepté le {{date}}",
+    "withdrawnOn": "Retiré le {{date}}",
+    "fingerprint": "Empreinte du texte (SHA-256) : identifie exactement ce texte",
+    "print": "Imprimer ou enregistrer en PDF",
+    "close": "Fermer",
+    "loading": "Chargement du document…",
+    "loadError": "Nous n'avons pas pu charger le document. Vous ne pouvez pas continuer sans le lire.",
+    "retry": "Réessayer",
+    "textRegion": "Texte intégral du document"
+  },
+  "consents": {
+    "title": "Mes consentements",
+    "intro": "Chaque consentement que vous avez donné, avec le texte exact accepté. Une version n'est jamais modifiée : si elle change, une nouvelle est publiée.",
+    "back": "Retour à mon profil",
+    "signedLine": "Accepté le {{date}} · version {{version}}",
+    "status": {
+      "active": "En vigueur",
+      "withdrawn": "Retiré"
+    },
+    "view": "Voir le texte accepté",
+    "hide": "Masquer le texte",
+    "withdraw": "Retirer le consentement",
+    "confirm": "Voulez-vous vraiment retirer ce consentement ? Il cessera de s'appliquer dès maintenant.",
+    "confirmHealth": "Si vous retirez ce consentement, vous ne pourrez plus faire de nouvelles évaluations tant que vous ne l'aurez pas redonné. Celles déjà enregistrées restent dans votre compte.",
+    "confirmWithdraw": "Oui, le retirer",
+    "withdrawError": "Nous n'avons pas pu le retirer. Veuillez réessayer.",
+    "loadError": "Nous n'avons pas pu charger vos consentements.",
+    "empty": "Vous n'avez encore donné aucun consentement."
+  },
   "profile": {
     "title": "Mon profil",
     "firstName": "Prénom",
@@ -215,7 +256,10 @@
     "errors": {
       "phone": "Saisissez un numéro valide : chiffres, espaces, tirets et signe + uniquement.",
       "dateOfBirth": "Saisissez une date valide. Le compte doit appartenir à une personne majeure."
-    }
+    },
+    "consentsTitle": "Confidentialité et consentements",
+    "consentsBody": "Consultez ce que vous avez accepté, imprimez-le ou retirez-le.",
+    "consentsLink": "Voir mes consentements"
   },
   "security": {
     "title": "Sécurité",
@@ -256,7 +300,8 @@
       "role": "Profil",
       "consent": "Consentement",
       "concern": "Motif",
-      "result": "Résultat"
+      "result": "Résultat",
+      "safety": "Sécurité"
     },
     "role": {
       "legend": "Qui consulte ?",
@@ -268,23 +313,36 @@
       "guardianship": "Je confirme être son tuteur légal",
       "professionalConfirm": "Je confirme ma qualité de professionnel",
       "identifiable": "Le cas contient des données identifiables du patient",
-      "professionalNote": "Seuls les cas anonymisés sont acceptés."
+      "professionalNote": "Seuls les cas anonymisés sont acceptés.",
+      "title": "Commençons",
+      "intro": "Dites-nous qui concerne cette évaluation.",
+      "adultHint": "Je veux évaluer mon propre sommeil.",
+      "parentHint": "Je veux évaluer le sommeil d'un enfant dont j'ai la charge.",
+      "professionalHint": "Je veux examiner un cas anonymisé."
     },
     "consent": {
       "legend": "Consentement",
-      "label": "J'ai lu et j'accepte l'utilisation de mes réponses pour cette orientation.",
-      "note": "Vous pouvez retirer votre consentement à tout moment."
+      "label": "J'ai lu le document et je donne mon consentement explicite au traitement de mes données de santé.",
+      "note": "Vous pouvez retirer votre consentement à tout moment dans « Mes consentements ».",
+      "intro": "Lisez le document avant de continuer. C'est ce que vous acceptez, et il est conservé tel quel, avec sa version et son empreinte.",
+      "recordedHint": "Il sera enregistré dans votre compte, avec la date et la version exacte du texte.",
+      "anonymousHint": "Si vous enregistrez le résultat dans un compte, ce consentement y sera enregistré.",
+      "alreadySigned": "Vous avez donné ce consentement le {{date}}. Vous pouvez le consulter ou le retirer dans « Mes consentements »."
     },
     "safety": {
       "legend": "D'abord, quelques questions de sécurité.",
       "intro": "Répondez selon votre situation. Si vous ne savez pas, choisissez « Je ne sais pas ».",
       "yes": "Oui",
       "no": "Non",
-      "unknown": "Je ne sais pas"
+      "unknown": "Je ne sais pas",
+      "answered": "{{answered}} sur {{total}} répondues"
     },
     "concern": {
       "legend": "Qu'est-ce qui vous préoccupe ? Choisissez ce qui s'applique.",
-      "empty": "Aucun motif disponible."
+      "empty": "Aucun motif disponible.",
+      "intro": "Cochez tout ce qui vous concerne. Plusieurs choix sont possibles.",
+      "selected_one": "{{count}} option choisie",
+      "selected_other": "{{count}} options choisies"
     },
     "actions": {
       "next": "Continuer",
@@ -319,6 +377,10 @@
       "autoSaving": "Enregistrement du résultat dans votre compte…",
       "autoSaved": "Résultat enregistré dans votre compte.",
       "saveFailed": "Nous n'avons pas pu enregistrer le résultat dans votre compte."
+    },
+    "progress": {
+      "label": "Progression de l'évaluation",
+      "stepOf": "Étape {{current}} sur {{total}} : {{name}}"
     }
   },
   "errors": {

@@ -15,6 +15,13 @@
       "when": 1784899873491,
       "tag": "0001_seed_consent_purposes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1792060240373,
+      "tag": "0002_legal_drafts_v2",
+      "breakpoints": true
     }
   ]
 }

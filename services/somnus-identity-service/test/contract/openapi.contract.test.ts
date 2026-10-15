@@ -300,6 +300,7 @@ describe("OpenAPI document structure", () => {
     ["/v1/legal-documents/current", "get", undefined],
     ["/v1/consents", "post", "ConsentCreateDto"],
     ["/v1/consents/current", "get", undefined],
+    ["/v1/consents/receipts", "get", undefined],
     ["/v1/consents/{receiptId}/withdraw", "post", "ConsentWithdrawDto"],
     ["/internal/v1/consents/check", "post", "ConsentCheckDto"],
     ["/internal/v1/users/provision", "post", "UserProvisionDto"],

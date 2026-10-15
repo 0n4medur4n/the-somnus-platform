@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import {
   CONSENT_PURPOSE_KEYS,
@@ -5,10 +6,12 @@ import {
   type ConsentCheckResponse,
   type ConsentCreateRequest,
   type ConsentReceipt,
+  type ConsentRecordsResponse,
   type ConsentStatus,
   type ConsentStatusListResponse,
   type CurrentLegalDocumentsResponse,
   DEFAULT_LOCALE,
+  type LegalDocumentVersion,
   makeEvent,
   type SupportedLocale,
   type UUIDv7,
@@ -19,6 +22,33 @@ import { ConsentReceiptsRepository } from "./db/repositories/consent-receipts.re
 import { ConsentWithdrawalsRepository } from "./db/repositories/consent-withdrawals.repository.js";
 import { LegalDocumentsRepository } from "./db/repositories/legal-documents.repository.js";
 import { EVENT_PUBLISHER, type EventPublisher } from "./events/event-publisher.js";
+
+type DocumentRow = { name: string; purposeKey: LegalDocumentVersion["purposeKey"] };
+type VersionRow = {
+  id: string;
+  version: number;
+  locale: LegalDocumentVersion["locale"];
+  content: string;
+  effectiveAt: Date;
+};
+
+/** The SHA-256 of a version's text exactly as stored -- what a receipt's copy is checked against. */
+export function contentSha256(content: string): string {
+  return createHash("sha256").update(content, "utf8").digest("hex");
+}
+
+function toDocumentVersion(document: DocumentRow, version: VersionRow): LegalDocumentVersion {
+  return {
+    id: version.id,
+    purposeKey: document.purposeKey,
+    title: document.name,
+    version: version.version,
+    locale: version.locale,
+    content: version.content,
+    contentSha256: contentSha256(version.content),
+    effectiveAt: version.effectiveAt.toISOString(),
+  };
+}
 
 /**
  * The ONLY class outside `src/modules/consent/` may import (enforced
@@ -52,16 +82,34 @@ export class ConsentService {
       if (!document) continue;
       const version = await this.legalDocuments.findCurrentVersion(document.id, locale);
       if (!version) continue;
-      documents.push({
-        id: version.id,
-        purposeKey,
-        version: version.version,
-        locale: version.locale,
-        content: version.content,
-        effectiveAt: version.effectiveAt.toISOString(),
-      });
+      documents.push(toDocumentVersion(document, version));
     }
     return { documents };
+  }
+
+  /**
+   * Every consent the user gave, newest first, each with the exact document
+   * version it was given against (its text and fingerprint). Withdrawn ones
+   * stay: withdrawing ends a consent, it does not unmake the fact it was given.
+   */
+  async listRecords(userId: UUIDv7): Promise<ConsentRecordsResponse> {
+    const receipts = await this.receipts.listForUser({ userId });
+    const records: ConsentRecordsResponse["receipts"] = [];
+    for (const receipt of receipts) {
+      const version = await this.legalDocuments.findVersionById(receipt.legalDocumentVersionId);
+      const document = version ? await this.legalDocuments.findById(version.legalDocumentId) : null;
+      if (!version || !document) continue;
+      const withdrawal = await this.withdrawals.findByReceiptId(receipt.id);
+      records.push({
+        receiptId: receipt.id,
+        purposeKey: receipt.purposeKey,
+        source: receipt.source,
+        consentedAt: receipt.consentedAt.toISOString(),
+        ...(withdrawal ? { withdrawnAt: withdrawal.withdrawnAt.toISOString() } : {}),
+        document: toDocumentVersion(document, version),
+      });
+    }
+    return { receipts: records };
   }
 
   async getStatus(userId: UUIDv7): Promise<ConsentStatusListResponse> {

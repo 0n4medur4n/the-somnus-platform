@@ -1,6 +1,10 @@
 import { Body, Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import type { ConsentReceipt, ConsentStatusListResponse } from "@somnus/api-contracts";
+import type {
+  ConsentReceipt,
+  ConsentRecordsResponse,
+  ConsentStatusListResponse,
+} from "@somnus/api-contracts";
 import { CurrentActorId } from "../../common/decorators/current-actor.decorator.js";
 import { CorrelationId } from "../../common/interceptors/correlation-id.decorator.js";
 import { ConsentCreateDto, ConsentWithdrawDto } from "./consent.dto.js";
@@ -29,6 +33,14 @@ export class ConsentsController {
   @ApiOperation({ summary: "The actor's current consent standing for every purpose." })
   async current(@CurrentActorId() actorId: string): Promise<ConsentStatusListResponse> {
     return this.consentService.getStatus(actorId);
+  }
+
+  @Get("receipts")
+  @ApiOperation({
+    summary: "Every consent the actor gave, newest first, with the exact document text signed.",
+  })
+  async receipts(@CurrentActorId() actorId: string): Promise<ConsentRecordsResponse> {
+    return this.consentService.listRecords(actorId);
   }
 
   @Post(":receiptId/withdraw")

@@ -24,6 +24,15 @@ export class LegalDocumentsRepository {
     return rows[0] ?? null;
   }
 
+  async findById(id: UUIDv7) {
+    const rows = await this.db
+      .select()
+      .from(legalDocuments)
+      .where(eq(legalDocuments.id, id))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
   async publishVersion(input: {
     legalDocumentId: UUIDv7;
     version: number;

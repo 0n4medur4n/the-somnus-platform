@@ -10,6 +10,7 @@ import { AssessmentDetail } from "./routes/AssessmentDetail.js";
 import { AuthCallback } from "./routes/AuthCallback.js";
 import { InvitationAccept } from "./routes/InvitationAccept.js";
 import { Login } from "./routes/Login.js";
+import { MyConsents } from "./routes/MyConsents.js";
 import { NotFound } from "./routes/NotFound.js";
 import { Organization } from "./routes/Organization.js";
 import { OrganizationInvitations } from "./routes/OrganizationInvitations.js";
@@ -38,6 +39,7 @@ const router = createBrowserRouter([
       { path: "/app", element: <AppHome /> },
       { path: "/app/profile", element: <Profile /> },
       { path: "/app/assessments/:sessionId", element: <AssessmentDetail /> },
+      { path: "/app/consents", element: <MyConsents /> },
       { path: "/app/security", element: <Security /> },
       { path: "/professional", element: <Professional /> },
       { path: "/professional/profile", element: <ProfessionalProfile /> },

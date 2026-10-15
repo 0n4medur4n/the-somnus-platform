@@ -55,6 +55,15 @@ export class ConsentReceiptsRepository {
     return rows[0] ?? null;
   }
 
+  /** Every receipt the user has, newest first (UUIDv7 ids sort by creation time). */
+  async listForUser(scope: UserScope) {
+    return this.db
+      .select()
+      .from(consentReceipts)
+      .where(eq(consentReceipts.userId, scope.userId))
+      .orderBy(desc(consentReceipts.id));
+  }
+
   /** Account erasure (build plan §21 / 13.2): delete every receipt for a user. */
   async deleteByUserId(userId: UUIDv7): Promise<void> {
     await this.db.delete(consentReceipts).where(eq(consentReceipts.userId, userId));

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { opaqueIdSchema } from "../uuid.js";
 import { ConsentPurposeKeySchema } from "./consent-purpose.js";
+import { LegalDocumentVersionSchema } from "./legal-document.js";
 
 export const ConsentReceiptSchema = z.object({
   id: opaqueIdSchema,
@@ -59,3 +60,24 @@ export const ConsentStatusListResponseSchema = z.object({
   purposes: z.array(ConsentStatusSchema),
 });
 export type ConsentStatusListResponse = z.infer<typeof ConsentStatusListResponseSchema>;
+
+/**
+ * One consent the person gave, with the exact document version it was given
+ * against -- the "signed copy". Withdrawn receipts stay listed: a withdrawal
+ * ends the consent, it does not erase that it was given.
+ */
+export const ConsentRecordSchema = z.object({
+  receiptId: opaqueIdSchema,
+  purposeKey: ConsentPurposeKeySchema,
+  source: z.string().min(1).max(120),
+  consentedAt: z.iso.datetime(),
+  withdrawnAt: z.iso.datetime().optional(),
+  document: LegalDocumentVersionSchema,
+});
+export type ConsentRecord = z.infer<typeof ConsentRecordSchema>;
+
+/** GET /v1/consents/receipts -- every consent the actor gave, newest first. */
+export const ConsentRecordsResponseSchema = z.object({
+  receipts: z.array(ConsentRecordSchema),
+});
+export type ConsentRecordsResponse = z.infer<typeof ConsentRecordsResponseSchema>;

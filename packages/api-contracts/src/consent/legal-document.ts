@@ -13,9 +13,22 @@ import { ConsentPurposeKeySchema } from "./consent-purpose.js";
 export const LegalDocumentVersionSchema = z.object({
   id: opaqueIdSchema,
   purposeKey: ConsentPurposeKeySchema,
+  /** The document's name, e.g. "Health Data Processing Policy". */
+  title: z.string().min(1),
   version: z.number().int().min(1),
+  /**
+   * The language the text is in. A receipt always binds to the default-locale
+   * (es) version, so a consent screen shows that text: what is read is what is
+   * signed.
+   */
   locale: LocaleSchema,
   content: z.string().min(1),
+  /**
+   * SHA-256 (hex) of `content` exactly as stored. A version is never edited
+   * (a change is a new version), so this fingerprint identifies the text a
+   * receipt refers to and lets anyone check a printed copy against it.
+   */
+  contentSha256: z.string().regex(/^[0-9a-f]{64}$/),
   effectiveAt: z.iso.datetime(),
 });
 export type LegalDocumentVersion = z.infer<typeof LegalDocumentVersionSchema>;

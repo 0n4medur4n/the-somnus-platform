@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { Test } from "@nestjs/testing";
 import { UUIDv7 } from "@somnus/api-contracts";
@@ -76,6 +77,84 @@ describe("consent HTTP endpoints (build plan §20 Checkpoint 7.1)", () => {
       const esRes = await inject(server, "GET", "/v1/legal-documents/current?locale=es");
       const esDocuments = (esRes.body as { documents: Array<{ locale: string }> }).documents;
       expect(esDocuments).toHaveLength(6);
+    });
+  });
+
+  describe("the signed copy: fingerprints and GET /v1/consents/receipts", () => {
+    it("serves every document with its title and the SHA-256 of its exact text", async () => {
+      const res = await inject(server, "GET", "/v1/legal-documents/current?locale=es");
+      const documents = (
+        res.body as {
+          documents: Array<{ title: string; content: string; contentSha256: string }>;
+        }
+      ).documents;
+      expect(documents.length).toBeGreaterThan(0);
+      for (const document of documents) {
+        expect(document.title.length).toBeGreaterThan(0);
+        expect(document.contentSha256).toBe(
+          createHash("sha256").update(document.content, "utf8").digest("hex"),
+        );
+      }
+    });
+
+    it("lists each consent with the exact document version it was given against, newest first, withdrawn ones kept", async () => {
+      const userId = await users.create({ email: "signed-copy@example.com" });
+      const health = await inject(server, "POST", "/v1/consents", {
+        actorId: userId,
+        payload: { purposeKey: "health_data_processing", source: "morpheo-assessment" },
+      });
+      const marketing = await inject(server, "POST", "/v1/consents", {
+        actorId: userId,
+        payload: { purposeKey: "marketing" },
+      });
+      const marketingId = (marketing.body as { id: string }).id;
+      await inject(server, "POST", `/v1/consents/${marketingId}/withdraw`, {
+        actorId: userId,
+        payload: {},
+      });
+
+      const res = await inject(server, "GET", "/v1/consents/receipts", { actorId: userId });
+      expect(res.statusCode).toBe(200);
+      const receipts = (
+        res.body as {
+          receipts: Array<{
+            receiptId: string;
+            purposeKey: string;
+            source: string;
+            withdrawnAt?: string;
+            document: { id: string; content: string; contentSha256: string; locale: string };
+          }>;
+        }
+      ).receipts;
+      expect(receipts.map((r) => r.receiptId)).toEqual([
+        marketingId,
+        (health.body as { id: string }).id,
+      ]);
+      expect(receipts[0]?.withdrawnAt).toBeTruthy();
+      const healthRecord = receipts[1];
+      expect(healthRecord?.purposeKey).toBe("health_data_processing");
+      expect(healthRecord?.source).toBe("morpheo-assessment");
+      expect(healthRecord?.withdrawnAt).toBeUndefined();
+      expect(healthRecord?.document.locale).toBe("es");
+      expect(healthRecord?.document.id).toBe(
+        (health.body as { legalDocumentVersionId: string }).legalDocumentVersionId,
+      );
+      expect(healthRecord?.document.contentSha256).toBe(
+        createHash("sha256")
+          .update(healthRecord?.document.content ?? "", "utf8")
+          .digest("hex"),
+      );
+    });
+
+    it("never lists another person's consents", async () => {
+      const someone = await users.create({ email: "someone@example.com" });
+      const other = await users.create({ email: "other@example.com" });
+      await inject(server, "POST", "/v1/consents", {
+        actorId: someone,
+        payload: { purposeKey: "marketing" },
+      });
+      const res = await inject(server, "GET", "/v1/consents/receipts", { actorId: other });
+      expect((res.body as { receipts: unknown[] }).receipts).toEqual([]);
     });
   });
 

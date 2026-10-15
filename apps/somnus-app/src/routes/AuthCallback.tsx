@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { ConsentPurposeKey } from "@somnus/api-contracts";
 import {
   DEFAULT_LOCALE,
   isSupportedLocale,
@@ -8,6 +9,7 @@ import {
   RegistrationRequestSchema,
   type SupportedLocale,
 } from "@somnus/api-contracts";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -20,6 +22,7 @@ import { CheckboxField } from "../components/CheckboxField.js";
 import { ErrorSummary, type FieldError } from "../components/ErrorSummary.js";
 import { Field } from "../components/Field.js";
 import { FullPageStatus } from "../components/FullPageStatus.js";
+import { LegalDocumentDialog, ReadDocumentButton } from "../components/LegalDocument.js";
 import { SelectField } from "../components/SelectField.js";
 import { AuthLayout } from "../layouts/AuthLayout.js";
 import {
@@ -551,6 +554,15 @@ function ConsentFields({
   privacyError: string;
 }) {
   const { t } = useTranslation();
+  // The texts a person accepts here are the ones the receipts bind to; each
+  // opens in full, with its version and fingerprint, before it is accepted.
+  const documents = useQuery({
+    queryKey: ["legal-documents", "es"],
+    queryFn: edge.getLegalDocuments,
+  });
+  const [reading, setReading] = useState<ConsentPurposeKey | null>(null);
+  const document = documents.data?.documents.find((doc) => doc.purposeKey === reading);
+
   return (
     <fieldset className="flex flex-col gap-3 border-0 p-0">
       <legend className="text-sm font-medium text-somnus-text">
@@ -563,11 +575,26 @@ function ConsentFields({
         {...(termsError ? { error: termsError } : {})}
         {...termsProps}
       />
+      <div className="pl-7">
+        <ReadDocumentButton onClick={() => setReading("terms_acceptance")}>
+          {t("register.readTerms")}
+        </ReadDocumentButton>
+      </div>
       <CheckboxField
         id="reg-consent-privacy"
         label={t("register.consentPrivacy")}
         {...(privacyError ? { error: privacyError } : {})}
         {...privacyProps}
+      />
+      <div className="pl-7">
+        <ReadDocumentButton onClick={() => setReading("privacy_policy_acknowledgement")}>
+          {t("register.readPrivacy")}
+        </ReadDocumentButton>
+      </div>
+      <LegalDocumentDialog
+        document={document}
+        open={reading !== null}
+        onClose={() => setReading(null)}
       />
     </fieldset>
   );

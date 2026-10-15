@@ -3,6 +3,8 @@ import {
   type ConsentCreateRequest,
   type ConsentReceipt,
   ConsentReceiptSchema,
+  type ConsentRecordsResponse,
+  ConsentRecordsResponseSchema,
   type ConsentStatusListResponse,
   ConsentStatusListResponseSchema,
   type ConsentWithdrawRequest,
@@ -54,6 +56,20 @@ export class ConsentProxyService {
       headers: { [ACTOR_ID_HEADER]: actorId },
     });
     return this.parse(ConsentStatusListResponseSchema, response.body, correlationId);
+  }
+
+  /** Every consent the actor gave, with the exact document text each one was given against. */
+  async getRecords(
+    session: SessionRecord | undefined,
+    rawCorrelationId?: string,
+  ): Promise<ConsentRecordsResponse> {
+    const correlationId = correlationOf(rawCorrelationId);
+    const actorId = await this.resolveActor(session, correlationId);
+    const response = await this.identity.get("/v1/consents/receipts", {
+      correlationId,
+      headers: { [ACTOR_ID_HEADER]: actorId },
+    });
+    return this.parse(ConsentRecordsResponseSchema, response.body, correlationId);
   }
 
   async record(
