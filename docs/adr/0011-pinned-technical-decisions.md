@@ -32,7 +32,7 @@ The following are pinned and must not be substituted:
   complaint.
 - **Stable releases only:** alpha / beta / rc / canary / nightly are
   rejected in CI.
-- **Node.js 24 LTS, pnpm 10/11, NestJS 11, Fastify 5, TypeScript
+- **Node.js 24 LTS, pnpm 10/11/12 (12.11.2 since 2026-10-15), NestJS 11, Fastify 5, TypeScript
   stable.**
 
 ## Consequences

@@ -15,7 +15,7 @@
 | Git         | stable             | stable               | 2.46.0.windows.1       | PASS   |
 | Node.js     | 24 LTS             | 24 LTS               | 24.11.1                | PASS   |
 | Corepack    | bundled with Node  | bundled with Node    | 0.34.2                 | PASS   |
-| pnpm        | 10.x               | **latest stable (user-approved deviation)** | 11.5.0 | PASS |
+| pnpm        | 10.x               | **latest stable (user-approved deviation)** | 12.11.2 (was 11.5.0 until 2026-10-15) | PASS |
 | Python      | 3.13               | **3.14.3 (user-approved deviation, latest stable)** | 3.14.3 (`py -3.14`) | PASS |
 | uv          | latest stable      | latest stable        | 0.11.26                | PASS   |
 | Docker      | stable (daemon live) | stable (installed) | 29.6.2, daemon UP      | PASS   |
@@ -25,9 +25,14 @@
 
 ### User-approved deviations from build plan §18
 
-1. **pnpm 11.5.0** instead of 10.x — user decision ("la versión más nueva
+1. **pnpm 12.11.2** instead of 10.x — user decision ("la versión más nueva
    estable nos sirve"). Latest stable. No warm-up or any other cost-related
-   mechanism is being added; this is purely the package manager.
+   mechanism is being added; this is purely the package manager. Moved from
+   11.5.0 to 12.11.2 on 2026-10-15 when the workstation's global pnpm became
+   12: pnpm 12 refuses to run a project pinned to 11 on Windows ("no
+   @pnpm/exe.win32-x64 native binary"). pnpm 12 also records its own version
+   and integrity at the top of `pnpm-lock.yaml` (`packageManagerDependencies`);
+   no dependency changed.
 2. **Python 3.14.3** instead of 3.13 — user decision ("la versión más nueva
    estable nos sirve"). The active interpreter is `py -3.14`; the legacy
    3.11.0 default is no longer used by the toolchain. The build plan
