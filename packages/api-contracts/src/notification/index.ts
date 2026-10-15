@@ -4,4 +4,6 @@ export {
   NotificationTaskSchema,
   type NotificationType,
   NotificationTypeSchema,
+  type SignInLinkRequest,
+  SignInLinkRequestSchema,
 } from "./task.js";

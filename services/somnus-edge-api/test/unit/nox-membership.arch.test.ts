@@ -160,6 +160,9 @@ describe("edge route table: the public surface is a closed, reviewed list", () =
         // the only way to tell an invited person their invitation is dead
         // before a magic link is sent.
         "POST /v1/invitations/preview",
+        // Asking for a sign-in link by email: before any session, rate-limited
+        // per IP and per address, the same answer whether or not an account exists.
+        "POST /v1/auth/email-link",
       ].sort(),
     );
   });

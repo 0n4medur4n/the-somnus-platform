@@ -50,3 +50,22 @@ describe("email templates", () => {
     expect(new Set(subjects).size).toBe(SUPPORTED_LOCALES.length);
   });
 });
+
+describe("sign-in link email", () => {
+  it("says what it is for, what to do if not asked for, and repeats the link as text", () => {
+    const link = "https://app.thesomnus.com/auth/callback?mode=signIn&oobCode=abc&lang=es";
+    const email = renderEmail("sign_in_link", "es", link, {});
+    expect(email.subject).toBe("Tu enlace para entrar en The Somnus");
+    expect(email.html).toContain("Si no has pedido este enlace");
+    expect(email.text).toContain("Si no has pedido este enlace");
+    // Button + fallback link: the escaped link appears in both hrefs and as text.
+    expect(email.html.match(/oobCode=abc/g)?.length).toBe(3);
+    expect(email.html).toContain("&amp;oobCode=abc");
+  });
+
+  it("escapes anything in the link that could break out of the attribute", () => {
+    const email = renderEmail("sign_in_link", "en", 'https://x.example/"><script>', {});
+    expect(email.html).not.toContain("<script>");
+    expect(email.html).toContain("&quot;&gt;&lt;script&gt;");
+  });
+});

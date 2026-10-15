@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NotificationTaskSchema } from "./task.js";
+import { NotificationTaskSchema, SignInLinkRequestSchema } from "./task.js";
 
 const valid = {
   idempotencyKey: "invite:org-1:user-2",
@@ -30,8 +30,32 @@ describe("NotificationTaskSchema", () => {
 
   it("only allows the two notification types", () => {
     expect(NotificationTaskSchema.safeParse({ ...valid, type: "report_ready" }).success).toBe(true);
+    expect(NotificationTaskSchema.safeParse({ ...valid, type: "sign_in_link" }).success).toBe(true);
     expect(NotificationTaskSchema.safeParse({ ...valid, type: "password_reset" }).success).toBe(
       false,
     );
+  });
+});
+
+describe("SignInLinkRequestSchema", () => {
+  it("normalises the address and requires a supported locale", () => {
+    const parsed = SignInLinkRequestSchema.parse({ email: "  Ada@Example.COM ", locale: "ca" });
+    expect(parsed).toEqual({ email: "ada@example.com", locale: "ca" });
+    expect(SignInLinkRequestSchema.safeParse({ email: "a@b.co", locale: "de" }).success).toBe(
+      false,
+    );
+    expect(SignInLinkRequestSchema.safeParse({ email: "not-an-email", locale: "es" }).success).toBe(
+      false,
+    );
+  });
+
+  it("accepts nothing but the address and the locale -- no link, no redirect target", () => {
+    expect(
+      SignInLinkRequestSchema.safeParse({
+        email: "a@b.co",
+        locale: "es",
+        continueUrl: "https://evil.example",
+      }).success,
+    ).toBe(false);
   });
 });

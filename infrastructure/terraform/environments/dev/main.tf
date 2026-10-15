@@ -179,6 +179,10 @@ module "run_edge_api" {
     # id again -- which is what pointed session writes at a project with no
     # database in it.
     FIRESTORE_PROJECT_ID = var.project_id
+    # Sign-in links are emailed by The Somnus (worker + Brevo), not by Firebase:
+    # the link lands here directly, carrying only the one-time code.
+    SIGN_IN_CALLBACK_URL = "https://app.thesomnus.com/auth/callback"
+    WORKER_BASE_URL      = "https://somnus-worker-lx3fvb5r5q-ey.a.run.app"
     # Private bucket for profile photos; edge-api is its only reader/writer.
     PROFILE_PHOTOS_BUCKET = module.profile_photos_bucket.bucket_name
   }
@@ -334,14 +338,23 @@ module "run_worker" {
     NOTIFICATIONS_DB_SSL = "true"
     AUDIT_DB_SSL         = "true"
     ENV                  = "production"
+    # Transactional email from the domain authenticated in Brevo (DKIM brevo1/
+    # brevo2 + DMARC on thesomnus.com), so it reaches the inbox.
+    BREVO_SENDER_EMAIL = "access@thesomnus.com"
+    BREVO_SENDER_NAME  = "The Somnus"
   }
   secret_env_vars = {
     NOTIFICATIONS_DATABASE_URL = { secret_id = "notifications-db-url", version = "latest" }
     AUDIT_DATABASE_URL         = { secret_id = "audit-db-url", version = "latest" }
+    BREVO_API_KEY              = { secret_id = "brevo-api-key", version = "latest" }
   }
   labels = { app = "somnus", service = "worker", env = var.env }
 
-  depends_on = [module.project_apis_backend]
+  # The worker reads BREVO_API_KEY at start-up: its access must exist first.
+  depends_on = [
+    module.project_apis_backend,
+    google_secret_manager_secret_iam_member.worker_brevo_api_key,
+  ]
 }
 
 # --- Cloud Run IAM: only somnus-edge-api may invoke the private four ---
@@ -492,6 +505,43 @@ resource "google_secret_manager_secret_iam_member" "report_openai_api_key" {
   secret_id = data.google_secret_manager_secret.openai_api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = module.sa_report.member
+}
+
+# --- Sign-in links by email (worker + Brevo) ---
+#
+# edge-api asks Firebase for a sign-in link WITHOUT having Firebase send it,
+# then hands it to the worker, which emails it through Brevo from our domain.
+#
+# Generating that link needs exactly one permission. The predefined role that
+# holds it (roles/firebaseauth.admin) could also delete users and change the
+# Auth configuration; this custom role holds that one permission and nothing
+# else.
+resource "google_project_iam_custom_role" "sign_in_link_issuer" {
+  project     = var.project_id
+  role_id     = "somnusSignInLinkIssuer"
+  title       = "Somnus sign-in link issuer"
+  description = "Generate passwordless sign-in links (sent by The Somnus, not by Firebase). Nothing else."
+  permissions = ["firebaseauth.users.sendEmail"]
+}
+
+resource "google_project_iam_member" "edge_sign_in_link_issuer" {
+  project = var.project_id
+  role    = google_project_iam_custom_role.sign_in_link_issuer.name
+  member  = module.sa_edge_api.member
+}
+
+# The Brevo API key: created by hand in Secret Manager (never in Terraform
+# state), read by the worker alone -- the only service that sends email.
+data "google_secret_manager_secret" "brevo_api_key" {
+  project   = var.project_id
+  secret_id = "brevo-api-key"
+}
+
+resource "google_secret_manager_secret_iam_member" "worker_brevo_api_key" {
+  project   = var.project_id
+  secret_id = data.google_secret_manager_secret.brevo_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = module.sa_worker.member
 }
 
 # --- Sessions store (build plan §9 / ADR 0006) ---

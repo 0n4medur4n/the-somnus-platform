@@ -109,6 +109,9 @@ export const EdgeConfigSchema = z.object({
   // local dev and tests, where photos live in memory; a production process with
   // it unset refuses photo uploads rather than keeping them in memory.
   PROFILE_PHOTOS_BUCKET: z.string().min(3).max(63).optional(),
+  // Where a sign-in link lands: the app's callback route. The emailed link points
+  // here directly (not at Firebase's handler), with only the one-time code.
+  SIGN_IN_CALLBACK_URL: z.string().url().default("http://localhost:5173/auth/callback"),
   // How internal calls are authenticated. `gcp`: mint a real Google
   // OIDC identity token (production on Cloud Run). `insecure-dev`: send
   // a fixed dev token -- for local/docker/tests where there is no GCP

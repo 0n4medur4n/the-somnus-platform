@@ -38,6 +38,9 @@ const CSRF_EXEMPT = new Set(["/v1/sessions"]);
 function isCsrfExempt(path: string): boolean {
   if (CSRF_EXEMPT.has(path)) return true;
   if (path === "/v1/invitations/preview") return true;
+  // Asking for a sign-in link happens before any session exists -- nothing to
+  // forge against. It is rate-limited per IP and per address instead.
+  if (path === "/v1/auth/email-link") return true;
   if (path === "/v1/assessments") return true;
   return path.startsWith("/v1/assessments/") && path !== "/v1/assessments/claim";
 }

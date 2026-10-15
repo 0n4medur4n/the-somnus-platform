@@ -11,6 +11,7 @@ import { EventsModule } from "./infrastructure/events/events.module.js";
 import { FirebaseModule } from "./infrastructure/firebase/firebase.module.js";
 import { InternalClientsModule } from "./infrastructure/internal-clients/internal-clients.module.js";
 import { AdminModule } from "./modules/admin/admin.module.js";
+import { AuthEmailLinkModule } from "./modules/auth-email-link/auth-email-link.module.js";
 import { ConsentModule } from "./modules/consent/consent.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
 import { MeModule } from "./modules/me/me.module.js";
@@ -47,6 +48,7 @@ export const ROOT_LOGGER: Logger = createLogger({
     OrganizationsModule,
     MorpheoModule,
     ReportsModule,
+    AuthEmailLinkModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: SomnusExceptionFilter },
