@@ -12,7 +12,12 @@ import { LocaleSchema } from "../locale.js";
  * details. The worker's template test asserts the rendered body stays clean.
  */
 
-export const NOTIFICATION_TYPES = ["invitation", "report_ready"] as const;
+/**
+ * `sign_in_link`: the passwordless access link, sent by us from our own domain
+ * (rather than by Firebase from a shared one) so it reaches the inbox. The link
+ * IS a credential for a few minutes: the worker sends it and never stores it.
+ */
+export const NOTIFICATION_TYPES = ["invitation", "report_ready", "sign_in_link"] as const;
 export const NotificationTypeSchema = z.enum(NOTIFICATION_TYPES);
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;
 
@@ -30,3 +35,16 @@ export const NotificationTaskSchema = z
   })
   .strict();
 export type NotificationTask = z.infer<typeof NotificationTaskSchema>;
+
+/**
+ * `POST /v1/auth/email-link` -- public, before any session: ask for an access
+ * link by email. Always answered the same way whether or not an account exists
+ * for the address, so it cannot be used to find out who is registered.
+ */
+export const SignInLinkRequestSchema = z
+  .object({
+    email: z.string().trim().toLowerCase().email().max(320),
+    locale: LocaleSchema,
+  })
+  .strict();
+export type SignInLinkRequest = z.infer<typeof SignInLinkRequestSchema>;

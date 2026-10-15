@@ -45,6 +45,13 @@ export const AppEnvSchema = z.object({
   VITE_AUTH_EMULATOR_URL: z.url().optional(),
   /** The admin console, linked for platform staff only. Unset: no link is shown. */
   VITE_ADMIN_CONSOLE_URL: z.url().optional(),
+  /**
+   * Who emails the sign-in link. `somnus`: edge-api, from The Somnus's own
+   * domain (it reaches the inbox, and the link carries only a one-time code).
+   * `firebase` (default): Firebase's own email -- local development and the
+   * end-to-end suite, which read the code from the Auth emulator.
+   */
+  VITE_SIGN_IN_EMAIL: z.enum(["somnus", "firebase"]).optional(),
 });
 
 export const HostingEnvSchema = AppEnvSchema.extend({

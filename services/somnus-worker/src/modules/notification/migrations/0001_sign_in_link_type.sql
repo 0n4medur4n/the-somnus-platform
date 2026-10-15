@@ -1,0 +1,1 @@
+ALTER TABLE `notification_deliveries` MODIFY COLUMN `type` enum('invitation','report_ready','sign_in_link') NOT NULL;

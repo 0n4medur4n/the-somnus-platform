@@ -26,6 +26,7 @@ import type {
   ProfilePatchRequest,
   RegistrationRequest,
   SessionResponse,
+  SignInLinkRequest,
 } from "@somnus/api-contracts";
 import { api, BinaryBody } from "./api.js";
 
@@ -38,6 +39,9 @@ export const edge = {
   createSession: (idToken: string): Promise<SessionResponse> =>
     api.post<SessionResponse>("/v1/sessions", { idToken }),
   getMe: (): Promise<MeResponse> => api.get<MeResponse>("/v1/me"),
+  /** Pre-login: The Somnus emails the sign-in link from its own domain. */
+  requestSignInLink: (body: SignInLinkRequest): Promise<void> =>
+    api.post<void>("/v1/auth/email-link", body),
   register: (body: RegistrationRequest): Promise<MeResponse> =>
     api.post<MeResponse>("/v1/registration", body),
   patchProfile: (body: ProfilePatchRequest): Promise<void> =>
