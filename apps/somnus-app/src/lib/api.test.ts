@@ -19,6 +19,7 @@ type Init = {
   method?: string;
   headers: Record<string, string>;
   credentials?: string;
+  cache?: string;
   body?: string | Blob;
 };
 type Reply = { status: number; body?: unknown };
@@ -88,6 +89,9 @@ describe("api client", () => {
     expect(await api.get<{ ok: boolean }>("/v1/me")).toEqual({ ok: true });
     expect(calls[0]?.init.headers["x-correlation-id"]).toBeTruthy();
     expect(calls[0]?.init.credentials).toBe("include");
+    // Never from the browser cache: a stale "no account yet" 404 kept a newly
+    // registered person on the registration form (2026-10-15).
+    expect(calls[0]?.init.cache).toBe("no-store");
     expect(calls[0]?.init.headers["x-csrf-token"]).toBeUndefined();
   });
 

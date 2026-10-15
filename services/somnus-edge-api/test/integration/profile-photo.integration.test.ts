@@ -180,6 +180,28 @@ describe("profile photo + own assessments (edge-api)", () => {
     expect(got.statusCode).toBe(404);
   });
 
+  it("marks API answers no-store, so no cache can replay a stale one; the photo keeps its own policy", async () => {
+    const missing = await server.inject({
+      method: "GET",
+      url: "/v1/me/photo",
+      headers: { cookie: cookieHeader },
+    });
+    expect(missing.statusCode).toBe(404);
+    expect(missing.headers["cache-control"]).toBe("no-store");
+
+    const unknown = await server.inject({ method: "GET", url: "/v1/nothing-here" });
+    expect(unknown.statusCode).toBe(404);
+    expect(unknown.headers["cache-control"]).toBe("no-store");
+
+    await upload(webp(), "image/webp");
+    const photo = await server.inject({
+      method: "GET",
+      url: "/v1/me/photo",
+      headers: { cookie: cookieHeader },
+    });
+    expect(photo.headers["cache-control"]).toBe("private, max-age=86400");
+  });
+
   it("GET /v1/assessments/mine asks morpheo for the signed-in person's own history", async () => {
     const res = await server.inject({
       method: "GET",
