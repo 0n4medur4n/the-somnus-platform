@@ -72,6 +72,10 @@ async function send(
     // The HttpOnly session cookie rides every request; the SPA never
     // reads or stores it (build plan §5.2).
     credentials: "include",
+    // Always ask the server: an answer about who is signed in must never come
+    // from the browser's cache (edge-api also sends no-store; this covers a
+    // proxy that adds a cache lifetime of its own).
+    cache: "no-store",
   };
   if (body !== undefined) init.body = JSON.stringify(body);
 

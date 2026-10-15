@@ -89,6 +89,18 @@ export async function applyHardening(
     (_request, body, done) => done(null, body),
   );
 
+  // Every API answer is about one person and one moment, so nothing may keep
+  // it unless the route says otherwise (the profile photo sets its own policy).
+  // Without this, Firebase Hosting gives a response that carries no
+  // Cache-Control a default of its own -- `max-age=600` on a 404 -- and the
+  // browser then replays the pre-registration "no account yet" 404 of
+  // `/v1/me` for ten minutes, so a person who has just registered is shown
+  // the registration form again (2026-10-15).
+  fastify.addHook("onSend", (_req, reply, payload, done) => {
+    if (!reply.hasHeader("cache-control")) reply.header("cache-control", "no-store");
+    done(null, payload);
+  });
+
   fastify.addHook("preHandler", (req: FastifyRequest, reply: FastifyReply, done: () => void) => {
     const path = req.url.split("?")[0] ?? req.url;
     if (STATE_CHANGING.has(req.method) && !isCsrfExempt(path)) {
