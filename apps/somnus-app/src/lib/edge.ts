@@ -7,6 +7,11 @@ import type {
   AssessmentCreateResponse,
   AssessmentResult,
   AssessmentSnapshotResponse,
+  ConsentPurposeKey,
+  ConsentReceipt,
+  ConsentRecordsResponse,
+  ConsentStatusListResponse,
+  CurrentLegalDocumentsResponse,
   Invitation,
   InvitationAcceptRequest,
   InvitationCreateRequest,
@@ -58,6 +63,22 @@ export const edge = {
   /** Pre-login: the only invitation call that works without a session (Addendum A 14.2). */
   previewInvitation: (body: InvitationPreviewRequest): Promise<InvitationPreviewResponse> =>
     api.post<InvitationPreviewResponse>("/v1/invitations/preview", body),
+
+  // --- Consent (build plan §13) ---
+  /**
+   * The current legal documents. Always the Spanish text: a consent receipt
+   * binds to that version, so it is what a person must read before signing.
+   */
+  getLegalDocuments: (): Promise<CurrentLegalDocumentsResponse> =>
+    api.get<CurrentLegalDocumentsResponse>("/v1/legal-documents/current?locale=es"),
+  getConsentStatus: (): Promise<ConsentStatusListResponse> =>
+    api.get<ConsentStatusListResponse>("/v1/consents/current"),
+  getConsentRecords: (): Promise<ConsentRecordsResponse> =>
+    api.get<ConsentRecordsResponse>("/v1/consents/receipts"),
+  recordConsent: (purposeKey: ConsentPurposeKey, source: string): Promise<ConsentReceipt> =>
+    api.post<ConsentReceipt>("/v1/consents", { purposeKey, source }),
+  withdrawConsent: (receiptId: string): Promise<void> =>
+    api.post<void>(`/v1/consents/${encodeURIComponent(receiptId)}/withdraw`, {}),
 
   // --- Morpheo anonymous assessment (build plan §20 Checkpoint 10.3) ---
   getAssessmentContent: (): Promise<AssessmentContentResponse> =>

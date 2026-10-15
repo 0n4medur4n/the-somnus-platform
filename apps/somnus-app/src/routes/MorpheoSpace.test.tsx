@@ -17,6 +17,9 @@ const edge = vi.hoisted(() => ({
   getOwnAssessments: vi.fn(),
   getAssessmentSnapshot: vi.fn(),
   photoUrl: vi.fn((version: string) => `/v1/me/photo?v=${version}`),
+  getLegalDocuments: vi.fn(),
+  getConsentStatus: vi.fn(),
+  recordConsent: vi.fn(),
 }));
 vi.mock("../lib/edge.js", () => ({ edge }));
 vi.mock("../config/env.js", () => ({
@@ -110,6 +113,16 @@ beforeEach(() => {
   edge.getAssessmentSummary.mockResolvedValue(L4_RESULT);
   edge.requestAssessmentClaimToken.mockResolvedValue({ token: "tok" });
   edge.claimAssessment.mockResolvedValue({ success: true, snapshotId: "snap", reason: null });
+  edge.getLegalDocuments.mockResolvedValue({ documents: [HEALTH_DOCUMENT] });
+  edge.getConsentStatus.mockResolvedValue({ purposes: [] });
+  edge.recordConsent.mockResolvedValue({
+    id: "receipt-1",
+    userId: "u",
+    purposeKey: "health_data_processing",
+    legalDocumentVersionId: HEALTH_DOCUMENT.id,
+    source: "morpheo-assessment",
+    consentedAt: "2026-10-15T10:00:00.000Z",
+  });
   edge.getOwnAssessments.mockResolvedValue(HISTORY);
   edge.getAssessmentSnapshot.mockResolvedValue({
     snapshotId: "snap",
@@ -120,7 +133,78 @@ beforeEach(() => {
   });
 });
 
+const HEALTH_DOCUMENT = {
+  id: "019fe7a0-0003-7000-8000-000000000003",
+  purposeKey: "health_data_processing",
+  title: "Health Data Processing Policy",
+  version: 2,
+  locale: "es",
+  content: "Texto del consentimiento.",
+  contentSha256: "d".repeat(64),
+  effectiveAt: "2026-10-15T09:00:00.000Z",
+};
+
 describe("the questionnaire inside a Morpheo user's space", () => {
+  it("records the health-data consent as a receipt before the assessment starts", async () => {
+    const auth = authFor();
+    if (auth.state.status !== "authenticated") throw new Error("unreachable");
+    renderWithProviders(<Assessment embedded me={auth.state.me} />, { auth });
+
+    await userEvent.type(await screen.findByLabelText(t("assessment.role.ageAdult")), "40");
+    await userEvent.click(screen.getByRole("button", { name: t("assessment.actions.next") }));
+    await userEvent.click(await screen.findByLabelText(t("assessment.consent.label")));
+    await userEvent.click(screen.getByRole("button", { name: t("assessment.actions.next") }));
+
+    await waitFor(() => expect(edge.createAssessment).toHaveBeenCalled());
+    expect(edge.recordConsent).toHaveBeenCalledWith("health_data_processing", "morpheo-assessment");
+    expect(edge.recordConsent.mock.invocationCallOrder[0]).toBeLessThan(
+      edge.createAssessment.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it("does not ask again when the consent in force was already given, and records nothing new", async () => {
+    edge.getConsentStatus.mockResolvedValue({
+      purposes: [
+        {
+          purposeKey: "health_data_processing",
+          consented: true,
+          current: true,
+          withdrawn: false,
+          receiptId: "r-old",
+          legalDocumentVersionId: HEALTH_DOCUMENT.id,
+          consentedAt: "2026-10-01T08:00:00.000Z",
+        },
+      ],
+    });
+    const auth = authFor();
+    if (auth.state.status !== "authenticated") throw new Error("unreachable");
+    renderWithProviders(<Assessment embedded me={auth.state.me} />, { auth });
+
+    await userEvent.type(await screen.findByLabelText(t("assessment.role.ageAdult")), "40");
+    await userEvent.click(screen.getByRole("button", { name: t("assessment.actions.next") }));
+    expect((await screen.findAllByText(/1 de octubre de 2026/)).length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText(t("assessment.consent.label"))).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: t("assessment.actions.next") }));
+
+    await waitFor(() => expect(edge.createAssessment).toHaveBeenCalled());
+    expect(edge.recordConsent).not.toHaveBeenCalled();
+  });
+
+  it("does not start the assessment if the consent could not be recorded", async () => {
+    edge.recordConsent.mockRejectedValue(new Error("down"));
+    const auth = authFor();
+    if (auth.state.status !== "authenticated") throw new Error("unreachable");
+    renderWithProviders(<Assessment embedded me={auth.state.me} />, { auth });
+
+    await userEvent.type(await screen.findByLabelText(t("assessment.role.ageAdult")), "40");
+    await userEvent.click(screen.getByRole("button", { name: t("assessment.actions.next") }));
+    await userEvent.click(await screen.findByLabelText(t("assessment.consent.label")));
+    await userEvent.click(screen.getByRole("button", { name: t("assessment.actions.next") }));
+
+    expect(await screen.findByText(t("assessment.submitError"))).toBeInTheDocument();
+    expect(edge.createAssessment).not.toHaveBeenCalled();
+  });
+
   it("starts on the branch they registered for, without the professional path", async () => {
     const auth = authFor({ registrationRole: "parent" });
     if (auth.state.status !== "authenticated") throw new Error("unreachable");

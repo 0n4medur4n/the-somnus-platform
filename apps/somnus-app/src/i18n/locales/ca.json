@@ -114,7 +114,9 @@
       "specialtyRequired": "Selecciona la teva especialitat.",
       "consentRequired": "Ho has d'acceptar per continuar."
     },
-    "lockedNotice": "T'hi uneixes per invitació d'una organització, així que el teu compte es crea com a compte professional."
+    "lockedNotice": "T'hi uneixes per invitació d'una organització, així que el teu compte es crea com a compte professional.",
+    "readTerms": "Llegir els Termes del servei",
+    "readPrivacy": "Llegir la Política de privacitat"
   },
   "invitation": {
     "title": "Invitació a The Somnus",
@@ -185,6 +187,45 @@
     "back": "Tornar al meu espai",
     "error": "No hem pogut carregar aquest resultat."
   },
+  "legal": {
+    "title": {
+      "terms_acceptance": "Termes del servei",
+      "privacy_policy_acknowledgement": "Política de privacitat",
+      "health_data_processing": "Consentiment per al tractament de dades de salut",
+      "professional_sharing": "Compartir dades amb professionals",
+      "marketing": "Comunicacions comercials",
+      "research_participation": "Participació en recerca"
+    },
+    "versionLine": "Versió {{version}} · en vigor des del {{date}}",
+    "signedOn": "Acceptat el {{date}}",
+    "withdrawnOn": "Retirat el {{date}}",
+    "fingerprint": "Empremta del text (SHA-256): identifica exactament aquest text",
+    "print": "Imprimir o desar en PDF",
+    "close": "Tancar",
+    "loading": "S'està carregant el document…",
+    "loadError": "No hem pogut carregar el document. Sense llegir-lo no pots continuar.",
+    "retry": "Torna-ho a provar",
+    "textRegion": "Text complet del document"
+  },
+  "consents": {
+    "title": "Els meus consentiments",
+    "intro": "Cada consentiment que has donat, amb el text exacte que vas acceptar. Cap versió no es modifica mai: si canvia, se'n publica una de nova.",
+    "back": "Tornar al meu perfil",
+    "signedLine": "Acceptat el {{date}} · versió {{version}}",
+    "status": {
+      "active": "Vigent",
+      "withdrawn": "Retirat"
+    },
+    "view": "Veure el text acceptat",
+    "hide": "Amagar el text",
+    "withdraw": "Retirar el consentiment",
+    "confirm": "Segur que vols retirar aquest consentiment? Deixarà d'aplicar-se a partir d'ara.",
+    "confirmHealth": "Si retires aquest consentiment no podràs fer noves avaluacions fins que el tornis a donar. Les desades continuen al teu compte.",
+    "confirmWithdraw": "Sí, retirar-lo",
+    "withdrawError": "No l'hem pogut retirar. Torna-ho a provar.",
+    "loadError": "No hem pogut carregar els teus consentiments.",
+    "empty": "Encara no has donat cap consentiment."
+  },
   "profile": {
     "title": "El meu perfil",
     "firstName": "Nom",
@@ -215,7 +256,10 @@
     "errors": {
       "phone": "Introdueix un telèfon vàlid: només números, espais, guions i el signe +.",
       "dateOfBirth": "Introdueix una data vàlida. El compte ha de ser d'una persona major d'edat."
-    }
+    },
+    "consentsTitle": "Privacitat i consentiments",
+    "consentsBody": "Consulta el que vas acceptar, imprimeix-ho o retira-ho.",
+    "consentsLink": "Veure els meus consentiments"
   },
   "security": {
     "title": "Seguretat",
@@ -256,7 +300,8 @@
       "role": "Perfil",
       "consent": "Consentiment",
       "concern": "Motiu",
-      "result": "Resultat"
+      "result": "Resultat",
+      "safety": "Seguretat"
     },
     "role": {
       "legend": "Qui fa la consulta?",
@@ -268,23 +313,36 @@
       "guardianship": "Confirmo que en soc el tutor legal",
       "professionalConfirm": "Confirmo la meva condició de professional",
       "identifiable": "El cas conté dades identificables del pacient",
-      "professionalNote": "Només s'accepten casos anonimitzats."
+      "professionalNote": "Només s'accepten casos anonimitzats.",
+      "title": "Comencem",
+      "intro": "Explica'ns sobre qui és l'avaluació.",
+      "adultHint": "Vull valorar el meu propi descans.",
+      "parentHint": "Vull valorar el descans d'un menor que tinc a càrrec.",
+      "professionalHint": "Vull revisar un cas anonimitzat."
     },
     "consent": {
       "legend": "Consentiment",
-      "label": "He llegit i accepto l'ús de les meves respostes per a aquesta orientació.",
-      "note": "Pots retirar el consentiment en qualsevol moment."
+      "label": "He llegit el document i dono el meu consentiment explícit per al tractament de les meves dades de salut.",
+      "note": "Pots retirar el consentiment en qualsevol moment des d'«Els meus consentiments».",
+      "intro": "Llegeix el document abans de continuar. És el que acceptes i queda desat tal qual, amb la seva versió i la seva empremta.",
+      "recordedHint": "Quedarà registrat al teu compte, amb la data i la versió exacta del text.",
+      "anonymousHint": "Si deses el resultat en un compte, aquest consentiment hi quedarà registrat.",
+      "alreadySigned": "Ja vas donar aquest consentiment el {{date}}. Pots revisar-lo o retirar-lo a «Els meus consentiments»."
     },
     "safety": {
       "legend": "Abans de continuar, unes preguntes de seguretat.",
       "intro": "Respon segons la teva situació. Si no ho saps, tria «No ho sé».",
       "yes": "Sí",
       "no": "No",
-      "unknown": "No ho sé"
+      "unknown": "No ho sé",
+      "answered": "{{answered}} de {{total}} respostes"
     },
     "concern": {
       "legend": "Què et preocupa? Tria el que correspongui.",
-      "empty": "No hi ha motius disponibles."
+      "empty": "No hi ha motius disponibles.",
+      "intro": "Marca tot el que et passi. Pots triar diverses opcions.",
+      "selected_one": "{{count}} opció triada",
+      "selected_other": "{{count}} opcions triades"
     },
     "actions": {
       "next": "Continua",
@@ -319,6 +377,10 @@
       "autoSaving": "S'està desant el resultat al teu compte…",
       "autoSaved": "Resultat desat al teu compte.",
       "saveFailed": "No hem pogut desar el resultat al teu compte."
+    },
+    "progress": {
+      "label": "Progrés de l'avaluació",
+      "stepOf": "Pas {{current}} de {{total}}: {{name}}"
     }
   },
   "errors": {

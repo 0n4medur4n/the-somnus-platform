@@ -5,6 +5,7 @@ import { CONSENT_PURPOSE_KEYS, ConsentPurposeKeySchema } from "./consent-purpose
 import {
   ConsentCreateRequestSchema,
   ConsentReceiptSchema,
+  ConsentRecordsResponseSchema,
   ConsentStatusListResponseSchema,
   ConsentStatusSchema,
   ConsentWithdrawRequestSchema,
@@ -26,17 +27,52 @@ describe("ConsentPurposeKeySchema", () => {
   });
 });
 
+const DOCUMENT = {
+  id: UUIDv7(),
+  purposeKey: "privacy_policy_acknowledgement",
+  title: "Privacy Policy",
+  version: 1,
+  locale: "es",
+  content: "...",
+  contentSha256: "a".repeat(64),
+  effectiveAt: new Date().toISOString(),
+};
+
 describe("LegalDocumentVersionSchema", () => {
   it("accepts a valid version", () => {
-    const r = LegalDocumentVersionSchema.safeParse({
-      id: UUIDv7(),
-      purposeKey: "privacy_policy_acknowledgement",
-      version: 1,
-      locale: "es",
-      content: "...",
-      effectiveAt: new Date().toISOString(),
-    });
-    expect(r.success).toBe(true);
+    expect(LegalDocumentVersionSchema.safeParse(DOCUMENT).success).toBe(true);
+  });
+
+  it("requires a lowercase hex SHA-256 fingerprint of the text", () => {
+    for (const contentSha256 of ["", "A".repeat(64), "a".repeat(63), "z".repeat(64)]) {
+      expect(LegalDocumentVersionSchema.safeParse({ ...DOCUMENT, contentSha256 }).success).toBe(
+        false,
+      );
+    }
+    const { contentSha256: _omitted, ...withoutHash } = DOCUMENT;
+    expect(LegalDocumentVersionSchema.safeParse(withoutHash).success).toBe(false);
+  });
+});
+
+describe("ConsentRecordsResponseSchema", () => {
+  it("carries each consent with the exact document version it was given against", () => {
+    const record = {
+      receiptId: UUIDv7(),
+      purposeKey: "health_data_processing",
+      source: "morpheo-assessment",
+      consentedAt: new Date().toISOString(),
+      document: { ...DOCUMENT, purposeKey: "health_data_processing" },
+    };
+    expect(ConsentRecordsResponseSchema.safeParse({ receipts: [record] }).success).toBe(true);
+    expect(
+      ConsentRecordsResponseSchema.safeParse({
+        receipts: [{ ...record, withdrawnAt: new Date().toISOString() }],
+      }).success,
+    ).toBe(true);
+    const { document: _document, ...withoutDocument } = record;
+    expect(ConsentRecordsResponseSchema.safeParse({ receipts: [withoutDocument] }).success).toBe(
+      false,
+    );
   });
 });
 

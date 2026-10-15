@@ -114,7 +114,9 @@
       "specialtyRequired": "Select your specialty.",
       "consentRequired": "You must accept this to continue."
     },
-    "lockedNotice": "You are joining by organization invitation, so your account is created as a professional account."
+    "lockedNotice": "You are joining by organization invitation, so your account is created as a professional account.",
+    "readTerms": "Read the Terms of Service",
+    "readPrivacy": "Read the Privacy Policy"
   },
   "invitation": {
     "title": "Invitation to The Somnus",
@@ -185,6 +187,45 @@
     "back": "Back to my space",
     "error": "We could not load this result."
   },
+  "legal": {
+    "title": {
+      "terms_acceptance": "Terms of Service",
+      "privacy_policy_acknowledgement": "Privacy Policy",
+      "health_data_processing": "Consent to the processing of health data",
+      "professional_sharing": "Sharing data with professionals",
+      "marketing": "Marketing communications",
+      "research_participation": "Research participation"
+    },
+    "versionLine": "Version {{version}} · in force since {{date}}",
+    "signedOn": "Accepted on {{date}}",
+    "withdrawnOn": "Withdrawn on {{date}}",
+    "fingerprint": "Text fingerprint (SHA-256): identifies exactly this text",
+    "print": "Print or save as PDF",
+    "close": "Close",
+    "loading": "Loading the document…",
+    "loadError": "We could not load the document. You cannot continue without reading it.",
+    "retry": "Try again",
+    "textRegion": "Full text of the document"
+  },
+  "consents": {
+    "title": "My consents",
+    "intro": "Every consent you have given, with the exact text you accepted. A version is never changed: if it changes, a new one is published.",
+    "back": "Back to my profile",
+    "signedLine": "Accepted on {{date}} · version {{version}}",
+    "status": {
+      "active": "In force",
+      "withdrawn": "Withdrawn"
+    },
+    "view": "View the accepted text",
+    "hide": "Hide the text",
+    "withdraw": "Withdraw consent",
+    "confirm": "Are you sure you want to withdraw this consent? It stops applying from now on.",
+    "confirmHealth": "If you withdraw this consent you cannot take new assessments until you give it again. Your saved ones stay in your account.",
+    "confirmWithdraw": "Yes, withdraw it",
+    "withdrawError": "We could not withdraw it. Please try again.",
+    "loadError": "We could not load your consents.",
+    "empty": "You have not given any consent yet."
+  },
   "profile": {
     "title": "My profile",
     "firstName": "First name",
@@ -215,7 +256,10 @@
     "errors": {
       "phone": "Enter a valid phone number: digits, spaces, dashes and + only.",
       "dateOfBirth": "Enter a valid date. The account must belong to an adult."
-    }
+    },
+    "consentsTitle": "Privacy and consents",
+    "consentsBody": "See what you accepted, print it or withdraw it.",
+    "consentsLink": "View my consents"
   },
   "security": {
     "title": "Security",
@@ -256,7 +300,8 @@
       "role": "Profile",
       "consent": "Consent",
       "concern": "Concern",
-      "result": "Result"
+      "result": "Result",
+      "safety": "Safety"
     },
     "role": {
       "legend": "Who is this for?",
@@ -268,23 +313,36 @@
       "guardianship": "I confirm I am their legal guardian",
       "professionalConfirm": "I confirm I am a professional",
       "identifiable": "The case contains identifiable patient data",
-      "professionalNote": "Only anonymized cases are accepted."
+      "professionalNote": "Only anonymized cases are accepted.",
+      "title": "Let's start",
+      "intro": "Tell us who this assessment is about.",
+      "adultHint": "I want to assess my own sleep.",
+      "parentHint": "I want to assess the sleep of a child in my care.",
+      "professionalHint": "I want to review an anonymised case."
     },
     "consent": {
       "legend": "Consent",
-      "label": "I have read and accept the use of my answers for this orientation.",
-      "note": "You can withdraw your consent at any time."
+      "label": "I have read the document and give my explicit consent to the processing of my health data.",
+      "note": "You can withdraw your consent at any time in “My consents”.",
+      "intro": "Read the document before you continue. It is what you agree to, and it is kept exactly as it is, with its version and fingerprint.",
+      "recordedHint": "It will be recorded in your account, with the date and the exact version of the text.",
+      "anonymousHint": "If you save the result to an account, this consent will be recorded there.",
+      "alreadySigned": "You gave this consent on {{date}}. You can review or withdraw it in “My consents”."
     },
     "safety": {
       "legend": "First, a few safety questions.",
       "intro": "Answer for your situation. If you don't know, choose 'I don't know'.",
       "yes": "Yes",
       "no": "No",
-      "unknown": "I don't know"
+      "unknown": "I don't know",
+      "answered": "{{answered}} of {{total}} answered"
     },
     "concern": {
       "legend": "What concerns you? Choose all that apply.",
-      "empty": "No concerns available."
+      "empty": "No concerns available.",
+      "intro": "Tick everything that applies. You can choose several.",
+      "selected_one": "{{count}} option selected",
+      "selected_other": "{{count}} options selected"
     },
     "actions": {
       "next": "Continue",
@@ -319,6 +377,10 @@
       "autoSaving": "Saving the result to your account…",
       "autoSaved": "Result saved to your account.",
       "saveFailed": "We could not save the result to your account."
+    },
+    "progress": {
+      "label": "Assessment progress",
+      "stepOf": "Step {{current}} of {{total}}: {{name}}"
     }
   },
   "errors": {

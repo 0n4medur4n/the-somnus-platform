@@ -7,24 +7,31 @@ import {
   type RoleId,
 } from "@somnus/api-contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { ResultView } from "../assessment/ResultView.js";
+import { type AssessmentStep, StepProgress } from "../assessment/StepProgress.js";
 import { accountViewOf } from "../auth/account-view.js";
 import { useAuth } from "../auth/useAuth.js";
 import { Button } from "../components/Button.js";
+import { ChoiceCard, SegmentedOption } from "../components/ChoiceCard.js";
 import { FullPageStatus } from "../components/FullPageStatus.js";
+import { formatDateTime, LegalDocument } from "../components/LegalDocument.js";
 import { MorpheoLayout } from "../layouts/MorpheoLayout.js";
 import { edge } from "../lib/edge.js";
 import { ASSESSMENT_CONTENT_QUERY, OWN_ASSESSMENTS_QUERY } from "./MorpheoHome.js";
 
-type Step = "role" | "consent" | "safety" | "concern" | "result";
 type SafetyAnswer = "yes" | "no" | "unknown";
 const ROLES: RoleId[] = ["adult", "parent", "professional"];
 /** A Morpheo user assesses themselves or a minor in their care; the professional path is not theirs. */
 const MORPHEO_USER_ROLES: RoleId[] = ["adult", "parent"];
 const SAFETY_OPTIONS: SafetyAnswer[] = ["yes", "no", "unknown"];
+
+export const LEGAL_DOCUMENTS_QUERY = ["legal-documents", "es"] as const;
+export const CONSENT_STATUS_QUERY = ["consent-status"] as const;
+/** Where a health-data consent given in the questionnaire is recorded from. */
+const CONSENT_SOURCE = "morpheo-assessment";
 
 /**
  * `/assessment`. A signed-in Morpheo user takes the questionnaire inside their
@@ -54,12 +61,59 @@ function presetFor(me: MeResponse | undefined): { role: RoleId | null; age: stri
   return { role, age };
 }
 
+function StepCard({
+  title,
+  intro,
+  children,
+}: {
+  title: string;
+  intro?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-labelledby="step-heading"
+      className="flex flex-col gap-5 rounded-2xl border border-somnus-muted/30 bg-somnus-surface/40 p-5 shadow-lg shadow-black/20 sm:p-7"
+    >
+      <div className="flex flex-col gap-1">
+        <h2 id="step-heading" className="text-xl font-semibold">
+          {title}
+        </h2>
+        {intro ? <p className="text-somnus-subtle">{intro}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function StepActions({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex flex-col-reverse gap-3 border-t border-somnus-muted/30 pt-5 sm:flex-row sm:justify-between">
+      {children}
+    </div>
+  );
+}
+
+function SubmitError({ show }: { show: boolean }) {
+  const { t } = useTranslation();
+  if (!show) return null;
+  return (
+    <p role="alert" className="text-somnus-danger">
+      {t("assessment.submitError")}
+    </p>
+  );
+}
+
 /**
  * The anonymous assessment flow (build plan §20 Checkpoint 10.3, state machine
  * §14a): role → consent → SAFETY-FIRST questions → (stop on an emergency) →
  * concern → the §14b result. Public (no session). The safety questions and
  * every clinical string come from the morpheo content endpoint — the SPA never
  * authors clinical text. "No lo sé" maps to unknown, never No (§14).
+ *
+ * The health-data consent is read in full before it is given (build plan §13):
+ * the current document is shown with its version and fingerprint, and a
+ * signed-in person's consent is recorded as a receipt against that version.
  */
 export function Assessment({
   embedded = false,
@@ -70,19 +124,39 @@ export function Assessment({
   /** The signed-in Morpheo user, when embedded. */
   me?: MeResponse;
 } = {}) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { state } = useAuth();
   const queryClient = useQueryClient();
   const isAuthenticated = state.status === "authenticated";
   const preset = useMemo(() => presetFor(me), [me]);
   const roleOptions = me ? MORPHEO_USER_ROLES : ROLES;
+  const locale = i18n.resolvedLanguage ?? "es";
 
   const contentQuery = useQuery({
     queryKey: ASSESSMENT_CONTENT_QUERY,
     queryFn: edge.getAssessmentContent,
   });
+  const legalQuery = useQuery({ queryKey: LEGAL_DOCUMENTS_QUERY, queryFn: edge.getLegalDocuments });
+  const consentQuery = useQuery({
+    queryKey: CONSENT_STATUS_QUERY,
+    queryFn: edge.getConsentStatus,
+    enabled: isAuthenticated,
+  });
+  const healthDocument = legalQuery.data?.documents.find(
+    (document) => document.purposeKey === "health_data_processing",
+  );
+  const healthStatus = consentQuery.data?.purposes.find(
+    (purpose) => purpose.purposeKey === "health_data_processing",
+  );
+  // Already given against the version in force: shown as signed, not asked again.
+  const alreadySigned =
+    healthStatus?.consented === true &&
+    healthStatus.current &&
+    healthStatus.legalDocumentVersionId === healthDocument?.id
+      ? healthStatus
+      : undefined;
 
-  const [step, setStep] = useState<Step>("role");
+  const [step, setStep] = useState<AssessmentStep>("role");
   const [role, setRole] = useState<RoleId | null>(preset.role);
   const [ageYears, setAgeYears] = useState(preset.age);
   const [guardianshipConfirmed, setGuardianshipConfirmed] = useState(false);
@@ -101,6 +175,9 @@ export function Assessment({
   const [saveFailed, setSaveFailed] = useState(false);
   /** The session already saved (or being saved), so a result is saved once. */
   const savingFor = useRef<string | null>(null);
+  /** This flow's health consent is on record (given now, or already in force). */
+  const consentRecorded = useRef(false);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   const complaintOptions = useMemo(
     () =>
@@ -120,21 +197,32 @@ export function Assessment({
         : [],
     [contentQuery.data, role],
   );
+  const answeredCount = safetyPrompts.filter((prompt) => safetyAnswers[prompt.signalId]).length;
 
   const roleValid =
     role === "professional"
       ? professionalConfirmed
       : role !== null && ageYears.trim().length > 0 && Number.isFinite(Number(ageYears));
 
-  function reset(next: Step) {
+  // Each step starts at the top with focus on its title, so a screen reader
+  // hears where they are and a phone user is not left mid-page.
+  const goTo = useCallback((next: AssessmentStep) => {
     setStep(next);
+    requestAnimationFrame(() => {
+      heading.current?.focus();
+      if (typeof window.scrollTo === "function") window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }, []);
+
+  function reset(next: AssessmentStep) {
+    goTo(next);
     setResult(null);
     setBlocked(null);
     setSubmitError(false);
   }
 
   function restart() {
-    setStep("role");
+    goTo("role");
     setRole(preset.role);
     setAgeYears(preset.age);
     setGuardianshipConfirmed(false);
@@ -152,15 +240,28 @@ export function Assessment({
     savingFor.current = null;
   }
 
+  /** Records the health-data consent once per flow, for a signed-in person. */
+  const recordHealthConsent = useCallback(async () => {
+    if (!isAuthenticated || consentRecorded.current) return;
+    if (alreadySigned) {
+      consentRecorded.current = true;
+      return;
+    }
+    await edge.recordConsent("health_data_processing", CONSENT_SOURCE);
+    consentRecorded.current = true;
+    await queryClient.invalidateQueries({ queryKey: CONSENT_STATUS_QUERY });
+  }, [isAuthenticated, alreadySigned, queryClient]);
+
   async function startSession() {
     if (role === null) return;
     setSubmitting(true);
     setSubmitError(false);
     setBlocked(null);
     try {
+      await recordHealthConsent();
       const payload: AssessmentCreateRequest = {
         role,
-        consentGiven,
+        consentGiven: consentGiven || alreadySigned !== undefined,
         ...(role !== "professional" ? { ageYears: Number(ageYears) } : {}),
         ...(role === "parent" ? { guardianshipConfirmed } : {}),
         ...(role === "professional" ? { professionalConfirmed, containsIdentifiableData } : {}),
@@ -168,11 +269,11 @@ export function Assessment({
       const created = await edge.createAssessment(payload);
       if (!created.allowed || created.sessionId === null) {
         setBlocked(created.reason ?? "ineligible");
-        setStep("result");
+        goTo("result");
         return;
       }
       setSessionId(created.sessionId);
-      setStep("safety");
+      goTo("safety");
     } catch {
       setSubmitError(true);
     } finally {
@@ -193,9 +294,9 @@ export function Assessment({
       // Safety-first: an emergency stop short-circuits the rest of the flow.
       if (summary.stop) {
         setResult(summary);
-        setStep("result");
+        goTo("result");
       } else {
-        setStep("concern");
+        goTo("concern");
       }
     } catch {
       setSubmitError(true);
@@ -213,7 +314,7 @@ export function Assessment({
         await edge.submitAssessmentAnswer(sessionId, { kind: "complaint", name: phrase });
       }
       setResult(await edge.getAssessmentSummary(sessionId));
-      setStep("result");
+      goTo("result");
     } catch {
       setSubmitError(true);
     } finally {
@@ -226,6 +327,8 @@ export function Assessment({
     savingFor.current = sessionId;
     setSaveFailed(false);
     try {
+      // Saving to an account is where an anonymous person's consent becomes theirs.
+      await recordHealthConsent();
       const { token } = await edge.requestAssessmentClaimToken(sessionId);
       const outcome = await edge.claimAssessment(token);
       if (outcome.success) {
@@ -237,7 +340,7 @@ export function Assessment({
     } catch {
       setSaveFailed(true);
     }
-  }, [sessionId, queryClient]);
+  }, [sessionId, queryClient, recordHealthConsent]);
 
   // Inside their own space, a result is saved to the account as soon as it is
   // shown -- the history is the point of having one. Once per session.
@@ -260,6 +363,9 @@ export function Assessment({
     );
   }
 
+  const primaryLink =
+    "inline-flex items-center justify-center rounded-md bg-somnus-primary-strong px-4 py-2 font-medium text-white hover:brightness-110";
+
   return (
     // The public route has no app-shell layout, so the page owns its `main`
     // landmark (a11y baseline: one main landmark per document). Embedded in
@@ -267,202 +373,255 @@ export function Assessment({
     <Wrapper
       aria-labelledby="assessment-heading"
       className={
-        embedded ? "flex max-w-2xl flex-col gap-6" : "mx-auto flex max-w-2xl flex-col gap-6 p-6"
+        embedded
+          ? "mx-auto flex w-full max-w-3xl flex-col gap-6"
+          : "mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 sm:p-6"
       }
     >
-      <div>
-        <h1 id="assessment-heading" className="text-2xl font-semibold">
+      <header className="flex flex-col gap-1">
+        <h1
+          id="assessment-heading"
+          ref={heading}
+          tabIndex={-1}
+          className="text-2xl font-semibold sm:text-3xl"
+        >
           {t("assessment.title")}
         </h1>
-        <p className="mt-1 text-somnus-subtle">{t("assessment.intro")}</p>
-      </div>
+        <p className="text-somnus-subtle">{t("assessment.intro")}</p>
+      </header>
+
+      <StepProgress step={step} />
 
       {step === "role" ? (
-        <fieldset className="flex flex-col gap-3">
-          <legend className="text-lg font-medium">{t("assessment.role.legend")}</legend>
-          {roleOptions.map((option) => (
-            <label key={option} className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="role"
-                value={option}
-                checked={role === option}
-                onChange={() => setRole(option)}
-              />
-              {t(`assessment.role.${option}`)}
-            </label>
-          ))}
+        <StepCard title={t("assessment.role.title")} intro={t("assessment.role.intro")}>
+          <fieldset className="flex flex-col gap-3">
+            <legend className="mb-3 font-medium">{t("assessment.role.legend")}</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {roleOptions.map((option) => (
+                <ChoiceCard
+                  key={option}
+                  type="radio"
+                  name="role"
+                  value={option}
+                  checked={role === option}
+                  onChange={() => setRole(option)}
+                  label={t(`assessment.role.${option}`)}
+                  hint={t(`assessment.role.${option}Hint`)}
+                />
+              ))}
+            </div>
+          </fieldset>
 
           {role === "adult" || role === "parent" ? (
-            <label className="mt-2 flex flex-col gap-1">
-              <span className="text-sm font-medium">
+            <label className="flex flex-col gap-1">
+              <span className="font-medium">
                 {t(role === "parent" ? "assessment.role.ageMinor" : "assessment.role.ageAdult")}
               </span>
               <input
                 type="number"
+                inputMode="numeric"
                 min={0}
                 max={120}
                 value={ageYears}
                 onChange={(event) => setAgeYears(event.target.value)}
-                className="w-32 rounded-md border border-somnus-muted/40 bg-somnus-surface px-3 py-2"
+                className="w-36 rounded-lg border border-somnus-muted/40 bg-somnus-surface px-3 py-2.5 text-lg"
               />
             </label>
           ) : null}
 
           {role === "parent" ? (
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={guardianshipConfirmed}
-                onChange={(event) => setGuardianshipConfirmed(event.target.checked)}
-              />
-              {t("assessment.role.guardianship")}
-            </label>
+            <ChoiceCard
+              type="checkbox"
+              checked={guardianshipConfirmed}
+              onChange={(event) => setGuardianshipConfirmed(event.target.checked)}
+              label={t("assessment.role.guardianship")}
+            />
           ) : null}
 
           {role === "professional" ? (
-            <>
+            <div className="flex flex-col gap-3">
               <p className="text-sm text-somnus-subtle">{t("assessment.role.professionalNote")}</p>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={professionalConfirmed}
-                  onChange={(event) => setProfessionalConfirmed(event.target.checked)}
-                />
-                {t("assessment.role.professionalConfirm")}
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={containsIdentifiableData}
-                  onChange={(event) => setContainsIdentifiableData(event.target.checked)}
-                />
-                {t("assessment.role.identifiable")}
-              </label>
-            </>
+              <ChoiceCard
+                type="checkbox"
+                checked={professionalConfirmed}
+                onChange={(event) => setProfessionalConfirmed(event.target.checked)}
+                label={t("assessment.role.professionalConfirm")}
+              />
+              <ChoiceCard
+                type="checkbox"
+                checked={containsIdentifiableData}
+                onChange={(event) => setContainsIdentifiableData(event.target.checked)}
+                label={t("assessment.role.identifiable")}
+              />
+            </div>
           ) : null}
 
-          <div className="mt-2">
+          <StepActions>
+            <span />
             <Button onClick={() => reset("consent")} disabled={!roleValid}>
               {t("assessment.actions.next")}
             </Button>
-          </div>
-        </fieldset>
+          </StepActions>
+        </StepCard>
       ) : null}
 
       {step === "consent" ? (
-        <fieldset className="flex flex-col gap-3">
-          <legend className="text-lg font-medium">{t("assessment.consent.legend")}</legend>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={consentGiven}
-              onChange={(event) => setConsentGiven(event.target.checked)}
-            />
-            {t("assessment.consent.label")}
-          </label>
-          <p className="text-sm text-somnus-subtle">{t("assessment.consent.note")}</p>
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setStep("role")}>
+        <StepCard title={t("assessment.consent.legend")} intro={t("assessment.consent.intro")}>
+          {legalQuery.isPending ? (
+            <p role="status">{t("legal.loading")}</p>
+          ) : !healthDocument ? (
+            <div className="flex flex-col gap-2">
+              <p role="alert" className="text-somnus-danger">
+                {t("legal.loadError")}
+              </p>
+              <div>
+                <Button variant="secondary" onClick={() => void legalQuery.refetch()}>
+                  {t("legal.retry")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <LegalDocument
+                document={healthDocument}
+                {...(alreadySigned?.consentedAt ? { signedAt: alreadySigned.consentedAt } : {})}
+                scrollable
+              />
+              {alreadySigned?.consentedAt ? (
+                <p role="status" className="text-somnus-success">
+                  {t("assessment.consent.alreadySigned", {
+                    date: formatDateTime(alreadySigned.consentedAt, locale),
+                  })}
+                </p>
+              ) : (
+                <ChoiceCard
+                  type="checkbox"
+                  checked={consentGiven}
+                  onChange={(event) => setConsentGiven(event.target.checked)}
+                  label={t("assessment.consent.label")}
+                  hint={
+                    isAuthenticated
+                      ? t("assessment.consent.recordedHint")
+                      : t("assessment.consent.anonymousHint")
+                  }
+                />
+              )}
+              <p className="text-sm text-somnus-subtle">{t("assessment.consent.note")}</p>
+            </>
+          )}
+          <SubmitError show={submitError} />
+          <StepActions>
+            <Button variant="secondary" onClick={() => goTo("role")}>
               {t("assessment.actions.back")}
             </Button>
-            <Button onClick={startSession} disabled={!consentGiven || submitting}>
+            <Button
+              onClick={startSession}
+              disabled={
+                !healthDocument || submitting || (!consentGiven && alreadySigned === undefined)
+              }
+            >
               {t("assessment.actions.next")}
             </Button>
-          </div>
-          {submitError ? (
-            <p role="alert" className="text-somnus-danger">
-              {t("assessment.submitError")}
-            </p>
-          ) : null}
-        </fieldset>
+          </StepActions>
+        </StepCard>
       ) : null}
 
       {step === "safety" ? (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-lg font-medium">{t("assessment.safety.legend")}</h2>
-            <p className="text-sm text-somnus-subtle">{t("assessment.safety.intro")}</p>
-          </div>
-          {safetyPrompts.map((prompt) => (
-            <fieldset key={prompt.signalId} className="flex flex-col gap-1">
-              <legend className="text-sm font-medium">{prompt.question}</legend>
-              <div className="flex gap-4">
-                {SAFETY_OPTIONS.map((option) => (
-                  <label key={option} className="flex items-center gap-1">
-                    <input
-                      type="radio"
+        <StepCard title={t("assessment.safety.legend")} intro={t("assessment.safety.intro")}>
+          <p className="text-sm text-somnus-subtle" aria-live="polite">
+            {t("assessment.safety.answered", {
+              answered: answeredCount,
+              total: safetyPrompts.length,
+            })}
+          </p>
+          <div className="flex flex-col gap-3">
+            {safetyPrompts.map((prompt, index) => (
+              <fieldset
+                key={prompt.signalId}
+                className="flex flex-col gap-3 rounded-xl border border-somnus-muted/30 bg-somnus-surface/60 p-4"
+              >
+                <legend className="float-left flex w-full gap-3 font-medium leading-snug">
+                  <span aria-hidden="true" className="text-somnus-subtle">
+                    {index + 1}.
+                  </span>
+                  <span>{prompt.question}</span>
+                </legend>
+                <div className="flex gap-2">
+                  {SAFETY_OPTIONS.map((option) => (
+                    <SegmentedOption
+                      key={option}
                       name={prompt.signalId}
                       checked={safetyAnswers[prompt.signalId] === option}
                       onChange={() =>
                         setSafetyAnswers((current) => ({ ...current, [prompt.signalId]: option }))
                       }
+                      label={t(`assessment.safety.${option}`)}
                     />
-                    {t(`assessment.safety.${option}`)}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          ))}
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setStep("consent")}>
+                  ))}
+                </div>
+              </fieldset>
+            ))}
+          </div>
+          <SubmitError show={submitError} />
+          <StepActions>
+            <Button variant="secondary" onClick={() => goTo("consent")}>
               {t("assessment.actions.back")}
             </Button>
             <Button onClick={submitSafety} disabled={submitting}>
               {t("assessment.actions.next")}
             </Button>
-          </div>
-          {submitError ? (
-            <p role="alert" className="text-somnus-danger">
-              {t("assessment.submitError")}
-            </p>
-          ) : null}
-        </div>
+          </StepActions>
+        </StepCard>
       ) : null}
 
       {step === "concern" ? (
-        <fieldset className="flex flex-col gap-3">
-          <legend className="text-lg font-medium">{t("assessment.concern.legend")}</legend>
-          {complaintOptions.length === 0 ? (
-            <p>{t("assessment.concern.empty")}</p>
-          ) : (
-            complaintOptions.map((phrase) => (
-              <label key={phrase} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={complaints.includes(phrase)}
-                  onChange={() =>
-                    setComplaints((current) =>
-                      current.includes(phrase)
-                        ? current.filter((item) => item !== phrase)
-                        : [...current, phrase],
-                    )
-                  }
-                />
-                {phrase}
-              </label>
-            ))
-          )}
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setStep("safety")}>
+        <StepCard title={t("assessment.concern.legend")} intro={t("assessment.concern.intro")}>
+          <fieldset>
+            <legend className="sr-only">{t("assessment.concern.legend")}</legend>
+            {complaintOptions.length === 0 ? (
+              <p>{t("assessment.concern.empty")}</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {complaintOptions.map((phrase) => (
+                  <ChoiceCard
+                    key={phrase}
+                    type="checkbox"
+                    checked={complaints.includes(phrase)}
+                    onChange={() =>
+                      setComplaints((current) =>
+                        current.includes(phrase)
+                          ? current.filter((item) => item !== phrase)
+                          : [...current, phrase],
+                      )
+                    }
+                    label={phrase}
+                  />
+                ))}
+              </div>
+            )}
+          </fieldset>
+          <p className="text-sm text-somnus-subtle" aria-live="polite">
+            {t("assessment.concern.selected", { count: complaints.length })}
+          </p>
+          <SubmitError show={submitError} />
+          <StepActions>
+            <Button variant="secondary" onClick={() => goTo("safety")}>
               {t("assessment.actions.back")}
             </Button>
             <Button onClick={finishWithComplaints} disabled={submitting || complaints.length === 0}>
               {t("assessment.actions.seeResult")}
             </Button>
-          </div>
-          {submitError ? (
-            <p role="alert" className="text-somnus-danger">
-              {t("assessment.submitError")}
-            </p>
-          ) : null}
-        </fieldset>
+          </StepActions>
+        </StepCard>
       ) : null}
 
       {step === "result" ? (
         <div className="flex flex-col gap-6">
           {blocked ? (
-            <div role="alert" className="flex flex-col gap-1">
+            <div
+              role="alert"
+              className="flex flex-col gap-1 rounded-2xl border border-somnus-danger/50 bg-somnus-danger/10 p-5"
+            >
               <h2 className="text-xl font-semibold">{t("assessment.result.blockedTitle")}</h2>
               <p>{t(`assessment.result.blocked.${blocked}`)}</p>
             </div>
@@ -470,17 +629,14 @@ export function Assessment({
             <>
               <ResultView result={result} content={contentQuery.data} complaints={complaints} />
               {embedded ? (
-                <div className="flex flex-col gap-3 border-t border-somnus-muted/30 pt-4">
+                <div className="flex flex-col gap-3 rounded-2xl border border-somnus-muted/30 bg-somnus-surface/40 p-5">
                   {saved ? (
                     <>
                       <p role="status" aria-live="polite" className="text-somnus-success">
                         {t("assessment.result.autoSaved")}
                       </p>
                       <div>
-                        <Link
-                          to="/app"
-                          className="inline-flex items-center justify-center rounded-md bg-somnus-primary-strong px-4 py-2 font-medium text-white hover:brightness-110"
-                        >
+                        <Link to="/app" className={primaryLink}>
                           {t("assessment.actions.goToSpace")}
                         </Link>
                       </div>
@@ -503,7 +659,7 @@ export function Assessment({
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 border-t border-somnus-muted/30 pt-4">
+                <div className="flex flex-col gap-2 rounded-2xl border border-somnus-muted/30 bg-somnus-surface/40 p-5">
                   <p className="text-sm text-somnus-subtle">{t("assessment.result.saveHint")}</p>
                   {saved ? (
                     <p role="status" aria-live="polite" className="text-somnus-success">
@@ -511,7 +667,9 @@ export function Assessment({
                     </p>
                   ) : isAuthenticated ? (
                     <>
-                      <Button onClick={() => void save()}>{t("assessment.actions.save")}</Button>
+                      <div>
+                        <Button onClick={() => void save()}>{t("assessment.actions.save")}</Button>
+                      </div>
                       {saveFailed ? (
                         <p role="alert" className="text-somnus-danger">
                           {t("assessment.submitError")}

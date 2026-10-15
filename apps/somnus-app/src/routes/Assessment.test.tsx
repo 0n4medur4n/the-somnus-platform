@@ -3,16 +3,45 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n, renderWithProviders } from "../test/utils.js";
 
-const { getAssessmentContent, createAssessment, submitAssessmentAnswer, getAssessmentSummary } =
-  vi.hoisted(() => ({
-    getAssessmentContent: vi.fn(),
-    createAssessment: vi.fn(),
-    submitAssessmentAnswer: vi.fn(),
-    getAssessmentSummary: vi.fn(),
-  }));
-vi.mock("../lib/edge.js", () => ({
-  edge: { getAssessmentContent, createAssessment, submitAssessmentAnswer, getAssessmentSummary },
+const {
+  getAssessmentContent,
+  createAssessment,
+  submitAssessmentAnswer,
+  getAssessmentSummary,
+  getLegalDocuments,
+  getConsentStatus,
+  recordConsent,
+} = vi.hoisted(() => ({
+  getAssessmentContent: vi.fn(),
+  createAssessment: vi.fn(),
+  submitAssessmentAnswer: vi.fn(),
+  getAssessmentSummary: vi.fn(),
+  getLegalDocuments: vi.fn(),
+  getConsentStatus: vi.fn(),
+  recordConsent: vi.fn(),
 }));
+vi.mock("../lib/edge.js", () => ({
+  edge: {
+    getAssessmentContent,
+    createAssessment,
+    submitAssessmentAnswer,
+    getAssessmentSummary,
+    getLegalDocuments,
+    getConsentStatus,
+    recordConsent,
+  },
+}));
+
+const HEALTH_DOCUMENT = {
+  id: "019fe7a0-0003-7000-8000-000000000003",
+  purposeKey: "health_data_processing",
+  title: "Health Data Processing Policy",
+  version: 2,
+  locale: "es",
+  content: "## Qué datos\nTus respuestas a las preguntas.",
+  contentSha256: "c".repeat(64),
+  effectiveAt: "2026-10-15T09:00:00.000Z",
+};
 
 const { Assessment } = await import("./Assessment.js");
 
@@ -70,6 +99,40 @@ describe("Assessment flow (build plan §20 Checkpoint 10.3, safety-first)", () =
       .mockResolvedValue({ allowed: true, sessionId: "s1", reason: null });
     submitAssessmentAnswer.mockReset().mockResolvedValue(L4_SUMMARY);
     getAssessmentSummary.mockReset().mockResolvedValue(L4_SUMMARY);
+    getLegalDocuments.mockReset().mockResolvedValue({ documents: [HEALTH_DOCUMENT] });
+    getConsentStatus.mockReset();
+    recordConsent.mockReset();
+  });
+
+  it("shows the health-data document in full, with its version and fingerprint, before consent", async () => {
+    renderWithProviders(<Assessment />, { route: "/assessment" });
+    await userEvent.click(await screen.findByLabelText(t("assessment.role.adult")));
+    await userEvent.type(screen.getByLabelText(t("assessment.role.ageAdult")), "35");
+    await userEvent.click(next());
+
+    expect(await screen.findByText("Tus respuestas a las preguntas.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Qué datos" })).toBeInTheDocument();
+    expect(screen.getByTestId("document-fingerprint")).toHaveTextContent("cccc cccc");
+    // Nothing is consented until the person ticks it.
+    expect(next()).toBeDisabled();
+    await userEvent.click(screen.getByLabelText(t("assessment.consent.label")));
+    expect(next()).toBeEnabled();
+    // Anonymous: there is no account to record a receipt in yet.
+    await userEvent.click(next());
+    await waitFor(() => expect(createAssessment).toHaveBeenCalled());
+    expect(recordConsent).not.toHaveBeenCalled();
+  });
+
+  it("will not take consent when the document cannot be loaded", async () => {
+    getLegalDocuments.mockRejectedValue(new Error("down"));
+    renderWithProviders(<Assessment />, { route: "/assessment" });
+    await userEvent.click(await screen.findByLabelText(t("assessment.role.adult")));
+    await userEvent.type(screen.getByLabelText(t("assessment.role.ageAdult")), "35");
+    await userEvent.click(next());
+
+    expect(await screen.findByText(t("legal.loadError"))).toBeInTheDocument();
+    expect(screen.queryByLabelText(t("assessment.consent.label"))).toBeNull();
+    expect(next()).toBeDisabled();
   });
 
   it("adult path: role -> consent -> safety -> concern -> the L4 result", async () => {

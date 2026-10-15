@@ -10,6 +10,7 @@ import {
 import { type ChangeEvent, useId, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import { z } from "zod";
 import { accountViewOf } from "../auth/account-view.js";
 import { useAuth } from "../auth/useAuth.js";
@@ -240,6 +241,21 @@ export function Profile() {
           </div>
         </dl>
         <p className="text-sm text-somnus-subtle">{t("profile.emailHint")}</p>
+      </section>
+
+      <section aria-labelledby="consents-heading" className="flex flex-col gap-2">
+        <h2 id="consents-heading" className="text-lg font-semibold">
+          {t("profile.consentsTitle")}
+        </h2>
+        <p className="text-sm text-somnus-subtle">{t("profile.consentsBody")}</p>
+        <div>
+          <Link
+            to="/app/consents"
+            className="font-medium text-somnus-primary underline-offset-4 hover:underline"
+          >
+            {t("profile.consentsLink")}
+          </Link>
+        </div>
       </section>
 
       <section aria-labelledby="details-heading" className="flex flex-col gap-4">

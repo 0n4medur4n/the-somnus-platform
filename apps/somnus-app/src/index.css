@@ -80,3 +80,23 @@ body {
 .skip-link:focus {
   top: 0.5rem;
 }
+
+/* Printing one legal document (components/LegalDocument.tsx): everything but
+   the marked element is hidden, and the copy prints dark-on-white. */
+@media print {
+  body[data-printing] * {
+    visibility: hidden;
+  }
+  body[data-printing] [data-print-root],
+  body[data-printing] [data-print-root] * {
+    visibility: visible;
+    color: #000;
+    background: #fff;
+    border-color: #999;
+  }
+  body[data-printing] [data-print-root] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+}

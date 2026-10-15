@@ -236,6 +236,40 @@ describe("ConsentProxyService (composition)", () => {
     expect(await service.getCurrent(SESSION, "corr-1")).toEqual({ purposes: [] });
   });
 
+  it("lists the actor's signed consents with the exact text, and refuses an altered shape", async () => {
+    const record = {
+      receiptId: UUIDv7(),
+      purposeKey: "health_data_processing",
+      source: "morpheo-assessment",
+      consentedAt: "2026-10-15T10:00:00.000Z",
+      document: {
+        id: UUIDv7(),
+        purposeKey: "health_data_processing",
+        title: "Health Data Processing Policy",
+        version: 2,
+        locale: "es",
+        content: "Texto",
+        contentSha256: "b".repeat(64),
+        effectiveAt: "2026-10-15T09:00:00.000Z",
+      },
+    };
+    const { client } = makeFakeIdentityClient((req) => {
+      expect(req.path).toBe("/v1/consents/receipts");
+      expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
+      return { status: 200, body: { receipts: [record] } };
+    });
+    const service = new ConsentProxyService(client, fakeResolver);
+    expect(await service.getRecords(SESSION, "corr-1")).toEqual({ receipts: [record] });
+
+    const { client: broken } = makeFakeIdentityClient(() => ({
+      status: 200,
+      body: { receipts: [{ ...record, document: { ...record.document, contentSha256: "x" } }] },
+    }));
+    await expect(
+      new ConsentProxyService(broken, fakeResolver).getRecords(SESSION, "corr-1"),
+    ).rejects.toMatchObject({ code: "INTERNAL" });
+  });
+
   it("records consent, forwarding actor and body, returning the receipt", async () => {
     const receipt = {
       id: UUIDv7(),
