@@ -67,7 +67,11 @@ describe("sign-in link sent by The Somnus (VITE_SIGN_IN_EMAIL=somnus)", () => {
 
     await fresh.sendLoginLink("ada@example.com");
 
-    expect(requestSignInLink).toHaveBeenCalledWith({ email: "ada@example.com", locale: "ca" });
+    expect(requestSignInLink).toHaveBeenCalledWith({
+      email: "ada@example.com",
+      locale: "ca",
+      client: "app",
+    });
     expect(sendSignInLinkToEmail).not.toHaveBeenCalled();
     expect(fresh.storedEmail()).toBe("ada@example.com");
 

@@ -91,6 +91,16 @@ describe("POST /v1/auth/email-link (sign-in link sent from our own domain)", () 
     expect(workerRequests).toHaveLength(1);
   });
 
+  it("sends a console sign-in to the console's callback", async () => {
+    const res = await request({ email: unique(), locale: "en", client: "console" });
+    expect(res.statusCode).toBe(204);
+    const task = JSON.parse(workerRequests[0]?.body ?? "{}") as { link: string };
+    const link = new URL(task.link);
+    expect(`${link.origin}${link.pathname}`).toBe(
+      loadEdgeConfig(process.env).SIGN_IN_CONSOLE_CALLBACK_URL,
+    );
+  });
+
   it("needs no session and no CSRF token: it happens before sign-in", async () => {
     const res = await request({ email: unique(), locale: "es" });
     expect(res.statusCode).toBe(204);

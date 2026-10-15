@@ -1,10 +1,13 @@
+import { isSupportedLocale } from "@somnus/api-contracts";
 import {
   isSignInWithEmailLink,
   sendSignInLinkToEmail,
   signInWithEmailLink,
   signOut,
 } from "firebase/auth";
+import { env } from "../config/env.js";
 import i18n from "../i18n/index.js";
+import { edge } from "../lib/edge.js";
 import { getFirebaseAuth } from "../lib/firebase.js";
 
 /**
@@ -25,13 +28,41 @@ function callbackUrl(): string {
 }
 
 export async function sendLoginLink(email: string): Promise<void> {
-  const auth = getFirebaseAuth();
-  await sendSignInLinkToEmail(auth, email, { url: callbackUrl(), handleCodeInApp: true });
+  if (env.VITE_SIGN_IN_EMAIL === "somnus") {
+    const lng = i18n.resolvedLanguage;
+    await edge.requestSignInLink({
+      email,
+      locale: lng && isSupportedLocale(lng) ? lng : "es",
+      client: "console",
+    });
+  } else {
+    const auth = getFirebaseAuth();
+    await sendSignInLinkToEmail(auth, email, { url: callbackUrl(), handleCodeInApp: true });
+  }
   window.sessionStorage.setItem(EMAIL_KEY, email);
 }
 
+/**
+ * The link we email carries only the one-time code (see edge-api's
+ * auth-email-link). The Firebase SDK also expects the project's web API key in
+ * the link -- public by design, it is in this bundle anyway -- so it is added
+ * back here, in the browser, instead of travelling in every email.
+ */
+export function withApiKey(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.searchParams.has("oobCode") && !parsed.searchParams.has("apiKey")) {
+      parsed.searchParams.set("apiKey", env.VITE_FIREBASE_API_KEY);
+      return parsed.toString();
+    }
+  } catch {
+    /* not a URL: leave it to Firebase to refuse */
+  }
+  return url;
+}
+
 export function isEmailLink(url: string): boolean {
-  return isSignInWithEmailLink(getFirebaseAuth(), url);
+  return isSignInWithEmailLink(getFirebaseAuth(), withApiKey(url));
 }
 
 export function storedEmail(): string | null {
@@ -41,7 +72,7 @@ export function storedEmail(): string | null {
 /** Completes the email-link sign-in and returns a fresh Firebase ID token. */
 export async function completeEmailLinkSignIn(email: string, url: string): Promise<string> {
   const auth = getFirebaseAuth();
-  const credential = await signInWithEmailLink(auth, email, url);
+  const credential = await signInWithEmailLink(auth, email, withApiKey(url));
   window.sessionStorage.removeItem(EMAIL_KEY);
   return credential.user.getIdToken();
 }

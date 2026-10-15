@@ -50,3 +50,47 @@ describe("firebase-auth", () => {
     expect(mocks.signOut).toHaveBeenCalled();
   });
 });
+
+describe("sign-in link sent by The Somnus (VITE_SIGN_IN_EMAIL=somnus)", () => {
+  it("asks edge-api for the link, in the current language, and never calls Firebase's mailer", async () => {
+    vi.resetModules();
+    const requestSignInLink = vi.fn().mockResolvedValue(undefined);
+    const sendSignInLinkToEmail = vi.fn();
+    vi.doMock("firebase/auth", () => ({ ...mocks, sendSignInLinkToEmail }));
+    vi.doMock("../config/env.js", () => ({
+      env: { VITE_SIGN_IN_EMAIL: "somnus", VITE_FIREBASE_API_KEY: "AIzaPUBLIC" },
+    }));
+    vi.doMock("../lib/edge.js", () => ({ edge: { requestSignInLink } }));
+    const fresh = await import("./firebase-auth.js");
+    const { default: freshI18n } = await import("../i18n/index.js");
+    await freshI18n.changeLanguage("en");
+
+    await fresh.sendLoginLink("ada@example.com");
+
+    expect(requestSignInLink).toHaveBeenCalledWith({
+      email: "ada@example.com",
+      locale: "en",
+      client: "console",
+    });
+    expect(sendSignInLinkToEmail).not.toHaveBeenCalled();
+    expect(fresh.storedEmail()).toBe("ada@example.com");
+
+    // The emailed link has only the code; the public key is added back in the browser.
+    expect(
+      fresh.withApiKey("https://console.thesomnus.com/auth/callback?mode=signIn&oobCode=C&lng=es"),
+    ).toBe(
+      "https://console.thesomnus.com/auth/callback?mode=signIn&oobCode=C&lng=es&apiKey=AIzaPUBLIC",
+    );
+    // A Firebase-built link already has its key and is left alone.
+    const full = "https://x.firebaseapp.com/__/auth/action?apiKey=K&mode=signIn&oobCode=C";
+    expect(fresh.withApiKey(full)).toBe(full);
+    // Not a sign-in link: untouched.
+    expect(fresh.withApiKey("https://console.thesomnus.com/users")).toBe(
+      "https://console.thesomnus.com/users",
+    );
+
+    vi.doUnmock("firebase/auth");
+    vi.doUnmock("../config/env.js");
+    vi.doUnmock("../lib/edge.js");
+  });
+});

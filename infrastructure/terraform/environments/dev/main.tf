@@ -181,8 +181,9 @@ module "run_edge_api" {
     FIRESTORE_PROJECT_ID = var.project_id
     # Sign-in links are emailed by The Somnus (worker + Brevo), not by Firebase:
     # the link lands here directly, carrying only the one-time code.
-    SIGN_IN_CALLBACK_URL = "https://app.thesomnus.com/auth/callback"
-    WORKER_BASE_URL      = "https://somnus-worker-lx3fvb5r5q-ey.a.run.app"
+    SIGN_IN_CALLBACK_URL         = "https://app.thesomnus.com/auth/callback"
+    SIGN_IN_CONSOLE_CALLBACK_URL = "https://console.thesomnus.com/auth/callback"
+    WORKER_BASE_URL              = "https://somnus-worker-lx3fvb5r5q-ey.a.run.app"
     # Private bucket for profile photos; edge-api is its only reader/writer.
     PROFILE_PHOTOS_BUCKET = module.profile_photos_bucket.bucket_name
   }

@@ -112,6 +112,8 @@ export const EdgeConfigSchema = z.object({
   // Where a sign-in link lands: the app's callback route. The emailed link points
   // here directly (not at Firebase's handler), with only the one-time code.
   SIGN_IN_CALLBACK_URL: z.string().url().default("http://localhost:5173/auth/callback"),
+  // The admin console's own callback, for staff signing in to the console.
+  SIGN_IN_CONSOLE_CALLBACK_URL: z.string().url().default("http://localhost:5174/auth/callback"),
   // How internal calls are authenticated. `gcp`: mint a real Google
   // OIDC identity token (production on Cloud Run). `insecure-dev`: send
   // a fixed dev token -- for local/docker/tests where there is no GCP

@@ -45,6 +45,8 @@ export const SignInLinkRequestSchema = z
   .object({
     email: z.string().trim().toLowerCase().email().max(320),
     locale: LocaleSchema,
+    /** Which front end the link opens: the app (default) or the admin console. */
+    client: z.enum(["app", "console"]).default("app"),
   })
   .strict();
 export type SignInLinkRequest = z.infer<typeof SignInLinkRequestSchema>;
