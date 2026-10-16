@@ -30,6 +30,25 @@ export class GoogleIdTokenTokenProvider implements TokenProvider {
   }
 }
 
+/**
+ * An OAuth access token for a Google API (not an ID token for a Cloud Run
+ * service): what calling Cloud Tasks, for instance, needs. Uses the runtime's
+ * own service account; nothing is configured or stored here.
+ */
+export class GoogleAccessTokenProvider {
+  private readonly auth: GoogleAuth;
+
+  constructor(scopes: string[] = ["https://www.googleapis.com/auth/cloud-platform"]) {
+    this.auth = new GoogleAuth({ scopes });
+  }
+
+  async getAccessToken(): Promise<string> {
+    const token = await this.auth.getAccessToken();
+    if (!token) throw new Error("google-auth-library returned no access token");
+    return token;
+  }
+}
+
 export async function createGoogleTokenProvider(
   options: GoogleTokenProviderOptions,
 ): Promise<TokenProvider> {

@@ -184,6 +184,9 @@ module "run_edge_api" {
     SIGN_IN_CALLBACK_URL         = "https://app.thesomnus.com/auth/callback"
     SIGN_IN_CONSOLE_CALLBACK_URL = "https://console.thesomnus.com/auth/callback"
     WORKER_BASE_URL              = "https://somnus-worker-lx3fvb5r5q-ey.a.run.app"
+    # Emails are queued, not sent inline (see "Notification queue" below).
+    NOTIFICATIONS_QUEUE        = module.notifications_queue.queue_id
+    NOTIFICATIONS_TASK_INVOKER = module.sa_edge_api.email
     # Private bucket for profile photos; edge-api is its only reader/writer.
     PROFILE_PHOTOS_BUCKET = module.profile_photos_bucket.bucket_name
   }
@@ -514,6 +517,59 @@ resource "google_secret_manager_secret_iam_member" "report_openai_api_key" {
   secret_id = data.google_secret_manager_secret.openai_api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = module.sa_report.member
+}
+
+# --- Notification queue (build plan §5.7) ---
+#
+# The worker's Notification module is a Cloud Tasks consumer. edge-api queues
+# an email and answers at once; Cloud Tasks pushes it to the worker (waking it
+# if needed) and retries a 503 up to max_attempts -- the same 5 the module's
+# dead-letter policy counts to. Before this queue, the sign-in request waited
+# for the worker's cold start and the Brevo call (~10 s of a ~19 s answer).
+module "notifications_queue" {
+  source     = "../../modules/cloud-tasks-queue"
+  project_id = var.project_id
+  region     = var.region
+  queue_id   = "notifications"
+
+  depends_on = [module.project_apis_backend]
+}
+
+# edge-api may add tasks to this queue and nothing else.
+resource "google_cloud_tasks_queue_iam_member" "edge_enqueue_notifications" {
+  project  = var.project_id
+  location = var.region
+  name     = module.notifications_queue.name
+  role     = "roles/cloudtasks.enqueuer"
+  member   = module.sa_edge_api.member
+}
+
+# Cloud Tasks signs each push as edge-api's own account (which already holds
+# run.invoker on the worker), and naming an account as a task's identity takes
+# actAs on it. Granted on that one account to itself -- not project-wide.
+resource "google_service_account_iam_member" "edge_tasks_act_as_self" {
+  service_account_id = module.sa_edge_api.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = module.sa_edge_api.member
+}
+
+# --- edge-api keep-warm ping (build plan §2, pre-approved) ---
+#
+# "Optional and pre-approved if login latency becomes a real complaint": it
+# has (2026-10-16, ~9 s of edge-api cold start on sign-in). Every 10 minutes,
+# 07:00-24:00 Europe/Madrid, a GET to the public liveness route. Nothing else
+# is kept warm; min instances stay 0 everywhere.
+module "edge_api_warm_ping" {
+  source      = "../../modules/cloud-scheduler-job"
+  project_id  = var.project_id
+  region      = var.region
+  job_id      = "edge-api-warm-ping"
+  schedule    = "*/10 7-23 * * *"
+  time_zone   = "Europe/Madrid"
+  http_method = "GET"
+  http_uri    = "${module.run_edge_api.url}/health/live"
+
+  depends_on = [module.project_apis_backend]
 }
 
 # --- Sign-in links by email (worker + Brevo) ---

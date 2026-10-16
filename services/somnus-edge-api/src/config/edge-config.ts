@@ -105,6 +105,17 @@ export const EdgeConfigSchema = z.object({
   WORKER_BASE_URL: z.string().url().default("http://127.0.0.1:3003"),
   // OIDC audience for the worker's Cloud Run URL; defaults to WORKER_BASE_URL.
   WORKER_AUDIENCE: z.string().min(1).optional(),
+  // Notification tasks go through this Cloud Tasks queue (build plan §5.7: the
+  // Notification module is a Cloud Tasks consumer), so the caller is answered
+  // as soon as the task is queued and the worker sends it in the background.
+  // Unset (local dev, tests): the task is posted to the worker directly.
+  NOTIFICATIONS_QUEUE: z
+    .string()
+    .regex(/^projects\/[a-z0-9-]+\/locations\/[a-z0-9-]+\/queues\/[A-Za-z0-9-]+$/)
+    .optional(),
+  // The identity Cloud Tasks presents to the worker (an OIDC token for this
+  // service account, which holds run.invoker on the worker). Required with a queue.
+  NOTIFICATIONS_TASK_INVOKER: z.string().email().optional(),
   // Private Cloud Storage bucket for profile photos (build plan §388). Unset in
   // local dev and tests, where photos live in memory; a production process with
   // it unset refuses photo uploads rather than keeping them in memory.
