@@ -54,6 +54,9 @@ function captureProvision() {
   return { client, requests, captured };
 }
 
+/** Who the account holder is: required on every registration. */
+const ABOUT = { gender: "female", country: "ES", dateOfBirth: "1990-05-17" } as const;
+
 describe("RegistrationService", () => {
   it("provisions with the session identity, memoizes the id, and returns /v1/me", async () => {
     const setSomnusUserId = vi.fn().mockResolvedValue(undefined);
@@ -65,6 +68,7 @@ describe("RegistrationService", () => {
           ageYears: 34,
           firstName: "Ada",
           lastName: "Lovelace",
+          ...ABOUT,
           locale: "ca",
           consents: CONSENTS,
           providerUserId: "firebase-uid-1",
@@ -85,6 +89,7 @@ describe("RegistrationService", () => {
         ageYears: 34,
         firstName: "Ada",
         lastName: "Lovelace",
+        ...ABOUT,
         locale: "ca",
         consents: CONSENTS,
       },
@@ -103,7 +108,14 @@ describe("RegistrationService", () => {
     await expect(
       service.register(
         session(null),
-        { role: "adult", ageYears: 30, firstName: "A", lastName: "B", consents: CONSENTS },
+        {
+          role: "adult",
+          ageYears: 30,
+          firstName: "A",
+          lastName: "B",
+          ...ABOUT,
+          consents: CONSENTS,
+        },
         "corr-1",
       ),
     ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
@@ -117,7 +129,14 @@ describe("RegistrationService", () => {
     await expect(
       service.register(
         session("u@example.com"),
-        { role: "adult", ageYears: 30, firstName: "A", lastName: "B", consents: CONSENTS },
+        {
+          role: "adult",
+          ageYears: 30,
+          firstName: "A",
+          lastName: "B",
+          ...ABOUT,
+          consents: CONSENTS,
+        },
         "corr-1",
       ),
     ).rejects.toMatchObject({ code: "INTERNAL" });
@@ -133,7 +152,14 @@ describe("RegistrationService", () => {
     await expect(
       service.register(
         session("u@example.com"),
-        { role: "adult", ageYears: 30, firstName: "A", lastName: "B", consents: CONSENTS },
+        {
+          role: "adult",
+          ageYears: 30,
+          firstName: "A",
+          lastName: "B",
+          ...ABOUT,
+          consents: CONSENTS,
+        },
         "corr-1",
       ),
     ).rejects.toMatchObject({ code: "CONFLICT" });

@@ -45,6 +45,12 @@ export const individualProfiles = mysqlTable("individual_profiles", {
   // footguns Date objects would introduce for no benefit here.
   dateOfBirth: date("date_of_birth", { mode: "string" }),
   phone: varchar("phone", { length: 32 }),
+  // Who the account holder is, asked at registration (NULL on profiles that
+  // predate it). Profile data only: no Morpheo rule reads it. Country is the
+  // ISO 3166-1 alpha-2 code; the name is shown in the reader's language.
+  gender: mysqlEnum("gender", ["male", "female", "prefer_not_to_say"]),
+  country: varchar("country", { length: 2 }),
+  city: varchar("city", { length: 120 }),
   // Registration role branch (Addendum A, Checkpoint 14.1). Stored so the
   // registration funnel metrics (14.3) and the guardian flow are auditable.
   // The vocabulary is Morpheo's clinical role vocabulary, never a second enum.

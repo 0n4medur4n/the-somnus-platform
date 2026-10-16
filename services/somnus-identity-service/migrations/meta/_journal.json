@@ -36,6 +36,13 @@
       "when": 1791215052981,
       "tag": "0004_profile_photo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1792170236168,
+      "tag": "0005_profile_about",
+      "breakpoints": true
     }
   ]
 }

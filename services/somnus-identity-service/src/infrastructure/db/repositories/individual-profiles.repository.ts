@@ -1,4 +1,4 @@
-import { UUIDv7 } from "@somnus/api-contracts";
+import { type CountryCode, type Gender, UUIDv7 } from "@somnus/api-contracts";
 import { eq } from "drizzle-orm";
 import type { Db } from "../db.client.js";
 import { individualProfiles } from "../schema/index.js";
@@ -14,6 +14,9 @@ export type NewIndividualProfile = UserScope & {
   lastName: string;
   dateOfBirth?: string;
   phone?: string;
+  gender?: Gender;
+  country?: CountryCode;
+  city?: string;
   /**
    * Null for profiles created before the role branch existed, and for any
    * path that provisions a profile without going through registration.
@@ -31,6 +34,9 @@ export type ProfilePatch = {
   lastName?: string;
   phone?: string | null;
   dateOfBirth?: string | null;
+  gender?: Gender;
+  country?: CountryCode;
+  city?: string | null;
 };
 
 /** Every method takes a UserScope: this is profile data that belongs to exactly one user. */
@@ -46,6 +52,9 @@ export class IndividualProfilesRepository {
       lastName: input.lastName,
       dateOfBirth: input.dateOfBirth,
       phone: input.phone,
+      gender: input.gender,
+      country: input.country,
+      city: input.city,
       registrationRole: input.registrationRole,
       guardianshipConfirmed: input.guardianshipConfirmed,
       minorAgeBand: input.minorAgeBand,

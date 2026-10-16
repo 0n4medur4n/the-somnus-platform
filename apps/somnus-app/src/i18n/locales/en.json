@@ -120,11 +120,23 @@
       "guardianship": "You must confirm that you are the mother, father or legal guardian.",
       "minorAgeBandRequired": "Select the age range of the minor.",
       "specialtyRequired": "Select your specialty.",
-      "consentRequired": "You must accept this to continue."
+      "consentRequired": "You must accept this to continue.",
+      "dobRequired": "Enter your date of birth.",
+      "dobMinor": "You must be an adult to open an account.",
+      "genderRequired": "Choose an option (you can choose “Prefer not to say”).",
+      "countryRequired": "Choose your country."
     },
     "lockedNotice": "You are joining by organization invitation, so your account is created as a professional account.",
     "readTerms": "Read the Terms of Service",
-    "readPrivacy": "Read the Privacy Policy"
+    "readPrivacy": "Read the Privacy Policy",
+    "aboutTitle": "About you",
+    "aboutIntro": "A few details to complete your profile. They help us understand who uses The Somnus; they never change your guidance.",
+    "dobLabel": "Date of birth",
+    "dobHint": "You must be an adult to hold an account.",
+    "phoneLabel": "Phone",
+    "consentMarketing": "I would like to receive news from The Somnus (optional)",
+    "consentMarketingHint": "You can unsubscribe at any time from “My consents”.",
+    "readMarketing": "Read the communications consent"
   },
   "invitation": {
     "title": "Invitation to The Somnus",
@@ -272,7 +284,8 @@
     },
     "consentsTitle": "Privacy and consents",
     "consentsBody": "See what you accepted, print it or withdraw it.",
-    "consentsLink": "View my consents"
+    "consentsLink": "View my consents",
+    "aboutTitle": "About you"
   },
   "security": {
     "title": "Security",
@@ -408,5 +421,18 @@
     "title": "Page not found",
     "description": "The page you're looking for doesn't exist.",
     "back": "Back to home"
+  },
+  "about": {
+    "genderLabel": "Gender",
+    "gender": {
+      "male": "Man",
+      "female": "Woman",
+      "prefer_not_to_say": "Prefer not to say"
+    },
+    "countryLabel": "Country",
+    "countryPlaceholder": "Choose your country",
+    "cityLabel": "City",
+    "optional": "Optional",
+    "choose": "Choose an option"
   }
 }

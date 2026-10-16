@@ -26,6 +26,9 @@ import {
 import { InternalRolesService } from "../../src/modules/admin/internal-roles.service.js";
 import { getTestDb, resetTables } from "./db-test-helper.js";
 
+/** Who the account holder is: required on every registration since the profile starts complete. */
+const ABOUT = { gender: "female", country: "ES", dateOfBirth: "1990-05-17" } as const;
+
 type JsonResponse = { statusCode: number; body: unknown };
 
 async function inject(
@@ -256,6 +259,26 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
       expect(after.individualProfile).not.toHaveProperty("dateOfBirth");
     });
 
+    it("updates gender, country and city, and clears the city with null", async () => {
+      const userId = await personWithProfile("about-patch@example.com");
+      const set = await inject(server, "PATCH", "/v1/me/profile", {
+        actorId: userId,
+        payload: { gender: "male", country: "FR", city: "Lyon" },
+      });
+      expect(set.statusCode).toBe(204);
+      const me = await inject(server, "GET", "/v1/me", { actorId: userId });
+      expect(me.body).toMatchObject({
+        individualProfile: { gender: "male", country: "FR", city: "Lyon" },
+      });
+
+      await inject(server, "PATCH", "/v1/me/profile", { actorId: userId, payload: { city: null } });
+      const after = (await inject(server, "GET", "/v1/me", { actorId: userId })).body as {
+        individualProfile: Record<string, unknown>;
+      };
+      expect(after.individualProfile).not.toHaveProperty("city");
+      expect(after.individualProfile).toMatchObject({ country: "FR" });
+    });
+
     it("rejects a date of birth that would make the account holder a minor", async () => {
       const userId = await personWithProfile("minor-dob@example.com");
       const minor = `${new Date().getUTCFullYear() - 10}-01-01`;
@@ -483,6 +506,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("adult branch: creates the user, links the identity, stores the branch, records one receipt per purpose", async () => {
       const res = await provision({
         providerUserId: "firebase-new-1",
+        ...ABOUT,
         email: "new@example.com",
         firstName: "Ada",
         lastName: "Lovelace",
@@ -519,9 +543,73 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
       expect(consented.get("health_data_processing")).toBe(false);
     });
 
+    it("stores who they are -- gender, country, city, birth date, phone -- and /v1/me returns it", async () => {
+      const res = await provision({
+        providerUserId: "firebase-about-1",
+        email: "about@example.com",
+        firstName: "Mercè",
+        lastName: "Rodoreda",
+        gender: "prefer_not_to_say",
+        country: "AD",
+        city: "Andorra la Vella",
+        dateOfBirth: "1985-02-11",
+        phone: "+376 600 000",
+        role: "adult",
+        ageYears: 40,
+        consents: CONSENTS,
+      });
+      expect(res.statusCode).toBe(200);
+      const userId = (res.body as { userId: string }).userId;
+
+      const me = await inject(server, "GET", "/v1/me", { actorId: userId });
+      expect(me.body).toMatchObject({
+        individualProfile: {
+          gender: "prefer_not_to_say",
+          country: "AD",
+          city: "Andorra la Vella",
+          dateOfBirth: "1985-02-11",
+          phone: "+376 600 000",
+        },
+      });
+      // Marketing is opt-in: not ticked, no receipt.
+      expect((await consentedPurposes(userId)).get("marketing")).toBe(false);
+    });
+
+    it("records a marketing receipt only when the person ticked it", async () => {
+      const res = await provision({
+        providerUserId: "firebase-marketing-1",
+        ...ABOUT,
+        email: "marketing@example.com",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        role: "adult",
+        ageYears: 35,
+        consents: { ...CONSENTS, marketing: true },
+      });
+      expect(res.statusCode).toBe(200);
+      const consented = await consentedPurposes((res.body as { userId: string }).userId);
+      expect(consented.get("marketing")).toBe(true);
+    });
+
+    it("rejects a registration without gender or country", async () => {
+      const base = {
+        providerUserId: "firebase-noabout-1",
+        email: "noabout@example.com",
+        firstName: "No",
+        lastName: "About",
+        dateOfBirth: "1990-05-17",
+        role: "adult",
+        ageYears: 35,
+        consents: CONSENTS,
+      };
+      expect((await provision({ ...base, country: "ES" })).statusCode).toBe(400);
+      expect((await provision({ ...base, gender: "male" })).statusCode).toBe(400);
+    });
+
     it("parent branch: guardianship confirmation and minor age band are persisted verbatim", async () => {
       const res = await provision({
         providerUserId: "firebase-parent-1",
+        ...ABOUT,
         email: "parent@example.com",
         firstName: "Marie",
         lastName: "Curie",
@@ -553,6 +641,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("professional branch: stores the profile, opens a pending verification case, assigns NO role", async () => {
       const res = await provision({
         providerUserId: "firebase-pro-1",
+        ...ABOUT,
         email: "pro-branch@example.com",
         firstName: "Grace",
         lastName: "Hopper",
@@ -590,6 +679,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("is idempotent: provisioning the same provider id returns the same user", async () => {
       const payload = {
         providerUserId: "firebase-dup-1",
+        ...ABOUT,
         email: "dup@example.com",
         firstName: "Grace",
         lastName: "Hopper",
@@ -611,6 +701,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("rejects an adult who declares a minor age", async () => {
       const res = await provision({
         providerUserId: "firebase-minor-1",
+        ...ABOUT,
         email: "minor@example.com",
         firstName: "Too",
         lastName: "Young",
@@ -625,6 +716,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("rejects a guardian who omits the guardianship confirmation", async () => {
       const res = await provision({
         providerUserId: "firebase-noguard-1",
+        ...ABOUT,
         email: "noguard@example.com",
         firstName: "No",
         lastName: "Confirmation",
@@ -638,6 +730,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("rejects a guardian who sets the guardianship confirmation to false", async () => {
       const res = await provision({
         providerUserId: "firebase-falseguard-1",
+        ...ABOUT,
         email: "falseguard@example.com",
         firstName: "False",
         lastName: "Confirmation",
@@ -652,6 +745,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("rejects a registration that does not accept both required purposes", async () => {
       const res = await provision({
         providerUserId: "firebase-noconsent-1",
+        ...ABOUT,
         email: "noconsent@example.com",
         firstName: "No",
         lastName: "Consent",
@@ -665,6 +759,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("rejects an unknown role branch", async () => {
       const res = await provision({
         providerUserId: "firebase-badrole-1",
+        ...ABOUT,
         email: "badrole@example.com",
         firstName: "Bad",
         lastName: "Role",
@@ -690,6 +785,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
       const provisionRes = await inject(server, "POST", "/internal/v1/users/provision", {
         payload: {
           providerUserId: "firebase-unverified-pro",
+          ...ABOUT,
           email: "unverified-pro@example.com",
           firstName: "Self",
           lastName: "Declared",
@@ -801,6 +897,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
       const res = await inject(server, "POST", "/internal/v1/users/provision", {
         payload: {
           providerUserId,
+          ...ABOUT,
           email,
           firstName: "Rosalind",
           lastName: "Franklin",
@@ -1031,6 +1128,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
       async (branch, branchFields) => {
         const res = await provision({
           providerUserId: `firebase-events-${branch}`,
+          ...ABOUT,
           email: `events-${branch}@example.com`,
           locale: "es",
           consents: CONSENTS,
@@ -1066,6 +1164,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("opens the verification funnel only for the professional branch", async () => {
       await provision({
         providerUserId: "firebase-events-noverif",
+        ...ABOUT,
         email: "noverif@example.com",
         firstName: "No",
         lastName: "Case",
@@ -1078,6 +1177,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
       published.length = 0;
       const res = await provision({
         providerUserId: "firebase-events-verif",
+        ...ABOUT,
         email: "verif@example.com",
         firstName: "Rosalind",
         lastName: "Franklin",
@@ -1101,6 +1201,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
     it("re-submitting an existing registration completes the funnel, never starts a second user", async () => {
       const payload = {
         providerUserId: "firebase-events-dup",
+        ...ABOUT,
         email: "dup-events@example.com",
         firstName: "Ada",
         lastName: "Lovelace",
@@ -1483,6 +1584,7 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
       const res = await inject(server, "POST", "/internal/v1/users/provision", {
         payload: {
           providerUserId,
+          ...ABOUT,
           email,
           firstName: "Rosalind",
           lastName: "Franklin",

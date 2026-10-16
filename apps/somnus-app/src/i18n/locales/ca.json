@@ -120,11 +120,23 @@
       "guardianship": "Has de confirmar que ets la mare, el pare o el tutor legal.",
       "minorAgeBandRequired": "Selecciona la franja d'edat del menor.",
       "specialtyRequired": "Selecciona la teva especialitat.",
-      "consentRequired": "Ho has d'acceptar per continuar."
+      "consentRequired": "Ho has d'acceptar per continuar.",
+      "dobRequired": "Indica la teva data de naixement.",
+      "dobMinor": "Has de ser major d'edat per obrir un compte.",
+      "genderRequired": "Tria una opció (pots triar «Prefereixo no dir-ho»).",
+      "countryRequired": "Tria el teu país."
     },
     "lockedNotice": "T'hi uneixes per invitació d'una organització, així que el teu compte es crea com a compte professional.",
     "readTerms": "Llegir els Termes del servei",
-    "readPrivacy": "Llegir la Política de privacitat"
+    "readPrivacy": "Llegir la Política de privacitat",
+    "aboutTitle": "Sobre tu",
+    "aboutIntro": "Unes dades per completar el teu perfil. Ens ajuden a entendre qui fa servir The Somnus; mai no canvien la teva orientació.",
+    "dobLabel": "Data de naixement",
+    "dobHint": "Has de ser major d'edat per tenir un compte.",
+    "phoneLabel": "Telèfon",
+    "consentMarketing": "Vull rebre novetats de The Somnus (opcional)",
+    "consentMarketingHint": "Et pots donar de baixa quan vulguis des d'«Els meus consentiments».",
+    "readMarketing": "Llegir el consentiment de comunicacions"
   },
   "invitation": {
     "title": "Invitació a The Somnus",
@@ -272,7 +284,8 @@
     },
     "consentsTitle": "Privacitat i consentiments",
     "consentsBody": "Consulta el que vas acceptar, imprimeix-ho o retira-ho.",
-    "consentsLink": "Veure els meus consentiments"
+    "consentsLink": "Veure els meus consentiments",
+    "aboutTitle": "Sobre tu"
   },
   "security": {
     "title": "Seguretat",
@@ -408,5 +421,18 @@
     "title": "Pàgina no trobada",
     "description": "La pàgina que busques no existeix.",
     "back": "Torna a l'inici"
+  },
+  "about": {
+    "genderLabel": "Gènere",
+    "gender": {
+      "male": "Home",
+      "female": "Dona",
+      "prefer_not_to_say": "Prefereixo no dir-ho"
+    },
+    "countryLabel": "País",
+    "countryPlaceholder": "Tria el teu país",
+    "cityLabel": "Ciutat",
+    "optional": "Opcional",
+    "choose": "Tria una opció"
   }
 }

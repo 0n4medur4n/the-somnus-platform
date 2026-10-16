@@ -120,11 +120,23 @@
       "guardianship": "Vous devez confirmer que vous êtes la mère, le père ou le tuteur légal.",
       "minorAgeBandRequired": "Sélectionnez la tranche d'âge du mineur.",
       "specialtyRequired": "Sélectionnez votre spécialité.",
-      "consentRequired": "Vous devez l'accepter pour continuer."
+      "consentRequired": "Vous devez l'accepter pour continuer.",
+      "dobRequired": "Indiquez votre date de naissance.",
+      "dobMinor": "Vous devez être majeur pour ouvrir un compte.",
+      "genderRequired": "Choisissez une option (vous pouvez choisir « Je préfère ne pas le dire »).",
+      "countryRequired": "Choisissez votre pays."
     },
     "lockedNotice": "Vous rejoignez sur invitation d'une organisation, votre compte est donc créé comme compte professionnel.",
     "readTerms": "Lire les Conditions d'utilisation",
-    "readPrivacy": "Lire la Politique de confidentialité"
+    "readPrivacy": "Lire la Politique de confidentialité",
+    "aboutTitle": "À propos de vous",
+    "aboutIntro": "Quelques informations pour compléter votre profil. Elles nous aident à comprendre qui utilise The Somnus ; elles ne changent jamais votre orientation.",
+    "dobLabel": "Date de naissance",
+    "dobHint": "Vous devez être majeur pour avoir un compte.",
+    "phoneLabel": "Téléphone",
+    "consentMarketing": "Je souhaite recevoir des nouvelles de The Somnus (facultatif)",
+    "consentMarketingHint": "Vous pouvez vous désinscrire à tout moment depuis « Mes consentements ».",
+    "readMarketing": "Lire le consentement aux communications"
   },
   "invitation": {
     "title": "Invitation à The Somnus",
@@ -272,7 +284,8 @@
     },
     "consentsTitle": "Confidentialité et consentements",
     "consentsBody": "Consultez ce que vous avez accepté, imprimez-le ou retirez-le.",
-    "consentsLink": "Voir mes consentements"
+    "consentsLink": "Voir mes consentements",
+    "aboutTitle": "À propos de vous"
   },
   "security": {
     "title": "Sécurité",
@@ -408,5 +421,18 @@
     "title": "Page introuvable",
     "description": "La page que vous recherchez n'existe pas.",
     "back": "Retour à l'accueil"
+  },
+  "about": {
+    "genderLabel": "Genre",
+    "gender": {
+      "male": "Homme",
+      "female": "Femme",
+      "prefer_not_to_say": "Je préfère ne pas le dire"
+    },
+    "countryLabel": "Pays",
+    "countryPlaceholder": "Choisissez votre pays",
+    "cityLabel": "Ville",
+    "optional": "Facultatif",
+    "choose": "Choisissez une option"
   }
 }
