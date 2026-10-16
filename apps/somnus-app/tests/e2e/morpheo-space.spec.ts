@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import es from "../../src/i18n/locales/es.json" with { type: "json" };
+import { fillAboutYou } from "./support/about.js";
 import { expect, test } from "./support/console.js";
 import { escapeRe, getSignInLink, uniqueEmail } from "./support/emulator.js";
 import { answerSafetyQuestions } from "./support/safety.js";
@@ -23,6 +24,7 @@ async function registerAdult(page: Page, email: string): Promise<void> {
   await page.getByLabel(t.register.firstName, { exact: true }).fill("Ada");
   await page.getByLabel(t.register.lastName, { exact: true }).fill("Lovelace");
   await page.getByRole("button", { name: t.register.next }).click();
+  await fillAboutYou(page, t);
   await page.getByRole("radio", { name: new RegExp(escapeRe(t.register.roleAdult)) }).check();
   await page.getByRole("button", { name: t.register.next }).click();
   await page.getByLabel(t.register.ageLabel, { exact: true }).fill("35");

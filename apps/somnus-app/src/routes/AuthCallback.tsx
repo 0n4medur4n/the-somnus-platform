@@ -1,9 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ConsentPurposeKey } from "@somnus/api-contracts";
 import {
+  AccountHolderDateOfBirthSchema,
+  COUNTRY_CODES,
   DEFAULT_LOCALE,
+  GENDERS,
   isSupportedLocale,
   MORPHEO_MINOR_AGE_BANDS,
+  PhoneSchema,
   PROFESSIONAL_SPECIALTIES,
   type RegistrationRequest,
   RegistrationRequestSchema,
@@ -31,6 +35,7 @@ import {
   classifyCallbackFailure,
   describeCallbackFailure,
 } from "../lib/auth-failure.js";
+import { browserCountry, countryOptions } from "../lib/countries.js";
 import { edge } from "../lib/edge.js";
 import { pendingInvitation } from "../lib/invitation.js";
 import { reportError } from "../lib/report-error.js";
@@ -282,11 +287,51 @@ const NameSchema = z.object({
 });
 type NameForm = z.infer<typeof NameSchema>;
 
+/** Who they are. Gender and country required ("prefer not to say" is an answer); city and phone optional. */
+const AboutSchema = z.object({
+  dateOfBirth: z
+    .string()
+    .min(1, "register.errors.dobRequired")
+    .refine((v) => AccountHolderDateOfBirthSchema.safeParse(v).success, "register.errors.dobMinor"),
+  gender: z.enum(GENDERS, { error: "register.errors.genderRequired" }),
+  country: z.enum(COUNTRY_CODES, { error: "register.errors.countryRequired" }),
+  city: z.string().trim().max(120, "errors.required"),
+  phone: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || PhoneSchema.safeParse(v).success, "profile.errors.phone"),
+});
+type AboutForm = z.infer<typeof AboutSchema>;
+type PersonForm = NameForm & AboutForm;
+
+/** The registration's profile fields, optional ones only when given. */
+function personFields(person: PersonForm) {
+  return {
+    firstName: person.firstName,
+    lastName: person.lastName,
+    gender: person.gender,
+    country: person.country,
+    dateOfBirth: person.dateOfBirth,
+    ...(person.city ? { city: person.city } : {}),
+    ...(person.phone ? { phone: person.phone } : {}),
+  };
+}
+
 /** Both required purposes, each its own checkbox and its own receipt (build plan §13). */
 const ConsentsSchema = z.object({
   termsAcceptance: z.boolean().refine((v) => v, "register.errors.consentRequired"),
   privacyPolicyAcknowledgement: z.boolean().refine((v) => v, "register.errors.consentRequired"),
+  /** Optional and unticked by default. */
+  marketing: z.boolean().optional(),
 });
+
+function consentsOf(values: { marketing?: boolean | undefined }) {
+  return {
+    termsAcceptance: true as const,
+    privacyPolicyAcknowledgement: true as const,
+    ...(values.marketing ? { marketing: true } : {}),
+  };
+}
 
 const AdultDetailsSchema = ConsentsSchema.extend({
   ageYears: z
@@ -339,11 +384,12 @@ function RegistrationForm({
   onRegistered: () => void;
 }) {
   const { t } = useTranslation();
-  const [step, setStep] = useState<"name" | "role" | "details">("name");
+  const [step, setStep] = useState<"name" | "about" | "role" | "details">("name");
   const [name, setName] = useState<NameForm | null>(null);
+  const [about, setAbout] = useState<AboutForm | null>(null);
   const [role, setRole] = useState<RoleBranch | null>(lockedRole ?? null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const total = lockedRole ? 2 : 3;
+  const total = lockedRole ? 3 : 4;
 
   /**
    * The payload is re-validated against the contract before it leaves the
@@ -374,6 +420,18 @@ function RegistrationForm({
             {...(name ? { defaults: name } : {})}
             onNext={(values) => {
               setName(values);
+              setStep("about");
+            }}
+          />
+        ) : null}
+
+        {step === "about" ? (
+          <AboutStep
+            step={{ current: 2, total }}
+            {...(about ? { defaults: about } : {})}
+            onBack={() => setStep("name")}
+            onNext={(values) => {
+              setAbout(values);
               setStep(lockedRole ? "details" : "role");
             }}
           />
@@ -381,9 +439,9 @@ function RegistrationForm({
 
         {step === "role" ? (
           <RoleStep
-            step={{ current: 2, total }}
+            step={{ current: 3, total }}
             {...(role ? { selected: role } : {})}
-            onBack={() => setStep("name")}
+            onBack={() => setStep("about")}
             onNext={(chosen) => {
               setRole(chosen);
               setStep("details");
@@ -391,15 +449,15 @@ function RegistrationForm({
           />
         ) : null}
 
-        {step === "details" && name && role ? (
+        {step === "details" && name && about && role ? (
           <DetailsStep
             role={role}
-            name={name}
+            name={{ ...name, ...about }}
             locale={locale}
-            step={{ current: lockedRole ? 2 : 3, total }}
+            step={{ current: lockedRole ? 3 : 4, total }}
             locked={lockedRole !== undefined}
             submitError={submitError}
-            onBack={() => setStep(lockedRole ? "name" : "role")}
+            onBack={() => setStep(lockedRole ? "about" : "role")}
             onSubmit={submit}
           />
         ) : null}
@@ -455,6 +513,122 @@ function NameStep({
       <Button type="submit" className="w-full">
         {t("register.next")}
       </Button>
+    </form>
+  );
+}
+
+function AboutStep({
+  step,
+  defaults,
+  onBack,
+  onNext,
+}: {
+  step: StepMeta;
+  defaults?: AboutForm;
+  onBack: () => void;
+  onNext: (values: AboutForm) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const guess = browserCountry();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<AboutForm>({
+    resolver: zodResolver(AboutSchema),
+    defaultValues: defaults ?? {
+      dateOfBirth: "",
+      city: "",
+      phone: "",
+      ...(guess ? { country: guess } : {}),
+    },
+  });
+
+  const errorOf = (message: string | undefined) => (message ? t(message) : "");
+  const dobError = errorOf(errors.dateOfBirth?.message);
+  const genderError = errorOf(errors.gender?.message);
+  const countryError = errorOf(errors.country?.message);
+  const cityError = errorOf(errors.city?.message);
+  const phoneError = errorOf(errors.phone?.message);
+  const summary: FieldError[] = [
+    ...(dobError ? [{ fieldId: "reg-dob", message: dobError }] : []),
+    ...(genderError ? [{ fieldId: "reg-gender-male", message: genderError }] : []),
+    ...(countryError ? [{ fieldId: "reg-country", message: countryError }] : []),
+    ...(cityError ? [{ fieldId: "reg-city", message: cityError }] : []),
+    ...(phoneError ? [{ fieldId: "reg-phone", message: phoneError }] : []),
+  ];
+
+  return (
+    <form onSubmit={handleSubmit(onNext)} noValidate className="flex flex-col gap-4">
+      <StepHeader step={step} title={t("register.aboutTitle")} intro={t("register.aboutIntro")} />
+      <ErrorSummary errors={summary} />
+      <Field
+        id="reg-dob"
+        label={t("register.dobLabel")}
+        hint={t("register.dobHint")}
+        type="date"
+        autoComplete="bday"
+        {...(dobError ? { error: dobError } : {})}
+        {...register("dateOfBirth")}
+      />
+      <fieldset
+        className="flex flex-col gap-2 border-0 p-0"
+        {...(genderError ? { "aria-describedby": "reg-gender-error" } : {})}
+      >
+        <legend className="mb-1 text-sm font-medium text-somnus-text">
+          {t("about.genderLabel")}
+        </legend>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {GENDERS.map((gender) => (
+            <label
+              key={gender}
+              htmlFor={`reg-gender-${gender}`}
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-somnus-subtle/25 px-3 py-2.5 hover:border-somnus-primary/60 has-[:checked]:border-somnus-primary-strong has-[:checked]:bg-somnus-primary/10"
+            >
+              <input
+                id={`reg-gender-${gender}`}
+                type="radio"
+                value={gender}
+                className="h-4 w-4 shrink-0 accent-somnus-primary-strong"
+                {...register("gender")}
+              />
+              <span className="text-somnus-text">{t(`about.gender.${gender}`)}</span>
+            </label>
+          ))}
+        </div>
+        {genderError ? (
+          <p id="reg-gender-error" className="text-sm text-somnus-danger">
+            {genderError}
+          </p>
+        ) : null}
+      </fieldset>
+      <SelectField
+        id="reg-country"
+        label={t("about.countryLabel")}
+        placeholder={t("about.countryPlaceholder")}
+        options={countryOptions(i18n.resolvedLanguage ?? DEFAULT_LOCALE)}
+        autoComplete="country"
+        {...(countryError ? { error: countryError } : {})}
+        {...register("country")}
+      />
+      <Field
+        id="reg-city"
+        label={t("about.cityLabel")}
+        hint={t("about.optional")}
+        autoComplete="address-level2"
+        {...(cityError ? { error: cityError } : {})}
+        {...register("city")}
+      />
+      <Field
+        id="reg-phone"
+        label={t("register.phoneLabel")}
+        hint={t("about.optional")}
+        type="tel"
+        autoComplete="tel"
+        {...(phoneError ? { error: phoneError } : {})}
+        {...register("phone")}
+      />
+      <StepNav onBack={onBack} submitLabel={t("register.next")} />
     </form>
   );
 }
@@ -546,11 +720,13 @@ function StepNav({
 function ConsentFields({
   termsProps,
   privacyProps,
+  marketingProps,
   termsError,
   privacyError,
 }: {
   termsProps: Record<string, unknown>;
   privacyProps: Record<string, unknown>;
+  marketingProps: Record<string, unknown>;
   termsError: string;
   privacyError: string;
 }) {
@@ -593,6 +769,18 @@ function ConsentFields({
           {t("register.readPrivacy")}
         </ReadDocumentButton>
       </div>
+      {/* Optional, unticked: registration never depends on it. */}
+      <CheckboxField
+        id="reg-consent-marketing"
+        label={t("register.consentMarketing")}
+        hint={t("register.consentMarketingHint")}
+        {...marketingProps}
+      />
+      <div className="pl-7">
+        <ReadDocumentButton onClick={() => setReading("marketing")}>
+          {t("register.readMarketing")}
+        </ReadDocumentButton>
+      </div>
       <LegalDocumentDialog
         document={document}
         open={reading !== null}
@@ -604,7 +792,7 @@ function ConsentFields({
 
 function DetailsStep(props: {
   role: RoleBranch;
-  name: NameForm;
+  name: PersonForm;
   locale: SupportedLocale;
   step: StepMeta;
   locked: boolean;
@@ -618,7 +806,7 @@ function DetailsStep(props: {
 }
 
 type BranchStepProps = {
-  name: NameForm;
+  name: PersonForm;
   locale: SupportedLocale;
   step: StepMeta;
   /** True when an organization invitation fixed the branch: no role was chosen. */
@@ -676,14 +864,10 @@ function AdultStep({ name, locale, step, locked, submitError, onBack, onSubmit }
       onSubmit={handleSubmit(async (values) =>
         onSubmit({
           role: "adult",
-          firstName: name.firstName,
-          lastName: name.lastName,
+          ...personFields(name),
           locale,
           ageYears: values.ageYears,
-          consents: {
-            termsAcceptance: true,
-            privacyPolicyAcknowledgement: true,
-          },
+          consents: consentsOf(values),
         }),
       )}
     >
@@ -704,6 +888,7 @@ function AdultStep({ name, locale, step, locked, submitError, onBack, onSubmit }
       <ConsentFields
         termsProps={register("termsAcceptance")}
         privacyProps={register("privacyPolicyAcknowledgement")}
+        marketingProps={register("marketing")}
         termsError={termsError}
         privacyError={privacyError}
       />
@@ -758,15 +943,11 @@ function ParentStep({
       onSubmit={handleSubmit(async (values) =>
         onSubmit({
           role: "parent",
-          firstName: name.firstName,
-          lastName: name.lastName,
+          ...personFields(name),
           locale,
           guardianshipConfirmed: true,
           minorAgeBand: values.minorAgeBand,
-          consents: {
-            termsAcceptance: true,
-            privacyPolicyAcknowledgement: true,
-          },
+          consents: consentsOf(values),
         }),
       )}
     >
@@ -791,6 +972,7 @@ function ParentStep({
       <ConsentFields
         termsProps={register("termsAcceptance")}
         privacyProps={register("privacyPolicyAcknowledgement")}
+        marketingProps={register("marketing")}
         termsError={termsError}
         privacyError={privacyError}
       />
@@ -845,15 +1027,11 @@ function ProfessionalStep({
       onSubmit={handleSubmit(async (values) =>
         onSubmit({
           role: "professional",
-          firstName: name.firstName,
-          lastName: name.lastName,
+          ...personFields(name),
           locale,
           specialty: values.specialty,
           licenseNumber: values.licenseNumber,
-          consents: {
-            termsAcceptance: true,
-            privacyPolicyAcknowledgement: true,
-          },
+          consents: consentsOf(values),
         }),
       )}
     >
@@ -886,6 +1064,7 @@ function ProfessionalStep({
       <ConsentFields
         termsProps={register("termsAcceptance")}
         privacyProps={register("privacyPolicyAcknowledgement")}
+        marketingProps={register("marketing")}
         termsError={termsError}
         privacyError={privacyError}
       />

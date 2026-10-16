@@ -376,6 +376,8 @@ describe("MorpheoHome (the user's own space)", () => {
           photoUpdatedAt: "2026-10-05T10:00:00.000Z",
           dateOfBirth: "1990-01-01",
           phone: "600123456",
+          gender: "female",
+          country: "ES",
         },
       ),
     );

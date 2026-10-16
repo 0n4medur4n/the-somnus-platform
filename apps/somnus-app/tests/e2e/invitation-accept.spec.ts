@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import ca from "../../src/i18n/locales/ca.json" with { type: "json" };
 import es from "../../src/i18n/locales/es.json" with { type: "json" };
+import { fillAboutYou } from "./support/about.js";
 import { expect, test } from "./support/console.js";
 import { escapeRe, getSignInLink, uniqueEmail } from "./support/emulator.js";
 
@@ -33,6 +34,7 @@ async function registerOwner(page: Page, locale: string, email: string): Promise
   await page.getByLabel(t.register.firstName, { exact: true }).fill("Ada");
   await page.getByLabel(t.register.lastName, { exact: true }).fill("Lovelace");
   await page.getByRole("button", { name: t.register.next }).click();
+  await fillAboutYou(page, t);
   await page.getByRole("radio", { name: new RegExp(escapeRe(t.register.roleAdult)) }).check();
   await page.getByRole("button", { name: t.register.next }).click();
   await page.getByLabel(t.register.ageLabel, { exact: true }).fill("40");
@@ -92,14 +94,15 @@ for (const locale of ["es", "ca"] as const) {
     await invitee.goto(await getSignInLink(inviteeEmail));
 
     await expect(invitee.getByRole("heading", { level: 1 })).toHaveText(t.register.nameTitle);
-    // Two steps, not three: there is no role to choose.
+    // Three steps, not four: there is no role to choose.
     await expect(
-      invitee.getByText(interpolate(t.register.stepOf, { current: "1", total: "2" })),
+      invitee.getByText(interpolate(t.register.stepOf, { current: "1", total: "3" })),
     ).toBeVisible();
 
     await invitee.getByLabel(t.register.firstName, { exact: true }).fill("Rosalind");
     await invitee.getByLabel(t.register.lastName, { exact: true }).fill("Franklin");
     await invitee.getByRole("button", { name: t.register.next }).click();
+    await fillAboutYou(invitee, t);
 
     // Straight to the professional branch, which says why it was not offered.
     await expect(invitee.getByRole("heading", { level: 1 })).toHaveText(

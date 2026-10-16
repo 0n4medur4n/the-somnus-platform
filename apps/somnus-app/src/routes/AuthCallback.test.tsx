@@ -41,11 +41,30 @@ const needsRegistration: AuthContextValue = {
 
 const t = (key: string) => i18n.t(key);
 
-/** Step 1 -> step 2: the name is common to every branch. */
+/** Step 2, "about you": common to every branch. */
+async function fillAbout() {
+  await screen.findByText(t("register.aboutTitle"));
+  await userEvent.type(screen.getByLabelText(t("register.dobLabel")), "1990-05-17");
+  await userEvent.click(screen.getByRole("radio", { name: t("about.gender.female") }));
+  await userEvent.selectOptions(screen.getByLabelText(t("about.countryLabel")), "ES");
+  await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
+}
+
+/** What every branch sends from steps 1-2. */
+const PERSON = {
+  firstName: "Ada",
+  lastName: "Lovelace",
+  gender: "female",
+  country: "ES",
+  dateOfBirth: "1990-05-17",
+} as const;
+
+/** Steps 1-3: name and "about you" are common to every branch, then the role. */
 async function fillNameAndChooseRole(role: "adult" | "parent" | "professional", roleLabel: string) {
   await userEvent.type(screen.getByLabelText(t("register.firstName")), "Ada");
   await userEvent.type(screen.getByLabelText(t("register.lastName")), "Lovelace");
   await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
+  await fillAbout();
 
   await screen.findByText(t("register.roleTitle"));
   await userEvent.click(screen.getByRole("radio", { name: new RegExp(roleLabel, "i") }));
@@ -79,8 +98,7 @@ describe("AuthCallback registration (Addendum A Checkpoint 14.1: one flow, three
     await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
     expect(register).toHaveBeenCalledWith({
       role: "adult",
-      firstName: "Ada",
-      lastName: "Lovelace",
+      ...PERSON,
       locale: "es",
       ageYears: 34,
       consents: { termsAcceptance: true, privacyPolicyAcknowledgement: true },
@@ -105,8 +123,7 @@ describe("AuthCallback registration (Addendum A Checkpoint 14.1: one flow, three
     await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
     expect(register).toHaveBeenCalledWith({
       role: "parent",
-      firstName: "Ada",
-      lastName: "Lovelace",
+      ...PERSON,
       locale: "es",
       guardianshipConfirmed: true,
       minorAgeBand: "6-12y",
@@ -136,8 +153,7 @@ describe("AuthCallback registration (Addendum A Checkpoint 14.1: one flow, three
     await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
     expect(register).toHaveBeenCalledWith({
       role: "professional",
-      firstName: "Ada",
-      lastName: "Lovelace",
+      ...PERSON,
       locale: "es",
       specialty: "sleep_physician",
       licenseNumber: "COL-12345",
@@ -208,6 +224,7 @@ describe("AuthCallback registration (Addendum A Checkpoint 14.1: one flow, three
     await userEvent.type(screen.getByLabelText(t("register.firstName")), "Ada");
     await userEvent.type(screen.getByLabelText(t("register.lastName")), "Lovelace");
     await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
+    await fillAbout();
 
     await screen.findByText(t("register.roleTitle"));
     await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
@@ -230,8 +247,88 @@ describe("AuthCallback registration (Addendum A Checkpoint 14.1: one flow, three
     ).toBeChecked();
 
     await userEvent.click(screen.getByRole("button", { name: t("register.back") }));
+    await screen.findByText(t("register.aboutTitle"));
+    expect(screen.getByLabelText(t("register.dobLabel"))).toHaveValue("1990-05-17");
+    expect(screen.getByRole("radio", { name: t("about.gender.female") })).toBeChecked();
+    expect(screen.getByLabelText(t("about.countryLabel"))).toHaveValue("ES");
+
+    await userEvent.click(screen.getByRole("button", { name: t("register.back") }));
     await screen.findByText(t("register.nameTitle"));
     expect(screen.getByLabelText(t("register.firstName"))).toHaveValue("Ada");
+  });
+
+  it("asks who they are before the role: gender and country required, city and phone optional", async () => {
+    renderWithProviders(<AuthCallback />, { auth: needsRegistration });
+    await screen.findByText(t("register.nameTitle"));
+    await userEvent.type(screen.getByLabelText(t("register.firstName")), "Ada");
+    await userEvent.type(screen.getByLabelText(t("register.lastName")), "Lovelace");
+    await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
+    await screen.findByText(t("register.aboutTitle"));
+
+    // The country starts from the browser's own region (jsdom: en-US) -- a
+    // guess they can change; gender and birth date start empty.
+    expect(screen.getByLabelText(t("about.countryLabel"))).toHaveValue("US");
+    await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
+    expect(await screen.findAllByText(t("register.errors.genderRequired"))).not.toHaveLength(0);
+    expect(screen.getAllByText(t("register.errors.dobRequired"))).not.toHaveLength(0);
+    expect(screen.queryByText(t("register.roleTitle"))).not.toBeInTheDocument();
+
+    // "Prefer not to say" is a full answer; city and phone go when given.
+    await userEvent.type(screen.getByLabelText(t("register.dobLabel")), "1990-05-17");
+    await userEvent.click(screen.getByRole("radio", { name: t("about.gender.prefer_not_to_say") }));
+    await userEvent.selectOptions(screen.getByLabelText(t("about.countryLabel")), "FR");
+    await userEvent.type(screen.getByLabelText(t("about.cityLabel")), "Lyon");
+    await userEvent.type(screen.getByLabelText(t("register.phoneLabel")), "+33 6 00 00 00 00");
+    await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
+
+    await screen.findByText(t("register.roleTitle"));
+    await userEvent.click(
+      screen.getByRole("radio", { name: new RegExp(t("register.roleAdult"), "i") }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
+    await screen.findByText(t("register.adultTitle"));
+    await userEvent.type(screen.getByLabelText(t("register.ageLabel")), "36");
+    await acceptBothConsents();
+    // Marketing is its own optional box, unticked until they tick it.
+    const marketing = screen.getByLabelText(t("register.consentMarketing"));
+    expect(marketing).not.toBeChecked();
+    await userEvent.click(marketing);
+    await userEvent.click(screen.getByRole("button", { name: t("register.submit") }));
+
+    await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
+    expect(register).toHaveBeenCalledWith({
+      role: "adult",
+      firstName: "Ada",
+      lastName: "Lovelace",
+      gender: "prefer_not_to_say",
+      country: "FR",
+      city: "Lyon",
+      phone: "+33 6 00 00 00 00",
+      dateOfBirth: "1990-05-17",
+      locale: "es",
+      ageYears: 36,
+      consents: { termsAcceptance: true, privacyPolicyAcknowledgement: true, marketing: true },
+    });
+  });
+
+  it("will not take a date of birth that makes the account holder a minor", async () => {
+    renderWithProviders(<AuthCallback />, { auth: needsRegistration });
+    await screen.findByText(t("register.nameTitle"));
+    await userEvent.type(screen.getByLabelText(t("register.firstName")), "Too");
+    await userEvent.type(screen.getByLabelText(t("register.lastName")), "Young");
+    await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
+    await screen.findByText(t("register.aboutTitle"));
+    const minorYear = new Date().getFullYear() - 12;
+    await userEvent.type(
+      screen.getByLabelText(t("register.dobLabel")),
+      String(minorYear).concat("-01-01"),
+    );
+    await userEvent.click(screen.getByRole("radio", { name: t("about.gender.male") }));
+    await userEvent.selectOptions(screen.getByLabelText(t("about.countryLabel")), "ES");
+    await userEvent.click(screen.getByRole("button", { name: t("register.next") }));
+
+    expect(await screen.findAllByText(t("register.errors.dobMinor"))).not.toHaveLength(0);
+    expect(screen.queryByText(t("register.roleTitle"))).not.toBeInTheDocument();
   });
 });
 

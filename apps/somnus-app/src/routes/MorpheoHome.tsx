@@ -35,7 +35,12 @@ export function formatDate(iso: string, locale: string, withTime = false): strin
 function ProfileCard({ me, view }: { me: MeResponse; view: AccountView }) {
   const { t } = useTranslation();
   const profile = me.individualProfile;
-  const incomplete = !profile?.photoUpdatedAt || !profile.dateOfBirth || !profile.phone;
+  const incomplete =
+    !profile?.photoUpdatedAt ||
+    !profile.dateOfBirth ||
+    !profile.phone ||
+    !profile.gender ||
+    !profile.country;
   return (
     <Card className="flex flex-col gap-4 sm:flex-row sm:items-center">
       <Avatar me={me} className="h-20 w-20 text-2xl" />

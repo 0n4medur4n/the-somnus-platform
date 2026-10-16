@@ -29,6 +29,13 @@
       "when": 1792164309024,
       "tag": "0003_legal_drafts_v2_translations",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1792175320380,
+      "tag": "0004_legal_v3_profile_and_marketing",
+      "breakpoints": true
     }
   ]
 }

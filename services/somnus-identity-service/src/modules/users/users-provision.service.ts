@@ -79,6 +79,11 @@ export class UsersProvisionService {
       userId,
       firstName: input.firstName,
       lastName: input.lastName,
+      gender: input.gender,
+      country: input.country,
+      dateOfBirth: input.dateOfBirth,
+      ...(input.city ? { city: input.city } : {}),
+      ...(input.phone ? { phone: input.phone } : {}),
       registrationRole: input.role,
       guardianshipConfirmed: input.role === "parent" ? true : null,
       minorAgeBand: input.role === "parent" ? input.minorAgeBand : null,
@@ -110,7 +115,13 @@ export class UsersProvisionService {
     // purposes apply to every role branch. Health-data processing is
     // deliberately absent -- it is captured at the first assessment
     // (Addendum A, A1). Recorded through ConsentService only.
-    for (const purposeKey of ["terms_acceptance", "privacy_policy_acknowledgement"] as const) {
+    // Marketing is optional and unticked by default: a receipt only when given.
+    const purposes = [
+      "terms_acceptance",
+      "privacy_policy_acknowledgement",
+      ...(input.consents.marketing === true ? (["marketing"] as const) : []),
+    ] as const;
+    for (const purposeKey of purposes) {
       await this.consent.record({
         userId,
         // Signed in the language the registration form showed them in.

@@ -44,4 +44,20 @@ describe("Profile (component test for a form)", () => {
     );
     expect(await screen.findByText(i18n.t("profile.saved"))).toBeInTheDocument();
   });
+
+  it("lets a profile from before registration asked fill in gender, country and city", async () => {
+    patchProfile.mockResolvedValue(undefined);
+    renderWithProviders(<Profile />, { auth: authValue });
+
+    await userEvent.selectOptions(screen.getByLabelText(i18n.t("about.genderLabel")), "male");
+    await userEvent.selectOptions(screen.getByLabelText(i18n.t("about.countryLabel")), "PT");
+    await userEvent.type(screen.getByLabelText(i18n.t("about.cityLabel")), "Porto");
+    await userEvent.click(screen.getByRole("button", { name: i18n.t("common.save") }));
+
+    await waitFor(() =>
+      expect(patchProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ gender: "male", country: "PT", city: "Porto" }),
+      ),
+    );
+  });
 });

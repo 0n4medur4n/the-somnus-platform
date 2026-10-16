@@ -120,11 +120,23 @@
       "guardianship": "Debes confirmar que eres la madre, el padre o el tutor legal.",
       "minorAgeBandRequired": "Selecciona la franja de edad del menor.",
       "specialtyRequired": "Selecciona tu especialidad.",
-      "consentRequired": "Debes aceptarlo para continuar."
+      "consentRequired": "Debes aceptarlo para continuar.",
+      "dobRequired": "Indica tu fecha de nacimiento.",
+      "dobMinor": "Debes ser mayor de edad para abrir una cuenta.",
+      "genderRequired": "Elige una opción (puedes elegir «Prefiero no decirlo»).",
+      "countryRequired": "Elige tu país."
     },
     "lockedNotice": "Te unes por invitación de una organización, así que tu cuenta se crea como cuenta profesional.",
     "readTerms": "Leer los Términos del servicio",
-    "readPrivacy": "Leer la Política de privacidad"
+    "readPrivacy": "Leer la Política de privacidad",
+    "aboutTitle": "Sobre ti",
+    "aboutIntro": "Unos datos para completar tu perfil. Nos ayudan a entender quién usa The Somnus; nunca cambian tu orientación.",
+    "dobLabel": "Fecha de nacimiento",
+    "dobHint": "Debes ser mayor de edad para tener una cuenta.",
+    "phoneLabel": "Teléfono",
+    "consentMarketing": "Quiero recibir novedades de The Somnus (opcional)",
+    "consentMarketingHint": "Puedes darte de baja cuando quieras desde «Mis consentimientos».",
+    "readMarketing": "Leer el consentimiento de comunicaciones"
   },
   "invitation": {
     "title": "Invitación a The Somnus",
@@ -272,7 +284,8 @@
     },
     "consentsTitle": "Privacidad y consentimientos",
     "consentsBody": "Consulta lo que aceptaste, imprímelo o retíralo.",
-    "consentsLink": "Ver mis consentimientos"
+    "consentsLink": "Ver mis consentimientos",
+    "aboutTitle": "Sobre ti"
   },
   "security": {
     "title": "Seguridad",
@@ -408,5 +421,18 @@
     "title": "Página no encontrada",
     "description": "La página que buscas no existe.",
     "back": "Volver al inicio"
+  },
+  "about": {
+    "genderLabel": "Género",
+    "gender": {
+      "male": "Hombre",
+      "female": "Mujer",
+      "prefer_not_to_say": "Prefiero no decirlo"
+    },
+    "countryLabel": "País",
+    "countryPlaceholder": "Elige tu país",
+    "cityLabel": "Ciudad",
+    "optional": "Opcional",
+    "choose": "Elige una opción"
   }
 }

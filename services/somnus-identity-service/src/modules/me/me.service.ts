@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import {
   INTERNAL_ROLE_KEYS,
+  isCountryCode,
   type MeAccount,
   type MeResponse,
   type ProfilePatchRequest,
@@ -48,6 +49,11 @@ export class MeService {
             lastName: individual.lastName,
             ...(individual.dateOfBirth ? { dateOfBirth: individual.dateOfBirth } : {}),
             ...(individual.phone ? { phone: individual.phone } : {}),
+            ...(individual.gender ? { gender: individual.gender } : {}),
+            ...(individual.country && isCountryCode(individual.country)
+              ? { country: individual.country }
+              : {}),
+            ...(individual.city ? { city: individual.city } : {}),
             ...(individual.photoUpdatedAt
               ? { photoUpdatedAt: individual.photoUpdatedAt.toISOString() }
               : {}),
@@ -136,6 +142,9 @@ export class MeService {
         ...(patch.lastName !== undefined ? { lastName: patch.lastName } : {}),
         ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
         ...(patch.dateOfBirth !== undefined ? { dateOfBirth: patch.dateOfBirth } : {}),
+        ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
+        ...(patch.country !== undefined ? { country: patch.country } : {}),
+        ...(patch.city !== undefined ? { city: patch.city } : {}),
       },
     );
     if (patch.locale !== undefined) {

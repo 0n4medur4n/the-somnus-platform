@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import ca from "../../src/i18n/locales/ca.json" with { type: "json" };
 import es from "../../src/i18n/locales/es.json" with { type: "json" };
+import { fillAboutYou } from "./support/about.js";
 import { expect, test } from "./support/console.js";
 import { escapeRe, getSignInLink, uniqueEmail } from "./support/emulator.js";
 
@@ -38,6 +39,7 @@ async function fillNameAndChooseRole(
   await page.getByLabel(t.register.firstName, { exact: true }).fill(firstName);
   await page.getByLabel(t.register.lastName, { exact: true }).fill(lastName);
   await page.getByRole("button", { name: t.register.next }).click();
+  await fillAboutYou(page, t);
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(t.register.roleTitle);
   await page.getByRole("radio", { name: new RegExp(escapeRe(roleLabel)) }).check();

@@ -101,6 +101,10 @@ describe("MeResponseSchema", () => {
 describe("ProfilePatchRequestSchema", () => {
   it("accepts a partial patch", () => {
     expect(ProfilePatchRequestSchema.safeParse({ firstName: "Ada" }).success).toBe(true);
+    expect(
+      ProfilePatchRequestSchema.safeParse({ gender: "male", country: "FR", city: null }).success,
+    ).toBe(true);
+    expect(ProfilePatchRequestSchema.safeParse({ country: "fr" }).success).toBe(false);
   });
 
   it("rejects an empty patch", () => {
@@ -340,7 +344,60 @@ describe("UserResolveRequestSchema / UserResolveResponseSchema", () => {
 describe("RegistrationRequestSchema (Addendum A Checkpoint 14.1: one flow, three role branches)", () => {
   /** Both required purposes, separate flags -- never one combined value (build plan §13). */
   const consents = { termsAcceptance: true, privacyPolicyAcknowledgement: true } as const;
-  const common = { firstName: "Ada", lastName: "Lovelace", consents } as const;
+  const common = {
+    firstName: "Ada",
+    lastName: "Lovelace",
+    gender: "female",
+    country: "ES",
+    dateOfBirth: "1990-05-17",
+    consents,
+  } as const;
+
+  it("asks who they are: gender and country required, city and phone optional", () => {
+    const adult = { ...common, role: "adult", ageYears: 35 } as const;
+    expect(RegistrationRequestSchema.safeParse(adult).success).toBe(true);
+    expect(
+      RegistrationRequestSchema.safeParse({ ...adult, city: "Girona", phone: "+34 600 000 000" })
+        .success,
+    ).toBe(true);
+    expect(
+      RegistrationRequestSchema.safeParse({ ...adult, gender: "prefer_not_to_say" }).success,
+    ).toBe(true);
+    const { gender: _g, ...noGender } = adult;
+    const { country: _c, ...noCountry } = adult;
+    const { dateOfBirth: _d, ...noBirth } = adult;
+    expect(RegistrationRequestSchema.safeParse(noGender).success).toBe(false);
+    expect(RegistrationRequestSchema.safeParse(noCountry).success).toBe(false);
+    expect(RegistrationRequestSchema.safeParse(noBirth).success).toBe(false);
+    expect(RegistrationRequestSchema.safeParse({ ...adult, gender: "other" }).success).toBe(false);
+    expect(RegistrationRequestSchema.safeParse({ ...adult, country: "Spain" }).success).toBe(false);
+    expect(RegistrationRequestSchema.safeParse({ ...adult, country: "XX" }).success).toBe(false);
+  });
+
+  it("never lets a minor hold the account, whatever age is typed", () => {
+    const twelve = new Date();
+    twelve.setFullYear(twelve.getFullYear() - 12);
+    expect(
+      RegistrationRequestSchema.safeParse({
+        ...common,
+        dateOfBirth: twelve.toISOString().slice(0, 10),
+        role: "adult",
+        ageYears: 30,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("takes marketing as its own optional consent, never required", () => {
+    const adult = { ...common, role: "adult", ageYears: 35 } as const;
+    expect(
+      RegistrationRequestSchema.safeParse({ ...adult, consents: { ...consents, marketing: true } })
+        .success,
+    ).toBe(true);
+    expect(
+      RegistrationRequestSchema.safeParse({ ...adult, consents: { ...consents, marketing: false } })
+        .success,
+    ).toBe(true);
+  });
 
   it("accepts the adult branch (identity still comes from the session)", () => {
     expect(
@@ -506,6 +563,9 @@ describe("UserProvisionRequestSchema", () => {
     email: "a@example.com",
     firstName: "Ada",
     lastName: "Lovelace",
+    gender: "female",
+    country: "ES",
+    dateOfBirth: "1990-05-17",
     consents,
   } as const;
 

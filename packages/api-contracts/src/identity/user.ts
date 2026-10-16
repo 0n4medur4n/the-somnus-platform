@@ -2,6 +2,7 @@ import { z } from "zod";
 import { LocaleSchema } from "../locale.js";
 import { MORPHEO_ROLES } from "../morpheo/enums.js";
 import { opaqueIdSchema } from "../uuid.js";
+import { CitySchema, CountryCodeSchema, GenderSchema } from "./demographics.js";
 import { OrganizationStatusSchema } from "./organization.js";
 import { RoleKeySchema } from "./roles.js";
 
@@ -20,6 +21,10 @@ export const IndividualProfileSchema = z.object({
   lastName: z.string().min(1).max(120),
   dateOfBirth: z.string().date().optional(),
   phone: z.string().min(1).max(32).optional(),
+  /** Absent on profiles created before registration asked for them. */
+  gender: GenderSchema.optional(),
+  country: CountryCodeSchema.optional(),
+  city: CitySchema.optional(),
   /**
    * When the profile photo last changed; absent when there is none. The app
    * also uses it as the cache key of `GET /v1/me/photo`, so a new photo is
@@ -123,6 +128,9 @@ export const ProfilePatchRequestSchema = z
     lastName: z.string().min(1).max(120).optional(),
     phone: PhoneSchema.nullable().optional(),
     dateOfBirth: AccountHolderDateOfBirthSchema.nullable().optional(),
+    gender: GenderSchema.optional(),
+    country: CountryCodeSchema.optional(),
+    city: CitySchema.nullable().optional(),
     locale: LocaleSchema.optional(),
   })
   .strict()
@@ -199,6 +207,8 @@ export const RegistrationConsentsSchema = z
   .object({
     termsAcceptance: z.literal(true),
     privacyPolicyAcknowledgement: z.literal(true),
+    /** Optional, unticked by default: news and offers. Its own receipt when given. */
+    marketing: z.boolean().optional(),
   })
   .strict();
 export type RegistrationConsents = z.infer<typeof RegistrationConsentsSchema>;
@@ -212,6 +222,13 @@ export type RegistrationConsents = z.infer<typeof RegistrationConsentsSchema>;
 const registrationCommon = {
   firstName: z.string().min(1).max(120),
   lastName: z.string().min(1).max(120),
+  /** The profile starts complete: who they are and where, asked once. */
+  gender: GenderSchema,
+  country: CountryCodeSchema,
+  city: CitySchema.optional(),
+  /** The account holder's own date of birth (an adult: minors never have accounts). */
+  dateOfBirth: AccountHolderDateOfBirthSchema,
+  phone: PhoneSchema.optional(),
   locale: LocaleSchema.optional(),
   consents: RegistrationConsentsSchema,
 };

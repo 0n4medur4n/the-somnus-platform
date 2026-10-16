@@ -1,6 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AccountHolderDateOfBirthSchema,
+  COUNTRY_CODES,
+  GENDERS,
   type MeResponse,
   PhoneSchema,
   type ProfilePatchRequest,
@@ -20,6 +22,7 @@ import { ErrorSummary, type FieldError } from "../components/ErrorSummary.js";
 import { Field } from "../components/Field.js";
 import { LOCALE_LABELS } from "../components/LanguageSwitcher.js";
 import { SelectField } from "../components/SelectField.js";
+import { countryOptions } from "../lib/countries.js";
 import { edge } from "../lib/edge.js";
 import { PhotoPrepFailure, prepareProfilePhoto } from "../lib/photo.js";
 
@@ -39,6 +42,11 @@ const ProfileSchema = z.object({
       "profile.errors.dateOfBirth",
     ),
   locale: z.enum(SUPPORTED_LOCALES),
+  // Empty only on profiles from before registration asked; once set, they
+  // can be changed but not emptied ("prefer not to say" is the way out).
+  gender: z.union([z.literal(""), z.enum(GENDERS)]),
+  country: z.union([z.literal(""), z.enum(COUNTRY_CODES)]),
+  city: z.string().trim().max(120, "errors.required"),
 });
 type ProfileForm = z.infer<typeof ProfileSchema>;
 
@@ -53,6 +61,10 @@ function patchFrom(form: ProfileForm, me: MeResponse): ProfilePatchRequest {
   if (phone !== current?.phone) patch["phone"] = phone ?? null;
   const dateOfBirth = form.dateOfBirth === "" ? undefined : form.dateOfBirth;
   if (dateOfBirth !== current?.dateOfBirth) patch["dateOfBirth"] = dateOfBirth ?? null;
+  if (form.gender !== "" && form.gender !== current?.gender) patch["gender"] = form.gender;
+  if (form.country !== "" && form.country !== current?.country) patch["country"] = form.country;
+  const city = form.city === "" ? undefined : form.city;
+  if (city !== current?.city) patch["city"] = city ?? null;
   if (form.locale !== me.user.locale) patch["locale"] = form.locale;
   return patch as ProfilePatchRequest;
 }
@@ -176,6 +188,9 @@ export function Profile() {
       lastName: profile?.lastName ?? "",
       phone: profile?.phone ?? "",
       dateOfBirth: profile?.dateOfBirth ?? "",
+      gender: profile?.gender ?? "",
+      country: profile?.country ?? "",
+      city: profile?.city ?? "",
       locale: me?.user.locale ?? "es",
     },
   });
@@ -295,6 +310,31 @@ export function Profile() {
             autoComplete="tel"
             {...(fieldErrors.phone ? { error: fieldErrors.phone } : {})}
             {...register("phone")}
+          />
+          <SelectField
+            id="profile-gender"
+            label={t("about.genderLabel")}
+            placeholder={t("about.choose")}
+            options={GENDERS.map((gender) => ({
+              value: gender,
+              label: t(`about.gender.${gender}`),
+            }))}
+            {...register("gender")}
+          />
+          <SelectField
+            id="profile-country"
+            label={t("about.countryLabel")}
+            placeholder={t("about.countryPlaceholder")}
+            options={countryOptions(i18n.resolvedLanguage ?? "es")}
+            autoComplete="country"
+            {...register("country")}
+          />
+          <Field
+            id="profile-city"
+            label={t("about.cityLabel")}
+            hint={t("about.optional")}
+            autoComplete="address-level2"
+            {...register("city")}
           />
           <SelectField
             id="profile-locale"
