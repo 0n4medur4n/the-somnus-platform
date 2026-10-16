@@ -23,6 +23,10 @@ export default defineConfig({
     baseURL: APP_URL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    // Questions and steps fade in and out (cosmetic). With reduced motion --
+    // which the app honours -- they arrive at full opacity at once, so an axe
+    // contrast scan never samples a half-faded frame.
+    contextOptions: { reducedMotion: "reduce" },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {

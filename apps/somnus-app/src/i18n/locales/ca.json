@@ -9,7 +9,13 @@
     "skipToContent": "Vés al contingut",
     "language": "Idioma",
     "menu": "Menú principal",
-    "opensInNewTab": "s'obre en una pestanya nova"
+    "opensInNewTab": "s'obre en una pestanya nova",
+    "theme": "Aparença",
+    "themes": {
+      "dark": "Fosc",
+      "light": "Clar",
+      "contrast": "Alt contrast"
+    }
   },
   "nav": {
     "home": "Inici",
@@ -342,7 +348,9 @@
       "yes": "Sí",
       "no": "No",
       "unknown": "No ho sé",
-      "answered": "{{answered}} de {{total}} respostes"
+      "answered": "{{answered}} de {{total}} respostes",
+      "questionOf": "Pregunta {{current}} de {{total}}",
+      "checking": "S'estan comprovant les teves respostes…"
     },
     "concern": {
       "legend": "Què et preocupa? Tria el que correspongui.",

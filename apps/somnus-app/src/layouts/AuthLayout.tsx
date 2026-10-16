@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "../components/LanguageSwitcher.js";
+import { ThemeSwitcher } from "../components/ThemeSwitcher.js";
 
 /** Centered layout for the unauthenticated screens (login, callback). */
 export function AuthLayout({ children }: { children: ReactNode }) {
@@ -12,7 +13,10 @@ export function AuthLayout({ children }: { children: ReactNode }) {
       </a>
       <header className="mx-auto flex w-full max-w-md items-center justify-between p-4">
         <span className="font-semibold text-somnus-text">{t("common.appName")}</span>
-        <LanguageSwitcher />
+        <div className="flex items-center gap-3">
+          <ThemeSwitcher />
+          <LanguageSwitcher />
+        </div>
       </header>
       <main id="main" tabIndex={-1} className="mx-auto flex max-w-md flex-col gap-4 p-4">
         {children}

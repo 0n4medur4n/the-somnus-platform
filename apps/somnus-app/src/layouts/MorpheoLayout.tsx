@@ -6,6 +6,7 @@ import { useAuth } from "../auth/useAuth.js";
 import { Avatar } from "../components/Avatar.js";
 import { Button } from "../components/Button.js";
 import { LanguageSwitcher } from "../components/LanguageSwitcher.js";
+import { ThemeSwitcher } from "../components/ThemeSwitcher.js";
 import { env } from "../config/env.js";
 
 const NAV: ReadonlyArray<{ to: string; key: string; end: boolean }> = [
@@ -36,12 +37,14 @@ export function MorpheoLayout({ children }: { children: ReactNode }) {
         {t("common.skipToContent")}
       </a>
       <header className="border-b border-somnus-muted/20">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 p-4 sm:gap-4">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 p-4 sm:gap-4">
           <span className="whitespace-nowrap font-semibold text-somnus-text">
             {t("common.appName")}
           </span>
-          <div className="flex items-center gap-2 sm:gap-4">
+          {/* Wraps under the name on a phone rather than overflowing. */}
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
             {me ? <Avatar me={me} className="hidden h-9 w-9 text-sm sm:flex" /> : null}
+            <ThemeSwitcher />
             <LanguageSwitcher />
             <Button variant="secondary" className="whitespace-nowrap" onClick={() => void logout()}>
               {t("common.signOut")}

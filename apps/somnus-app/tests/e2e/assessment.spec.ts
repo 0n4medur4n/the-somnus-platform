@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import es from "../../src/i18n/locales/es.json" with { type: "json" };
 import { expect, test } from "./support/console.js";
+import { answerSafetyQuestions } from "./support/safety.js";
 
 /**
  * Anonymous assessment golden paths (build plan §20 Checkpoint 10.3), run in
@@ -29,11 +30,6 @@ async function passConsent(page: Page): Promise<void> {
   await page.getByRole("button", { name: t.actions.next }).click(); // -> safety
 }
 
-/** Answer one safety question (identified by a fragment of its text) Sí/No. */
-async function answerSafety(page: Page, question: RegExp, answer: string): Promise<void> {
-  await page.getByRole("group", { name: question }).getByLabel(answer, { exact: true }).check();
-}
-
 test("adult INS path shows the L4 orientation and passes the a11y baseline", async ({ page }) => {
   await roleConsent(page, { role: "adult", age: "35" });
 
@@ -42,7 +38,7 @@ test("adult INS path shows the L4 orientation and passes the a11y baseline", asy
 
   await passConsent(page);
   // No safety signal -> continue to the concern step.
-  await page.getByRole("button", { name: t.actions.next }).click();
+  await answerSafetyQuestions(page);
 
   await page.getByLabel("despertares", { exact: true }).check();
   await page.getByRole("button", { name: t.actions.seeResult }).click();
@@ -61,7 +57,7 @@ test("parent BRE path routes to breathing and keeps the output adult-directed", 
   await roleConsent(page, { role: "parent", age: "8" });
   await page.getByLabel(t.role.guardianship, { exact: true }).check();
   await passConsent(page);
-  await page.getByRole("button", { name: t.actions.next }).click(); // no safety signal -> concern
+  await answerSafetyQuestions(page); // no safety signal -> concern
 
   await page.getByLabel("ronquido", { exact: true }).check();
   await page.getByRole("button", { name: t.actions.seeResult }).click();
@@ -76,8 +72,7 @@ test("T-03: adult driving near-miss escalates to L1 and stops before the concern
   await roleConsent(page, { role: "adult", age: "35" });
   await passConsent(page);
 
-  await answerSafety(page, /a punto de sufrir un accidente/, t.safety.yes);
-  await page.getByRole("button", { name: t.actions.next }).click();
+  await answerSafetyQuestions(page, [/a punto de sufrir un accidente/]);
 
   // Emergency stop: straight to the result, no concern step.
   await expect(page.getByRole("heading", { name: t.result.title })).toBeVisible();
@@ -92,9 +87,10 @@ test("T-06: infant cyanosis + unresponsive is an L0 emergency that stops the flo
   await page.getByLabel(t.role.guardianship, { exact: true }).check();
   await passConsent(page);
 
-  await answerSafety(page, /azulados o grisáceos/, t.safety.yes); // cyanosis
-  await answerSafety(page, /no responde cuando le habla/, t.safety.yes); // unresponsive
-  await page.getByRole("button", { name: t.actions.next }).click();
+  await answerSafetyQuestions(page, [
+    /azulados o grisáceos/, // cyanosis
+    /no responde cuando le habla/, // unresponsive
+  ]);
 
   await expect(page.getByRole("heading", { name: t.result.title })).toBeVisible();
   await expect(page.getByText("Emergencia actual")).toBeVisible();

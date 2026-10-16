@@ -9,7 +9,13 @@
     "skipToContent": "Saltar al contenido",
     "language": "Idioma",
     "menu": "Menú principal",
-    "opensInNewTab": "se abre en una pestaña nueva"
+    "opensInNewTab": "se abre en una pestaña nueva",
+    "theme": "Apariencia",
+    "themes": {
+      "dark": "Oscuro",
+      "light": "Claro",
+      "contrast": "Alto contraste"
+    }
   },
   "nav": {
     "home": "Inicio",
@@ -342,7 +348,9 @@
       "yes": "Sí",
       "no": "No",
       "unknown": "No lo sé",
-      "answered": "{{answered}} de {{total}} respondidas"
+      "answered": "{{answered}} de {{total}} respondidas",
+      "questionOf": "Pregunta {{current}} de {{total}}",
+      "checking": "Comprobando tus respuestas…"
     },
     "concern": {
       "legend": "¿Qué te preocupa? Elige lo que corresponda.",
