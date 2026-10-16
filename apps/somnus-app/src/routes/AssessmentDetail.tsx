@@ -52,7 +52,12 @@ export function AssessmentDetail() {
         </p>
       ) : (
         <>
-          <ResultView result={snapshot.data.result} content={content.data} complaints={[]} />
+          <ResultView
+            result={snapshot.data.result}
+            content={content.data}
+            complaints={[]}
+            sessionId={sessionId}
+          />
           <div>
             <DownloadReportLink sessionId={sessionId} />
           </div>

@@ -18,9 +18,21 @@ export const AssessmentModuleContentSchema = z
     entry: z.array(z.string().min(1)),
     minimumQuestions: z.array(z.string().min(1)),
     output: z.string().min(1),
+    /** The module's approved clinical rules. Optional: older morpheo omits it. */
+    rules: z.array(z.string().min(1)).optional(),
   })
   .strict();
 export type AssessmentModuleContent = z.infer<typeof AssessmentModuleContentSchema>;
+
+/** A safety rule's approved message, written for the person (e.g. "No conduzcas…"). */
+export const SafetyRuleContentSchema = z
+  .object({
+    id: z.string().min(1),
+    level: SafetyLevelIdSchema,
+    message: z.string().min(1),
+  })
+  .strict();
+export type SafetyRuleContent = z.infer<typeof SafetyRuleContentSchema>;
 
 export const SafetyLevelContentSchema = z
   .object({
@@ -83,6 +95,8 @@ export const AssessmentContentResponseSchema = z
     modules: z.array(AssessmentModuleContentSchema),
     safetyLevels: z.array(SafetyLevelContentSchema),
     safetyPrompts: z.array(SafetyPromptContentSchema),
+    /** Optional so edge can ship before the morpheo that sends it. */
+    safetyRules: z.array(SafetyRuleContentSchema).optional(),
     // The governed limits statements (build plan §14b), sourced verbatim from
     // the approved CLM-006/007/008 replacement text — three separate sentences,
     // never merged. es-only; the single source consumers (report) lay out.

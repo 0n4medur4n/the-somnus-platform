@@ -15,6 +15,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
 from report.rendering.i18n import strings_for
+from report.schemas.narrative import NarrativeDTO
 from report.schemas.render import ClinicalContentDTO, ReportRenderRequestDTO
 from report.schemas.retrieval import GroundingMaterial, RetrievedSource
 
@@ -49,8 +50,13 @@ def render_html(
     template_version: str = TEMPLATE_VERSION,
     citations: Sequence[RetrievedSource] = (),
     grounding: Sequence[GroundingMaterial] = (),
+    narrative: NarrativeDTO | None = None,
 ) -> RenderedReport:
     modules_by_id = {module.id: module for module in content.modules}
+    rules_by_id = {rule.id: rule for rule in content.safety_rules}
+    # The fired rules' own messages: written for the person, printed verbatim
+    # and never by the AI (the urgent instructions are the protocol's words).
+    urgent = [rules_by_id[r].message for r in request.triggered_rules if r in rules_by_id]
     routed = [modules_by_id[route] for route in request.routes if route in modules_by_id]
     level = next(
         (safety for safety in content.safety_levels if safety.id == request.level),
@@ -79,6 +85,8 @@ def render_html(
         # an already-decided result, not evidence a rule cited.
         grounding=grounding,
         template_version=template_version,
+        narrative=narrative,
+        urgent=urgent,
     )
     return RenderedReport(
         html=html,

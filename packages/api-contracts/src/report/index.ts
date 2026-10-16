@@ -1,4 +1,8 @@
 export {
+  type PersonReport,
+  type PersonReportResponse,
+  PersonReportResponseSchema,
+  PersonReportSchema,
   REPORT_CONTRACT_SCHEMAS,
   type ReportPdf,
   ReportPdfSchema,

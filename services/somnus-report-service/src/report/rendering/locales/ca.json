@@ -13,5 +13,8 @@
   "supportingMaterial": "Material de suport",
   "limits": "Límits",
   "framing": "Amb la informació disponible, i a falta d'una valoració presencial:",
-  "emergency": "Situació d'emergència: no s'ofereixen hipòtesis tranquil·litzadores. Seguiu l'acció indicada immediatament."
+  "emergency": "Situació d'emergència: no s'ofereixen hipòtesis tranquil·litzadores. Seguiu l'acció indicada immediatament.",
+  "whatToDo": "Què fer ara",
+  "recommendations": "Recomanacions",
+  "aiNote": "Informe redactat amb l'ajuda d'intel·ligència artificial a partir del teu resultat. No és un diagnòstic."
 }

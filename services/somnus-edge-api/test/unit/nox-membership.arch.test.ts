@@ -156,6 +156,9 @@ describe("edge route table: the public surface is a closed, reviewed list", () =
         "POST /v1/assessments/:sessionId/answers",
         "GET /v1/assessments/:sessionId/summary",
         "POST /v1/assessments/:sessionId/claim-token",
+        // The person's AI-written report: as public as the summary it is built
+        // from (the session id is the capability), rate-limited per IP.
+        "GET /v1/assessments/:sessionId/report",
         // The invitation preview (Addendum A Checkpoint 14.2): read-only, and
         // the only way to tell an invited person their invitation is dead
         // before a magic link is sent.

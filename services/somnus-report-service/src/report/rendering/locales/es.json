@@ -13,5 +13,8 @@
   "supportingMaterial": "Material de apoyo",
   "limits": "Límites",
   "framing": "Con la información disponible, y a falta de una valoración presencial:",
-  "emergency": "Situación de emergencia: no se ofrecen hipótesis tranquilizadoras. Siga la acción indicada de inmediato."
+  "emergency": "Situación de emergencia: no se ofrecen hipótesis tranquilizadoras. Siga la acción indicada de inmediato.",
+  "whatToDo": "Qué hacer ahora",
+  "recommendations": "Recomendaciones",
+  "aiNote": "Informe redactado con ayuda de inteligencia artificial a partir de tu resultado. No es un diagnóstico."
 }

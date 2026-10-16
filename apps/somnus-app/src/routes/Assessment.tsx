@@ -630,7 +630,12 @@ export function Assessment({
             </div>
           ) : result ? (
             <>
-              <ResultView result={result} content={contentQuery.data} complaints={complaints} />
+              <ResultView
+                result={result}
+                content={contentQuery.data}
+                complaints={complaints}
+                {...(sessionId ? { sessionId } : {})}
+              />
               {embedded ? (
                 <div className="flex flex-col gap-3 rounded-2xl border border-somnus-muted/30 bg-somnus-surface/40 p-5">
                   {saved ? (

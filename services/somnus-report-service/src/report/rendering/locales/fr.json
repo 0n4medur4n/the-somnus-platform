@@ -13,5 +13,8 @@
   "supportingMaterial": "Documentation complémentaire",
   "limits": "Limites",
   "framing": "Avec les informations disponibles, et en l'absence d'une évaluation en personne :",
-  "emergency": "Urgence : aucune hypothèse rassurante n'est proposée. Suivez immédiatement l'action indiquée."
+  "emergency": "Urgence : aucune hypothèse rassurante n'est proposée. Suivez immédiatement l'action indiquée.",
+  "whatToDo": "Que faire maintenant",
+  "recommendations": "Recommandations",
+  "aiNote": "Rapport rédigé avec l'aide de l'intelligence artificielle à partir de votre résultat. Ce n'est pas un diagnostic."
 }

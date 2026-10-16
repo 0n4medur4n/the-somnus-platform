@@ -1,5 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import {
+  type PersonReportResponse,
+  PersonReportResponseSchema,
   type ReportPdf,
   ReportPdfSchema,
   type ReportRef,
@@ -21,12 +23,48 @@ import type { SessionRecord } from "../sessions/session.service.js";
  * returns the immutable ReportRef with short-lived signed URLs (§9); it never
  * renders or recalculates anything itself.
  */
+/** A reasoning model writing a report can take a minute or two; the PDF waits for it too. */
+const PERSON_REPORT_TIMEOUT_MS = 240_000;
+
 @Injectable()
 export class ReportProxyService {
   constructor(
     @Inject(REPORT_CLIENT) private readonly report: CloudRunClient,
     private readonly morpheo: MorpheoProxyService,
   ) {}
+
+  /**
+   * The person's AI-written report for an assessment (§15 amended): built from
+   * Morpheo's own result for that session -- never from the browser -- so it can
+   * only describe what the assessment found. Written once by the report service
+   * and stored; the first call may take a while (the model reasons at length).
+   */
+  async personReport(
+    sessionId: string,
+    locale: SupportedLocale,
+    rawCorrelationId?: string,
+  ): Promise<PersonReportResponse> {
+    const correlationId = correlationOf(rawCorrelationId);
+    const result = await this.morpheo.summary(sessionId, correlationId);
+    const body: ReportRenderRequest = {
+      assessmentId: sessionId,
+      definitionVersion: result.workflowVersion,
+      contentVersion: result.contentVersion,
+      locale,
+      role: result.role,
+      level: result.level,
+      stop: result.stop,
+      triggeredRules: result.triggeredRules,
+      routes: result.routes,
+      completedAt: new Date().toISOString(),
+    };
+    const response = await this.report.post("/internal/v1/reports/narrative", {
+      correlationId,
+      body,
+      timeoutMs: PERSON_REPORT_TIMEOUT_MS,
+    });
+    return this.parse(PersonReportResponseSchema, response.body, correlationId);
+  }
 
   /**
    * The signed-in person's report for one of THEIR saved assessments, as a PDF.
@@ -63,7 +101,11 @@ export class ReportProxyService {
       routes: snapshot.result.routes,
       completedAt: saved.createdAt,
     };
-    const response = await this.report.post("/internal/v1/reports/pdf", { correlationId, body });
+    const response = await this.report.post("/internal/v1/reports/pdf", {
+      correlationId,
+      body,
+      timeoutMs: PERSON_REPORT_TIMEOUT_MS,
+    });
     return this.parse(ReportPdfSchema, response.body, correlationId);
   }
 

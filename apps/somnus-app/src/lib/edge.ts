@@ -23,6 +23,7 @@ import type {
   Organization,
   OrganizationCreateRequest,
   OwnAssessmentsResponse,
+  PersonReportResponse,
   ProfilePatchRequest,
   RegistrationRequest,
   SessionResponse,
@@ -53,6 +54,11 @@ export const edge = {
   removePhoto: (): Promise<void> => api.del<void>("/v1/me/photo"),
   /** The photo URL; `version` (the photo's change time) keeps a new photo from showing stale. */
   photoUrl: (version: string): string => api.url(`/v1/me/photo?v=${encodeURIComponent(version)}`),
+  /** The person's AI-written report for an assessment (written once, then stored). */
+  getPersonReport: (sessionId: string, locale: SupportedLocale): Promise<PersonReportResponse> =>
+    api.get<PersonReportResponse>(
+      `/v1/assessments/${encodeURIComponent(sessionId)}/report?locale=${encodeURIComponent(locale)}`,
+    ),
   /** The PDF report for one of the person's saved assessments (a download link). */
   assessmentReportUrl: (sessionId: string, locale: SupportedLocale): string =>
     api.url(

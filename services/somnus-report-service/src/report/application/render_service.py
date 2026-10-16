@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 from report.application.ai_wording import ApprovedWording, apply_approved_wording
+from report.application.narrative import NarrativeService
 from report.application.retrieval import CitationResolver, SourceRetriever
 from report.infrastructure.morpheo_client import ContentProvider
 from report.infrastructure.pdf import PdfRenderer
@@ -86,7 +87,11 @@ class RenderService:
         review: ApprovedWording | None = None,
         grounding: GroundingSource | None = None,
         provenance: ProvenanceSink | None = None,
+        narratives: NarrativeService | None = None,
     ) -> None:
+        # The person's AI-written report (§15 amended). Only the on-demand PDF
+        # uses it; the stored render stays the deterministic report.
+        self._narratives = narratives
         self._content = content_provider
         self._pdf = pdf_renderer
         self._storage = storage
@@ -263,12 +268,17 @@ class RenderService:
         return apply_approved_wording(content, self._review)
 
     def _compose(
-        self, request: ReportRenderRequestDTO
+        self, request: ReportRenderRequestDTO, *, with_narrative: bool = False
     ) -> tuple[RenderedReport, list[RetrievedSource], list[GroundingMaterial]]:
         content = self._worded(self._content.get_content())
         citations = self._citations(request, content)
         grounding = self._grounding_material(request, content, citations)
-        rendered = render_html(request, content, citations=citations, grounding=grounding)
+        narrative = None
+        if with_narrative and self._narratives is not None:
+            narrative = self._narratives.for_assessment(request, content).narrative
+        rendered = render_html(
+            request, content, citations=citations, grounding=grounding, narrative=narrative
+        )
         return rendered, citations, grounding
 
     def render_pdf(self, request: ReportRenderRequestDTO) -> ReportPdfDTO:
@@ -277,7 +287,7 @@ class RenderService:
         For the person's own "download my report": rendered on demand from their
         frozen result, handed back once, kept nowhere.
         """
-        rendered, _citations, _grounding = self._compose(request)
+        rendered, _citations, _grounding = self._compose(request, with_narrative=True)
         pdf_bytes = self._pdf.to_pdf(rendered.html)
         return ReportPdfDTO(
             assessment_id=request.assessment_id,

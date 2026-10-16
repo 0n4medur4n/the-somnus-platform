@@ -72,9 +72,45 @@ export const ReportPdfSchema = z
   .strict();
 export type ReportPdf = z.infer<typeof ReportPdfSchema>;
 
+/**
+ * The person's report, written by the AI from their structured result (build
+ * plan §15 amended 2026-10-16: live, not reviewed). Bounded on both sides; the
+ * level and the urgent instructions are NOT in it -- they stay the protocol's
+ * own words, printed apart.
+ */
+export const PersonReportSchema = z
+  .object({
+    summary: z.string().min(1).max(900),
+    whatToDo: z.array(z.string().min(1)).min(1).max(4),
+    patterns: z
+      .array(
+        z.object({ name: z.string().min(1).max(120), why: z.string().min(1).max(600) }).strict(),
+      )
+      .max(3),
+    recommendations: z.array(z.string().min(1)).max(6),
+    prepare: z.array(z.string().min(1)).max(8),
+  })
+  .strict();
+export type PersonReport = z.infer<typeof PersonReportSchema>;
+
+/**
+ * report -> edge -> app. `generated: false` (an emergency, which never reaches a
+ * model, or a failed/refused generation): the app shows the protocol's wording.
+ */
+export const PersonReportResponseSchema = z
+  .object({
+    assessmentId: z.string().min(1),
+    locale: LocaleSchema,
+    generated: z.boolean(),
+    narrative: PersonReportSchema.nullish(),
+  })
+  .strict();
+export type PersonReportResponse = z.infer<typeof PersonReportResponseSchema>;
+
 /** The named set exported as JSON Schema artifacts (schemas/json-schema/report). */
 export const REPORT_CONTRACT_SCHEMAS = {
   ReportRenderRequest: ReportRenderRequestSchema,
   ReportRef: ReportRefSchema,
   ReportPdf: ReportPdfSchema,
+  PersonReportResponse: PersonReportResponseSchema,
 } as const;

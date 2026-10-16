@@ -23,6 +23,8 @@ class LlmRequest:
     # default. A reasoning model takes no temperature while it reasons, so an
     # adapter drops `temperature` whenever an effort other than "none" is set.
     reasoning_effort: str | None = None
+    # Ask the model for a single JSON object (the person's report is structured).
+    json_output: bool = False
 
 
 @dataclass(frozen=True)
