@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { get, post, patch, del } = vi.hoisted(() => ({
+const { get, post, patch, del, url } = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
   patch: vi.fn(),
   del: vi.fn(),
+  url: vi.fn((path: string) => `https://app.example${path}`),
 }));
-vi.mock("./api.js", () => ({ api: { get, post, patch, del } }));
+vi.mock("./api.js", () => ({ api: { get, post, patch, del, url } }));
 
 const { edge } = await import("./edge.js");
 
@@ -138,5 +139,14 @@ describe("edge (Morpheo anonymous assessment surface)", () => {
   it("getAssessmentSnapshot gets the session snapshot path", () => {
     void edge.getAssessmentSnapshot("sess-1");
     expect(get).toHaveBeenCalledWith("/v1/assessments/sess-1/snapshot");
+  });
+
+  it("links the report download to the person's own assessment, in their language", () => {
+    expect(edge.assessmentReportUrl("sess/1", "ca")).toBe(
+      "https://app.example/v1/reports/assessments/sess%2F1/pdf?locale=ca",
+    );
+    expect(edge.photoUrl("2026-10-16T10:00:00.000Z")).toBe(
+      "https://app.example/v1/me/photo?v=2026-10-16T10%3A00%3A00.000Z",
+    );
   });
 });
