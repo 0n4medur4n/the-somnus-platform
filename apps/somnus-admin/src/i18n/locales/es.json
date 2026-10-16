@@ -15,7 +15,9 @@
     "sendLink": "Enviar enlace de acceso",
     "linkSent": "Te hemos enviado un enlace de acceso a {{email}}. Revisa tu correo.",
     "tryAnotherEmail": "Usar otro correo",
-    "error": "No hemos podido enviar el enlace. Inténtalo de nuevo."
+    "error": "No hemos podido enviar el enlace. Inténtalo de nuevo.",
+    "sending": "Enviando enlace…",
+    "sendingSlow": "Un momento: estamos preparando tu enlace. Puede tardar unos segundos."
   },
   "callback": {
     "verifying": "Verificando tu enlace de acceso…",
