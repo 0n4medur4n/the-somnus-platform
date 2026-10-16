@@ -4,6 +4,7 @@ import { NavLink } from "react-router";
 import { accountViewOf } from "../auth/account-view.js";
 import { useAuth } from "../auth/useAuth.js";
 import { Avatar } from "../components/Avatar.js";
+import { type Brand, BrandLogo } from "../components/BrandLogo.js";
 import { Button } from "../components/Button.js";
 import { LanguageSwitcher } from "../components/LanguageSwitcher.js";
 import { ThemeSwitcher } from "../components/ThemeSwitcher.js";
@@ -24,8 +25,17 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
  * The shell of a Morpheo user's own space: their questionnaire, their saved
  * assessments, their profile. Nothing from the professional or organization
  * areas -- those are other people's flows.
+ *
+ * `brand` is the mark in the header: The Somnus by default, Morpheo while the
+ * user is inside the Morpheo questionnaire.
  */
-export function MorpheoLayout({ children }: { children: ReactNode }) {
+export function MorpheoLayout({
+  children,
+  brand = "somnus",
+}: {
+  children: ReactNode;
+  brand?: Brand;
+}) {
   const { t } = useTranslation();
   const { state, logout } = useAuth();
   const me = state.status === "authenticated" ? state.me : null;
@@ -38,9 +48,7 @@ export function MorpheoLayout({ children }: { children: ReactNode }) {
       </a>
       <header className="border-b border-somnus-muted/20">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 p-4 sm:gap-4">
-          <span className="whitespace-nowrap font-semibold text-somnus-text">
-            {t("common.appName")}
-          </span>
+          <BrandLogo brand={brand} className={brand === "morpheo" ? "h-6 w-auto" : "h-5 w-auto"} />
           {/* Wraps under the name on a phone rather than overflowing. */}
           <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
             {me ? <Avatar me={me} className="hidden h-9 w-9 text-sm sm:flex" /> : null}

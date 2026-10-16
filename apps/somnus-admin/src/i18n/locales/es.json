@@ -1,6 +1,7 @@
 {
   "common": {
-    "appName": "The Somnus · Consola",
+    "brandName": "The Somnus",
+    "consoleLabel": "Consola",
     "loading": "Cargando…",
     "signOut": "Cerrar sesión",
     "skipToContent": "Saltar al contenido",

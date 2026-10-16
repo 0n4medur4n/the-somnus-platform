@@ -16,6 +16,7 @@ import { type SafetyAnswer, SafetyQuestions } from "../assessment/SafetyQuestion
 import { type AssessmentStep, StepProgress } from "../assessment/StepProgress.js";
 import { accountViewOf } from "../auth/account-view.js";
 import { useAuth } from "../auth/useAuth.js";
+import { BrandLogo } from "../components/BrandLogo.js";
 import { Button } from "../components/Button.js";
 import { ChoiceCard } from "../components/ChoiceCard.js";
 import { FullPageStatus } from "../components/FullPageStatus.js";
@@ -47,7 +48,7 @@ export function AssessmentRoute() {
   if (state.status === "loading") return <FullPageStatus message={t("common.loading")} />;
   if (state.status === "authenticated" && accountViewOf(state.me).isMorpheoUser) {
     return (
-      <MorpheoLayout>
+      <MorpheoLayout brand="morpheo">
         <Assessment embedded me={state.me} />
       </MorpheoLayout>
     );
@@ -391,11 +392,14 @@ export function Assessment({
       }
     >
       {embedded ? null : (
-        // The public page has no app shell: its own appearance and language
-        // controls (embedded, the Morpheo layout's header carries them).
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <ThemeSwitcher />
-          <LanguageSwitcher />
+        // The public page has no app shell: its own Morpheo mark, appearance and
+        // language controls (embedded, the Morpheo layout's header carries them).
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BrandLogo brand="morpheo" className="h-6 w-auto" />
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <ThemeSwitcher />
+            <LanguageSwitcher />
+          </div>
         </div>
       )}
       <header className="flex flex-col gap-1">

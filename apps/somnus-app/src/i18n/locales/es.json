@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "The Somnus",
+    "productName": "Morpheo",
     "loading": "Cargando…",
     "save": "Guardar",
     "cancel": "Cancelar",
