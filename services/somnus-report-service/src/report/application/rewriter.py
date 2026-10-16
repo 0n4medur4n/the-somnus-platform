@@ -51,7 +51,9 @@ class Rewriter:
         temperature: float,
         template_version: str,
         prompt_template_id: str,
+        reasoning_effort: str | None = None,
     ) -> None:
+        self._reasoning_effort = reasoning_effort
         self._provider = provider
         self._scanner = scanner
         self._model = model
@@ -67,6 +69,7 @@ class Rewriter:
                 user=approved_text,
                 model=self._model,
                 temperature=self._temperature,
+                reasoning_effort=self._reasoning_effort,
             )
         )
         blocked = self._scanner.scan(response.text)
