@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import type { SignInLinkRequest } from "@somnus/api-contracts";
-import type { CloudRunClient } from "@somnus/cloud-run-client";
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import { Timestamp } from "firebase-admin/firestore";
 import { correlationOf } from "../../common/composition.util.js";
 import { loadEdgeConfig } from "../../config/edge-config.js";
 import { FirebaseService } from "../../infrastructure/firebase/firebase.service.js";
-import { WORKER_CLIENT } from "../../infrastructure/internal-clients/internal-clients.module.js";
+import {
+  NOTIFICATION_QUEUE,
+  type NotificationQueue,
+} from "../../infrastructure/notification-queue/notification-queue.js";
 import { cleanSignInLink, SAME_ADDRESS_INTERVAL_MS, throttleKey } from "./sign-in-link.js";
 
 /** Firestore: one document per address hash, holding when a link was last sent. */
@@ -32,7 +34,7 @@ export class AuthEmailLinkService {
 
   constructor(
     private readonly firebase: FirebaseService,
-    @Inject(WORKER_CLIENT) private readonly worker: CloudRunClient,
+    @Inject(NOTIFICATION_QUEUE) private readonly notifications: NotificationQueue,
   ) {}
 
   async send(request: SignInLinkRequest, rawCorrelationId?: string): Promise<SignInLinkOutcome> {
@@ -54,17 +56,26 @@ export class AuthEmailLinkService {
       });
     }
 
-    await this.worker.post("/internal/v1/notifications/tasks", {
-      correlationId,
-      body: {
-        idempotencyKey: `sign-in-link:${randomUUID()}`,
-        type: "sign_in_link",
-        to: request.email,
-        locale: request.locale,
-        link,
-        params: {},
-      },
-    });
+    // Queued, not sent inline: the answer does not wait for the worker to wake
+    // up and for Brevo to accept the message (deployed; locally it does).
+    try {
+      await this.notifications.enqueue(
+        {
+          idempotencyKey: `sign-in-link:${randomUUID()}`,
+          type: "sign_in_link",
+          to: request.email,
+          locale: request.locale,
+          link,
+          params: {},
+        },
+        correlationId,
+      );
+    } catch (error) {
+      if (error instanceof SomnusError) throw error;
+      throw new SomnusError(ErrorCode.UPSTREAM_UNAVAILABLE, "Could not queue the sign-in email.", {
+        correlationId,
+      });
+    }
     return "sent";
   }
 

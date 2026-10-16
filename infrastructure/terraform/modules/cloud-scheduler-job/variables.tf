@@ -25,9 +25,15 @@ variable "http_uri" {
   type        = string
 }
 
+variable "http_method" {
+  type    = string
+  default = "POST"
+}
+
 variable "oidc_service_account_email" {
-  description = "Service account whose OIDC token authenticates the call -- the target Cloud Run service must grant it roles/run.invoker (cloud-run-iam module)."
+  description = "Service account whose OIDC token authenticates the call -- the target Cloud Run service must grant it roles/run.invoker (cloud-run-iam module). Null for a public target."
   type        = string
+  default     = null
 }
 
 variable "paused" {

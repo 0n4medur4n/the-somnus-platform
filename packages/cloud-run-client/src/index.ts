@@ -8,6 +8,7 @@ export { mapHttpErrorToSomnusError } from "./error-mapping.js";
 export type { UpstreamErrorContext } from "./error-mapping-types.js";
 export {
   createGoogleTokenProvider,
+  GoogleAccessTokenProvider,
   GoogleIdTokenTokenProvider,
   type GoogleTokenProviderOptions,
 } from "./google-token-provider.js";

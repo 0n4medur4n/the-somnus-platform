@@ -13,11 +13,15 @@ resource "google_cloud_scheduler_job" "this" {
   paused    = var.paused
 
   http_target {
-    http_method = "POST"
+    http_method = var.http_method
     uri         = var.http_uri
 
-    oidc_token {
-      service_account_email = var.oidc_service_account_email
+    # A public target (the edge-api keep-warm ping) needs no token.
+    dynamic "oidc_token" {
+      for_each = var.oidc_service_account_email == null ? [] : [var.oidc_service_account_email]
+      content {
+        service_account_email = oidc_token.value
+      }
     }
   }
 

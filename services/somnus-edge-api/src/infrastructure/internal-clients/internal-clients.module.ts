@@ -1,6 +1,16 @@
 import { Global, Module } from "@nestjs/common";
-import { type CloudRunClient, createCloudRunClient } from "@somnus/cloud-run-client";
+import {
+  type CloudRunClient,
+  createCloudRunClient,
+  GoogleAccessTokenProvider,
+} from "@somnus/cloud-run-client";
 import { type EdgeConfig, loadEdgeConfig } from "../../config/edge-config.js";
+import {
+  CloudTasksNotificationQueue,
+  DirectWorkerNotificationQueue,
+  NOTIFICATION_QUEUE,
+  type NotificationQueue,
+} from "../notification-queue/notification-queue.js";
 import { createInternalTokenProvider } from "./token-provider.js";
 
 /**
@@ -81,6 +91,21 @@ async function buildWorkerClient(config: EdgeConfig): Promise<CloudRunClient> {
   });
 }
 
+function buildNotificationQueue(config: EdgeConfig, worker: CloudRunClient): NotificationQueue {
+  if (!config.NOTIFICATIONS_QUEUE) return new DirectWorkerNotificationQueue(worker);
+  if (!config.NOTIFICATIONS_TASK_INVOKER) {
+    throw new Error("NOTIFICATIONS_QUEUE is set but NOTIFICATIONS_TASK_INVOKER is not");
+  }
+  const tokens = new GoogleAccessTokenProvider();
+  return new CloudTasksNotificationQueue({
+    queue: config.NOTIFICATIONS_QUEUE,
+    workerBaseUrl: config.WORKER_BASE_URL,
+    audience: config.WORKER_AUDIENCE ?? config.WORKER_BASE_URL,
+    invokerServiceAccount: config.NOTIFICATIONS_TASK_INVOKER,
+    getAccessToken: () => tokens.getAccessToken(),
+  });
+}
+
 /**
  * Global so any composing module (`me`, `consent`, and the actor
  * resolver) can inject the identity client. Built once at bootstrap
@@ -102,10 +127,16 @@ async function buildWorkerClient(config: EdgeConfig): Promise<CloudRunClient> {
       useFactory: (): Promise<CloudRunClient> => buildWorkerClient(loadEdgeConfig(process.env)),
     },
     {
+      provide: NOTIFICATION_QUEUE,
+      inject: [WORKER_CLIENT],
+      useFactory: (worker: CloudRunClient): NotificationQueue =>
+        buildNotificationQueue(loadEdgeConfig(process.env), worker),
+    },
+    {
       provide: REPORT_CLIENT,
       useFactory: (): Promise<CloudRunClient> => buildReportClient(loadEdgeConfig(process.env)),
     },
   ],
-  exports: [WORKER_CLIENT, IDENTITY_CLIENT, MORPHEO_CLIENT, REPORT_CLIENT],
+  exports: [WORKER_CLIENT, IDENTITY_CLIENT, MORPHEO_CLIENT, REPORT_CLIENT, NOTIFICATION_QUEUE],
 })
 export class InternalClientsModule {}
