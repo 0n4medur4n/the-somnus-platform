@@ -435,5 +435,8 @@
     "cityLabel": "Ville",
     "optional": "Facultatif",
     "choose": "Choisissez une option"
+  },
+  "report": {
+    "download": "Télécharger le rapport (PDF)"
   }
 }

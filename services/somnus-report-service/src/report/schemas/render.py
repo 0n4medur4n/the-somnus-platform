@@ -67,6 +67,22 @@ class ClinicalContentDTO(ContractModel):
     output_contract: OutputContractContentDTO
 
 
+class ReportPdfDTO(ContractModel):
+    """report -> edge: one report as a PDF, rendered on demand and not stored.
+
+    Base64 because the internal client speaks JSON. The edge decodes it and hands
+    the person the file; nothing is kept, so there is no URL to leak or expire.
+    """
+
+    assessment_id: str
+    template_version: str
+    definition_version: str
+    content_version: str
+    locale: Locale
+    created_at: str
+    pdf_base64: str
+
+
 class ReportRefDTO(ContractModel):
     report_id: str
     assessment_id: str

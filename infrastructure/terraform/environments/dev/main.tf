@@ -305,13 +305,12 @@ module "run_report" {
     LOG_FORMAT       = "json"
     MORPHEO_BASE_URL = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
   }
-  # OPENAI_API_KEY is the embedding key, and nothing else.
-  #
-  # AI_REWRITE_ENABLED is deliberately NOT set here. It is a separate setting
-  # with its own env var, defaulting to false in `report.settings.config`, and
-  # the chat adapter it would need is constructed by nothing in the service.
-  # Mounting this key enables embedding and cannot enable AI rewriting; that
-  # remains a separate, explicit decision (build plan §15 / Addendum A 15.3).
+  # OPENAI_API_KEY: embeddings, and the AI wording job
+  # (`python -m report.jobs.generate_rewrites`, GPT-6 Luna at max effort -- the
+  # code defaults, owner decision 2026-10-16). The service itself never calls
+  # the chat model: it only prints rewordings a human approved in the review
+  # queue. AI_REWRITE_ENABLED defaults on in `report.settings.config`; set it to
+  # "false" here to print every report deterministically.
   secret_env_vars = {
     DATABASE_URL   = { secret_id = "report-db-url", version = "latest" }
     OPENAI_API_KEY = { secret_id = "OPENAI_API_KEY", version = "latest" }

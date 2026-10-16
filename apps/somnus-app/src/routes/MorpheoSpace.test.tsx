@@ -17,6 +17,10 @@ const edge = vi.hoisted(() => ({
   getOwnAssessments: vi.fn(),
   getAssessmentSnapshot: vi.fn(),
   photoUrl: vi.fn((version: string) => `/v1/me/photo?v=${version}`),
+  assessmentReportUrl: vi.fn(
+    (sessionId: string, locale: string) =>
+      `/v1/reports/assessments/${sessionId}/pdf?locale=${locale}`,
+  ),
   getLegalDocuments: vi.fn(),
   getConsentStatus: vi.fn(),
   recordConsent: vi.fn(),
@@ -401,6 +405,11 @@ describe("AssessmentDetail (one saved result)", () => {
     expect(await screen.findByText("Información y observación")).toBeInTheDocument();
     expect(edge.getAssessmentSnapshot).toHaveBeenCalledWith("s-old");
     await waitFor(() => expect(screen.getByText(/14 de marzo de 2026/)).toBeInTheDocument());
+
+    // The report for THIS assessment, in the language being read, as a download.
+    const download = screen.getByRole("link", { name: t("report.download") });
+    expect(download).toHaveAttribute("href", "/v1/reports/assessments/s-old/pdf?locale=es");
+    expect(download).toHaveAttribute("download");
   });
 });
 

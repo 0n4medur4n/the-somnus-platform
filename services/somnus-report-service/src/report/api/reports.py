@@ -9,7 +9,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 
 from report.application.render_service import RenderService
-from report.schemas.render import ReportRefDTO, ReportRenderRequestDTO
+from report.schemas.render import ReportPdfDTO, ReportRefDTO, ReportRenderRequestDTO
 
 router = APIRouter(prefix="/internal/v1/reports", tags=["reports"])
 
@@ -22,3 +22,13 @@ router = APIRouter(prefix="/internal/v1/reports", tags=["reports"])
 def render_report(body: ReportRenderRequestDTO, request: Request) -> ReportRefDTO:
     service: RenderService = request.app.state.render_service
     return service.render(body)
+
+
+@router.post(
+    "/pdf",
+    response_model=ReportPdfDTO,
+    summary="Render a report as a PDF on demand (not stored).",
+)
+def render_report_pdf(body: ReportRenderRequestDTO, request: Request) -> ReportPdfDTO:
+    service: RenderService = request.app.state.render_service
+    return service.render_pdf(body)

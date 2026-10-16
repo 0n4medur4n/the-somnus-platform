@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "assessmentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "templateVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "definitionVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contentVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "locale": {
+      "type": "string",
+      "enum": [
+        "es",
+        "en",
+        "ca",
+        "fr"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pdfBase64": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "assessmentId",
+    "templateVersion",
+    "definitionVersion",
+    "contentVersion",
+    "locale",
+    "createdAt",
+    "pdfBase64"
+  ],
+  "additionalProperties": false
+}
