@@ -19,6 +19,10 @@ class LlmRequest:
     user: str
     model: str
     temperature: float
+    # How hard a reasoning model thinks ("none" ... "max"). None: the model's own
+    # default. A reasoning model takes no temperature while it reasons, so an
+    # adapter drops `temperature` whenever an effort other than "none" is set.
+    reasoning_effort: str | None = None
 
 
 @dataclass(frozen=True)

@@ -61,6 +61,48 @@ def test_openai_adapter_forwards_the_prompt_and_maps_the_text(
     assert captured["api_key"] == "secret"
 
 
+def test_openai_adapter_sends_the_reasoning_effort_and_no_temperature_when_reasoning(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    class _Completions:
+        def create(self, **kwargs: Any) -> Any:
+            captured.update(kwargs)
+            message = SimpleNamespace(content="Texto reescrito.")
+            return SimpleNamespace(model="gpt-6-luna", choices=[SimpleNamespace(message=message)])
+
+    class _Client:
+        def __init__(self, api_key: str) -> None:
+            self.chat = SimpleNamespace(completions=_Completions())
+
+    import openai
+
+    monkeypatch.setattr(openai, "OpenAI", _Client)
+    OpenAiAdapter(api_key="secret").complete(
+        LlmRequest(
+            system="s", user="u", model="gpt-6-luna", temperature=0.2, reasoning_effort="max"
+        )
+    )
+
+    assert captured["model"] == "gpt-6-luna"
+    assert captured["reasoning_effort"] == "max"
+    # A reasoning model rejects sampling parameters while it reasons.
+    assert "temperature" not in captured
+
+
+def test_the_configured_model_is_gpt_6_luna_at_maximum_effort(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    monkeypatch.delenv("LLM_REASONING_EFFORT", raising=False)
+    from report.settings.config import Settings
+
+    settings = Settings()
+    assert settings.llm_model == "gpt-6-luna"
+    assert settings.llm_reasoning_effort == "max"
+
+
 def test_openai_embedding_adapter_forwards_model_dimensions_and_maps_vectors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
