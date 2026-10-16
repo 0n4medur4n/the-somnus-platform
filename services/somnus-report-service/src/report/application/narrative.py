@@ -56,7 +56,9 @@ Escribes el informe final que leerá {audience}, en {language}, claro, cercano y
 
 Reglas que no puedes romper:
 - Usa SOLO los datos del mensaje. No inventes hechos, cifras, enfermedades ni causas.
-- No diagnostiques ni descartes nada. No digas «tienes…» ni «no tienes…».
+- No diagnostiques ni descartes nada. No escribas NUNCA la palabra «tienes» (ni
+  «no tienes»), en ninguna frase: di «has comunicado», «te ocurre», «notas», «si te
+  surgen dudas».
 - El nivel de atención ya está decidido: descríbelo, no lo cambies ni lo suavices.
 - Las instrucciones urgentes ya se muestran aparte con sus palabras exactas: no las
   repitas ni las contradigas.
@@ -73,6 +75,14 @@ Responde SOLO con un objeto JSON con estas claves:
  "patterns": [{{"name": "nombre del patrón", "why": "por qué conviene valorarlo"}}],
  "recommendations": ["2 a 5 recomendaciones prácticas del protocolo"],
  "prepare": ["3 a 6 cosas que anotar para la consulta"]}}"""
+
+# One answer, and one corrected retry if the guardrail refuses it.
+_ATTEMPTS = 2
+
+_CORRECTION = """
+
+Tu respuesta anterior se descartó porque {reason}. Escríbela de nuevo cumpliendo
+todas las reglas; no uses en ninguna frase «tienes» ni «no tienes»."""
 
 # Morpheo's module outputs are quoted templates with [placeholders]; the model
 # gets the sentence without either, so it never echoes a bracket to a person.
@@ -185,6 +195,13 @@ class NarrativeService:
         content: ClinicalContentDTO,
         data: dict[str, Any],
     ) -> tuple[NarrativeDTO, str, str] | None:
+        """Ask the model, check the answer; one corrected retry, then give up.
+
+        The scanner is deliberately broad ("Tienes [diagnóstico]." catches any
+        "tienes …"), and it is the guardrail, so it is not loosened. A refused
+        answer gets ONE retry that names the governed phrase it hit -- never the
+        text -- and if that fails too, the person reads the protocol's wording.
+        """
         assert self._provider is not None
         forbidden = [*content.output_contract.forbidden_phrases, *content.blocked_claims]
         system = _SYSTEM.format(
@@ -193,49 +210,67 @@ class NarrativeService:
             forbidden="; ".join(forbidden),
         )
         user = json.dumps(data, ensure_ascii=False)
-        try:
-            response = self._provider.complete(
-                LlmRequest(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                    reasoning_effort=self._effort,
-                    json_output=True,
+        scanner = ForbiddenPhraseScanner(
+            forbidden_phrases=list(content.output_contract.forbidden_phrases),
+            blocked_claims=list(content.blocked_claims),
+        )
+        correction = ""
+        for _attempt in range(_ATTEMPTS):
+            try:
+                response = self._provider.complete(
+                    LlmRequest(
+                        system=system,
+                        user=user + correction,
+                        model=self._model,
+                        temperature=self._temperature,
+                        reasoning_effort=self._effort,
+                        json_output=True,
+                    )
+                )
+            except Exception as exc:
+                logger.warning(
+                    "person report not written: model call failed (%s)", type(exc).__name__
+                )
+                return None
+
+            status = "published"
+            hits: list[str] = []
+            narrative: NarrativeDTO | None = None
+            try:
+                narrative = NarrativeDTO.model_validate_json(response.text)
+            except ValidationError:
+                status = "rejected_shape"
+            if narrative is not None:
+                hits = scanner.scan(_all_text(narrative))
+                if hits:
+                    status = "rejected_forbidden"
+                    narrative = None
+            # §15 logging: hashes only, never the health text.
+            log_generation(
+                build_audit(
+                    model=response.model,
+                    template_version=PROMPT_VERSION,
+                    prompt_template_id=PROMPT_ID,
+                    structured_input=user,
+                    response_text=response.text,
+                    review_status=status,
                 )
             )
-        except Exception as exc:
-            logger.warning("person report not written: model call failed (%s)", type(exc).__name__)
-            return None
-
-        status = "published"
-        narrative: NarrativeDTO | None = None
-        try:
-            narrative = NarrativeDTO.model_validate_json(response.text)
-        except ValidationError:
-            status = "rejected_shape"
-        if narrative is not None:
-            scanner = ForbiddenPhraseScanner(
-                forbidden_phrases=list(content.output_contract.forbidden_phrases),
-                blocked_claims=list(content.blocked_claims),
+            if narrative is not None:
+                return narrative, response.model, user
+            # Governed phrases only: safe to log and to hand back to the model.
+            logger.warning(
+                "person report refused",
+                extra={"personReport": {"status": status, "governedPhrases": hits}},
             )
-            if scanner.scan(_all_text(narrative)):
-                status = "rejected_forbidden"
-                narrative = None
-        # §15 logging: hashes only, never the health text.
-        log_generation(
-            build_audit(
-                model=response.model,
-                template_version=PROMPT_VERSION,
-                prompt_template_id=PROMPT_ID,
-                structured_input=user,
-                response_text=response.text,
-                review_status=status,
+            correction = _CORRECTION.format(
+                reason=(
+                    "contenía expresiones prohibidas: " + "; ".join(hits)
+                    if hits
+                    else "no era un JSON con las claves y límites pedidos"
+                )
             )
-        )
-        if narrative is None:
-            return None
-        return narrative, response.model, user
+        return None
 
 
 def _all_text(narrative: NarrativeDTO) -> str:
