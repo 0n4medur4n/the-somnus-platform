@@ -12,5 +12,7 @@ import { MorpheoProxyService } from "./morpheo.service.js";
   imports: [SessionsModule],
   controllers: [AssessmentsController],
   providers: [MorpheoProxyService],
+  // The report module reads the person's own frozen result through it.
+  exports: [MorpheoProxyService],
 })
 export class MorpheoModule {}

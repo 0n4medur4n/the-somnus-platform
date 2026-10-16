@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { DownloadReportLink } from "../assessment/DownloadReportLink.js";
 import { ResultView } from "../assessment/ResultView.js";
 import { type SafetyAnswer, SafetyQuestions } from "../assessment/SafetyQuestions.js";
 import { type AssessmentStep, StepProgress } from "../assessment/StepProgress.js";
@@ -637,10 +638,11 @@ export function Assessment({
                       <p role="status" aria-live="polite" className="text-somnus-success">
                         {t("assessment.result.autoSaved")}
                       </p>
-                      <div>
+                      <div className="flex flex-wrap gap-3">
                         <Link to="/app" className={primaryLink}>
                           {t("assessment.actions.goToSpace")}
                         </Link>
+                        {sessionId ? <DownloadReportLink sessionId={sessionId} /> : null}
                       </div>
                     </>
                   ) : saveFailed ? (

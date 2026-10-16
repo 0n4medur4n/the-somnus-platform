@@ -54,8 +54,27 @@ export const ReportRefSchema = z
   .strict();
 export type ReportRef = z.infer<typeof ReportRefSchema>;
 
+/**
+ * report -> edge: one report as a PDF, rendered on demand and not stored
+ * (the person's own "download my report"). Base64: the internal client speaks
+ * JSON. edge decodes it and hands over the file; nothing is kept.
+ */
+export const ReportPdfSchema = z
+  .object({
+    assessmentId: z.string().min(1),
+    templateVersion: z.string().min(1),
+    definitionVersion: z.string().min(1),
+    contentVersion: z.string().min(1),
+    locale: LocaleSchema,
+    createdAt: z.string().min(1),
+    pdfBase64: z.string().min(1),
+  })
+  .strict();
+export type ReportPdf = z.infer<typeof ReportPdfSchema>;
+
 /** The named set exported as JSON Schema artifacts (schemas/json-schema/report). */
 export const REPORT_CONTRACT_SCHEMAS = {
   ReportRenderRequest: ReportRenderRequestSchema,
   ReportRef: ReportRefSchema,
+  ReportPdf: ReportPdfSchema,
 } as const;

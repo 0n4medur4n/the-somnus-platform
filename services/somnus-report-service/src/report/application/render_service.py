@@ -7,6 +7,7 @@ URLs. The service never recalculates a level, route, or decision (§5.6).
 
 from __future__ import annotations
 
+import base64
 import logging
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -17,8 +18,13 @@ from report.application.retrieval import CitationResolver, SourceRetriever
 from report.infrastructure.morpheo_client import ContentProvider
 from report.infrastructure.pdf import PdfRenderer
 from report.infrastructure.storage import StorageBackend
-from report.rendering.renderer import render_html
-from report.schemas.render import ClinicalContentDTO, ReportRefDTO, ReportRenderRequestDTO
+from report.rendering.renderer import RenderedReport, render_html
+from report.schemas.render import (
+    ClinicalContentDTO,
+    ReportPdfDTO,
+    ReportRefDTO,
+    ReportRenderRequestDTO,
+)
 from report.schemas.retrieval import (
     GroundingMaterial,
     GroundingRequest,
@@ -256,11 +262,35 @@ class RenderService:
             return content
         return apply_approved_wording(content, self._review)
 
-    def render(self, request: ReportRenderRequestDTO) -> ReportRefDTO:
+    def _compose(
+        self, request: ReportRenderRequestDTO
+    ) -> tuple[RenderedReport, list[RetrievedSource], list[GroundingMaterial]]:
         content = self._worded(self._content.get_content())
         citations = self._citations(request, content)
         grounding = self._grounding_material(request, content, citations)
         rendered = render_html(request, content, citations=citations, grounding=grounding)
+        return rendered, citations, grounding
+
+    def render_pdf(self, request: ReportRenderRequestDTO) -> ReportPdfDTO:
+        """The same report as `render`, returned as a PDF instead of stored.
+
+        For the person's own "download my report": rendered on demand from their
+        frozen result, handed back once, kept nowhere.
+        """
+        rendered, _citations, _grounding = self._compose(request)
+        pdf_bytes = self._pdf.to_pdf(rendered.html)
+        return ReportPdfDTO(
+            assessment_id=request.assessment_id,
+            template_version=rendered.template_version,
+            definition_version=request.definition_version,
+            content_version=request.content_version,
+            locale=request.locale,
+            created_at=_now_iso(),
+            pdf_base64=base64.b64encode(pdf_bytes).decode("ascii"),
+        )
+
+    def render(self, request: ReportRenderRequestDTO) -> ReportRefDTO:
+        rendered, citations, grounding = self._compose(request)
         report_id = uuid.uuid4().hex
         html = rendered.html
         pdf_bytes = self._pdf.to_pdf(html)

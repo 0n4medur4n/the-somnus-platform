@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router";
+import { DownloadReportLink } from "../assessment/DownloadReportLink.js";
 import { ResultView } from "../assessment/ResultView.js";
 import { edge } from "../lib/edge.js";
 import { ASSESSMENT_CONTENT_QUERY, formatDate, OWN_ASSESSMENTS_QUERY } from "./MorpheoHome.js";
@@ -50,7 +51,12 @@ export function AssessmentDetail() {
           {t("resultPage.error")}
         </p>
       ) : (
-        <ResultView result={snapshot.data.result} content={content.data} complaints={[]} />
+        <>
+          <ResultView result={snapshot.data.result} content={content.data} complaints={[]} />
+          <div>
+            <DownloadReportLink sessionId={sessionId} />
+          </div>
+        </>
       )}
     </div>
   );

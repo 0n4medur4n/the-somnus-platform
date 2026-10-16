@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { MorpheoModule } from "../morpheo/morpheo.module.js";
 import { SessionsModule } from "../sessions/sessions.module.js";
 import { ReportsController } from "./reports.controller.js";
 import { ReportProxyService } from "./reports.service.js";
@@ -8,7 +9,7 @@ import { ReportProxyService } from "./reports.service.js";
  * `SessionGuard`; the report client comes from the global InternalClientsModule.
  */
 @Module({
-  imports: [SessionsModule],
+  imports: [SessionsModule, MorpheoModule],
   controllers: [ReportsController],
   providers: [ReportProxyService],
 })

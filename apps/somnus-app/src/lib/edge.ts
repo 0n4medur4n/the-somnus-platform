@@ -53,6 +53,11 @@ export const edge = {
   removePhoto: (): Promise<void> => api.del<void>("/v1/me/photo"),
   /** The photo URL; `version` (the photo's change time) keeps a new photo from showing stale. */
   photoUrl: (version: string): string => api.url(`/v1/me/photo?v=${encodeURIComponent(version)}`),
+  /** The PDF report for one of the person's saved assessments (a download link). */
+  assessmentReportUrl: (sessionId: string, locale: SupportedLocale): string =>
+    api.url(
+      `/v1/reports/assessments/${encodeURIComponent(sessionId)}/pdf?locale=${encodeURIComponent(locale)}`,
+    ),
   logout: (): Promise<void> => api.del<void>("/v1/sessions/current"),
   createOrganization: (body: OrganizationCreateRequest): Promise<Organization> =>
     api.post<Organization>("/v1/organizations", body),
