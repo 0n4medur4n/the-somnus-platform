@@ -328,7 +328,7 @@
       "consent": "Consentimiento",
       "concern": "Motivo",
       "result": "Resultado",
-      "safety": "Seguridad"
+      "safety": "Sueño y salud"
     },
     "role": {
       "legend": "¿Quién realiza la consulta?",
@@ -357,8 +357,8 @@
       "alreadySigned": "Ya diste este consentimiento el {{date}}. Puedes revisarlo o retirarlo en «Mis consentimientos»."
     },
     "safety": {
-      "legend": "Antes de continuar, unas preguntas de seguridad.",
-      "intro": "Responde según tu situación. Si no lo sabes, elige «No lo sé».",
+      "legend": "Unas preguntas sobre el sueño y la salud.",
+      "intro": "Responde según la situación. Si no lo sabes, elige «No lo sé».",
       "yes": "Sí",
       "no": "No",
       "unknown": "No lo sé",

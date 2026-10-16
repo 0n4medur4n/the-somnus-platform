@@ -328,7 +328,7 @@
       "consent": "Consent",
       "concern": "Concern",
       "result": "Result",
-      "safety": "Safety"
+      "safety": "Sleep and health"
     },
     "role": {
       "legend": "Who is this for?",
@@ -357,8 +357,8 @@
       "alreadySigned": "You gave this consent on {{date}}. You can review or withdraw it in “My consents”."
     },
     "safety": {
-      "legend": "First, a few safety questions.",
-      "intro": "Answer for your situation. If you don't know, choose 'I don't know'.",
+      "legend": "A few questions about sleep and health.",
+      "intro": "Answer according to the situation. If you don't know, choose “I don't know”.",
       "yes": "Yes",
       "no": "No",
       "unknown": "I don't know",

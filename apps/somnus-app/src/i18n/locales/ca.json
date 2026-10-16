@@ -328,7 +328,7 @@
       "consent": "Consentiment",
       "concern": "Motiu",
       "result": "Resultat",
-      "safety": "Seguretat"
+      "safety": "Son i salut"
     },
     "role": {
       "legend": "Qui fa la consulta?",
@@ -357,8 +357,8 @@
       "alreadySigned": "Ja vas donar aquest consentiment el {{date}}. Pots revisar-lo o retirar-lo a «Els meus consentiments»."
     },
     "safety": {
-      "legend": "Abans de continuar, unes preguntes de seguretat.",
-      "intro": "Respon segons la teva situació. Si no ho saps, tria «No ho sé».",
+      "legend": "Unes preguntes sobre el son i la salut.",
+      "intro": "Respon segons la situació. Si no ho saps, tria «No ho sé».",
       "yes": "Sí",
       "no": "No",
       "unknown": "No ho sé",
