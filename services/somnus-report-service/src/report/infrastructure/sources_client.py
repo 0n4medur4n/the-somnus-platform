@@ -8,10 +8,12 @@ the indexer is testable without a live Morpheo.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, Protocol
 
 import httpx
 
+from report.infrastructure.identity_token import IdentityHeaders
 from report.schemas.sources import ClinicalSourceDTO, ClinicalSourcesDTO
 
 
@@ -42,13 +44,22 @@ def _to_sources(raw: dict[str, Any]) -> ClinicalSourcesDTO:
 class MorpheoSourcesClient:
     """Reads Morpheo's `/internal/v1/clinical-sources` (the approved SRC corpus)."""
 
-    def __init__(self, base_url: str, timeout: float = 5.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        timeout: float = 5.0,
+        auth: Callable[[str], dict[str, str]] | None = None,
+    ) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
+        # Morpheo is private: on Cloud Run each call carries an ID token for it.
+        self._auth = auth if auth is not None else IdentityHeaders()
 
     def get_sources(self) -> ClinicalSourcesDTO:
         response = httpx.get(
-            f"{self._base_url}/internal/v1/clinical-sources", timeout=self._timeout
+            f"{self._base_url}/internal/v1/clinical-sources",
+            headers=self._auth(self._base_url),
+            timeout=self._timeout,
         )
         response.raise_for_status()
         return _to_sources(response.json())

@@ -8,10 +8,12 @@ testable without a live Morpheo. Only the fields the report presents are mapped
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, Protocol
 
 import httpx
 
+from report.infrastructure.identity_token import IdentityHeaders
 from report.schemas.render import (
     ClinicalContentDTO,
     ModuleContentDTO,
@@ -54,13 +56,22 @@ def _to_content(raw: dict[str, Any]) -> ClinicalContentDTO:
 class MorpheoContentClient:
     """Reads Morpheo's `/internal/v1/assessments/content` (es today)."""
 
-    def __init__(self, base_url: str, timeout: float = 5.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        timeout: float = 5.0,
+        auth: Callable[[str], dict[str, str]] | None = None,
+    ) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
+        # Morpheo is private: on Cloud Run each call carries an ID token for it.
+        self._auth = auth if auth is not None else IdentityHeaders()
 
     def get_content(self) -> ClinicalContentDTO:
         response = httpx.get(
-            f"{self._base_url}/internal/v1/assessments/content", timeout=self._timeout
+            f"{self._base_url}/internal/v1/assessments/content",
+            headers=self._auth(self._base_url),
+            timeout=self._timeout,
         )
         response.raise_for_status()
         return _to_content(response.json())

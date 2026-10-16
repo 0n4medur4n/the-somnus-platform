@@ -379,11 +379,14 @@ module "iam_identity" {
 }
 
 module "iam_morpheo" {
-  source          = "../../modules/cloud-run-iam"
-  project_id      = var.project_id
-  region          = var.region
-  service_name    = module.run_morpheo.service_name
-  invoker_members = [module.sa_edge_api.member]
+  source       = "../../modules/cloud-run-iam"
+  project_id   = var.project_id
+  region       = var.region
+  service_name = module.run_morpheo.service_name
+  # edge-api, and the report service: it reads Morpheo's approved content and
+  # clinical sources to render a report and to run its jobs (generate_rewrites,
+  # index_sources). Without it every report render was refused with a 403.
+  invoker_members = [module.sa_edge_api.member, module.sa_report.member]
 }
 
 module "iam_report" {
