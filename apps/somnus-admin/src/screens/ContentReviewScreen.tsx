@@ -1,4 +1,5 @@
 import type { ContentReviewItem, ReportProvenance } from "@somnus/api-contracts";
+import type { TFunction } from "i18next";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../components/Button.js";
@@ -120,6 +121,14 @@ function ProvenancePanel({
   );
 }
 
+/** "module:INS" -> "Patrón INS"; "level:L3" -> "Nivel L3"; anything else as is. */
+function describeTextRef(ref: string, t: TFunction) {
+  const [kind, id] = ref.split(":");
+  if (kind === "module" && id) return t("contentReview.textRefModule", { id });
+  if (kind === "level" && id) return t("contentReview.textRefLevel", { id });
+  return ref;
+}
+
 export function ContentReviewScreen() {
   const { t } = useTranslation();
   const { run, busy, error, notice } = useAdminAction();
@@ -176,6 +185,13 @@ export function ContentReviewScreen() {
             key={item.itemId}
             className="flex flex-col gap-3 rounded-lg border border-somnus-border p-4"
           >
+            {item.textRef ? (
+              // A per-text item: approving it changes this sentence in every
+              // report that prints it, not just one report.
+              <p className="text-sm text-somnus-subtle">
+                {t("contentReview.textRef", { ref: describeTextRef(item.textRef, t) })}
+              </p>
+            ) : null}
             <div className="grid gap-4 md:grid-cols-2">
               <article aria-labelledby={`deterministic-${item.itemId}`}>
                 <h3

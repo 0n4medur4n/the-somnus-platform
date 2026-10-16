@@ -12,7 +12,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
-from report.application.ai_rewrite import AiRewriteDisabledError
+from report.application.ai_wording import ApprovedWording, apply_approved_wording
 from report.application.retrieval import CitationResolver, SourceRetriever
 from report.infrastructure.morpheo_client import ContentProvider
 from report.infrastructure.pdf import PdfRenderer
@@ -31,18 +31,6 @@ logger = logging.getLogger("report.render")
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
-
-
-class ApprovedCandidateSource(Protocol):
-    """What the render pipeline is allowed to ask the review queue.
-
-    Deliberately one method, and deliberately the approved one. The pipeline
-    cannot request "the candidate for this report" and then decide for itself
-    whether the status permits it -- the only question it can ask already has the
-    status filter inside the answer (see ContentReviewService.approved_candidate).
-    """
-
-    def approved_candidate(self, report_id: str) -> str | None: ...
 
 
 class GroundingSource(Protocol):
@@ -89,7 +77,7 @@ class RenderService:
         ai_rewrite_enabled: bool = False,
         citations: CitationResolver | None = None,
         retriever: SourceRetriever | None = None,
-        review: ApprovedCandidateSource | None = None,
+        review: ApprovedWording | None = None,
         grounding: GroundingSource | None = None,
         provenance: ProvenanceSink | None = None,
     ) -> None:
@@ -97,7 +85,7 @@ class RenderService:
         self._pdf = pdf_renderer
         self._storage = storage
         self._ttl = signed_url_ttl
-        # Master switch for AI rewriting (§15); off by default. See ai_rewrite.
+        # Master switch for AI wording (§15). See report.application.ai_wording.
         self._ai_rewrite_enabled = ai_rewrite_enabled
         # The by-id path (§14b / Checkpoint 11.3 Stage 4): the sources the fired
         # rule actually cited. Needs no embedder and no key, so it is wired in
@@ -106,9 +94,9 @@ class RenderService:
         # The similarity fallback (§3.6b), for reports that fired no rule at all.
         # Optional: no embedding key -> None -> those reports carry no citations.
         self._retriever = retriever
-        # The human review queue (Checkpoint 15.3). Consulted only when the flag
-        # above is on; None means "no approvals reachable", which the gate treats
-        # exactly like no approval existing.
+        # The human review queue. Consulted only when the flag above is on, and
+        # only for approved rewordings; None means none are reachable, so every
+        # sentence prints as Morpheo approved it.
         self._review = review
         # Index B (Addendum B §B3.1). Supporting material only, and optional in
         # every sense: unwired, empty, wrong or raising, it changes no citation,
@@ -253,46 +241,28 @@ class RenderService:
         except Exception:
             logger.warning("corpus provenance could not be recorded for this report")
 
-    def _finalize_html(self, html: str, report_id: str) -> str:
-        """The one seam where AI rewriting could ever enter the pipeline (§15).
+    def _worded(self, content: ClinicalContentDTO) -> ClinicalContentDTO:
+        """The one seam where AI wording enters the pipeline (§15).
 
-        Off (the default): return the deterministic HTML unchanged — the Rewriter
-        is never constructed or invoked, and the review queue is not consulted.
-
-        On: the ONLY thing that can make AI text eligible is an approved review
-        item (Checkpoint 15.3). The lookup asks the review service for the
-        APPROVED candidate; there is no call that returns a rejected or pending
-        one, so those cannot reach this point even in principle. Absent an
-        approval, this raises exactly as it did in 11.2 — the guard is the same
-        one, now with something able to satisfy it rather than nothing.
-
-        Eligibility is as far as this checkpoint goes: an approved candidate does
-        not yet get substituted into the output. Wiring that substitution belongs
-        with the decision to enable the flag, which is the clinical lead's after
-        using the queue, not this checkpoint's.
+        Off: Morpheo's content untouched; the queue is not consulted.
+        On: each reviewable sentence is swapped for its HUMAN-APPROVED rewording,
+        if it has one. The queue can only answer with approved text, so pending
+        and rejected wording cannot reach a report; a sentence without an
+        approval prints exactly as Morpheo approved it. Swapping happens on the
+        content, before rendering, so the level, routing and layout are the
+        deterministic renderer's as always.
         """
-        if not self._ai_rewrite_enabled:
-            return html
-        approved = None if self._review is None else self._review.approved_candidate(report_id)
-        if approved is None:
-            raise AiRewriteDisabledError(
-                "AI_REWRITE_ENABLED is on but no approved review item exists for this "
-                "report (§15). Unreviewed, pending, and rejected AI text can never be "
-                "served; only a human approval in the content review queue makes a "
-                "candidate eligible."
-            )
-        return html
+        if not self._ai_rewrite_enabled or self._review is None:
+            return content
+        return apply_approved_wording(content, self._review)
 
     def render(self, request: ReportRenderRequestDTO) -> ReportRefDTO:
-        content = self._content.get_content()
+        content = self._worded(self._content.get_content())
         citations = self._citations(request, content)
         grounding = self._grounding_material(request, content, citations)
         rendered = render_html(request, content, citations=citations, grounding=grounding)
-        # Minted before finalizing so the AI gate can ask the review queue about
-        # THIS report. Nothing is stored under it until the gate has allowed the
-        # render to proceed.
         report_id = uuid.uuid4().hex
-        html = self._finalize_html(rendered.html, report_id)
+        html = rendered.html
         pdf_bytes = self._pdf.to_pdf(html)
         self._record_provenance(report_id, request, citations, grounding)
 

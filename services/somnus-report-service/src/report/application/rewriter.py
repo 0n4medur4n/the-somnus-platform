@@ -8,7 +8,7 @@ can never mark text approved.
 
 Status (Checkpoint 11.2): this class is NOT wired into the render pipeline and AI
 rewriting is disabled by `AI_REWRITE_ENABLED` (default off; see
-report.application.ai_rewrite). `pending_review` is only a status today — no
+report.application.ai_wording). `pending_review` is only a status today — no
 endpoint, UI, role, or persistence exists to review, approve, or reject the output.
 Until such a human-review mechanism is built, no AI text may be served (§15).
 """

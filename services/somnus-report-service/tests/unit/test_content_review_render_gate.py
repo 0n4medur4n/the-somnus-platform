@@ -1,15 +1,11 @@
-"""A rejected candidate can never be rendered (Checkpoint 15.3).
+"""Only human-approved AI wording ever reaches a report (build plan §15).
 
-Asserted at the RENDER PIPELINE, not at the queue: the queue refusing to hand out
-a rejected candidate is necessary but not sufficient, because the thing that must
-never happen is rejected prose reaching a stored report. So these drive
-`RenderService.render` and then look at what was actually written to storage.
-
-`AI_REWRITE_ENABLED` is off in every environment and stays off for this
-checkpoint. It is switched on *inside these tests only*, by constructing a
-RenderService with the flag set, because a gate that is never exercised is not a
-gate -- the default-off path is covered separately, and
-`test_render_service.py::...settings default` still asserts the shipped default.
+Replaces the Checkpoint 15.3 render-gate tests (owner decision 2026-10-16: AI
+wording reviewed once per sentence, AI_REWRITE_ENABLED on everywhere). The
+property protected is unchanged and is still asserted on what the pipeline
+actually STORED, not on the queue: rejected or still-pending AI text never
+reaches a report. What changed is the behaviour with nothing approved: the report
+is no longer refused, it prints Morpheo's approved original.
 """
 
 from __future__ import annotations
@@ -18,9 +14,6 @@ from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
 
-import pytest
-
-from report.application.ai_rewrite import AiRewriteDisabledError
 from report.application.content_review import (
     STATUS_APPROVED,
     STATUS_REJECTED,
@@ -29,14 +22,17 @@ from report.application.content_review import (
 from report.application.render_service import RenderService
 from report.infrastructure.forbidden import ForbiddenPhraseScanner
 from report.infrastructure.storage import LocalStorageBackend
+from report.rendering.renderer import render_html
 from report.schemas.render import ClinicalContentDTO, ReportRenderRequestDTO
 from report.settings.config import Settings
 
 RequestBuilder = Callable[..., ReportRenderRequestDTO]
 
-REJECTED_TEXT = "Una reescritura que el revisor rechazo por sonar a diagnostico."
-APPROVED_TEXT = "Una reescritura que el revisor aprobo por ser fiel al original."
-SEEDED_REPORT = "seeded-report"
+VERSION = "rewrite_v1"
+INS_OUTPUT = "Has comunicado un patrón de dificultad para dormir."
+L1_ACTION = "No conduzcas ni realices tareas de riesgo; busca valoración hoy."
+APPROVED_INS = "Nos cuentas que te cuesta dormir; es un patrón que vale la pena revisar."
+REJECTED_INS = "Tienes insomnio crónico y necesitas tratamiento."
 
 
 class _FakeContent:
@@ -52,67 +48,52 @@ class _FakePdf:
         return b"%PDF-1.7 fake " + html.encode("utf-8")
 
 
-class _SeededReview:
-    """Answers the pipeline's one question against a seeded report.
-
-    `render` mints a fresh report id, so it would never match a seeded row; this
-    adapter routes the question to the seeded item instead. What it does NOT do is
-    bypass the status filter -- it calls the real `approved_candidate`, so a
-    rejected or pending item still yields None exactly as in production.
-    """
+class _Wording:
+    """The render pipeline's view of the queue: approved rewordings only."""
 
     def __init__(self, service: ContentReviewService) -> None:
         self._service = service
 
-    def approved_candidate(self, report_id: str) -> str | None:
-        return self._service.approved_candidate(SEEDED_REPORT)
+    def approved_rewrite(self, deterministic_text: str) -> str | None:
+        return self._service.approved_rewrite(deterministic_text, prompt_template_version=VERSION)
 
 
-def _seed(
-    make_review_service: Callable[[], ContentReviewService], status: str | None, text: str
-) -> _SeededReview:
-    """Queue a candidate and optionally decide it."""
-    service = make_review_service()
-    scanner = ForbiddenPhraseScanner(forbidden_phrases=[], blocked_claims=[])
+def _queue(service: ContentReviewService, text: str, candidate: str, status: str | None) -> None:
     item = service.enqueue(
-        report_id=SEEDED_REPORT,
-        deterministic_text="El resultado estructurado aprobado.",
-        candidate_text=text,
-        scanner=scanner,
-        model_id="gpt-5.6",
-        prompt_template_version="v1",
+        text_ref="module:INS",
+        deterministic_text=text,
+        candidate_text=candidate,
+        scanner=ForbiddenPhraseScanner(forbidden_phrases=[], blocked_claims=[]),
+        model_id="gpt-6-luna",
+        prompt_template_version=VERSION,
         prompt_template_id="rewrite_plain_language",
     )
     assert item is not None
     if status is not None:
-        service.decide(
-            item.item_id,
-            status=status,
-            reviewer_id="rev-1",
-            reason="a recorded reason, as both directions require",
-        )
-    return _SeededReview(service)
+        service.decide(item.item_id, status=status, reviewer_id="rev-1", reason="a recorded reason")
 
 
-def _service(
+def _render(
     tmp_path: Path,
     content: ClinicalContentDTO,
-    review: _SeededReview,
+    request: ReportRenderRequestDTO,
+    service: ContentReviewService | None,
     *,
-    ai_rewrite_enabled: bool,
-) -> RenderService:
-    return RenderService(
+    enabled: bool = True,
+) -> str:
+    pipeline = RenderService(
         content_provider=_FakeContent(content),
         pdf_renderer=_FakePdf(),
         storage=LocalStorageBackend(root=tmp_path, base_url="http://x/reports"),
         signed_url_ttl=timedelta(minutes=15),
-        ai_rewrite_enabled=ai_rewrite_enabled,
-        review=review,
+        ai_rewrite_enabled=enabled,
+        review=None if service is None else _Wording(service),
     )
+    ref = pipeline.render(request)
+    return (tmp_path / ref.report_id / request.locale / "report.html").read_text("utf-8")
 
 
-def _stored_text(root: Path) -> str:
-    """Everything the pipeline actually wrote, HTML and PDF alike."""
+def _stored(root: Path) -> str:
     return "".join(
         path.read_bytes().decode("utf-8", errors="ignore")
         for path in root.rglob("*")
@@ -120,114 +101,130 @@ def _stored_text(root: Path) -> str:
     )
 
 
-class TestARejectedItemCanNeverBeRendered:
-    def test_the_pipeline_refuses_and_stores_nothing(
+class TestUnapprovedWordingNeverReachesAReport:
+    def test_a_rejected_rewording_is_never_printed(
         self,
         tmp_path: Path,
         content: ClinicalContentDTO,
         make_request: RequestBuilder,
         make_review_service: Callable[[], ContentReviewService],
     ) -> None:
-        service = _service(
-            tmp_path,
-            content,
-            _seed(make_review_service, STATUS_REJECTED, REJECTED_TEXT),
-            ai_rewrite_enabled=True,
+        service = make_review_service()
+        _queue(service, INS_OUTPUT, REJECTED_INS, STATUS_REJECTED)
+        request = make_request(locale="es", level="L4", routes=("INS",))
+
+        html = _render(tmp_path, content, request, service)
+
+        assert REJECTED_INS not in _stored(tmp_path)
+        assert html == render_html(request, content).html
+
+    def test_a_pending_rewording_is_never_printed(
+        self,
+        tmp_path: Path,
+        content: ClinicalContentDTO,
+        make_request: RequestBuilder,
+        make_review_service: Callable[[], ContentReviewService],
+    ) -> None:
+        service = make_review_service()
+        _queue(service, INS_OUTPUT, REJECTED_INS, None)
+        request = make_request(locale="es", level="L4", routes=("INS",))
+
+        html = _render(tmp_path, content, request, service)
+
+        assert REJECTED_INS not in _stored(tmp_path)
+        assert INS_OUTPUT in html
+
+    def test_with_nothing_approved_the_report_prints_the_approved_original(
+        self,
+        tmp_path: Path,
+        content: ClinicalContentDTO,
+        make_request: RequestBuilder,
+        make_review_service: Callable[[], ContentReviewService],
+    ) -> None:
+        request = make_request(locale="es", level="L4", routes=("INS",))
+        assert _render(tmp_path, content, request, make_review_service()) == (
+            render_html(request, content).html
         )
 
-        with pytest.raises(AiRewriteDisabledError):
-            service.render(make_request(locale="es", level="L4", routes=("INS",)))
-
-        # The report id is minted before the gate runs; nothing may be written
-        # under it when the gate refuses.
-        assert list(tmp_path.rglob("*.html")) == []
-        assert REJECTED_TEXT not in _stored_text(tmp_path)
-
-    def test_a_still_pending_item_is_refused_the_same_way(
-        self,
-        tmp_path: Path,
-        content: ClinicalContentDTO,
-        make_request: RequestBuilder,
-        make_review_service: Callable[[], ContentReviewService],
+    def test_without_the_queue_wired_the_report_is_deterministic(
+        self, tmp_path: Path, content: ClinicalContentDTO, make_request: RequestBuilder
     ) -> None:
-        service = _service(
-            tmp_path,
-            content,
-            _seed(make_review_service, None, REJECTED_TEXT),
-            ai_rewrite_enabled=True,
-        )
+        request = make_request(locale="es", level="L4", routes=("INS",))
+        assert _render(tmp_path, content, request, None) == render_html(request, content).html
 
-        with pytest.raises(AiRewriteDisabledError):
-            service.render(make_request(locale="es", level="L4", routes=("INS",)))
-
-        assert REJECTED_TEXT not in _stored_text(tmp_path)
-
-    def test_the_rejected_text_stays_out_even_with_the_flag_off(
-        self,
-        tmp_path: Path,
-        content: ClinicalContentDTO,
-        make_request: RequestBuilder,
-        make_review_service: Callable[[], ContentReviewService],
+    def test_a_failing_queue_never_stops_or_changes_a_report(
+        self, tmp_path: Path, content: ClinicalContentDTO, make_request: RequestBuilder
     ) -> None:
-        # The default path: deterministic output, queue never consulted. The
-        # rejected prose must be absent for the ordinary reason too, not only
-        # because the gate raised.
-        service = _service(
-            tmp_path,
-            content,
-            _seed(make_review_service, STATUS_REJECTED, REJECTED_TEXT),
-            ai_rewrite_enabled=False,
-        )
+        class _Broken:
+            def approved_rewrite(self, deterministic_text: str) -> str | None:
+                raise RuntimeError("database unavailable")
 
-        ref = service.render(make_request(locale="es", level="L4", routes=("INS",)))
-
-        assert ref.report_id
-        assert REJECTED_TEXT not in _stored_text(tmp_path)
-
-
-class TestAnApprovedItemIsWhatMakesRenderingEligible:
-    def test_the_pipeline_proceeds_when_an_approval_exists(
-        self,
-        tmp_path: Path,
-        content: ClinicalContentDTO,
-        make_request: RequestBuilder,
-        make_review_service: Callable[[], ContentReviewService],
-    ) -> None:
-        service = _service(
-            tmp_path,
-            content,
-            _seed(make_review_service, STATUS_APPROVED, APPROVED_TEXT),
-            ai_rewrite_enabled=True,
-        )
-
-        ref = service.render(make_request(locale="es", level="L4", routes=("INS",)))
-
-        # Eligibility, which is as far as 15.3 goes: the render is allowed to
-        # proceed. Substituting the approved prose into the output belongs with
-        # the decision to enable the flag, not with building the queue.
-        assert ref.report_id
-        assert (tmp_path / ref.report_id / "es" / "report.html").exists()
-
-    def test_without_the_queue_wired_at_all_the_gate_still_refuses(
-        self,
-        tmp_path: Path,
-        content: ClinicalContentDTO,
-        make_request: RequestBuilder,
-        make_review_service: Callable[[], ContentReviewService],
-    ) -> None:
-        # 11.2's behaviour, unchanged: flag on, no approval reachable -> refuse.
-        service = RenderService(
+        request = make_request(locale="es", level="L4", routes=("INS",))
+        pipeline = RenderService(
             content_provider=_FakeContent(content),
             pdf_renderer=_FakePdf(),
             storage=LocalStorageBackend(root=tmp_path, base_url="http://x/reports"),
             signed_url_ttl=timedelta(minutes=15),
             ai_rewrite_enabled=True,
+            review=_Broken(),
         )
+        ref = pipeline.render(request)
+        stored = (tmp_path / ref.report_id / "es" / "report.html").read_text("utf-8")
+        assert stored == render_html(request, content).html
 
-        with pytest.raises(AiRewriteDisabledError):
-            service.render(make_request(locale="es", level="L4", routes=("INS",)))
+
+class TestAnApprovedRewordingIsPrinted:
+    def test_in_place_of_the_original_with_level_and_routing_unchanged(
+        self,
+        tmp_path: Path,
+        content: ClinicalContentDTO,
+        make_request: RequestBuilder,
+        make_review_service: Callable[[], ContentReviewService],
+    ) -> None:
+        service = make_review_service()
+        _queue(service, INS_OUTPUT, APPROVED_INS, STATUS_APPROVED)
+        request = make_request(locale="es", level="L4", routes=("INS",))
+
+        html = _render(tmp_path, content, request, service)
+
+        assert APPROVED_INS in html
+        assert INS_OUTPUT not in html
+        # The decision is Morpheo's: same level name, same pattern name.
+        assert "Información y observación" in html or "L4" in html
+        assert "Dificultad para dormir" in html
+
+    def test_but_not_when_ai_wording_is_switched_off(
+        self,
+        tmp_path: Path,
+        content: ClinicalContentDTO,
+        make_request: RequestBuilder,
+        make_review_service: Callable[[], ContentReviewService],
+    ) -> None:
+        service = make_review_service()
+        _queue(service, INS_OUTPUT, APPROVED_INS, STATUS_APPROVED)
+        request = make_request(locale="es", level="L4", routes=("INS",))
+
+        html = _render(tmp_path, content, request, service, enabled=False)
+
+        assert html == render_html(request, content).html
+
+    def test_urgent_instructions_are_never_reworded_even_if_approved(
+        self,
+        tmp_path: Path,
+        content: ClinicalContentDTO,
+        make_request: RequestBuilder,
+        make_review_service: Callable[[], ContentReviewService],
+    ) -> None:
+        service = make_review_service()
+        _queue(service, L1_ACTION, "Mejor no conduzcas hoy, si puedes.", STATUS_APPROVED)
+        request = make_request(locale="es", level="L1", routes=())
+
+        html = _render(tmp_path, content, request, service)
+
+        assert L1_ACTION in html
+        assert "Mejor no conduzcas hoy" not in html
 
 
-def test_the_shipped_default_for_the_flag_is_still_off() -> None:
-    """15.3 builds the mechanism; it does not turn anything on."""
-    assert Settings().ai_rewrite_enabled is False
+def test_ai_wording_ships_switched_on() -> None:
+    """Owner decision 2026-10-16: on everywhere; safe because of the tests above."""
+    assert Settings().ai_rewrite_enabled is True

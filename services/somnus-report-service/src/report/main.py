@@ -187,15 +187,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # The render pipeline. WeasyPrint + the morpheo client are lazy (no native
     # libs loaded, no network) until a report is actually rendered, so the app
     # boots anywhere.
-    # The human review queue (Checkpoint 15.3) is what can make an AI candidate
-    # eligible for rendering. The render gate consults it ONLY when
-    # AI_REWRITE_ENABLED is on -- which it is not, in any environment -- and can
-    # ask it exactly one question: is there an APPROVED candidate for this report.
-    class _ApprovedCandidates:
-        def approved_candidate(self, report_id: str) -> str | None:
+    # The human review queue. The render pipeline consults it only when
+    # AI_REWRITE_ENABLED is on, and can ask it one question: is there an
+    # APPROVED rewording of this fixed sentence (see report.application.ai_wording).
+    template_version = settings.llm_prompt_template_version
+
+    class _ApprovedWording:
+        def approved_rewrite(self, deterministic_text: str) -> str | None:
             with session_factory() as session:
                 service = ContentReviewService(ContentReviewRepositorySql(session))
-                return service.approved_candidate(report_id)
+                return service.approved_rewrite(
+                    deterministic_text, prompt_template_version=template_version
+                )
 
     app.state.render_service = RenderService(
         content_provider=MorpheoContentClient(settings.morpheo_base_url),
@@ -207,7 +210,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ai_rewrite_enabled=settings.ai_rewrite_enabled,
         citations=citations,
         retriever=retriever,
-        review=_ApprovedCandidates(),
+        review=_ApprovedWording(),
         grounding=corpus_retriever,
         provenance=ProvenanceRecorder(session_factory, _current_corpus_version),
     )

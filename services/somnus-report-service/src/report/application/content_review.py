@@ -3,7 +3,7 @@
 Build plan §15 requires that all AI-generated health-related text be reviewed by
 a human before release. Checkpoint 11.2 produced the text and the status but no
 consumer: nothing could approve or reject, so `AI_REWRITE_ENABLED` had to stay
-off and `report.application.ai_rewrite` refused to serve anything. This module is
+off and the render pipeline refused to serve anything. This module is
 the missing consumer.
 
 Two rules shape the whole design, and both are about what can NOT happen:
@@ -17,8 +17,14 @@ Two rules shape the whole design, and both are about what can NOT happen:
    anything the caller passes in. A rejected or still-pending item is not
    "renderable but gated" -- there is no code path that returns it.
 
-`AI_REWRITE_ENABLED` remains off. This checkpoint builds the mechanism; turning
-the flag on is a separate decision, after the clinical lead has used the queue.
+Per-text review (2026-10-16). The AI rewords the report's fixed, approved
+sentences -- a pattern's summary, a care level's action -- never anything about
+one person. Each distinct sentence is reviewed ONCE: an item carries the
+sentence's `text_ref` (e.g. `module:INS`) and its input hash instead of a report
+id, and once approved its wording is used in every report that would otherwise
+print that sentence. `approved_rewrite` is the per-text exit and has the same
+property as `approved_candidate`: it filters on the stored status, so pending
+and rejected wording has no way out.
 """
 
 from __future__ import annotations
@@ -31,7 +37,7 @@ from datetime import UTC, datetime
 from typing import Protocol
 
 from report.infrastructure.forbidden import ForbiddenPhraseScanner
-from report.infrastructure.llm.audit import build_audit, log_generation
+from report.infrastructure.llm.audit import build_audit, input_hash_of, log_generation
 
 logger = logging.getLogger("report.content_review")
 
@@ -59,7 +65,9 @@ class ContentReviewItem:
     """One AI candidate awaiting, or having received, a human decision."""
 
     item_id: str
-    report_id: str
+    # The report the candidate was made for -- or None for a per-text item,
+    # which belongs to no single report (see `text_ref`).
+    report_id: str | None
     prompt_template_version: str
     model_id: str
     input_hash: str
@@ -75,6 +83,8 @@ class ContentReviewItem:
     decided_at: datetime | None
     reason: str | None
     created_at: datetime
+    # Which fixed sentence a per-text item rewords ("module:INS", "level:L3").
+    text_ref: str | None = None
 
     @property
     def is_renderable(self) -> bool:
@@ -93,6 +103,14 @@ class ContentReviewRepository(Protocol):
 
     def latest_approved_for_report(self, report_id: str) -> ContentReviewItem | None: ...
 
+    def latest_approved_for_text(
+        self, input_hash: str, prompt_template_version: str
+    ) -> ContentReviewItem | None: ...
+
+    def has_live_item_for_text(self, input_hash: str, prompt_template_version: str) -> bool:
+        """True when a pending or approved item already covers this text."""
+        ...
+
     def record_decision(
         self, item_id: str, *, status: str, reviewer_id: str, reason: str, decided_at: datetime
     ) -> ContentReviewItem | None: ...
@@ -105,7 +123,8 @@ class ContentReviewService:
     def enqueue(
         self,
         *,
-        report_id: str,
+        report_id: str | None = None,
+        text_ref: str | None = None,
         deterministic_text: str,
         candidate_text: str,
         scanner: ForbiddenPhraseScanner,
@@ -147,6 +166,7 @@ class ContentReviewService:
                 extra={
                     "contentReview": {
                         "reportId": report_id,
+                        "textRef": text_ref,
                         "blockedPhraseCount": len(blocked),
                         "blockedPhrases": blocked,
                         "reviewStatus": STATUS_REJECTED,
@@ -177,6 +197,7 @@ class ContentReviewService:
             decided_at=None,
             reason=None,
             created_at=datetime.now(UTC),
+            text_ref=text_ref,
         )
         self._repository.add(item)
         return item
@@ -226,6 +247,32 @@ class ContentReviewService:
         if decided is None:
             raise ReviewDecisionError(f"no review item {item_id!r}")
         return decided
+
+    def approved_rewrite(
+        self, deterministic_text: str, *, prompt_template_version: str
+    ) -> str | None:
+        """The approved rewording of one fixed sentence, or None.
+
+        The per-text exit, with the same guarantee as `approved_candidate`: the
+        repository filters on the stored status, so a pending or rejected
+        rewording cannot be returned. The sentence is matched by its hash, so a
+        changed sentence (new content version) has no approval until reviewed.
+        """
+        item = self._repository.latest_approved_for_text(
+            input_hash_of(deterministic_text), prompt_template_version
+        )
+        if item is None or not item.is_renderable:
+            return None
+        return item.candidate_text
+
+    def needs_candidate(self, deterministic_text: str, *, prompt_template_version: str) -> bool:
+        """Whether a sentence still lacks a pending or approved rewording.
+
+        A rejected one does not count: a new candidate may be proposed for it.
+        """
+        return not self._repository.has_live_item_for_text(
+            input_hash_of(deterministic_text), prompt_template_version
+        )
 
     def approved_candidate(self, report_id: str) -> str | None:
         """The only way AI text leaves this module.

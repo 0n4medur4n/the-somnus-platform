@@ -64,7 +64,14 @@ export type ReportProvenance = z.infer<typeof ReportProvenanceSchema>;
 export const ContentReviewItemSchema = z
   .object({
     itemId: z.string().min(1).max(32),
-    reportId: z.string().min(1).max(32),
+    /**
+     * The report the candidate was made for, or null for a per-text item: the
+     * AI rewords a report's fixed sentences, and each is reviewed once and then
+     * used in every report that prints it. `.nullish()`: Pydantic sends null.
+     */
+    reportId: z.string().min(1).max(32).nullish(),
+    /** Which fixed sentence a per-text item rewords, e.g. "module:INS". */
+    textRef: z.string().min(1).max(64).nullish(),
     promptTemplateVersion: z.string().min(1).max(32),
     modelId: z.string().min(1).max(64),
     /** sha256 hex of the structured input and of the model's response (§15). */
