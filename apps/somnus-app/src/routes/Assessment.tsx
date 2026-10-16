@@ -206,7 +206,7 @@ export function Assessment({
             // "tu hijo o hija", "la persona a la que valoras" (content 1.4).
             .map((prompt) => ({
               signalId: prompt.signalId,
-              question: (role ? prompt.questionByRole[role] : undefined) ?? prompt.question,
+              question: (role ? prompt.questionByRole?.[role] : undefined) ?? prompt.question,
             }))
         : [],
     [contentQuery.data, role],

@@ -59,6 +59,8 @@ export const SafetyPromptContentSchema = z
     /**
      * The same question in each audience's voice -- "tú", "tu hijo o hija",
      * "la persona a la que valoras". A role absent here falls back to `question`.
+     * Optional so an edge that knows it can be deployed before the morpheo that
+     * sends it: a strict reader must never reject the content it is about to get.
      */
     questionByRole: z
       .object({
@@ -67,7 +69,8 @@ export const SafetyPromptContentSchema = z
         professional: z.string().min(1),
       })
       .partial()
-      .strict(),
+      .strict()
+      .optional(),
   })
   .strict();
 export type SafetyPromptContent = z.infer<typeof SafetyPromptContentSchema>;

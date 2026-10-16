@@ -142,8 +142,7 @@
         "required": [
           "signalId",
           "context",
-          "question",
-          "questionByRole"
+          "question"
         ],
         "additionalProperties": false
       }
