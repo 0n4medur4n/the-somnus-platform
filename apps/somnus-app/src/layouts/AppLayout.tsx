@@ -4,6 +4,7 @@ import { NavLink } from "react-router";
 import { useAuth } from "../auth/useAuth.js";
 import { Button } from "../components/Button.js";
 import { LanguageSwitcher } from "../components/LanguageSwitcher.js";
+import { ThemeSwitcher } from "../components/ThemeSwitcher.js";
 
 const NAV: ReadonlyArray<{ to: string; key: string; end: boolean }> = [
   { to: "/app", key: "nav.home", end: true },
@@ -27,9 +28,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
         {t("common.skipToContent")}
       </a>
       <header className="border-b border-somnus-muted/20">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 p-4">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 p-4">
           <span className="font-semibold text-somnus-text">{t("common.appName")}</span>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
+            <ThemeSwitcher />
             <LanguageSwitcher />
             <Button variant="secondary" onClick={() => void logout()}>
               {t("common.signOut")}

@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import es from "../../src/i18n/locales/es.json" with { type: "json" };
 import { expect, test } from "./support/console.js";
 import { escapeRe, getSignInLink, uniqueEmail } from "./support/emulator.js";
+import { answerSafetyQuestions } from "./support/safety.js";
 
 const t = es;
 
@@ -52,7 +53,7 @@ test("a new Morpheo user starts with the questionnaire, then has their own space
   await page.getByRole("button", { name: t.assessment.actions.next }).click();
   await page.getByLabel(t.assessment.consent.label, { exact: true }).check();
   await page.getByRole("button", { name: t.assessment.actions.next }).click();
-  await page.getByRole("button", { name: t.assessment.actions.next }).click(); // no safety signal
+  await answerSafetyQuestions(page); // no safety signal
   await page.getByLabel("despertares", { exact: true }).check();
   await page.getByRole("button", { name: t.assessment.actions.seeResult }).click();
 

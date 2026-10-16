@@ -9,7 +9,13 @@
     "skipToContent": "Skip to content",
     "language": "Language",
     "menu": "Main menu",
-    "opensInNewTab": "opens in a new tab"
+    "opensInNewTab": "opens in a new tab",
+    "theme": "Appearance",
+    "themes": {
+      "dark": "Dark",
+      "light": "Light",
+      "contrast": "High contrast"
+    }
   },
   "nav": {
     "home": "Home",
@@ -342,7 +348,9 @@
       "yes": "Yes",
       "no": "No",
       "unknown": "I don't know",
-      "answered": "{{answered}} of {{total}} answered"
+      "answered": "{{answered}} of {{total}} answered",
+      "questionOf": "Question {{current}} of {{total}}",
+      "checking": "Checking your answers…"
     },
     "concern": {
       "legend": "What concerns you? Choose all that apply.",

@@ -145,9 +145,13 @@ describe("Assessment flow (build plan §20 Checkpoint 10.3, safety-first)", () =
     await userEvent.click(screen.getByLabelText(t("assessment.consent.label")));
     await userEvent.click(next());
 
-    // Safety-first screen (no emergency): leave the signal unanswered and go on.
+    // Safety-first, one question at a time (no emergency): answering the last
+    // question moves the flow on by itself.
     expect(await screen.findByText("¿Casi un accidente por sueño?")).toBeInTheDocument();
-    await userEvent.click(next());
+    expect(
+      screen.getByText(i18n.t("assessment.safety.questionOf", { current: 1, total: 1 })),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: t("assessment.safety.no") }));
 
     await userEvent.click(await screen.findByLabelText("despertares"));
     await userEvent.click(screen.getByRole("button", { name: t("assessment.actions.seeResult") }));
@@ -175,8 +179,7 @@ describe("Assessment flow (build plan §20 Checkpoint 10.3, safety-first)", () =
     await userEvent.click(screen.getByLabelText(t("assessment.consent.label")));
     await userEvent.click(next());
 
-    await userEvent.click(await screen.findByLabelText(t("assessment.safety.yes")));
-    await userEvent.click(next());
+    await userEvent.click(await screen.findByRole("button", { name: t("assessment.safety.yes") }));
 
     // Straight to the result — the concern step is skipped.
     expect(await screen.findByText(t("assessment.result.title"))).toBeInTheDocument();

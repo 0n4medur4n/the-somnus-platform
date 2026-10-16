@@ -24,6 +24,65 @@
   color-scheme: dark;
 }
 
+/* Appearance (ThemeSwitcher). Dark is the brand default; these two exist for
+   people who read better dark-on-light. Each pair meets WCAG AA: text on
+   background/surface >= 7:1, secondary text >= 4.5:1, white on primary-strong
+   >= 4.5:1. Only the tokens change -- every component already uses them. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-somnus-background: #f4f6fb;
+  --color-somnus-surface: #ffffff;
+  --color-somnus-primary: #2f6ae0;
+  --color-somnus-primary-strong: #1d4ed8;
+  --color-somnus-text: #0f172a;
+  --color-somnus-muted: #94a3b8;
+  --color-somnus-subtle: #475569;
+  --color-somnus-danger: #b91c1c;
+  --color-somnus-success: #15803d;
+}
+
+/* High contrast: black on white, dark borders, deep blue for actions. */
+:root[data-theme="contrast"] {
+  color-scheme: light;
+  --color-somnus-background: #ffffff;
+  --color-somnus-surface: #ffffff;
+  --color-somnus-primary: #0033a0;
+  --color-somnus-primary-strong: #0033a0;
+  --color-somnus-text: #000000;
+  --color-somnus-muted: #1f2937;
+  --color-somnus-subtle: #1f2937;
+  --color-somnus-danger: #9b0000;
+  --color-somnus-success: #0b5d1e;
+}
+
+/* Gentle entrances and exits for questions and steps. The reduced-motion rule
+   below collapses them for anyone who asked their system for less motion. */
+@keyframes somnus-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes somnus-fade-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.somnus-fade-in {
+  animation: somnus-fade-in 280ms ease-out both;
+}
+
+.somnus-fade-out {
+  animation: somnus-fade-out 180ms ease-in both;
+}
+
 body {
   margin: 0;
   min-height: 100dvh;

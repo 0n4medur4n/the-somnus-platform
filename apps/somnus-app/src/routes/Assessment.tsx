@@ -12,23 +12,24 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { ResultView } from "../assessment/ResultView.js";
+import { type SafetyAnswer, SafetyQuestions } from "../assessment/SafetyQuestions.js";
 import { type AssessmentStep, StepProgress } from "../assessment/StepProgress.js";
 import { accountViewOf } from "../auth/account-view.js";
 import { useAuth } from "../auth/useAuth.js";
 import { Button } from "../components/Button.js";
-import { ChoiceCard, SegmentedOption } from "../components/ChoiceCard.js";
+import { ChoiceCard } from "../components/ChoiceCard.js";
 import { FullPageStatus } from "../components/FullPageStatus.js";
+import { LanguageSwitcher } from "../components/LanguageSwitcher.js";
 import { formatDateTime, LegalDocument } from "../components/LegalDocument.js";
+import { ThemeSwitcher } from "../components/ThemeSwitcher.js";
 import { activeLocale } from "../i18n/index.js";
 import { MorpheoLayout } from "../layouts/MorpheoLayout.js";
 import { edge } from "../lib/edge.js";
 import { ASSESSMENT_CONTENT_QUERY, OWN_ASSESSMENTS_QUERY } from "./MorpheoHome.js";
 
-type SafetyAnswer = "yes" | "no" | "unknown";
 const ROLES: RoleId[] = ["adult", "parent", "professional"];
 /** A Morpheo user assesses themselves or a minor in their care; the professional path is not theirs. */
 const MORPHEO_USER_ROLES: RoleId[] = ["adult", "parent"];
-const SAFETY_OPTIONS: SafetyAnswer[] = ["yes", "no", "unknown"];
 
 export const legalDocumentsQuery = (locale: SupportedLocale) =>
   ["legal-documents", locale] as const;
@@ -76,7 +77,7 @@ function StepCard({
   return (
     <section
       aria-labelledby="step-heading"
-      className="flex flex-col gap-5 rounded-2xl border border-somnus-muted/30 bg-somnus-surface/40 p-5 shadow-lg shadow-black/20 sm:p-7"
+      className="somnus-fade-in flex flex-col gap-5 rounded-2xl border border-somnus-muted/30 bg-somnus-surface/40 p-5 shadow-lg shadow-black/20 sm:p-7"
     >
       <div className="flex flex-col gap-1">
         <h2 id="step-heading" className="text-xl font-semibold">
@@ -204,7 +205,6 @@ export function Assessment({
         : [],
     [contentQuery.data, role],
   );
-  const answeredCount = safetyPrompts.filter((prompt) => safetyAnswers[prompt.signalId]).length;
 
   const roleValid =
     role === "professional"
@@ -288,12 +288,12 @@ export function Assessment({
     }
   }
 
-  async function submitSafety() {
+  async function submitSafety(answers: Record<string, SafetyAnswer> = safetyAnswers) {
     if (sessionId === null) return;
     setSubmitting(true);
     setSubmitError(false);
     try {
-      for (const [signalId, answer] of Object.entries(safetyAnswers)) {
+      for (const [signalId, answer] of Object.entries(answers)) {
         const value = answer === "yes" ? "true" : answer === "no" ? "false" : "unknown";
         await edge.submitAssessmentAnswer(sessionId, { kind: "signal", name: signalId, value });
       }
@@ -385,6 +385,14 @@ export function Assessment({
           : "mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 sm:p-6"
       }
     >
+      {embedded ? null : (
+        // The public page has no app shell: its own appearance and language
+        // controls (embedded, the Morpheo layout's header carries them).
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <ThemeSwitcher />
+          <LanguageSwitcher />
+        </div>
+      )}
       <header className="flex flex-col gap-1">
         <h1
           id="assessment-heading"
@@ -535,49 +543,27 @@ export function Assessment({
 
       {step === "safety" ? (
         <StepCard title={t("assessment.safety.legend")} intro={t("assessment.safety.intro")}>
-          <p className="text-sm text-somnus-subtle" aria-live="polite">
-            {t("assessment.safety.answered", {
-              answered: answeredCount,
-              total: safetyPrompts.length,
-            })}
-          </p>
-          <div className="flex flex-col gap-3">
-            {safetyPrompts.map((prompt, index) => (
-              <fieldset
-                key={prompt.signalId}
-                className="flex flex-col gap-3 rounded-xl border border-somnus-muted/30 bg-somnus-surface/60 p-4"
-              >
-                <legend className="float-left flex w-full gap-3 font-medium leading-snug">
-                  <span aria-hidden="true" className="text-somnus-subtle">
-                    {index + 1}.
-                  </span>
-                  <span>{prompt.question}</span>
-                </legend>
-                <div className="flex gap-2">
-                  {SAFETY_OPTIONS.map((option) => (
-                    <SegmentedOption
-                      key={option}
-                      name={prompt.signalId}
-                      checked={safetyAnswers[prompt.signalId] === option}
-                      onChange={() =>
-                        setSafetyAnswers((current) => ({ ...current, [prompt.signalId]: option }))
-                      }
-                      label={t(`assessment.safety.${option}`)}
-                    />
-                  ))}
-                </div>
-              </fieldset>
-            ))}
-          </div>
+          <SafetyQuestions
+            prompts={safetyPrompts}
+            answers={safetyAnswers}
+            onAnswer={(signalId, answer) =>
+              setSafetyAnswers((current) => ({ ...current, [signalId]: answer }))
+            }
+            onBack={() => goTo("consent")}
+            onComplete={submitSafety}
+            busy={submitting}
+          />
+          {submitting ? (
+            <p role="status" className="text-sm text-somnus-subtle">
+              {t("assessment.safety.checking")}
+            </p>
+          ) : null}
           <SubmitError show={submitError} />
-          <StepActions>
-            <Button variant="secondary" onClick={() => goTo("consent")}>
-              {t("assessment.actions.back")}
+          {submitError ? (
+            <Button onClick={() => submitSafety()} disabled={submitting} className="self-start">
+              {t("assessment.actions.retrySave")}
             </Button>
-            <Button onClick={submitSafety} disabled={submitting}>
-              {t("assessment.actions.next")}
-            </Button>
-          </StepActions>
+          ) : null}
         </StepCard>
       ) : null}
 

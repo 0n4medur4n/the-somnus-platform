@@ -9,7 +9,13 @@
     "skipToContent": "Aller au contenu",
     "language": "Langue",
     "menu": "Menu principal",
-    "opensInNewTab": "s'ouvre dans un nouvel onglet"
+    "opensInNewTab": "s'ouvre dans un nouvel onglet",
+    "theme": "Apparence",
+    "themes": {
+      "dark": "Sombre",
+      "light": "Clair",
+      "contrast": "Contraste élevé"
+    }
   },
   "nav": {
     "home": "Accueil",
@@ -342,7 +348,9 @@
       "yes": "Oui",
       "no": "Non",
       "unknown": "Je ne sais pas",
-      "answered": "{{answered}} sur {{total}} répondues"
+      "answered": "{{answered}} sur {{total}} répondues",
+      "questionOf": "Question {{current}} sur {{total}}",
+      "checking": "Vérification de vos réponses…"
     },
     "concern": {
       "legend": "Qu'est-ce qui vous préoccupe ? Choisissez ce qui s'applique.",
