@@ -158,3 +158,52 @@ def test_the_pdf_prints_the_report_with_the_rules_own_words_and_says_it_is_ai(
     assert "Apunta desde cuándo te ocurre." in html
     assert "Pide una consulta." in html
     assert "inteligencia artificial" in html
+
+
+class _Replies:
+    """A model that answers from a script, one reply per call."""
+
+    def __init__(self, *replies: str) -> None:
+        self.requests: list[LlmRequest] = []
+        self._replies = list(replies)
+
+    def complete(self, request: LlmRequest) -> LlmResponse:
+        self.requests.append(request)
+        return LlmResponse(text=self._replies.pop(0), model="gpt-6-luna")
+
+
+def test_a_refused_answer_gets_one_corrected_retry_naming_only_the_rule(
+    content: ClinicalContentDTO, make_request: RequestBuilder
+) -> None:
+    bad = json.dumps(dict(GOOD, summary="Tienes insomnio."))
+    model = _Replies(bad, GOOD_JSON)
+    service = NarrativeService(
+        provider=model, store=_Store(), chat_model="m", reasoning_effort="xhigh", temperature=0.2
+    )
+    with_phrase = content.model_copy(
+        update={
+            "output_contract": content.output_contract.model_copy(
+                update={"forbidden_phrases": ["Tienes [diagnóstico]."]}
+            )
+        }
+    )
+    result = service.for_assessment(make_request(level="L3", routes=("INS",)), with_phrase)
+
+    assert result.generated is True
+    assert len(model.requests) == 2
+    retry = model.requests[1].user
+    assert "Tienes [diagnóstico]." in retry
+    # The refused text itself is never sent back.
+    assert "Tienes insomnio." not in retry
+
+
+def test_two_refusals_fall_back_to_the_protocol(
+    content: ClinicalContentDTO, make_request: RequestBuilder
+) -> None:
+    model = _Replies("no json", "still no json")
+    service = NarrativeService(
+        provider=model, store=_Store(), chat_model="m", reasoning_effort="xhigh", temperature=0.2
+    )
+    result = service.for_assessment(make_request(level="L3", routes=("INS",)), content)
+    assert result.generated is False
+    assert len(model.requests) == 2
