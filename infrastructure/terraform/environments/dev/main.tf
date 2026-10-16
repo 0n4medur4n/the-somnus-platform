@@ -331,6 +331,14 @@ module "run_worker" {
   service_name          = "somnus-worker"
   service_account_email = module.sa_worker.email
   public                = false
+  # The same deliberate, temporary exception as identity (see run_identity):
+  # edge-api calls the worker over its run.app URL with no VPC routing, so
+  # `INTERNAL_ONLY` rejected every call with a 404 before IAM was consulted --
+  # the sign-in email and the console's audit views never reached it. IAM still
+  # gates it: only edge-api's account holds run.invoker (module.iam_worker).
+  # ADR 0008's private-ingress intent stays UNMET pending the connectivity
+  # decision noted there.
+  ingress = "INGRESS_TRAFFIC_ALL"
   env_vars = {
     LOG_LEVEL            = "info"
     SERVICE_NAME         = "somnus-worker"
