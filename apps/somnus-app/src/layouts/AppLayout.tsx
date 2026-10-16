@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router";
 import { useAuth } from "../auth/useAuth.js";
+import { BrandLogo } from "../components/BrandLogo.js";
 import { Button } from "../components/Button.js";
 import { LanguageSwitcher } from "../components/LanguageSwitcher.js";
 import { ThemeSwitcher } from "../components/ThemeSwitcher.js";
@@ -29,7 +30,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </a>
       <header className="border-b border-somnus-muted/20">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 p-4">
-          <span className="font-semibold text-somnus-text">{t("common.appName")}</span>
+          <BrandLogo brand="somnus" />
           <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
             <ThemeSwitcher />
             <LanguageSwitcher />

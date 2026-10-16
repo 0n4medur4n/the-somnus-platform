@@ -15,30 +15,6 @@ const LoginSchema = z.object({
 });
 type LoginForm = z.infer<typeof LoginSchema>;
 
-/** Brand mark: a crescent moon (Somnus, the Roman god of sleep). */
-function MoonMark() {
-  return (
-    <span
-      aria-hidden="true"
-      className="flex h-12 w-12 items-center justify-center rounded-2xl bg-somnus-primary-strong/15 text-somnus-primary"
-    >
-      <svg
-        aria-hidden="true"
-        width="26"
-        height="26"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-      </svg>
-    </span>
-  );
-}
-
 export function Login() {
   const { t } = useTranslation();
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -78,7 +54,6 @@ export function Login() {
   return (
     <AuthLayout>
       <div className="flex flex-col items-center gap-3 text-center">
-        <MoonMark />
         <h1 className="text-2xl font-semibold text-somnus-text">{t("login.title")}</h1>
         <p className="max-w-sm text-somnus-subtle">{t("login.subtitle")}</p>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-somnus-subtle/25 px-3 py-1 text-xs font-medium text-somnus-subtle">
