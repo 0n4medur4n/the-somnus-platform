@@ -119,12 +119,31 @@
           "question": {
             "type": "string",
             "minLength": 1
+          },
+          "questionByRole": {
+            "type": "object",
+            "properties": {
+              "adult": {
+                "type": "string",
+                "minLength": 1
+              },
+              "parent": {
+                "type": "string",
+                "minLength": 1
+              },
+              "professional": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
           }
         },
         "required": [
           "signalId",
           "context",
-          "question"
+          "question",
+          "questionByRole"
         ],
         "additionalProperties": false
       }

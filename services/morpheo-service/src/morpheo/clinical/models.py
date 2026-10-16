@@ -11,6 +11,7 @@ fixed taxonomy (roles, modules, safety levels, claim status) fails loudly.
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -190,7 +191,12 @@ class SafetyPromptContext(StrEnum):
 class SafetyPrompt(_Artifact):
     signal_id: str
     context: SafetyPromptContext
+    # The default wording (the adult speaking about themselves).
     question: str
+    # The same clinical question in each audience's voice (content 1.4): the
+    # adult ("tú"), the parent about "tu hijo o hija", the professional about
+    # "la persona a la que valoras". A role absent here falls back to `question`.
+    question_by_role: dict[Literal["adult", "parent", "professional"], str]
 
 
 class SafetyPromptsMeta(_Artifact):

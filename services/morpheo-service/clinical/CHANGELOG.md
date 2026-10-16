@@ -4,6 +4,23 @@ Content-version bumps to the versioned artifacts (build plan §14a). The rule/
 spec `workflow_version` changes only when rules, levels, or priorities change;
 content-only additions bump `content_version` (reviewed by the Safety Committee).
 
+## content_version 1.4 — 2026-10-16 (workflow_version 1.0, unchanged)
+
+- `morpheo_safety_prompts_v1_es.json` 1.1 → 1.2: the 22 safety questions keep
+  the same clinical meaning and signal, but each audience now reads them in one
+  consistent voice instead of a mix of "usted" and "la persona": the adult in
+  "tú" about themselves, the parent/guardian about "tu hijo o hija", the
+  professional about "la persona a la que valoras" (`question_by_role`;
+  `question` stays as the default, adult wording). The two observer questions
+  (`unresponsive`, `seizure_in_progress`) ask the adult whether someone *with
+  them* is in that state, since a person in it cannot be answering. Typo fixed
+  ("dormirdo"). No signal, rule, level or priority changes.
+
+### Approval record
+- Change requested by the product owner on 2026-10-16, stating that the clinical
+  lead (Jesús) had approved rewording the questions. The final text above should
+  still be read and confirmed by the clinical lead.
+
 ## content_version 1.3 — 2026-08-18 (workflow_version 1.0, unchanged)
 
 - Expose `blockedClaims` (every BLOQUEAR claim statement) via the content

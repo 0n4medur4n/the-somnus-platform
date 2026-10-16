@@ -39,6 +39,7 @@ class SafetyPromptContentDTO(ContractModel):
     signal_id: str
     context: Literal["general", "pediatric"]
     question: str
+    question_by_role: dict[Literal["adult", "parent", "professional"], str]
 
 
 # The governed limits statements are the approved CLM replacement text, in
@@ -88,7 +89,10 @@ def build_content_response(bundle: ClinicalBundle) -> AssessmentContentResponseD
         ],
         safety_prompts=[
             SafetyPromptContentDTO(
-                signal_id=prompt.signal_id, context=prompt.context.value, question=prompt.question
+                signal_id=prompt.signal_id,
+                context=prompt.context.value,
+                question=prompt.question,
+                question_by_role=dict(prompt.question_by_role),
             )
             for prompt in bundle.safety_prompts.prompts
         ],

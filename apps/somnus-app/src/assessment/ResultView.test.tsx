@@ -24,6 +24,7 @@ const CONTENT = {
       signalId: "witnessed_apneas" as const,
       context: "general" as const,
       question: "¿Le han visto pausas al respirar?",
+      questionByRole: {},
     },
   ],
   limitsText: ["No és un diagnòstic."],
