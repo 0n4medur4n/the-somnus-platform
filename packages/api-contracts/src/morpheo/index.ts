@@ -45,6 +45,8 @@ export {
   SafetyPromptContentSchema,
   type SafetyPromptContext,
   SafetyPromptContextSchema,
+  type SafetyRuleContent,
+  SafetyRuleContentSchema,
 } from "./content.js";
 export {
   ANSWER_KINDS,

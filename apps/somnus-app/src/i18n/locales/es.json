@@ -405,7 +405,14 @@
       },
       "autoSaving": "Guardando el resultado en tu cuenta…",
       "autoSaved": "Resultado guardado en tu cuenta.",
-      "saveFailed": "No hemos podido guardar el resultado en tu cuenta."
+      "saveFailed": "No hemos podido guardar el resultado en tu cuenta.",
+      "whatToDo": "Qué hacer ahora",
+      "recommendations": "Recomendaciones",
+      "prepareNotes": "Qué apuntar para tu consulta",
+      "preparing": "Preparando tu informe personalizado…",
+      "preparingHint": "Puede tardar hasta un par de minutos. Puedes quedarte en esta página.",
+      "aiNote": "Informe redactado con ayuda de inteligencia artificial a partir de tu resultado. No es un diagnóstico.",
+      "emergencyNow": "Busca atención de emergencia ahora."
     },
     "progress": {
       "label": "Progreso de la evaluación",

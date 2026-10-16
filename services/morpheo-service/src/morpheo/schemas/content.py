@@ -21,6 +21,16 @@ class AssessmentModuleContentDTO(ContractModel):
     entry: list[str]
     minimum_questions: list[str]
     output: str
+    # The module's approved clinical rules (what to recommend, what never to).
+    rules: list[str]
+
+
+class SafetyRuleContentDTO(ContractModel):
+    """A fired safety rule's approved message -- written for the person."""
+
+    id: str
+    level: SafetyLevelId
+    message: str
 
 
 class SafetyLevelContentDTO(ContractModel):
@@ -54,6 +64,7 @@ class AssessmentContentResponseDTO(ContractModel):
     modules: list[AssessmentModuleContentDTO]
     safety_levels: list[SafetyLevelContentDTO]
     safety_prompts: list[SafetyPromptContentDTO]
+    safety_rules: list[SafetyRuleContentDTO]
     limits_text: list[str]
     blocked_claims: list[str]
     output_contract: OutputContractContentDTO
@@ -80,6 +91,7 @@ def build_content_response(bundle: ClinicalBundle) -> AssessmentContentResponseD
                 entry=list(module.entry),
                 minimum_questions=list(module.minimum_questions),
                 output=module.output,
+                rules=list(module.rules),
             )
             for module in workflows.modules
         ],
@@ -95,6 +107,10 @@ def build_content_response(bundle: ClinicalBundle) -> AssessmentContentResponseD
                 question_by_role=dict(prompt.question_by_role),
             )
             for prompt in bundle.safety_prompts.prompts
+        ],
+        safety_rules=[
+            SafetyRuleContentDTO(id=rule.id, level=rule.level, message=rule.message)
+            for rule in workflows.safety_rules
         ],
         limits_text=limits_text,
         blocked_claims=blocked_claims,

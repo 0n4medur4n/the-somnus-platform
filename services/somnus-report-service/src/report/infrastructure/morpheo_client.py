@@ -19,6 +19,7 @@ from report.schemas.render import (
     ModuleContentDTO,
     OutputContractContentDTO,
     SafetyLevelContentDTO,
+    SafetyRuleContentDTO,
 )
 
 
@@ -36,6 +37,7 @@ def _to_content(raw: dict[str, Any]) -> ClinicalContentDTO:
                 name=module["name"],
                 minimum_questions=module["minimumQuestions"],
                 output=module["output"],
+                rules=module.get("rules", []),
             )
             for module in raw["modules"]
         ],
@@ -44,6 +46,10 @@ def _to_content(raw: dict[str, Any]) -> ClinicalContentDTO:
             for level in raw["safetyLevels"]
         ],
         limits_text=raw["limitsText"],
+        safety_rules=[
+            SafetyRuleContentDTO(id=rule["id"], level=rule["level"], message=rule["message"])
+            for rule in raw.get("safetyRules", [])
+        ],
         blocked_claims=raw["blockedClaims"],
         output_contract=OutputContractContentDTO(
             patient_parent=raw["outputContract"]["patientParent"],

@@ -1,18 +1,27 @@
-import type { AssessmentContentResponse, AssessmentResult } from "@somnus/api-contracts";
+import type {
+  AssessmentContentResponse,
+  AssessmentResult,
+  PersonReport,
+} from "@somnus/api-contracts";
+import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { twMerge } from "tailwind-merge";
+import { activeLocale } from "../i18n/index.js";
+import { edge } from "../lib/edge.js";
 
 type ResultViewProps = {
   result: AssessmentResult;
   content: AssessmentContentResponse;
   complaints: string[];
+  /** The assessment, when known: its AI-written report is fetched for it. */
+  sessionId?: string;
 };
 
 /**
  * Each level's accent, from the clinical artifact's own `color` field
- * (L0 red … L4 blue). Presentation only: the level itself, its name and its
- * action all come from morpheo.
+ * (L0 red … L4 blue). Presentation only: the level itself and its name come
+ * from morpheo.
  */
 const LEVEL_ACCENT: Record<string, string> = {
   L0: "border-red-500/70 bg-red-500/15",
@@ -31,16 +40,30 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+function List({ items }: { items: string[] }) {
+  return (
+    <ul className="flex list-disc flex-col gap-2 pl-5 leading-relaxed">
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+
 /**
- * Renders the §14b output contract from the deterministic result + the approved
- * artifact wording (build plan §20 Checkpoint 10.3). Every clinical string here
- * comes from the morpheo content endpoint — the SPA never authors clinical
- * text. The "with the information available" framing shows on every L3/L4.
- * When the flow stopped on a safety rule, the care level and its action come
- * first, before anything else on the page.
+ * The person's result.
+ *
+ * Two layers, never mixed. The level and the fired safety rules' messages are
+ * the protocol's own words (Morpheo's deterministic result), shown first and
+ * never written by a model. Around them, the person's report written by the AI
+ * from that result (build plan §15 amended 2026-10-16): summary, what to do,
+ * patterns, recommendations, what to note for the appointment. An emergency
+ * never waits for, nor shows, AI text. If the report cannot be written, the
+ * protocol's own wording is shown instead.
  */
-export function ResultView({ result, content, complaints }: ResultViewProps) {
+export function ResultView({ result, content, complaints, sessionId }: ResultViewProps) {
   const { t } = useTranslation();
+  const locale = activeLocale();
   const moduleById = new Map(content.modules.map((module) => [module.id, module]));
   const routed = result.routes
     .map((id) => moduleById.get(id))
@@ -48,7 +71,23 @@ export function ResultView({ result, content, complaints }: ResultViewProps) {
   const level = result.level
     ? content.safetyLevels.find((safety) => safety.id === result.level)
     : undefined;
+  const ruleById = new Map((content.safetyRules ?? []).map((rule) => [rule.id, rule]));
+  const urgent = result.triggeredRules
+    .map((id) => ruleById.get(id)?.message)
+    .filter((message): message is string => message !== undefined);
+  const emergency = result.level === "L0";
   const showFraming = result.level === "L3" || result.level === "L4";
+
+  const report = useQuery({
+    queryKey: ["person-report", sessionId, locale],
+    queryFn: () => edge.getPersonReport(sessionId ?? "", locale),
+    enabled: sessionId !== undefined && !emergency && !result.privacyBlock,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+  });
+  const narrative: PersonReport | undefined =
+    report.data?.generated && report.data.narrative ? report.data.narrative : undefined;
+  const preparing = report.isPending && report.fetchStatus === "fetching";
 
   const levelCard = level ? (
     <section
@@ -64,20 +103,17 @@ export function ResultView({ result, content, complaints }: ResultViewProps) {
       </h3>
       {showFraming ? <p className="text-somnus-subtle">{t("assessment.result.framing")}</p> : null}
       <p className="text-2xl font-semibold">{level.name}</p>
-      <p className="text-lg leading-relaxed">{level.action}</p>
+      {urgent.length > 0 ? (
+        urgent.map((message) => (
+          <p key={message} className="text-lg font-medium leading-relaxed">
+            {message}
+          </p>
+        ))
+      ) : emergency ? (
+        <p className="text-lg font-medium leading-relaxed">{t("assessment.result.emergencyNow")}</p>
+      ) : null}
     </section>
   ) : null;
-
-  const summary =
-    routed.length > 0 ? (
-      <Block title={t("assessment.result.summary")}>
-        <ul className="flex list-disc flex-col gap-2 pl-5 leading-relaxed">
-          {routed.map((module) => (
-            <li key={module.id}>{module.output}</li>
-          ))}
-        </ul>
-      </Block>
-    ) : null;
 
   return (
     <section aria-labelledby="assessment-result-heading" className="flex flex-col gap-4">
@@ -85,57 +121,98 @@ export function ResultView({ result, content, complaints }: ResultViewProps) {
         {t("assessment.result.title")}
       </h2>
 
-      {result.stop ? (
-        <>
-          {levelCard}
-          {summary}
-        </>
-      ) : (
-        <>
-          {summary}
-          {levelCard}
-        </>
-      )}
+      {levelCard}
 
-      {routed.length > 0 ? (
-        <Block title={t("assessment.result.patterns")}>
-          <ul className="flex flex-col gap-3">
-            {routed.slice(0, 3).map((module) => {
-              const facts = module.entry.filter((phrase) => complaints.includes(phrase));
-              return (
-                <li key={module.id} className="flex flex-col">
-                  <span className="font-medium">{module.name}</span>
-                  {facts.length > 0 ? (
-                    <span className="text-sm text-somnus-subtle">
-                      {t("assessment.result.triggeredBy", { facts: facts.join(", ") })}
-                    </span>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </Block>
+      {preparing ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-3 rounded-xl border border-somnus-muted/30 bg-somnus-surface/60 p-5"
+        >
+          <span
+            aria-hidden="true"
+            className="size-5 shrink-0 animate-spin rounded-full border-2 border-somnus-primary border-t-transparent motion-reduce:animate-none"
+          />
+          <div className="flex flex-col">
+            <span className="font-medium">{t("assessment.result.preparing")}</span>
+            <span className="text-sm text-somnus-subtle">
+              {t("assessment.result.preparingHint")}
+            </span>
+          </div>
+        </div>
       ) : null}
 
-      <Block title={t("assessment.result.unknown")}>
-        <p>{t("assessment.result.unknownDeferred")}</p>
-      </Block>
-
-      {routed.length > 0 ? (
-        <Block title={t("assessment.result.prepare")}>
-          <ul className="flex flex-col gap-2">
-            {routed.flatMap((module) =>
-              module.minimumQuestions.map((question) => (
-                <li key={`${module.id}:${question}`} className="flex gap-2">
-                  <span aria-hidden="true" className="text-somnus-primary">
-                    ☐
-                  </span>
-                  <span>{question}</span>
-                </li>
-              )),
-            )}
-          </ul>
-        </Block>
+      {narrative ? (
+        <>
+          <Block title={t("assessment.result.summary")}>
+            <p className="leading-relaxed">{narrative.summary}</p>
+          </Block>
+          <Block title={t("assessment.result.whatToDo")}>
+            <List items={narrative.whatToDo} />
+          </Block>
+          {narrative.patterns.length > 0 ? (
+            <Block title={t("assessment.result.patterns")}>
+              <ul className="flex flex-col gap-3">
+                {narrative.patterns.map((pattern) => (
+                  <li key={pattern.name} className="flex flex-col">
+                    <span className="font-medium">{pattern.name}</span>
+                    <span className="leading-relaxed text-somnus-subtle">{pattern.why}</span>
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          ) : null}
+          {narrative.recommendations.length > 0 ? (
+            <Block title={t("assessment.result.recommendations")}>
+              <List items={narrative.recommendations} />
+            </Block>
+          ) : null}
+          {narrative.prepare.length > 0 ? (
+            <Block title={t("assessment.result.prepareNotes")}>
+              <List items={narrative.prepare} />
+            </Block>
+          ) : null}
+          <p className="text-sm text-somnus-subtle">{t("assessment.result.aiNote")}</p>
+        </>
+      ) : !preparing && !emergency && routed.length > 0 ? (
+        <>
+          <Block title={t("assessment.result.patterns")}>
+            <ul className="flex flex-col gap-3">
+              {routed.slice(0, 3).map((module) => {
+                const facts = module.entry.filter((phrase) => complaints.includes(phrase));
+                return (
+                  <li key={module.id} className="flex flex-col">
+                    <span className="font-medium">{module.name}</span>
+                    {facts.length > 0 ? (
+                      <span className="text-sm text-somnus-subtle">
+                        {t("assessment.result.triggeredBy", { facts: facts.join(", ") })}
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </Block>
+          {level && urgent.length === 0 ? (
+            <Block title={t("assessment.result.whatToDo")}>
+              <p className="leading-relaxed">{level.action}</p>
+            </Block>
+          ) : null}
+          <Block title={t("assessment.result.prepare")}>
+            <ul className="flex flex-col gap-2">
+              {routed.flatMap((module) =>
+                module.minimumQuestions.map((question) => (
+                  <li key={`${module.id}:${question}`} className="flex gap-2">
+                    <span aria-hidden="true" className="text-somnus-primary">
+                      ☐
+                    </span>
+                    <span>{question}</span>
+                  </li>
+                )),
+              )}
+            </ul>
+          </Block>
+        </>
       ) : null}
 
       <Block title={t("assessment.result.limits")}>

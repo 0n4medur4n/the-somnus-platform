@@ -80,3 +80,24 @@ def test_the_on_demand_pdf_response_conforms(
     assert base64.b64decode(dto.pdf_base64).startswith(b"%PDF-")
     # On demand means not stored: nothing was written.
     assert list(tmp_path.rglob("*")) == []
+
+
+def test_the_person_report_response_conforms() -> None:
+    from report.schemas.narrative import NarrativeDTO, NarrativeResponseDTO
+
+    narrative = NarrativeDTO.model_validate(
+        {
+            "summary": "Resumen.",
+            "whatToDo": ["Pide consulta."],
+            "patterns": [{"name": "Dificultad para dormir", "why": "Despertares."}],
+            "recommendations": ["Diario de sueño."],
+            "prepare": ["Apunta desde cuándo."],
+        }
+    )
+    for dto in (
+        NarrativeResponseDTO(assessment_id="s1", locale="es", generated=True, narrative=narrative),
+        NarrativeResponseDTO(assessment_id="s1", locale="es", generated=False),
+    ):
+        jsonschema.validate(
+            dto.model_dump(by_alias=True, mode="json"), _schema("PersonReportResponse")
+        )

@@ -13,5 +13,8 @@
   "supportingMaterial": "Supporting material",
   "limits": "Limits",
   "framing": "With the information available, and pending an in-person assessment:",
-  "emergency": "Emergency: no reassuring hypotheses are offered. Follow the indicated action immediately."
+  "emergency": "Emergency: no reassuring hypotheses are offered. Follow the indicated action immediately.",
+  "whatToDo": "What to do now",
+  "recommendations": "Recommendations",
+  "aiNote": "Report written with the help of artificial intelligence from your result. It is not a diagnosis."
 }

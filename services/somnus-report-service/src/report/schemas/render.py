@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+from pydantic import Field
+
 from report.schemas.base import ContractModel
 
 Role = Literal["adult", "parent", "professional"]
@@ -45,6 +47,16 @@ class ModuleContentDTO(ContractModel):
     name: str
     minimum_questions: list[str]
     output: str
+    # The module's approved clinical rules; empty from a Morpheo that predates them.
+    rules: list[str] = Field(default_factory=list)
+
+
+class SafetyRuleContentDTO(ContractModel):
+    """A safety rule's approved message, written for the person."""
+
+    id: str
+    level: SafetyLevel
+    message: str
 
 
 class OutputContractContentDTO(ContractModel):
@@ -61,6 +73,8 @@ class ClinicalContentDTO(ContractModel):
     # The governed limits statements from Morpheo (CLM-006/007/008 replacement
     # text). The report lays them out verbatim; it never authors this text.
     limits_text: list[str]
+    # The fired-rule messages (person-facing), by rule id. Empty from an older Morpheo.
+    safety_rules: list[SafetyRuleContentDTO] = Field(default_factory=list)
     # Every BLOQUEAR claim statement (§15): feeds the report's forbidden-phrase
     # scanner so AI-reworded output can never state a blocked claim.
     blocked_claims: list[str]

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MorpheoModule } from "../morpheo/morpheo.module.js";
 import { SessionsModule } from "../sessions/sessions.module.js";
+import { PersonReportController } from "./person-report.controller.js";
 import { ReportsController } from "./reports.controller.js";
 import { ReportProxyService } from "./reports.service.js";
 
@@ -10,7 +11,7 @@ import { ReportProxyService } from "./reports.service.js";
  */
 @Module({
   imports: [SessionsModule, MorpheoModule],
-  controllers: [ReportsController],
+  controllers: [ReportsController, PersonReportController],
   providers: [ReportProxyService],
 })
 export class ReportsModule {}

@@ -98,6 +98,29 @@ class AiContentReviewItemRow(Base):
     )
 
 
+class PersonReportRow(Base):
+    """The person's AI-written report, once per assessment and language.
+
+    Written once and read back by the screen and the PDF, so both show the same
+    text and the model is called once. Keyed by the assessment, never the person:
+    who it belongs to is Morpheo's to know (§7).
+    """
+
+    __tablename__ = "person_reports"
+
+    assessment_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    locale: Mapped[str] = mapped_column(String(5), primary_key=True)
+    content_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    # The validated NarrativeDTO, as JSON.
+    narrative: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+
 class ReportCorpusProvenanceRow(Base):
     """What grounded one generated report (Addendum B §B5 Checkpoint 16.5).
 

@@ -405,7 +405,14 @@
       },
       "autoSaving": "S'està desant el resultat al teu compte…",
       "autoSaved": "Resultat desat al teu compte.",
-      "saveFailed": "No hem pogut desar el resultat al teu compte."
+      "saveFailed": "No hem pogut desar el resultat al teu compte.",
+      "whatToDo": "Què fer ara",
+      "recommendations": "Recomanacions",
+      "prepareNotes": "Què apuntar per a la teva consulta",
+      "preparing": "S'està preparant el teu informe personalitzat…",
+      "preparingHint": "Pot trigar fins a un parell de minuts. Pots quedar-te en aquesta pàgina.",
+      "aiNote": "Informe redactat amb l'ajuda d'intel·ligència artificial a partir del teu resultat. No és un diagnòstic.",
+      "emergencyNow": "Busca atenció d'emergència ara."
     },
     "progress": {
       "label": "Progrés de l'avaluació",

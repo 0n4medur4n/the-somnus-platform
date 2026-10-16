@@ -23,6 +23,7 @@ from report.api.health import router as health_router
 from report.api.reports import router as reports_router
 from report.api.version import router as version_router
 from report.application.content_review import ContentReviewService
+from report.application.narrative import NarrativeService
 from report.application.provenance import ProvenanceRecorder, ProvenanceResolver
 from report.application.render_service import RenderService
 from report.application.retrieval import (
@@ -38,6 +39,7 @@ from report.corpus.retrieval import CorpusRetriever
 from report.infrastructure.correlation import CorrelationIdMiddleware
 from report.infrastructure.db import create_engine_from_url
 from report.infrastructure.errors import register_exception_handlers
+from report.infrastructure.llm.openai_adapter import OpenAiAdapter
 from report.infrastructure.llm.openai_embedding_adapter import OpenAiEmbeddingAdapter
 from report.infrastructure.logging import configure_logging
 from report.infrastructure.morpheo_client import MorpheoContentClient
@@ -45,6 +47,7 @@ from report.infrastructure.pdf import WeasyPrintPdfRenderer
 from report.infrastructure.sources_client import MorpheoSourcesClient
 from report.infrastructure.storage import LocalStorageBackend
 from report.repositories.content_review_repository import ContentReviewRepositorySql
+from report.repositories.person_report_repository import PersonReportRepositorySql
 from report.repositories.sources_repository import SourcesRepository
 from report.schemas.provenance import ProvenanceDocument
 from report.schemas.retrieval import CorpusEntry
@@ -200,8 +203,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     deterministic_text, prompt_template_version=template_version
                 )
 
+    # The person's AI-written report (§15 amended 2026-10-16). No key -> no model
+    # -> every person reads the protocol's own wording.
+    content_provider = MorpheoContentClient(settings.morpheo_base_url)
+    app.state.content_provider = content_provider
+    narrative_service = NarrativeService(
+        provider=OpenAiAdapter(settings.openai_api_key) if settings.openai_api_key else None,
+        store=PersonReportRepositorySql(session_factory),
+        chat_model=settings.llm_model,
+        reasoning_effort=settings.llm_reasoning_effort,
+        temperature=settings.llm_temperature,
+    )
+    app.state.narrative_service = narrative_service
+
     app.state.render_service = RenderService(
-        content_provider=MorpheoContentClient(settings.morpheo_base_url),
+        content_provider=content_provider,
         pdf_renderer=WeasyPrintPdfRenderer(),
         storage=LocalStorageBackend(
             root=Path(settings.reports_dir), base_url=settings.report_base_url
@@ -213,6 +229,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         review=_ApprovedWording(),
         grounding=corpus_retriever,
         provenance=ProvenanceRecorder(session_factory, _current_corpus_version),
+        narratives=narrative_service,
     )
 
     app.add_middleware(CorrelationIdMiddleware)
