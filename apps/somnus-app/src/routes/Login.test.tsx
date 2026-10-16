@@ -26,4 +26,27 @@ describe("Login (component test for auth form)", () => {
     await waitFor(() => expect(sendLoginLink).toHaveBeenCalledWith("user@example.com"));
     expect(await screen.findByRole("status")).toHaveTextContent("user@example.com");
   });
+
+  it("shows that it is sending while the link is on its way, and says so if it takes a while", async () => {
+    let finish: () => void = () => {};
+    sendLoginLink.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+    );
+    renderWithProviders(<Login />);
+    await userEvent.type(screen.getByLabelText(i18n.t("login.emailLabel")), "user@example.com");
+    await userEvent.click(screen.getByRole("button", { name: i18n.t("login.sendLink") }));
+
+    const button = await screen.findByRole("button", { name: i18n.t("login.sending") });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(
+      await screen.findByText(i18n.t("login.sendingSlow"), {}, { timeout: 4000 }),
+    ).toBeInTheDocument();
+
+    finish();
+    expect(await screen.findByText(/user@example\.com/)).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t("login.sendingSlow"))).not.toBeInTheDocument();
+  });
 });

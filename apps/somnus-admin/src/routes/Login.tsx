@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -33,6 +33,18 @@ export function Login() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({ resolver: zodResolver(LoginSchema) });
+
+  // A first request after a quiet spell can take a few seconds: say so, rather
+  // than leave a button that looks stuck.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!isSubmitting) {
+      setSlow(false);
+      return;
+    }
+    const timer = setTimeout(() => setSlow(true), 2500);
+    return () => clearTimeout(timer);
+  }, [isSubmitting]);
 
   const onSubmit = handleSubmit(async ({ email }) => {
     setSubmitError(null);
@@ -87,9 +99,29 @@ export function Login() {
                 {submitError}
               </p>
             ) : null}
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {t("login.sendLink")}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              aria-busy={isSubmitting}
+              className="w-full gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
+                  />
+                  {t("login.sending")}
+                </>
+              ) : (
+                t("login.sendLink")
+              )}
             </Button>
+            {slow ? (
+              <p role="status" aria-live="polite" className="text-sm text-somnus-subtle">
+                {t("login.sendingSlow")}
+              </p>
+            ) : null}
           </form>
         )}
       </div>

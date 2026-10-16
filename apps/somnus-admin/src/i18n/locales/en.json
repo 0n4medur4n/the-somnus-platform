@@ -15,7 +15,9 @@
     "sendLink": "Send sign-in link",
     "linkSent": "We sent a sign-in link to {{email}}. Check your inbox.",
     "tryAnotherEmail": "Use a different email",
-    "error": "We could not send the link. Please try again."
+    "error": "We could not send the link. Please try again.",
+    "sending": "Sending link…",
+    "sendingSlow": "One moment: we are preparing your link. It can take a few seconds."
   },
   "callback": {
     "verifying": "Verifying your sign-in link…",
