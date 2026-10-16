@@ -27,6 +27,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=8080 \
     ENV=production \
     SERVICE_NAME=somnus-report-service
+# WeasyPrint's native stack (Pango, HarfBuzz, fontconfig, GLib) and a font:
+# python:3.13-slim ships none of it, so every PDF failed with "cannot load
+# library 'libgobject-2.0-0'". The same set CI installs, plus fonts.
+RUN apt-get update     && apt-get install -y --no-install-recommends         libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libharfbuzz-subset0         libfontconfig1 libglib2.0-0 fonts-dejavu-core     && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system somnus && useradd --system --gid somnus --no-create-home somnus
 WORKDIR /app/services/somnus-report-service
 COPY --from=build --chown=somnus:somnus /app/services/somnus-report-service/.venv ./.venv
