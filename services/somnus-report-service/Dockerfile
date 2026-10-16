@@ -30,6 +30,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN groupadd --system somnus && useradd --system --gid somnus --no-create-home somnus
 WORKDIR /app/services/somnus-report-service
 COPY --from=build --chown=somnus:somnus /app/services/somnus-report-service/.venv ./.venv
+# The migration histories travel with the code they belong to, so a release can
+# be migrated from its own image (a one-off job: `alembic upgrade head`) instead
+# of from a checkout that may not match what is deployed.
+COPY --chown=somnus:somnus services/somnus-report-service/alembic.ini services/somnus-report-service/alembic_content.ini ./
+COPY --chown=somnus:somnus services/somnus-report-service/migrations ./migrations
+COPY --chown=somnus:somnus services/somnus-report-service/migrations_content ./migrations_content
 USER somnus
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
