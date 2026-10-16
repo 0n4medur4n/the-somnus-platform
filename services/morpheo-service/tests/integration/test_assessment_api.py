@@ -89,7 +89,7 @@ def test_content_endpoint_serves_artifact_wording(client: TestClient) -> None:
     }
     assert {level["id"] for level in body["safetyLevels"]} == {"L0", "L1", "L2", "L3", "L4"}
     assert body["outputContract"]["forbiddenPhrases"]
-    assert body["contentVersion"] == "1.3"
+    assert body["contentVersion"] == "1.4"
     assert len(body["safetyPrompts"]) == 22
     assert body["limitsText"][0].startswith("Morpheo organiza los síntomas")
     assert len(body["blockedClaims"]) == 6
@@ -99,7 +99,7 @@ def test_clinical_sources_endpoint_serves_the_approved_corpus(client: TestClient
     response = client.get("/internal/v1/clinical-sources")
     assert response.status_code == 200
     body = response.json()
-    assert body["contentVersion"] == "1.3"
+    assert body["contentVersion"] == "1.4"
     assert {source["id"] for source in body["sources"]} == {f"SRC-{n:02d}" for n in range(1, 16)}
     first = body["sources"][0]
     # The exact wire shape, pinned. `citedByRules` joined it in Checkpoint 11.3

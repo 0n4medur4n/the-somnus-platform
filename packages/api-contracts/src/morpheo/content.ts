@@ -54,7 +54,20 @@ export const SafetyPromptContentSchema = z
   .object({
     signalId: z.string().min(1),
     context: SafetyPromptContextSchema,
+    /** The default wording: the adult speaking about themselves. */
     question: z.string().min(1),
+    /**
+     * The same question in each audience's voice -- "tú", "tu hijo o hija",
+     * "la persona a la que valoras". A role absent here falls back to `question`.
+     */
+    questionByRole: z
+      .object({
+        adult: z.string().min(1),
+        parent: z.string().min(1),
+        professional: z.string().min(1),
+      })
+      .partial()
+      .strict(),
   })
   .strict();
 export type SafetyPromptContent = z.infer<typeof SafetyPromptContentSchema>;

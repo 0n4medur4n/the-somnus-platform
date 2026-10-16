@@ -67,6 +67,7 @@ const CONTENT = {
       signalId: "sleepiness_near_miss",
       context: "general",
       question: "¿Casi un accidente por sueño?",
+      questionByRole: {},
     },
   ],
   limitsText: ["No es un diagnóstico."],
@@ -193,6 +194,37 @@ describe("Assessment flow (build plan §20 Checkpoint 10.3, safety-first)", () =
       kind: "complaint",
       name: expect.anything(),
     });
+  });
+
+  it("asks each audience in its own voice: the parent reads it about their child", async () => {
+    getAssessmentContent.mockResolvedValue({
+      ...CONTENT,
+      safetyPrompts: [
+        {
+          signalId: "cyanosis",
+          context: "general",
+          question: "¿Notas que tus labios están azulados?",
+          questionByRole: {
+            adult: "¿Notas que tus labios están azulados?",
+            parent: "¿Observas que los labios de tu hijo o hija están azulados?",
+            professional: "¿Observas que los labios de la persona a la que valoras están azulados?",
+          },
+        },
+      ],
+    });
+    renderWithProviders(<Assessment />, { route: "/assessment" });
+
+    await userEvent.click(await screen.findByLabelText(t("assessment.role.parent")));
+    await userEvent.type(screen.getByLabelText(t("assessment.role.ageMinor")), "8");
+    await userEvent.click(screen.getByLabelText(t("assessment.role.guardianship")));
+    await userEvent.click(next());
+    await userEvent.click(screen.getByLabelText(t("assessment.consent.label")));
+    await userEvent.click(next());
+
+    expect(
+      await screen.findByText("¿Observas que los labios de tu hijo o hija están azulados?"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("¿Notas que tus labios están azulados?")).not.toBeInTheDocument();
   });
 
   it("professional with identifiable data is blocked (privacy)", async () => {

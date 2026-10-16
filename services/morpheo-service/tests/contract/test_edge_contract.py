@@ -202,7 +202,7 @@ def test_content_response_from_artifacts_conforms() -> None:
     assert len(payload["modules"]) == 6
     # The content endpoint reports the bumped content_version, not the rule version.
     assert payload["workflowVersion"] == "1.0"
-    assert payload["contentVersion"] == "1.3"
+    assert payload["contentVersion"] == "1.4"
     assert len(payload["safetyPrompts"]) == 22
     # Every BLOQUEAR claim statement is exposed for a consumer's scanner (§15).
     assert len(payload["blockedClaims"]) == 6
@@ -235,7 +235,7 @@ def test_clinical_sources_from_artifacts_conforms() -> None:
     assert len(payload["sources"]) == 15
     ids = {source["id"] for source in payload["sources"]}
     assert ids == {f"SRC-{n:02d}" for n in range(1, 16)}
-    assert payload["contentVersion"] == "1.3"
+    assert payload["contentVersion"] == "1.4"
     assert all(source["citation"] and source["use"] for source in payload["sources"])
 
     # `citedByRules` is the field the report resolves a citation BY (Checkpoint

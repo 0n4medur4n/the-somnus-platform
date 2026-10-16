@@ -199,9 +199,14 @@ export function Assessment({
   const safetyPrompts = useMemo(
     () =>
       contentQuery.data
-        ? contentQuery.data.safetyPrompts.filter(
-            (prompt) => prompt.context === "general" || role === "parent",
-          )
+        ? contentQuery.data.safetyPrompts
+            .filter((prompt) => prompt.context === "general" || role === "parent")
+            // Each audience reads the same question in its own voice: "tú",
+            // "tu hijo o hija", "la persona a la que valoras" (content 1.4).
+            .map((prompt) => ({
+              signalId: prompt.signalId,
+              question: (role ? prompt.questionByRole[role] : undefined) ?? prompt.question,
+            }))
         : [],
     [contentQuery.data, role],
   );
