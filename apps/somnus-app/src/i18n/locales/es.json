@@ -34,7 +34,9 @@
     "error": "No hemos podido enviar el enlace. Inténtalo de nuevo.",
     "subtitle": "Entra o crea tu cuenta. Sin contraseñas.",
     "passwordless": "Sin contraseñas",
-    "tryAnotherEmail": "Usar otro correo"
+    "tryAnotherEmail": "Usar otro correo",
+    "sending": "Enviando enlace…",
+    "sendingSlow": "Un momento: estamos preparando tu enlace. Puede tardar unos segundos."
   },
   "callback": {
     "title": "Completando el acceso",
@@ -200,12 +202,17 @@
     "signedOn": "Aceptado el {{date}}",
     "withdrawnOn": "Retirado el {{date}}",
     "fingerprint": "Huella del texto (SHA-256): identifica exactamente este texto",
-    "print": "Imprimir o guardar en PDF",
+    "print": "Imprimir",
     "close": "Cerrar",
     "loading": "Cargando el documento…",
     "loadError": "No hemos podido cargar el documento. Sin leerlo no puedes continuar.",
     "retry": "Volver a intentarlo",
-    "textRegion": "Texto completo del documento"
+    "textRegion": "Texto completo del documento",
+    "downloadPdf": "Descargar PDF",
+    "pdfWorking": "Preparando el PDF…",
+    "pdfError": "No hemos podido generar el PDF. Inténtalo de nuevo.",
+    "pdfGeneratedOn": "Copia generada el {{date}}",
+    "pdfPage": "Página {{page}} de {{pages}}"
   },
   "consents": {
     "title": "Mis consentimientos",

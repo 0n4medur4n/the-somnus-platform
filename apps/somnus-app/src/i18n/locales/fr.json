@@ -34,7 +34,9 @@
     "error": "Nous n'avons pas pu envoyer le lien. Veuillez réessayer.",
     "subtitle": "Connectez-vous ou créez votre compte. Sans mot de passe.",
     "passwordless": "Sans mot de passe",
-    "tryAnotherEmail": "Utiliser une autre adresse"
+    "tryAnotherEmail": "Utiliser une autre adresse",
+    "sending": "Envoi du lien…",
+    "sendingSlow": "Un instant : nous préparons votre lien. Cela peut prendre quelques secondes."
   },
   "callback": {
     "title": "Finalisation de la connexion",
@@ -200,12 +202,17 @@
     "signedOn": "Accepté le {{date}}",
     "withdrawnOn": "Retiré le {{date}}",
     "fingerprint": "Empreinte du texte (SHA-256) : identifie exactement ce texte",
-    "print": "Imprimer ou enregistrer en PDF",
+    "print": "Imprimer",
     "close": "Fermer",
     "loading": "Chargement du document…",
     "loadError": "Nous n'avons pas pu charger le document. Vous ne pouvez pas continuer sans le lire.",
     "retry": "Réessayer",
-    "textRegion": "Texte intégral du document"
+    "textRegion": "Texte intégral du document",
+    "downloadPdf": "Télécharger le PDF",
+    "pdfWorking": "Préparation du PDF…",
+    "pdfError": "Nous n'avons pas pu créer le PDF. Veuillez réessayer.",
+    "pdfGeneratedOn": "Copie générée le {{date}}",
+    "pdfPage": "Page {{page}} sur {{pages}}"
   },
   "consents": {
     "title": "Mes consentements",

@@ -27,6 +27,7 @@ import type {
   RegistrationRequest,
   SessionResponse,
   SignInLinkRequest,
+  SupportedLocale,
 } from "@somnus/api-contracts";
 import { api, BinaryBody } from "./api.js";
 
@@ -70,17 +71,23 @@ export const edge = {
 
   // --- Consent (build plan §13) ---
   /**
-   * The current legal documents. Always the Spanish text: a consent receipt
-   * binds to that version, so it is what a person must read before signing.
+   * The current legal documents in `locale`. A receipt binds to the text in
+   * the language it is signed in, so what is shown is what is signed.
    */
-  getLegalDocuments: (): Promise<CurrentLegalDocumentsResponse> =>
-    api.get<CurrentLegalDocumentsResponse>("/v1/legal-documents/current?locale=es"),
+  getLegalDocuments: (locale: SupportedLocale): Promise<CurrentLegalDocumentsResponse> =>
+    api.get<CurrentLegalDocumentsResponse>(
+      `/v1/legal-documents/current?locale=${encodeURIComponent(locale)}`,
+    ),
   getConsentStatus: (): Promise<ConsentStatusListResponse> =>
     api.get<ConsentStatusListResponse>("/v1/consents/current"),
   getConsentRecords: (): Promise<ConsentRecordsResponse> =>
     api.get<ConsentRecordsResponse>("/v1/consents/receipts"),
-  recordConsent: (purposeKey: ConsentPurposeKey, source: string): Promise<ConsentReceipt> =>
-    api.post<ConsentReceipt>("/v1/consents", { purposeKey, source }),
+  recordConsent: (
+    purposeKey: ConsentPurposeKey,
+    source: string,
+    locale: SupportedLocale,
+  ): Promise<ConsentReceipt> =>
+    api.post<ConsentReceipt>("/v1/consents", { purposeKey, source, locale }),
   withdrawConsent: (receiptId: string): Promise<void> =>
     api.post<void>(`/v1/consents/${encodeURIComponent(receiptId)}/withdraw`, {}),
 

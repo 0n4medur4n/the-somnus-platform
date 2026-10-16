@@ -156,7 +156,13 @@ describe("the questionnaire inside a Morpheo user's space", () => {
     await userEvent.click(screen.getByRole("button", { name: t("assessment.actions.next") }));
 
     await waitFor(() => expect(edge.createAssessment).toHaveBeenCalled());
-    expect(edge.recordConsent).toHaveBeenCalledWith("health_data_processing", "morpheo-assessment");
+    // Signed in the language it was read in (the test renders in Spanish).
+    expect(edge.recordConsent).toHaveBeenCalledWith(
+      "health_data_processing",
+      "morpheo-assessment",
+      "es",
+    );
+    expect(edge.getLegalDocuments).toHaveBeenCalledWith("es");
     expect(edge.recordConsent.mock.invocationCallOrder[0]).toBeLessThan(
       edge.createAssessment.mock.invocationCallOrder[0] ?? 0,
     );

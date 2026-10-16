@@ -5,6 +5,7 @@ import {
   type GateReason,
   type MeResponse,
   type RoleId,
+  type SupportedLocale,
 } from "@somnus/api-contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -18,6 +19,7 @@ import { Button } from "../components/Button.js";
 import { ChoiceCard, SegmentedOption } from "../components/ChoiceCard.js";
 import { FullPageStatus } from "../components/FullPageStatus.js";
 import { formatDateTime, LegalDocument } from "../components/LegalDocument.js";
+import { activeLocale } from "../i18n/index.js";
 import { MorpheoLayout } from "../layouts/MorpheoLayout.js";
 import { edge } from "../lib/edge.js";
 import { ASSESSMENT_CONTENT_QUERY, OWN_ASSESSMENTS_QUERY } from "./MorpheoHome.js";
@@ -28,7 +30,8 @@ const ROLES: RoleId[] = ["adult", "parent", "professional"];
 const MORPHEO_USER_ROLES: RoleId[] = ["adult", "parent"];
 const SAFETY_OPTIONS: SafetyAnswer[] = ["yes", "no", "unknown"];
 
-export const LEGAL_DOCUMENTS_QUERY = ["legal-documents", "es"] as const;
+export const legalDocumentsQuery = (locale: SupportedLocale) =>
+  ["legal-documents", locale] as const;
 export const CONSENT_STATUS_QUERY = ["consent-status"] as const;
 /** Where a health-data consent given in the questionnaire is recorded from. */
 const CONSENT_SOURCE = "morpheo-assessment";
@@ -136,7 +139,11 @@ export function Assessment({
     queryKey: ASSESSMENT_CONTENT_QUERY,
     queryFn: edge.getAssessmentContent,
   });
-  const legalQuery = useQuery({ queryKey: LEGAL_DOCUMENTS_QUERY, queryFn: edge.getLegalDocuments });
+  const legalLocale = activeLocale();
+  const legalQuery = useQuery({
+    queryKey: legalDocumentsQuery(legalLocale),
+    queryFn: () => edge.getLegalDocuments(legalLocale),
+  });
   const consentQuery = useQuery({
     queryKey: CONSENT_STATUS_QUERY,
     queryFn: edge.getConsentStatus,
@@ -247,10 +254,10 @@ export function Assessment({
       consentRecorded.current = true;
       return;
     }
-    await edge.recordConsent("health_data_processing", CONSENT_SOURCE);
+    await edge.recordConsent("health_data_processing", CONSENT_SOURCE, legalLocale);
     consentRecorded.current = true;
     await queryClient.invalidateQueries({ queryKey: CONSENT_STATUS_QUERY });
-  }, [isAuthenticated, alreadySigned, queryClient]);
+  }, [isAuthenticated, alreadySigned, queryClient, legalLocale]);
 
   async function startSession() {
     if (role === null) return;

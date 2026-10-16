@@ -113,7 +113,8 @@ export class UsersProvisionService {
     for (const purposeKey of ["terms_acceptance", "privacy_policy_acknowledgement"] as const) {
       await this.consent.record({
         userId,
-        request: { purposeKey, source: "registration" },
+        // Signed in the language the registration form showed them in.
+        request: { purposeKey, source: "registration", locale },
         correlationId: correlationId ?? userId,
       });
     }

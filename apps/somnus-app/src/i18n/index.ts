@@ -43,4 +43,10 @@ void i18n.use(initReactI18next).init({
   returnNull: false,
 });
 
+/** The language the interface is showing now, as a locale the API accepts. */
+export function activeLocale(): SupportedLocale {
+  const lng = i18n.resolvedLanguage;
+  return isSupportedLocale(lng) ? lng : DEFAULT_LOCALE;
+}
+
 export default i18n;

@@ -74,6 +74,43 @@ describe("ConsentService", () => {
       expect(eventPublisher.published[0]?.subject).toEqual({ type: "user", id: userId });
     });
 
+    it("binds the receipt to the text in the language it was signed in, falling back to Spanish where there is no translation", async () => {
+      // Versions persist across runs (see the supersession test below): publish
+      // the next number for this document, in es and ca only.
+      const document = await legalDocuments.findByPurposeKey("research_participation");
+      if (!document) throw new Error("seed missing");
+      const version = ((await legalDocuments.findLatestVersionNumber(document.id)) ?? 0) + 1;
+      await legalDocuments.publishVersion({
+        legalDocumentId: document.id,
+        version,
+        locale: "es",
+        content: `texto en castellano v${version}`,
+      });
+      await legalDocuments.publishVersion({
+        legalDocumentId: document.id,
+        version,
+        locale: "ca",
+        content: `text en català v${version}`,
+      });
+
+      const signedIn = async (locale: "ca" | "fr" | undefined) => {
+        const receipt = await service.record({
+          userId: UUIDv7(),
+          request: {
+            purposeKey: "research_participation",
+            source: "app",
+            ...(locale ? { locale } : {}),
+          },
+          correlationId: "corr-locale",
+        });
+        return legalDocuments.findVersionById(receipt.legalDocumentVersionId);
+      };
+
+      expect(await signedIn("ca")).toMatchObject({ version, locale: "ca" });
+      expect(await signedIn("fr")).toMatchObject({ version, locale: "es" });
+      expect(await signedIn(undefined)).toMatchObject({ version, locale: "es" });
+    });
+
     it("carries an organizationId through when the actor consents in an organization context", async () => {
       const userId = UUIDv7();
       const organizationId = UUIDv7();
