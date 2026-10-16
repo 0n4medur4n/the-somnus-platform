@@ -24,6 +24,7 @@ import { Field } from "../components/Field.js";
 import { FullPageStatus } from "../components/FullPageStatus.js";
 import { LegalDocumentDialog, ReadDocumentButton } from "../components/LegalDocument.js";
 import { SelectField } from "../components/SelectField.js";
+import { activeLocale } from "../i18n/index.js";
 import { AuthLayout } from "../layouts/AuthLayout.js";
 import {
   type CallbackFailure,
@@ -556,9 +557,10 @@ function ConsentFields({
   const { t } = useTranslation();
   // The texts a person accepts here are the ones the receipts bind to; each
   // opens in full, with its version and fingerprint, before it is accepted.
+  const locale = activeLocale();
   const documents = useQuery({
-    queryKey: ["legal-documents", "es"],
-    queryFn: edge.getLegalDocuments,
+    queryKey: ["legal-documents", locale],
+    queryFn: () => edge.getLegalDocuments(locale),
   });
   const [reading, setReading] = useState<ConsentPurposeKey | null>(null);
   const document = documents.data?.documents.find((doc) => doc.purposeKey === reading);

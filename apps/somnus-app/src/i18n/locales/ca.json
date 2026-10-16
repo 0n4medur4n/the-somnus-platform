@@ -34,7 +34,9 @@
     "error": "No hem pogut enviar l'enllaç. Torna-ho a provar.",
     "subtitle": "Entra o crea el teu compte. Sense contrasenyes.",
     "passwordless": "Sense contrasenyes",
-    "tryAnotherEmail": "Fes servir un altre correu"
+    "tryAnotherEmail": "Fes servir un altre correu",
+    "sending": "S'està enviant l'enllaç…",
+    "sendingSlow": "Un moment: estem preparant el teu enllaç. Pot trigar uns segons."
   },
   "callback": {
     "title": "Completant l'accés",
@@ -200,12 +202,17 @@
     "signedOn": "Acceptat el {{date}}",
     "withdrawnOn": "Retirat el {{date}}",
     "fingerprint": "Empremta del text (SHA-256): identifica exactament aquest text",
-    "print": "Imprimir o desar en PDF",
+    "print": "Imprimir",
     "close": "Tancar",
     "loading": "S'està carregant el document…",
     "loadError": "No hem pogut carregar el document. Sense llegir-lo no pots continuar.",
     "retry": "Torna-ho a provar",
-    "textRegion": "Text complet del document"
+    "textRegion": "Text complet del document",
+    "downloadPdf": "Baixar el PDF",
+    "pdfWorking": "S'està preparant el PDF…",
+    "pdfError": "No hem pogut generar el PDF. Torna-ho a provar.",
+    "pdfGeneratedOn": "Còpia generada el {{date}}",
+    "pdfPage": "Pàgina {{page}} de {{pages}}"
   },
   "consents": {
     "title": "Els meus consentiments",

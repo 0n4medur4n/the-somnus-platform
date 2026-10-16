@@ -1,5 +1,5 @@
 import type { LegalDocumentVersion } from "@somnus/api-contracts";
-import { type ReactNode, useEffect, useId, useRef } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { twMerge } from "tailwind-merge";
 import { Button } from "./Button.js";
@@ -33,6 +33,13 @@ export function parseLegalText(content: string): Block[] {
     }
   }
   return blocks;
+}
+
+/** How a draft announces itself, in each language the documents exist in. */
+const DRAFT_MARKERS = ["BORRADOR", "DRAFT", "ESBORRANY", "PROJET EN ATTENTE"];
+
+export function isDraftNotice(text: string): boolean {
+  return DRAFT_MARKERS.some((marker) => text.startsWith(marker));
 }
 
 /** "a1b2 c3d4 … " in groups of four, so the fingerprint can be read aloud or compared. */
@@ -91,6 +98,24 @@ export function LegalDocument({
   const locale = i18n.resolvedLanguage ?? "es";
   const root = useRef<HTMLElement>(null);
   const titleId = useId();
+  const [pdfState, setPdfState] = useState<"idle" | "working" | "failed">("idle");
+
+  async function downloadPdf() {
+    setPdfState("working");
+    try {
+      const { downloadLegalPdf } = await import("./legal-pdf.js");
+      await downloadLegalPdf({
+        document: doc,
+        ...(signedAt ? { signedAt } : {}),
+        ...(withdrawnAt ? { withdrawnAt } : {}),
+        locale,
+        t,
+      });
+      setPdfState("idle");
+    } catch {
+      setPdfState("failed");
+    }
+  }
 
   return (
     <article
@@ -130,7 +155,8 @@ export function LegalDocument({
           : {})}
         className={twMerge(
           "flex flex-col gap-3 leading-relaxed",
-          scrollable && "max-h-80 overflow-y-auto rounded-lg pr-2",
+          scrollable &&
+            "max-h-[min(70dvh,44rem)] min-h-72 overflow-y-auto rounded-lg border border-somnus-muted/20 bg-somnus-background/40 p-4",
           bodyClassName,
         )}
       >
@@ -145,7 +171,7 @@ export function LegalDocument({
                 <li key={item}>{item}</li>
               ))}
             </ul>
-          ) : block.text.startsWith("BORRADOR") ? (
+          ) : isDraftNotice(block.text) ? (
             // A draft says so up front, impossible to miss and not mistakable
             // for approved wording.
             <p
@@ -167,13 +193,21 @@ export function LegalDocument({
             {groupFingerprint(doc.contentSha256)}
           </p>
         </div>
-        <Button
-          variant="secondary"
-          className="shrink-0 print:hidden"
-          onClick={() => printElement(root.current)}
-        >
-          {t("legal.print")}
-        </Button>
+        <div className="flex shrink-0 flex-col gap-2 print:hidden sm:items-end">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={downloadPdf} disabled={pdfState === "working"}>
+              {pdfState === "working" ? t("legal.pdfWorking") : t("legal.downloadPdf")}
+            </Button>
+            <Button variant="secondary" onClick={() => printElement(root.current)}>
+              {t("legal.print")}
+            </Button>
+          </div>
+          {pdfState === "failed" ? (
+            <p role="alert" className="text-sm text-somnus-danger">
+              {t("legal.pdfError")}
+            </p>
+          ) : null}
+        </div>
       </footer>
     </article>
   );

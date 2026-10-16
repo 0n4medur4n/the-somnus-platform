@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LocaleSchema } from "../locale.js";
 import { opaqueIdSchema } from "../uuid.js";
 import { ConsentPurposeKeySchema } from "./consent-purpose.js";
 import { LegalDocumentVersionSchema } from "./legal-document.js";
@@ -21,6 +22,12 @@ export const ConsentCreateRequestSchema = z
     purposeKey: ConsentPurposeKeySchema,
     organizationId: opaqueIdSchema.optional(),
     source: z.string().min(1).max(120).default("app"),
+    /**
+     * The language the person read the document in. The receipt binds to the
+     * current version's text in that language -- what they actually saw --
+     * falling back to Spanish where no translation exists. Absent: Spanish.
+     */
+    locale: LocaleSchema.optional(),
   })
   .strict();
 export type ConsentCreateRequest = z.infer<typeof ConsentCreateRequestSchema>;

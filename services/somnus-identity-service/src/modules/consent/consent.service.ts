@@ -158,7 +158,12 @@ export class ConsentService {
         details: { purposeKey: request.purposeKey },
       });
     }
-    const version = await this.legalDocuments.findCurrentVersion(document.id, DEFAULT_LOCALE);
+    // Bind to the text the person read: the current version in their language,
+    // or the Spanish original where that document has no translation.
+    const version =
+      (request.locale && request.locale !== DEFAULT_LOCALE
+        ? await this.legalDocuments.findCurrentVersion(document.id, request.locale)
+        : null) ?? (await this.legalDocuments.findCurrentVersion(document.id, DEFAULT_LOCALE));
     if (!version) {
       throw new SomnusError(ErrorCode.NOT_FOUND, "No published version exists for this purpose.", {
         correlationId,

@@ -34,7 +34,9 @@
     "error": "We couldn't send the link. Please try again.",
     "subtitle": "Log in or create your account. No passwords.",
     "passwordless": "Passwordless",
-    "tryAnotherEmail": "Use a different email"
+    "tryAnotherEmail": "Use a different email",
+    "sending": "Sending link…",
+    "sendingSlow": "One moment: we are preparing your link. It can take a few seconds."
   },
   "callback": {
     "title": "Completing sign-in",
@@ -200,12 +202,17 @@
     "signedOn": "Accepted on {{date}}",
     "withdrawnOn": "Withdrawn on {{date}}",
     "fingerprint": "Text fingerprint (SHA-256): identifies exactly this text",
-    "print": "Print or save as PDF",
+    "print": "Print",
     "close": "Close",
     "loading": "Loading the document…",
     "loadError": "We could not load the document. You cannot continue without reading it.",
     "retry": "Try again",
-    "textRegion": "Full text of the document"
+    "textRegion": "Full text of the document",
+    "downloadPdf": "Download PDF",
+    "pdfWorking": "Preparing the PDF…",
+    "pdfError": "We could not create the PDF. Please try again.",
+    "pdfGeneratedOn": "Copy generated on {{date}}",
+    "pdfPage": "Page {{page}} of {{pages}}"
   },
   "consents": {
     "title": "My consents",
