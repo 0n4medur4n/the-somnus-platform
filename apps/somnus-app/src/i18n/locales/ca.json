@@ -28,7 +28,7 @@
     "title": "Inicia la sessió",
     "intro": "Introdueix el teu correu i t'enviarem un enllaç d'accés segur.",
     "emailLabel": "Adreça electrònica",
-    "emailHint": "T'enviarem un enllaç d'un sol ús. No fem servir contrasenyes.",
+    "emailHint": "D'un sol ús. No cal que creïs ni recordis cap contrasenya.",
     "sendLink": "Envia l'enllaç d'accés",
     "linkSent": "T'hem enviat un enllaç d'accés a {{email}}. Revisa el correu.",
     "error": "No hem pogut enviar l'enllaç. Torna-ho a provar.",
