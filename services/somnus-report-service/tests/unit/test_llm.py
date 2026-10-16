@@ -91,7 +91,7 @@ def test_openai_adapter_sends_the_reasoning_effort_and_no_temperature_when_reaso
     assert "temperature" not in captured
 
 
-def test_the_configured_model_is_gpt_6_luna_at_maximum_effort(
+def test_the_configured_model_is_gpt_6_luna_at_its_highest_effort(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("LLM_MODEL", raising=False)
@@ -100,7 +100,8 @@ def test_the_configured_model_is_gpt_6_luna_at_maximum_effort(
 
     settings = Settings()
     assert settings.llm_model == "gpt-6-luna"
-    assert settings.llm_reasoning_effort == "max"
+    # "max" is refused by the API for this model; "xhigh" is its highest.
+    assert settings.llm_reasoning_effort == "xhigh"
 
 
 def test_openai_embedding_adapter_forwards_model_dimensions_and_maps_vectors(

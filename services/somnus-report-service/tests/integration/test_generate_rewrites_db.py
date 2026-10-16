@@ -65,7 +65,7 @@ def test_every_sentence_gets_one_pending_candidate_and_a_rerun_adds_none(
     expected = len(rewritable_texts(content))
     assert (first.queued, first.already_covered, first.blocked) == (expected, 0, 0)
     # Maximum reasoning effort, and only Morpheo's approved sentences go out.
-    assert {request.reasoning_effort for request in model.requests} == {"max"}
+    assert {request.reasoning_effort for request in model.requests} == {"xhigh"}
     assert {request.user for request in model.requests} == {
         entry.text for entry in rewritable_texts(content)
     }

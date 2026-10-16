@@ -4,7 +4,7 @@
 
 For every fixed sentence the AI may reword (report.application.ai_wording) that
 has no pending or approved rewording yet, asks the configured model (GPT-6 Luna
-at maximum reasoning effort, by default) for one and queues it as
+at its highest reasoning effort, xhigh, by default) for one and queues it as
 `pending_review`. A human approves or rejects it in the admin console; only then
 can a report print it. A candidate the forbidden-phrase scanner blocks is logged
 and never queued.
