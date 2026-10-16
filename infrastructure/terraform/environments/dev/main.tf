@@ -306,7 +306,7 @@ module "run_report" {
     MORPHEO_BASE_URL = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
   }
   # OPENAI_API_KEY: embeddings, and the AI wording job
-  # (`python -m report.jobs.generate_rewrites`, GPT-6 Luna at max effort -- the
+  # (`python -m report.jobs.generate_rewrites`, GPT-6 Luna at xhigh effort -- the
   # code defaults, owner decision 2026-10-16). The service itself never calls
   # the chat model: it only prints rewordings a human approved in the review
   # queue. AI_REWRITE_ENABLED defaults on in `report.settings.config`; set it to

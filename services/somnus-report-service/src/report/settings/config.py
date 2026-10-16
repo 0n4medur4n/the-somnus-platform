@@ -61,12 +61,14 @@ class Settings(BaseSettings):
     # are configuration, never hardcoded at call sites (§5.6). The key is a
     # secret, injected in staging/production; empty locally (adapter is mocked).
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
-    # GPT-6 Luna at maximum reasoning effort (owner decision 2026-10-16,
-    # superseding GPT-5.6 in build plan §3.6). Temperature only applies when the
+    # GPT-6 Luna at the highest reasoning effort it accepts (owner decision
+    # 2026-10-16, superseding GPT-5.6 in build plan §3.6). OpenAI answers 400 to
+    # "max" for this model ("supported: none, low, medium, high, xhigh"), so the
+    # maximum is "xhigh". Temperature only applies when the
     # effort is "none": a reasoning model takes no sampling parameters.
     llm_model: str = Field(default="gpt-6-luna", min_length=1, alias="LLM_MODEL")
     llm_reasoning_effort: Literal["none", "low", "medium", "high", "xhigh", "max"] = Field(
-        default="max", alias="LLM_REASONING_EFFORT"
+        default="xhigh", alias="LLM_REASONING_EFFORT"
     )
     llm_temperature: float = Field(default=0.2, ge=0.0, le=2.0, alias="LLM_TEMPERATURE")
     llm_prompt_template_version: str = Field(
