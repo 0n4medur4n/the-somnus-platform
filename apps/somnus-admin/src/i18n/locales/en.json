@@ -176,7 +176,10 @@
     "provenanceMissing": "This report recorded no corpus provenance. It was generated before provenance was recorded, or the record could not be written.",
     "provenanceRetired": "retired since",
     "provenanceUntitled": "(document could not be resolved)",
-    "provenanceAddedIn": "added in version {{version}}"
+    "provenanceAddedIn": "added in version {{version}}",
+    "textRef": "Fixed report sentence: {{ref}}. If you approve it, it is used in every report that prints it.",
+    "textRefModule": "Pattern {{id}}",
+    "textRefLevel": "Level {{id}}"
   },
   "stats": {
     "title": "Platform statistics",

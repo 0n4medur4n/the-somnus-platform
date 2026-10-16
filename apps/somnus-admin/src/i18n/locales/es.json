@@ -176,7 +176,10 @@
     "provenanceMissing": "Este informe no registró procedencia del corpus. Se generó antes de que se registrara, o el registro no pudo escribirse.",
     "provenanceRetired": "retirado desde entonces",
     "provenanceUntitled": "(documento no resoluble)",
-    "provenanceAddedIn": "alta en la versión {{version}}"
+    "provenanceAddedIn": "alta en la versión {{version}}",
+    "textRef": "Texto fijo del informe: {{ref}}. Si lo apruebas, se usará en todos los informes que lo incluyan.",
+    "textRefModule": "Patrón {{id}}",
+    "textRefLevel": "Nivel {{id}}"
   },
   "stats": {
     "title": "Estadísticas de plataforma",

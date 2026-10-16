@@ -68,6 +68,7 @@ def _to_dto(
     return ContentReviewItemDTO(
         item_id=item.item_id,
         report_id=item.report_id,
+        text_ref=item.text_ref,
         prompt_template_version=item.prompt_template_version,
         model_id=item.model_id,
         input_hash=item.input_hash,
@@ -107,7 +108,9 @@ def list_queue(request: Request, limit: int = 50) -> ContentReviewQueueDTO:
     with session_factory() as session:
         service = ContentReviewService(ContentReviewRepositorySql(session))
         items = service.pending(limit=limit)
-        records = ProvenanceRepository(session).get_many([item.report_id for item in items])
+        records = ProvenanceRepository(session).get_many(
+            [item.report_id for item in items if item.report_id is not None]
+        )
 
     provenance: dict[str, ReportProvenanceDTO] = {}
     if resolver is not None:
@@ -115,7 +118,10 @@ def list_queue(request: Request, limit: int = 50) -> ContentReviewQueueDTO:
             provenance[report_id] = _provenance_dto(resolver.resolve(record))
 
     return ContentReviewQueueDTO(
-        items=[_to_dto(item, provenance.get(item.report_id)) for item in items]
+        items=[
+            _to_dto(item, provenance.get(item.report_id) if item.report_id else None)
+            for item in items
+        ]
     )
 
 

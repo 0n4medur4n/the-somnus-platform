@@ -30,6 +30,11 @@ class GenerationAudit:
     generated_at: str
 
 
+def input_hash_of(structured_input: str) -> str:
+    """The §15 input hash: how a reviewed text is recognised again later."""
+    return _sha256(structured_input)
+
+
 def build_audit(
     *,
     model: str,

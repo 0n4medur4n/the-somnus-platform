@@ -72,15 +72,13 @@ class Settings(BaseSettings):
     llm_prompt_template_version: str = Field(
         default="rewrite_v1", min_length=1, alias="LLM_PROMPT_TEMPLATE_VERSION"
     )
-    # Master switch for AI rewriting (§15). OFF by default and unset everywhere.
-    # It must stay off in every environment until a human-review mechanism for
-    # `pending_review` content exists. It does now (Checkpoint 15.3: the review
-    # queue in report.application.content_review), which is why the flag CAN be
-    # turned on -- not why it should be. Enabling it needs explicit clinical
-    # sign-off after the clinical lead has used the queue. With this off, the
-    # render pipeline is deterministic-only and the Rewriter cannot be invoked.
-    # See report.application.ai_rewrite.
-    ai_rewrite_enabled: bool = Field(default=False, alias="AI_REWRITE_ENABLED")
+    # Master switch for AI wording (§15). ON by default, everywhere (owner
+    # decision 2026-10-16). Safe to be on: only HUMAN-APPROVED rewordings of the
+    # report's fixed sentences are ever printed (per-text review queue), and a
+    # sentence without one prints exactly as Morpheo approved it. Set to false
+    # to print every report deterministically and never consult the queue.
+    # See report.application.ai_wording.
+    ai_rewrite_enabled: bool = Field(default=True, alias="AI_REWRITE_ENABLED")
     # Embeddings for explanation-only clinical grounding (build plan §3.6b). The
     # dimensions are fixed at the model default (3072); reducing them requires a
     # documented decision. Used only over the approved corpus — never on the

@@ -52,7 +52,10 @@ class ReportProvenanceDTO(ContractModel):
 
 class ContentReviewItemDTO(ContractModel):
     item_id: str
-    report_id: str
+    # None for a per-text item, which belongs to no single report.
+    report_id: str | None = None
+    # Which fixed sentence a per-text item rewords, e.g. "module:INS".
+    text_ref: str | None = None
     prompt_template_version: str
     model_id: str
     input_hash: str

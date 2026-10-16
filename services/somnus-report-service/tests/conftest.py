@@ -152,6 +152,26 @@ class InMemoryContentReviewRepository:
         ]
         return found[-1] if found else None
 
+    def latest_approved_for_text(
+        self, input_hash: str, prompt_template_version: str
+    ) -> ContentReviewItem | None:
+        found = [
+            item
+            for item in self.items.values()
+            if item.input_hash == input_hash
+            and item.prompt_template_version == prompt_template_version
+            and item.status == STATUS_APPROVED
+        ]
+        return found[-1] if found else None
+
+    def has_live_item_for_text(self, input_hash: str, prompt_template_version: str) -> bool:
+        return any(
+            item.input_hash == input_hash
+            and item.prompt_template_version == prompt_template_version
+            and item.status in (STATUS_PENDING, STATUS_APPROVED)
+            for item in self.items.values()
+        )
+
     def record_decision(
         self, item_id: str, *, status: str, reviewer_id: str, reason: str, decided_at: datetime
     ) -> ContentReviewItem | None:

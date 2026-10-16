@@ -67,7 +67,10 @@ class AiContentReviewItemRow(Base):
     __tablename__ = "ai_content_review_items"
 
     item_id: Mapped[str] = mapped_column(String(32), primary_key=True)
-    report_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    # NULL for a per-text item: it belongs to no single report (see text_ref).
+    report_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Which fixed sentence a per-text item rewords, e.g. "module:INS".
+    text_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
     prompt_template_version: Mapped[str] = mapped_column(String(32), nullable=False)
     model_id: Mapped[str] = mapped_column(String(64), nullable=False)
     # sha256 hex of the structured input and of the model's response (§15).
@@ -90,6 +93,8 @@ class AiContentReviewItemRow(Base):
         # for one report; both are the hot paths.
         Index("ix_ai_content_review_status_created", "status", "created_at"),
         Index("ix_ai_content_review_report_status", "report_id", "status"),
+        # The per-text lookup every AI-on render makes, once per sentence.
+        Index("ix_ai_content_review_input_status", "input_hash", "status"),
     )
 
 

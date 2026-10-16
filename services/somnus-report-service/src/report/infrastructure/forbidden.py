@@ -11,7 +11,7 @@ arbitrary PARAPHRASE that avoids the exact wording, nor Unicode/whitespace
 obfuscation. It is the ONLY automated control that exists today. The human review
 that would compensate for the gap does not exist yet (no consumer of
 `pending_review`), so AI rewriting is disabled by `AI_REWRITE_ENABLED` (default
-off; see report.application.ai_rewrite) and must not be enabled until that
+off; see report.application.ai_wording) and must not be enabled until that
 mechanism is built. See
 tests/unit/test_rewriter.py::test_residual_risk_a_paraphrased_claim_is_not_caught.
 """

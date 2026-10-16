@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pytest
 
-from report.application.ai_rewrite import AiRewriteDisabledError
 from report.application.render_service import RenderService
 from report.application.retrieval import SourceRetriever
 from report.infrastructure.storage import LocalStorageBackend
@@ -59,11 +58,14 @@ def test_render_service_stores_html_pdf_and_returns_signed_urls(
     assert LocalStorageBackend.is_expired(ref.pdf_url) is False
 
 
-def test_ai_rewrite_is_disabled_by_default_and_when_env_unset(
+def test_ai_wording_is_on_when_env_unset_and_off_when_set_false(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Unset AI_REWRITE_ENABLED must read as off — the master switch defaults off.
+    # On everywhere unless switched off (owner decision 2026-10-16); only
+    # human-approved wording is ever printed (test_content_review_render_gate).
     monkeypatch.delenv("AI_REWRITE_ENABLED", raising=False)
+    assert Settings().ai_rewrite_enabled is True
+    monkeypatch.setenv("AI_REWRITE_ENABLED", "false")
     assert Settings().ai_rewrite_enabled is False
 
 
@@ -85,11 +87,11 @@ def test_ai_rewrite_off_stores_the_deterministic_html_byte_for_byte(
     assert stored == render_html(request, content).html
 
 
-def test_ai_rewrite_on_refuses_to_serve_unreviewed_output(
+def test_ai_wording_on_with_no_review_queue_stores_the_deterministic_html(
     tmp_path: Path, content: ClinicalContentDTO, make_request: RequestBuilder
 ) -> None:
-    # Flipping the flag on cannot serve AI text while no human-review mechanism
-    # exists (§15): the pipeline refuses rather than emit unreviewed output.
+    # On, but no approved wording reachable: nothing unreviewed can be printed,
+    # and the report is Morpheo's approved original, byte for byte (§15).
     service = RenderService(
         content_provider=_FakeContent(content),
         pdf_renderer=_FakePdf(),
@@ -97,8 +99,10 @@ def test_ai_rewrite_on_refuses_to_serve_unreviewed_output(
         signed_url_ttl=timedelta(minutes=15),
         ai_rewrite_enabled=True,
     )
-    with pytest.raises(AiRewriteDisabledError):
-        service.render(make_request(locale="es", level="L4", routes=("INS",)))
+    request = make_request(locale="es", level="L4", routes=("INS",))
+    ref = service.render(request)
+    stored = (tmp_path / ref.report_id / "es" / "report.html").read_text(encoding="utf-8")
+    assert stored == render_html(request, content).html
 
 
 class _StubRetriever:

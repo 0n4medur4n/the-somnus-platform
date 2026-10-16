@@ -48,6 +48,7 @@ def _to_item(row: AiContentReviewItemRow) -> ContentReviewItem:
         decided_at=row.decided_at,
         reason=row.reason,
         created_at=row.created_at,
+        text_ref=row.text_ref,
     )
 
 
@@ -70,6 +71,7 @@ class ContentReviewRepositorySql:
                 reviewer_id=item.reviewer_id,
                 decided_at=item.decided_at,
                 reason=item.reason,
+                text_ref=item.text_ref,
             )
         )
         self._session.flush()
@@ -98,6 +100,33 @@ class ContentReviewRepositorySql:
             .limit(1)
         ).first()
         return None if row is None else _to_item(row)
+
+    def latest_approved_for_text(
+        self, input_hash: str, prompt_template_version: str
+    ) -> ContentReviewItem | None:
+        row = self._session.scalars(
+            select(AiContentReviewItemRow)
+            .where(
+                AiContentReviewItemRow.input_hash == input_hash,
+                AiContentReviewItemRow.prompt_template_version == prompt_template_version,
+                AiContentReviewItemRow.status == STATUS_APPROVED,
+            )
+            .order_by(AiContentReviewItemRow.decided_at.desc())
+            .limit(1)
+        ).first()
+        return None if row is None else _to_item(row)
+
+    def has_live_item_for_text(self, input_hash: str, prompt_template_version: str) -> bool:
+        row = self._session.scalars(
+            select(AiContentReviewItemRow.item_id)
+            .where(
+                AiContentReviewItemRow.input_hash == input_hash,
+                AiContentReviewItemRow.prompt_template_version == prompt_template_version,
+                AiContentReviewItemRow.status.in_((STATUS_PENDING, STATUS_APPROVED)),
+            )
+            .limit(1)
+        ).first()
+        return row is not None
 
     def record_decision(
         self, item_id: str, *, status: str, reviewer_id: str, reason: str, decided_at: datetime
