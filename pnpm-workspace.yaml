@@ -21,3 +21,6 @@ allowBuilds:
   # firebase-tools needs to run. Allowed so a fresh install doesn't fail
   # ERR_PNPM_IGNORED_BUILDS on CI.
   re2: true
+  # core-js arrives as an optional dependency of jspdf (the app's PDF copy of
+  # a legal document); its postinstall only prints a funding banner. Denied.
+  core-js: false
