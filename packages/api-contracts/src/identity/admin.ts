@@ -59,6 +59,17 @@ export const ADMIN_CAPABILITIES = [
    * corpus document is what an AI wording step grounds in.
    */
   "admin_corpus_manage",
+  /**
+   * The staff Drive (owner decision 2026-10-17, ADR 0019): end-to-end encrypted
+   * folders for protocols, rules, algorithms and usage instructions.
+   *
+   * Every internal role holds it, because sharing material across the staff is
+   * the point. It is the WIDEST row in the matrix and deliberately the least
+   * powerful: it opens the section and nothing else. What anyone can read is
+   * decided per folder by membership, and enforced by the keys -- a person who
+   * was never given a folder's key cannot read it, whatever this capability says.
+   */
+  "admin_drive",
 ] as const;
 
 export const AdminCapabilitySchema = z.enum(ADMIN_CAPABILITIES);

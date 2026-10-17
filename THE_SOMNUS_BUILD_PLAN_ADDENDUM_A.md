@@ -51,6 +51,7 @@ Rules that hold across all rows:
 | Consent records viewer (per user, metadata only)               | ✓             | –                     | –                            | ✓                          | ✓                          |
 | **Break-glass: view an individual's clinical answers/results** | –             | –                     | ✓ (justification required)   | ✓ (justification required) | ✓ (justification required) |
 | System health (service status, queue depths, error rates)      | –             | –                     | –                            | ✓                          | ✓                          |
+| Staff Drive, end-to-end encrypted (ADR 0019)                   | ✓             | ✓                     | ✓                            | ✓                          | ✓                          |
 
 ## A2.3 Data access policy (amends nothing; makes explicit what §11 already implies)
 

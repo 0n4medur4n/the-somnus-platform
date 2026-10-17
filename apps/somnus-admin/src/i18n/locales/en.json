@@ -64,7 +64,8 @@
     "admin_break_glass": "Break-glass access to clinical data",
     "admin_system_health": "System health",
     "admin_corpus_manage": "Manage the reference corpus",
-    "admin_audit_export": "Export the audit log"
+    "admin_audit_export": "Export the audit log",
+    "admin_drive": "The team's encrypted Drive (shared folders)"
   },
   "errors": {
     "required": "This field is required.",
@@ -87,7 +88,8 @@
     "audit": "Audit log",
     "breakGlass": "Break-glass access",
     "corpus": "Reference corpus",
-    "corpusSources": "Clinical sources"
+    "corpusSources": "Clinical sources",
+    "drive": "Encrypted Drive"
   },
   "users": {
     "title": "Users",
@@ -377,5 +379,229 @@
     "enrichmentsTitle": "Documents added by the console",
     "noEnrichments": "Nothing has been added for this source yet.",
     "addEnrichment": "Add a document to this source"
+  },
+  "drive": {
+    "title": "Encrypted Drive",
+    "subtitle": "The team's protocols, rules, algorithms and instructions, end-to-end encrypted.",
+    "loading": "Opening the Drive…",
+    "notForPatients": "Internal team material only. Never upload patient data or anything that identifies a person.",
+    "lock": "Lock",
+    "locked": "Drive locked for safety after 15 minutes of inactivity.",
+    "guide": "How to use it",
+    "closeGuide": "Close the guide",
+    "changePassphrase": "Change passphrase",
+    "yourFingerprint": "Your security fingerprint",
+    "fingerprintHint": "Compare it with your colleagues by phone or in person to confirm nobody is impersonating you.",
+    "working": "Working…",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "back": "Back",
+    "setup": {
+      "heading": "Create your encrypted Drive",
+      "intro": "Everything you keep here is encrypted in your browser before it leaves it. Neither The Somnus nor Google can read it: only you and the people you share each folder with.",
+      "point1": "Choose a passphrase just for the Drive. It is not your sign-in link and it is never sent to the server.",
+      "point2": "You will get a recovery code. It is the only way back in if you forget the passphrase.",
+      "point3": "If you lose both the passphrase and the code, nobody can recover your files. Not even us.",
+      "passphrase": "Drive passphrase",
+      "passphraseHint": "At least 12 characters. A long phrase beats a strange word: \"black-coffee-on-the-night-shift\".",
+      "confirm": "Repeat the passphrase",
+      "create": "Create my encrypted Drive",
+      "creating": "Generating your keys…",
+      "tooShort": "The passphrase needs at least 12 characters.",
+      "mismatch": "The two passphrases do not match.",
+      "strength": {
+        "weak": "Strength: weak",
+        "fair": "Strength: fair",
+        "strong": "Strength: strong"
+      }
+    },
+    "recovery": {
+      "heading": "Your recovery code",
+      "intro": "Keep it off this computer: on paper, in a password manager or in a safe. It is shown only this once.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "download": "Download as .txt",
+      "fileTitle": "The Somnus · Encrypted Drive · Recovery code",
+      "fileWarning": "Keep this code somewhere safe. It opens your Drive if you forget your passphrase.",
+      "confirm": "I have saved the code somewhere safe",
+      "continue": "Enter my Drive"
+    },
+    "unlock": {
+      "heading": "Open your encrypted Drive",
+      "intro": "Type your Drive passphrase. It is used only in this browser, to decrypt your keys.",
+      "passphrase": "Drive passphrase",
+      "open": "Open Drive",
+      "opening": "Decrypting your keys…",
+      "forgot": "Forgot the passphrase? Use your recovery code",
+      "lostEverything": "I lost both the passphrase and the code"
+    },
+    "recover": {
+      "heading": "Recover access",
+      "code": "Recovery code",
+      "codeHint": "Eight groups of four characters. Case and spaces do not matter.",
+      "newPassphrase": "New passphrase",
+      "confirm": "Repeat the new passphrase",
+      "submit": "Recover access",
+      "done": "Access recovered. Your old code no longer works: save the new one."
+    },
+    "reset": {
+      "heading": "Reset the Drive",
+      "warning": "New keys will be created. You will lose access to all your folders. Folders only you had are deleted, because nobody can open them any more. Colleagues can share the others with you again.",
+      "confirmLabel": "Type RESET to confirm",
+      "confirmWord": "RESET",
+      "submit": "Reset and create new keys"
+    },
+    "passphraseChange": {
+      "heading": "Change the passphrase",
+      "current": "Current passphrase",
+      "next": "New passphrase",
+      "confirm": "Repeat the new passphrase",
+      "submit": "Change the passphrase",
+      "done": "Passphrase changed. Your files and your recovery code stay the same."
+    },
+    "shares": {
+      "heading": "My folders",
+      "empty": "No folders yet. Create the first one, or ask a colleague to share one with you.",
+      "new": "New shared folder",
+      "newName": "Folder name",
+      "create": "Create folder",
+      "members_one": "{{count}} person",
+      "members_other": "{{count}} people",
+      "unreadable": "This folder cannot be opened"
+    },
+    "role": {
+      "owner": "Owner",
+      "editor": "Can edit",
+      "viewer": "Read only"
+    },
+    "folder": {
+      "breadcrumb": "Path",
+      "root": "My folders",
+      "empty": "This folder is empty.",
+      "dropHint": "Drop files here to upload them encrypted",
+      "newFolder": "New folder",
+      "newFolderName": "New folder name",
+      "newNote": "New note",
+      "upload": "Upload files",
+      "share": "People",
+      "trash": "Trash",
+      "trashCount": "Trash ({{count}})",
+      "items": "Folder contents",
+      "name": "Name",
+      "size": "Size",
+      "modified": "Modified",
+      "by": "By {{who}}",
+      "unknownAuthor": "unknown person",
+      "open": "Open",
+      "download": "Download",
+      "rename": "Rename",
+      "move": "Move",
+      "moveTo": "Move to",
+      "toTrash": "Move to trash",
+      "renameTo": "New name",
+      "uploading": "Encrypting and uploading {{name}}… {{done}}/{{total}}",
+      "uploaded": "{{name}} uploaded and encrypted.",
+      "verified": "Signature verified",
+      "unverified": "Signature not verified",
+      "unreadable": "Cannot be opened",
+      "kind": {
+        "folder": "Folder",
+        "note": "Note",
+        "file": "File"
+      }
+    },
+    "note": {
+      "heading": "Note",
+      "title": "Title",
+      "body": "Content",
+      "bodyHint": "Usage instructions, the steps of a protocol, notes on a rule… Saved encrypted.",
+      "save": "Save note",
+      "edit": "Edit",
+      "saved": "Note saved and encrypted."
+    },
+    "preview": {
+      "heading": "Preview",
+      "noPreview": "This kind of file cannot be previewed. Download it to open it."
+    },
+    "trash": {
+      "heading": "Trash",
+      "empty": "The trash is empty.",
+      "restore": "Restore",
+      "purge": "Delete forever",
+      "purgeConfirm": "Delete \"{{name}}\" forever? This cannot be undone.",
+      "ownersOnly": "Only owners can delete forever."
+    },
+    "members": {
+      "heading": "People with access",
+      "you": "You",
+      "fingerprint": "Fingerprint",
+      "markVerified": "I checked the fingerprint",
+      "acceptNewKey": "Accept their new key",
+      "remove": "Remove access",
+      "removeConfirm": "Access will be removed and the folder key changed for everyone. Continue?",
+      "leave": "Leave the folder",
+      "add": "Share with a colleague",
+      "colleague": "Colleague",
+      "chooseColleague": "Choose who",
+      "noColleagues": "No other colleagues have set up the Drive. Ask them to open Encrypted Drive once.",
+      "roleLabel": "Permission",
+      "addSubmit": "Share",
+      "checkFingerprint": "Before sharing, check with {{who}} that their fingerprint is:",
+      "renameFolder": "Rename the folder",
+      "deleteFolder": "Delete the folder",
+      "deleteConfirmLabel": "Type the folder's name to delete it with everything in it",
+      "deleteSubmit": "Delete forever"
+    },
+    "trust": {
+      "self": "You",
+      "verified": "Fingerprint verified",
+      "known": "Fingerprint not checked",
+      "changed": "Their key has changed!",
+      "unknown": "No Drive set up"
+    },
+    "trustHelp": {
+      "changed": "This person's key is not the one you knew. They may have reset their Drive, or someone may be impersonating them. Confirm with them before accepting the new key."
+    },
+    "problem": {
+      "wrong_secret": "The passphrase or code is not right.",
+      "tampered": "The content fails the integrity check: it has been altered or is damaged.",
+      "bad_signature": "The signature is not valid: who gave you access cannot be confirmed.",
+      "unknown_signer": "Whoever gave you access is no longer in the directory, or their key changed."
+    },
+    "errors": {
+      "file_too_large": "The file is over the 20 MB maximum.",
+      "key_changed": "That person's key has changed. Check it before sharing.",
+      "recipient_unknown": "That person has not set up their Drive yet.",
+      "content_mismatch": "The file does not match what was signed. It was not opened.",
+      "not_open": "The folder was updated. Open it again.",
+      "drive_last_owner": "The folder needs at least one owner. Name another one first.",
+      "drive_role_insufficient": "Your permission in this folder does not allow it.",
+      "drive_stale_key_generation": "The folder changed while you had it open. Open it again.",
+      "drive_already_member": "That person already has access.",
+      "drive_limit_reached": "The folder's limit has been reached.",
+      "drive_invalid_parent": "It cannot be moved there.",
+      "drive_not_trashed": "Move it to the trash first.",
+      "drive_recipient_unknown": "That person has not set up their Drive yet."
+    },
+    "guideContent": {
+      "heading": "How to use the Encrypted Drive",
+      "s1Title": "1. Your passphrase and your code",
+      "s1Body": "The first time, you choose a passphrase just for the Drive and get a recovery code. The passphrase never leaves your browser. Keep the code off the computer. If you lose both, nobody can recover your files.",
+      "s2Title": "2. Shared folders",
+      "s2Body": "Every shared folder has its own key. Create one per topic: \"Safety protocols\", \"Algorithm rules\", \"Shift instructions\". Inside you can create subfolders and notes, and upload files of up to 20 MB.",
+      "s3Title": "3. Notes and usage instructions",
+      "s3Body": "\"New note\" lets you write right in the console: the steps of a protocol, how a rule is applied, instructions for the team. Every save creates a new version, encrypted and signed by you.",
+      "s4Title": "4. Sharing and permissions",
+      "s4Body": "In \"People\" you choose a colleague and a permission. \"Read only\" can view and download; \"Can edit\" can also create, upload, rename and move; \"Owner\" can also share and delete forever. Only colleagues who set up their Drive appear.",
+      "s5Title": "5. Security fingerprints",
+      "s5Body": "Each person has a ten-group fingerprint. Compare it once by phone or in person and press \"I checked the fingerprint\". If someone's key changes you will see a red warning: confirm with them before accepting the new key.",
+      "s6Title": "6. Removing access",
+      "s6Body": "When you remove someone, the folder key changes for everyone who stays. Anything uploaded afterwards cannot be opened with their old copy.",
+      "s7Title": "7. Trash and locking",
+      "s7Body": "Whatever you move to the trash can be restored. Only an owner deletes it forever. The Drive locks itself after 15 minutes of inactivity and when you sign out; your passphrase opens it again.",
+      "s8Title": "8. What not to upload",
+      "s8Body": "This Drive is for internal team material. Do not upload patient data, reports about specific people or anything that identifies someone. The platform's clinical flows exist for that."
+    }
   }
 }

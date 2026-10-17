@@ -29,6 +29,7 @@ or query ever crosses a database boundary.
 | `somnus_content` | report/morpheo content | Curated clinical artifacts (safety rules, templates, sources) — **no personal data** | No |
 | `somnus_notifications` | Notification module (isolated) | Notification log (recipient reference, template, status) | No (contact) |
 | `somnus_audit` | Audit module (isolated) | Normalized audit events — **hashes and identifiers only, never raw health text or free text** | No |
+| `somnus_drive` | Drive module (isolated, worker; ADR 0019) | Internal staff only: the session email as a directory label, public keys, folder membership and roles; every name, note and file **end-to-end encrypted in the browser — unreadable to the platform** | No (by policy: internal material only, the console forbids patient data) |
 | Firebase Auth | Firebase (Google) | Authentication identity (Firebase UID, sign-in method) | No |
 | Firestore | edge-api | Short-lived server-side sessions, idempotency/workflow state, claim-token coordination — **not a source of truth** | No |
 | Cloud Storage (GCS) | report-service | Generated report artifacts (PDF/HTML), reached only via short-lived signed URLs | **Yes — derived from health data** |
@@ -57,6 +58,11 @@ verified professionals, and organization administrators.
    persists them in `somnus_audit` (hashes only) and exports **privacy-safe,
    redacted** events to BigQuery.
 
+6. **Staff Drive** (ADR 0019) — admin console → edge-api `/admin/v1/drive/*` →
+   worker Drive module. Content is encrypted in the browser before it is sent;
+   the platform stores and relays ciphertext, and holds no key that opens it.
+   No LLM, retrieval or analytics path reads it.
+
 All internal Cloud Run services are private (ADR 0008); only edge-api and the two
 static frontends are public. Database connections use TLS.
 
@@ -71,6 +77,7 @@ static frontends are public. Database connections use TLS.
 | Report generation & delivery | Art. 6(1)(b) contract / (a) consent | Art. 9(2)(a) explicit consent |
 | Transactional email | Art. 6(1)(b) contract | — |
 | Security & audit logging | Art. 6(1)(f) legitimate interest / (c) legal obligation | — |
+| Staff Drive (internal working documents) | Art. 6(1)(f) legitimate interest (running the service) | — (no special-category data by policy) |
 
 Consent for the health-adjacent processing is captured as an explicit consent
 receipt (`somnus_consent`) tied to the accepted document version; withdrawal is
@@ -87,6 +94,8 @@ recorded and honoured.
 | Generated reports (GCS) | Per privacy policy; signed URLs short-lived | report-service storage policy |
 | Audit events (`somnus_audit`) | **Retained** past account deletion (security / legal obligation) — hashes only, no raw health | Documented legal basis, §21 |
 | Registered account data | Until account deletion / erasure request | Account-deletion workflow (§6) |
+
+| Staff Drive content and keys (`somnus_drive`) | Until a folder owner deletes it; abandoned uploads after 24 h | Drive module (owner purge, upload cleanup) |
 
 Both TTL policies (30 days, 72 h) are stated in the public privacy policy.
 
@@ -110,6 +119,10 @@ swap needs no business-logic change. Note: OpenAI embeddings and GPT-5.6 are not
 available through Vertex, so a switch also re-hosts embeddings on a Vertex model.
 
 **Open verification items** (living-document actions):
+- [ ] **Staff Drive erasure (ADR 0019):** the account-deletion workflow (§6) does
+  not yet erase a person's `drive_accounts` row (email label + public keys) or
+  their folder memberships. Internal staff only; wire it into `DELETE /v1/me`
+  before a staff account is ever erased.
 - [ ] Confirm TiDB Cloud cluster is EU-region and TLS-only on the DPA.
 - [ ] Confirm OpenAI API training-opt-out, retention (ZDR?), and EU residency on the signed DPA.
 

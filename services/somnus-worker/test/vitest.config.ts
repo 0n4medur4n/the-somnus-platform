@@ -45,6 +45,9 @@ export default defineConfig({
         "src/modules/maintenance/maintenance.controller.ts",
         "src/modules/maintenance/morpheo-maintenance.client.ts",
         "src/common/guards/internal-auth.guard.ts",
+        "src/modules/drive/drive.policy.ts",
+        "src/modules/drive/drive.controller.ts",
+        "src/modules/drive/drive-actor.ts",
       ],
       thresholds: {
         lines: 80,

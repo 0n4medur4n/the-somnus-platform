@@ -39,6 +39,30 @@ four consumer locales on purpose: ca and fr exist for the people Somnus serves,
 not for the staff who operate it. The completeness rule is unchanged — a missing
 key fails CI.
 
+## Drive cifrado (ADR 0019)
+
+The staff Drive: shared folders, notes ("usage instructions") and files, **end-to-end
+encrypted in this app** with WebCrypto -- no third-party crypto code. Every internal
+role sees the section (`admin_drive`); what each person can open is decided by folder
+membership and, underneath, by keys the platform never holds.
+
+- `src/drive/crypto.ts` -- the key hierarchy and every seal. AES-256-GCM with
+  associated data binding each box to its folder, node, revision and block
+  position; ECDH/ECDSA P-256; PBKDF2-SHA256 (600 000) for the passphrase; a
+  160-bit recovery code.
+- `src/drive/drive-session.ts` -- an open Drive: decrypts and verifies, uploads
+  in blocks, shares, and rotates the folder key on removal. Pins colleagues'
+  key fingerprints on first use and flags a changed key instead of trusting it.
+- `src/drive/ui/` -- the screens. Keys live in component memory only; locking,
+  leaving the section, signing out or 15 idle minutes drop them. Nothing is
+  written to browser storage (a test asserts it). Decrypted files are only ever
+  downloaded as `application/octet-stream` or shown as raster images or text,
+  never navigated to, so a decrypted HTML or SVG cannot run in this origin.
+- `src/drive/drive-session.test.ts` runs the whole flow against an
+  honest-but-curious fake server and asserts that **no name, note, content,
+  passphrase or recovery code ever reaches it**, plus the dishonest cases:
+  swapped and flipped blocks, forged folder keys, impersonated colleagues.
+
 ## Commands
 
 ```bash

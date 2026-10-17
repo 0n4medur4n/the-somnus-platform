@@ -83,6 +83,17 @@ const CAPABILITY_ROLES: Readonly<Record<AdminCapability, ReadonlySet<RoleKey>>> 
   // A published corpus document is what an AI wording step grounds in, and §B6
   // chose a single-role restriction over a separate review gate.
   admin_corpus_manage: new Set<RoleKey>(["platform_super_admin"]),
+  // The staff Drive (owner decision 2026-10-17, ADR 0019) -- every internal
+  // role. This row only opens the section: which folders a person can read is
+  // decided by folder membership in the worker's Drive module, and enforced by
+  // the folder keys themselves, which the server never holds.
+  admin_drive: new Set<RoleKey>([
+    "support_agent",
+    "professional_verifier",
+    "clinical_governance_reviewer",
+    "platform_admin",
+    "platform_super_admin",
+  ]),
 });
 
 export type AdminCapabilityInput = {

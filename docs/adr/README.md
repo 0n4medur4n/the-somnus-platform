@@ -24,6 +24,7 @@ the consequences.
 | 0016 | Same-site API front door through Firebase Hosting | Superseded by ADR 0017 | §10, §21 |
 | 0017 | One GCP project per environment; the API same-origin with each SPA | Accepted | §2, §5.1, §5.2, §10 |
 | 0018 | Profile photos: a private bucket behind edge-api | Accepted | §9, §13, §21 |
+| 0019 | The staff Drive: end-to-end encrypted, in the worker | Accepted | §2, §3.9, §5.7, Addendum A §A2.2 |
 
 ## Convention
 

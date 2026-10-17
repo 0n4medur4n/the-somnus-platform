@@ -9,6 +9,8 @@ import { AdminContentReviewController } from "./admin-content-review.controller.
 import { AdminContentReviewService } from "./admin-content-review.service.js";
 import { AdminCorpusController } from "./admin-corpus.controller.js";
 import { AdminCorpusService } from "./admin-corpus.service.js";
+import { AdminDriveController } from "./admin-drive.controller.js";
+import { AdminDriveService } from "./admin-drive.service.js";
 import { AdminInsightsController } from "./admin-insights.controller.js";
 import { AdminInsightsService } from "./admin-insights.service.js";
 import { AdminMeController } from "./admin-me.controller.js";
@@ -31,6 +33,7 @@ import { AdminOperationsController } from "./admin-operations.controller.js";
     AdminInsightsController,
     AdminBreakGlassController,
     AdminCorpusController,
+    AdminDriveController,
   ],
   providers: [
     AdminProxyService,
@@ -45,6 +48,9 @@ import { AdminOperationsController } from "./admin-operations.controller.js";
     // the report service's isolated corpus module (ADR 0010), so this proxy
     // targets the report service too.
     AdminCorpusService,
+    // The staff Drive (ADR 0019) lives in the worker's isolated Drive module
+    // (`somnus_drive`), so its proxy targets the worker, as the insights one does.
+    AdminDriveService,
     AdminCapabilityGuard,
     AdminAuditInterceptor,
   ],

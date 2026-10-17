@@ -1,7 +1,9 @@
 export * from "./analytics/index.js";
 export * from "./consent/index.js";
+export * from "./drive/index.js";
 export { type ApiErrorResponse, ApiErrorResponseSchema } from "./error.js";
 export {
+  DRIVE_EVENT_TYPES,
   type EventEnvelope,
   EventEnvelopeSchema,
   type EventType,

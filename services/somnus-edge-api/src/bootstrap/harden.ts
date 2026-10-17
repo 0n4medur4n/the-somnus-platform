@@ -3,7 +3,8 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
-import type { FastifyReply, FastifyRequest } from "fastify";
+import { DRIVE_BLOCK_MAX_BYTES } from "@somnus/api-contracts";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { EdgeConfig } from "../config/edge-config.js";
 import { PROFILE_PHOTO_MAX_BYTES, PROFILE_PHOTO_TYPES } from "../modules/me/profile-photo.js";
 import { markCsrfCheckPassed, markCsrfCheckPending } from "./csrf-state.js";
@@ -83,14 +84,7 @@ export async function applyHardening(
 
   const fastify = app.getHttpAdapter().getInstance();
 
-  // The profile photo upload (PUT /v1/me/photo) is the one raw body edge-api
-  // accepts: the two image types, read as bytes, with their own 1 MB ceiling
-  // instead of the global JSON limit. Every other content type is still a 415.
-  fastify.addContentTypeParser(
-    [...PROFILE_PHOTO_TYPES],
-    { parseAs: "buffer", bodyLimit: PROFILE_PHOTO_MAX_BYTES },
-    (_request, body, done) => done(null, body),
-  );
+  registerRawBodyParsers(fastify);
 
   // Every API answer is about one person and one moment, so nothing may keep
   // it unless the route says otherwise (the profile photo sets its own policy).
@@ -121,6 +115,32 @@ export async function applyHardening(
     }
     done();
   });
+}
+
+/**
+ * The raw bodies edge-api accepts, each with its own ceiling instead of the
+ * global JSON limit. Every other content type is still a 415.
+ *
+ * - The profile photo upload (PUT /v1/me/photo): the two image types, 1 MB.
+ * - The staff Drive's file blocks (ADR 0019): ciphertext, one 512 KiB block
+ *   plus AES-GCM overhead. Only the Drive's block route reads it; anywhere
+ *   else these bytes fail the route's own validation, exactly as an image does
+ *   outside the photo route.
+ *
+ * Exported so a test app that does not apply the full hardening (the admin
+ * gate suite, which has no CSRF) still parses bodies exactly as production does.
+ */
+export function registerRawBodyParsers(fastify: FastifyInstance): void {
+  fastify.addContentTypeParser(
+    [...PROFILE_PHOTO_TYPES],
+    { parseAs: "buffer", bodyLimit: PROFILE_PHOTO_MAX_BYTES },
+    (_request, body, done) => done(null, body),
+  );
+  fastify.addContentTypeParser(
+    "application/octet-stream",
+    { parseAs: "buffer", bodyLimit: DRIVE_BLOCK_MAX_BYTES },
+    (_request, body, done) => done(null, body),
+  );
 }
 
 /**

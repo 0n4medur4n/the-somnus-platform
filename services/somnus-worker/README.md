@@ -3,7 +3,7 @@
 The Somnus background worker (build plan §5.7). Private Cloud Run service, NestJS
 11 + Fastify 5, cloned from the identity NestJS template (Checkpoint 3.1).
 
-Two **isolated modules** will live here, each owning its own logical database and
+Three **isolated modules** live here, each owning its own logical database and
 reached only through its public interface (ADR 0010):
 
 - **Notification** (`somnus_notifications`) — Cloud Tasks consumer, Brevo delivery,
@@ -12,6 +12,14 @@ reached only through its public interface (ADR 0010):
 - **Audit** (`somnus_audit`) — normalized audit records (§5.7 / §17), deduped by
   event id, with a privacy-safe BigQuery export and the Phase 15 read side: the
   audit log viewer and the statistics dashboards.
+
+- **Drive** (`somnus_drive`, owner decision 2026-10-17, ADR 0019) — the admin
+  console's staff Drive. Stores **ciphertext, public keys and folder membership
+  only**: names, notes and files are encrypted in the browser, and this module
+  holds no key that opens them. It decides who may *ask* for what (membership,
+  roles owner/editor/viewer, a folder always keeps an owner, uploads complete
+  before they are visible) and refuses a member removal that does not rotate
+  the folder key for exactly the remaining members and every node.
 
 Plus scheduled jobs (Cloud Scheduler): unclaimed-assessment and claim-token cleanup.
 
@@ -36,6 +44,23 @@ Plus scheduled jobs (Cloud Scheduler): unclaimed-assessment and claim-token clea
     reach BigQuery whatever anyone later adds to a denylist. `AuditService`
     lifts it out of the incoming payload on ingest, for every event type.
 - Scheduled jobs are **Checkpoint 12.2**.
+
+## The Drive module, in short
+
+- Internal API `internal/v1/drive/*`, called only by edge-api, which sets
+  `x-somnus-actor-id` (and `x-somnus-actor-email` on enroll/reset) from the
+  server-side session after identity granted `admin_drive`. A request without a
+  well-formed actor is refused before any Drive rule runs.
+- Pure rules in `drive.policy.ts` (unit-tested), the service over a
+  `DriveStore` interface, `DriveRepository` on Drizzle (integration-tested
+  against MySQL, migrations down and up included).
+- Files are 512 KiB AES-GCM blocks in `MEDIUMBLOB`, at most 40 per file (20 MiB).
+  A new revision replaces the previous one's blocks on commit. Abandoned uploads
+  are cleared after 24 h, opportunistically on the next upload to that folder.
+- No foreign keys or cascades (§8): children are deleted explicitly in the same
+  transaction. No delete of a node outside the trash; owners only.
+- Deploying it needs the database, user, secret and migration first: see
+  `docs/runbooks/deploy-dev.md`.
 
 ## Develop
 

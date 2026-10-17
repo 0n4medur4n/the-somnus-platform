@@ -31,6 +31,29 @@ import type {
   CorpusSearchRequest,
   CorpusVersionResult,
   Dashboards,
+  DriveAccount,
+  DriveBlock,
+  DriveDirectory,
+  DriveEnrollRequest,
+  DriveFolderCreateRequest,
+  DriveKeyGenerationResult,
+  DriveMember,
+  DriveMemberAddRequest,
+  DriveMemberKeyAcceptRequest,
+  DriveMemberRemoveRequest,
+  DriveMoveRequest,
+  DriveNode,
+  DrivePurgeResult,
+  DriveRenameRequest,
+  DriveRewrapRequest,
+  DriveRole,
+  DriveShareCreateRequest,
+  DriveShareDetail,
+  DriveShareList,
+  DriveShareSummary,
+  DriveStateRequest,
+  DriveUploadStartRequest,
+  DriveUploadStartResponse,
   SessionResponse,
   SignInLinkRequest,
   SrcEnrichmentPage,
@@ -85,7 +108,7 @@ export const edge = {
     ),
   organizationMembers: (organizationId: string): Promise<AdminOrganizationMember[]> =>
     api.get<AdminOrganizationMember[]>(
-      `/admin/v1/organizations/${encodeURIComponent(organizationId)}/members`,
+      `/admin/v1/organizations/${encodeURIComponent(organizationId)}/access`,
     ),
 
   // --- Professional verification queue (admin_verification_queue) ---
@@ -172,4 +195,88 @@ export const edge = {
   // --- Internal roles (admin_roles_assign, platform_super_admin only) ---
   assignRole: (body: AdminRoleAssignRequest): Promise<AdminRoleAssignResponse> =>
     api.post<AdminRoleAssignResponse>("/admin/v1/roles/assign", body),
+
+  // The staff Drive (admin_drive, every internal role; ADR 0019). Every body
+  // below is built by `drive/crypto.ts`: ciphertext, public keys and signatures.
+  drive: driveEdge(),
 };
+
+/** The Drive's routes. A function so the paths are built in one place, with ids encoded. */
+function driveEdge() {
+  const base = "/admin/v1/drive";
+  const share = (shareId: string) => `${base}/shares/${encodeURIComponent(shareId)}`;
+  const node = (shareId: string, nodeId: string) =>
+    `${share(shareId)}/nodes/${encodeURIComponent(nodeId)}`;
+  const block = (shareId: string, nodeId: string, revision: number, index: number) =>
+    `${node(shareId, nodeId)}/revisions/${revision}/blocks/${index}`;
+  return {
+    account: (): Promise<DriveAccount> => api.get<DriveAccount>(`${base}/account`),
+    enroll: (body: DriveEnrollRequest): Promise<DriveAccount> =>
+      api.post<DriveAccount>(`${base}/account`, body),
+    rewrap: (body: DriveRewrapRequest): Promise<DriveAccount> =>
+      api.post<DriveAccount>(`${base}/account/rewrap`, body),
+    saveState: (body: DriveStateRequest): Promise<DriveAccount> =>
+      api.post<DriveAccount>(`${base}/account/state`, body),
+    reset: (body: DriveEnrollRequest): Promise<DriveAccount> =>
+      api.post<DriveAccount>(`${base}/account/reset`, body),
+    directory: (): Promise<DriveDirectory> => api.get<DriveDirectory>(`${base}/directory`),
+    shares: (): Promise<DriveShareList> => api.get<DriveShareList>(`${base}/shares`),
+    createShare: (body: DriveShareCreateRequest): Promise<DriveShareSummary> =>
+      api.post<DriveShareSummary>(`${base}/shares`, body),
+    share: (shareId: string): Promise<DriveShareDetail> =>
+      api.get<DriveShareDetail>(share(shareId)),
+    purgeShare: (shareId: string): Promise<DrivePurgeResult> =>
+      api.post<DrivePurgeResult>(`${share(shareId)}/purge`),
+    addMember: (shareId: string, body: DriveMemberAddRequest): Promise<DriveMember> =>
+      api.post<DriveMember>(`${share(shareId)}/access`, body),
+    acceptKey: (shareId: string, body: DriveMemberKeyAcceptRequest): Promise<DriveShareSummary> =>
+      api.post<DriveShareSummary>(`${share(shareId)}/accept`, body),
+    setRole: (shareId: string, userId: string, role: DriveRole): Promise<DriveMember> =>
+      api.post<DriveMember>(`${share(shareId)}/access/${encodeURIComponent(userId)}/role`, {
+        role,
+      }),
+    removeMember: (
+      shareId: string,
+      userId: string,
+      body: DriveMemberRemoveRequest,
+    ): Promise<DriveKeyGenerationResult> =>
+      api.post<DriveKeyGenerationResult>(
+        `${share(shareId)}/access/${encodeURIComponent(userId)}/remove`,
+        body,
+      ),
+    createFolder: (shareId: string, body: DriveFolderCreateRequest): Promise<DriveNode> =>
+      api.post<DriveNode>(`${share(shareId)}/folders`, body),
+    startUpload: (
+      shareId: string,
+      body: DriveUploadStartRequest,
+    ): Promise<DriveUploadStartResponse> =>
+      api.post<DriveUploadStartResponse>(`${share(shareId)}/uploads`, body),
+    putBlock: (
+      shareId: string,
+      nodeId: string,
+      revision: number,
+      index: number,
+      bytes: Uint8Array,
+    ): Promise<void> => api.putBytes(block(shareId, nodeId, revision, index), bytes),
+    commit: (shareId: string, nodeId: string, revision: number): Promise<DriveNode> =>
+      api.post<DriveNode>(`${node(shareId, nodeId)}/revisions/${revision}/commit`),
+    readBlock: (
+      shareId: string,
+      nodeId: string,
+      revision: number,
+      index: number,
+    ): Promise<DriveBlock> => api.get<DriveBlock>(block(shareId, nodeId, revision, index)),
+    rename: (shareId: string, nodeId: string, body: DriveRenameRequest): Promise<DriveNode> =>
+      api.post<DriveNode>(`${node(shareId, nodeId)}/rename`, body),
+    move: (shareId: string, nodeId: string, body: DriveMoveRequest): Promise<DriveNode> =>
+      api.post<DriveNode>(`${node(shareId, nodeId)}/move`, body),
+    trash: (shareId: string, nodeId: string): Promise<DriveNode> =>
+      api.post<DriveNode>(`${node(shareId, nodeId)}/trash`),
+    restore: (shareId: string, nodeId: string): Promise<DriveNode> =>
+      api.post<DriveNode>(`${node(shareId, nodeId)}/restore`),
+    purgeNode: (shareId: string, nodeId: string): Promise<DrivePurgeResult> =>
+      api.post<DrivePurgeResult>(`${node(shareId, nodeId)}/purge`),
+  };
+}
+
+export type DriveEdge = ReturnType<typeof driveEdge>;

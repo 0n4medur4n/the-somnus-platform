@@ -67,7 +67,7 @@ Internet
               +--> morpheo-service           (Python, Cloud Run, private)
               +--> somnus-report-service     (Python, Cloud Run, private)
               +--> somnus-worker             (NestJS, Cloud Run, private)
-                       includes Notification + Audit modules (isolated)
+                       includes Notification + Audit + Drive modules (isolated)
 ```
 
 Five Cloud Run services total. Consent and the two worker concerns are **isolated modules**, not separate deployables: each has its own logical database, its own migration history, its own repository layer, and communicates with sibling modules only through the module's public service interface. Extracting any of them into a dedicated service later must be a deployment change, not a rewrite.
@@ -197,6 +197,7 @@ somnus_reporting        (includes clinical-source vectors for grounding)
 somnus_content          (educational/product-content vectors for RAG)
 somnus_notifications
 somnus_audit
+somnus_drive            (staff Drive: ciphertext + public keys only; owner decision 2026-10-17, ADR 0019)
 ```
 
 Each logical database has its own database user, password, schema-scoped access, independent migration history, and service-specific pool configuration. Services (and isolated modules) never read or write another database's tables.
@@ -281,6 +282,8 @@ It must not recalculate scores, alter safety flags, create diagnoses, invent cli
 **Notification module (isolated):** Cloud Tasks consumer; Brevo delivery; localized templates; idempotency keys; retries; max attempts; dead-letter handling; delivery status. Logical database `somnus_notifications`.
 
 **Audit module (isolated):** consumes audit events from all services; normalizes and persists audit records; exports privacy-safe analytics events to BigQuery. Logical database `somnus_audit`. It must not become a copy of every service database.
+
+**Drive module (isolated) — owner decision, 2026-10-17 (ADR 0019).** The admin console's staff Drive: shared folders, notes and files for protocols, rules, algorithms and usage instructions, **end-to-end encrypted in the browser** (WebCrypto; per-person passphrase + recovery code; per-folder keys wrapped per member and rotated on removal; signed nodes). The module stores ciphertext, public keys and folder membership in `somnus_drive` and holds no key that opens anything. Reached only through edge-api `/admin/v1/drive/*` behind the `admin_drive` capability (every internal role, Addendum A §A2.2); folder membership decides the rest. Internal material only: no patient data, and no LLM, retrieval or analytics path reads it (§15 untouched).
 
 **Scheduled jobs:** unclaimed-assessment cleanup (30-day TTL), expired claim-token cleanup, and future retention jobs, triggered by Cloud Scheduler.
 
