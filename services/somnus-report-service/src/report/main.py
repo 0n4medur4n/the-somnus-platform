@@ -41,6 +41,7 @@ from report.infrastructure.db import create_engine_from_url
 from report.infrastructure.errors import register_exception_handlers
 from report.infrastructure.llm.openai_adapter import OpenAiAdapter
 from report.infrastructure.llm.openai_embedding_adapter import OpenAiEmbeddingAdapter
+from report.infrastructure.llm.openai_endpoint import log_openai_endpoint
 from report.infrastructure.logging import configure_logging
 from report.infrastructure.morpheo_client import MorpheoContentClient
 from report.infrastructure.pdf import WeasyPrintPdfRenderer
@@ -62,6 +63,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=settings.service_version,
         level=settings.log_level,
     )
+    log_openai_endpoint(enabled=bool(settings.openai_api_key))
 
     app = FastAPI(
         title="The Somnus — Report Service",

@@ -35,6 +35,7 @@ def test_openai_adapter_forwards_the_prompt_and_maps_the_text(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
 
     class _Completions:
         def create(self, **kwargs: Any) -> Any:
@@ -43,8 +44,9 @@ def test_openai_adapter_forwards_the_prompt_and_maps_the_text(
             return SimpleNamespace(model="gpt-5.6", choices=[SimpleNamespace(message=message)])
 
     class _Client:
-        def __init__(self, api_key: str) -> None:
+        def __init__(self, api_key: str, base_url: str) -> None:
             captured["api_key"] = api_key
+            captured["base_url"] = base_url
             self.chat = SimpleNamespace(completions=_Completions())
 
     import openai
@@ -59,6 +61,9 @@ def test_openai_adapter_forwards_the_prompt_and_maps_the_text(
     assert captured["model"] == "gpt-5.6"
     assert captured["temperature"] == 0.2
     assert captured["api_key"] == "secret"
+    # Never kept as a stored completion; the default endpoint unless configured.
+    assert captured["store"] is False
+    assert captured["base_url"] == "https://api.openai.com/v1"
 
 
 def test_openai_adapter_sends_the_reasoning_effort_and_no_temperature_when_reasoning(
@@ -73,7 +78,7 @@ def test_openai_adapter_sends_the_reasoning_effort_and_no_temperature_when_reaso
             return SimpleNamespace(model="gpt-6-luna", choices=[SimpleNamespace(message=message)])
 
     class _Client:
-        def __init__(self, api_key: str) -> None:
+        def __init__(self, api_key: str, base_url: str) -> None:
             self.chat = SimpleNamespace(completions=_Completions())
 
     import openai
@@ -89,6 +94,7 @@ def test_openai_adapter_sends_the_reasoning_effort_and_no_temperature_when_reaso
     assert captured["reasoning_effort"] == "max"
     # A reasoning model rejects sampling parameters while it reasons.
     assert "temperature" not in captured
+    assert captured["store"] is False
 
 
 def test_the_configured_model_is_gpt_6_luna_at_its_highest_effort(
@@ -116,8 +122,9 @@ def test_openai_embedding_adapter_forwards_model_dimensions_and_maps_vectors(
             return SimpleNamespace(model="text-embedding-3-large", data=data)
 
     class _Client:
-        def __init__(self, api_key: str) -> None:
+        def __init__(self, api_key: str, base_url: str) -> None:
             captured["api_key"] = api_key
+            captured["base_url"] = base_url
             self.embeddings = _Embeddings()
 
     import openai
@@ -134,6 +141,8 @@ def test_openai_embedding_adapter_forwards_model_dimensions_and_maps_vectors(
     assert captured["model"] == "text-embedding-3-large"
     assert captured["dimensions"] == 3072
     assert captured["input"] == ["approved corpus text"]
+    # The embeddings API has no store parameter; nothing extra is sent.
+    assert "store" not in captured
 
 
 def test_audit_carries_only_hashes_never_raw_health_text() -> None:

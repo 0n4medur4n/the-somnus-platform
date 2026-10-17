@@ -37,6 +37,7 @@ from report.application.rewriter import PENDING_REVIEW, Rewriter
 from report.infrastructure.db import create_engine_from_url
 from report.infrastructure.forbidden import ForbiddenPhraseScanner
 from report.infrastructure.llm.openai_adapter import OpenAiAdapter
+from report.infrastructure.llm.openai_endpoint import endpoint_line
 from report.infrastructure.llm.provider import LlmProvider
 from report.infrastructure.morpheo_client import ContentProvider, MorpheoContentClient
 from report.repositories.content_review_repository import ContentReviewRepositorySql
@@ -125,6 +126,9 @@ def run_generation(
 
 def main() -> int:
     settings = load_settings()
+    # stderr: stdout carries the job's JSON result.
+    endpoint = endpoint_line(enabled=bool(settings.openai_api_key))
+    print(f"[generate_rewrites] {endpoint}", file=sys.stderr)
     engine = create_engine_from_url(settings.database_url)
     try:
         result = run_generation(
