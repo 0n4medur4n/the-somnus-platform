@@ -548,7 +548,7 @@ export class DriveService {
         };
       }
 
-      if (!existing || existing.kind !== "file") {
+      if (existing?.kind !== "file") {
         throw driveError(ErrorCode.NOT_FOUND, "drive_invalid_parent");
       }
       if (existing.trashedAt) throw driveError(ErrorCode.CONFLICT, "drive_invalid_parent");
@@ -781,7 +781,7 @@ function requireNode(m: ShareManifest, nodeId: string): NodeRecord {
 
 function requireLiveFolder(m: ShareManifest, folderId: string): void {
   const parent = m.nodes.find((n) => n.id === folderId);
-  if (!parent || parent.kind !== "folder" || parent.trashedAt) {
+  if (parent?.kind !== "folder" || parent.trashedAt) {
     throw driveError(ErrorCode.CONFLICT, "drive_invalid_parent");
   }
 }
