@@ -54,3 +54,9 @@ variable "github_repository_owner_id" {
   type        = string
   default     = "126766587"
 }
+
+variable "ops_alert_email" {
+  description = "Inbox that receives monitoring alerts (the edge 5xx alert). An operations address, not a person's."
+  type        = string
+  default     = "thesomnus.web@gmail.com"
+}
