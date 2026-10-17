@@ -28,6 +28,9 @@ _NO_SAFETY = SafetyOutcome(level=None, stop=False, triggered_rule_ids=(), messag
 def run_assessment(inp: AssessmentInput, bundle: ClinicalBundle) -> AssessmentResult:
     workflows = bundle.workflows
     version = workflows.meta.version
+    # The rules' version and the content's version are different things (§14a):
+    # content-only changes bump content_version while `version` stays put.
+    content_version = bundle.content_version
 
     eligibility = evaluate_eligibility(inp)
     if not eligibility.eligible or eligibility.privacy_block:
@@ -42,7 +45,7 @@ def run_assessment(inp: AssessmentInput, bundle: ClinicalBundle) -> AssessmentRe
             stop=False,
             triggered_rule_ids=(),
             workflow_version=version,
-            content_version=version,
+            content_version=content_version,
         )
 
     signals = Signals.from_answers(inp.safety_answers)
@@ -66,5 +69,5 @@ def run_assessment(inp: AssessmentInput, bundle: ClinicalBundle) -> AssessmentRe
         stop=stop,
         triggered_rule_ids=safety.triggered_rule_ids,
         workflow_version=version,
-        content_version=version,
+        content_version=content_version,
     )
