@@ -411,7 +411,8 @@
       "prepareNotes": "Què apuntar per a la teva consulta",
       "preparing": "S'està preparant el teu informe personalitzat…",
       "preparingHint": "Pot trigar fins a un parell de minuts. Pots quedar-te en aquesta pàgina.",
-      "emergencyNow": "Busca atenció d'emergència ara."
+      "emergencyNow": "Busca atenció d'emergència ara.",
+      "loadingReport": "S'està carregant el teu informe…"
     },
     "progress": {
       "label": "Progrés de l'avaluació",

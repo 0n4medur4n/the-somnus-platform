@@ -127,7 +127,12 @@ describe("ResultView (§14b output contract)", () => {
     renderWithProviders(
       <ResultView result={RESULT_L3} content={CONTENT} complaints={[]} sessionId="s1" />,
     );
-    expect(await screen.findByText(t("assessment.result.preparing"))).toBeInTheDocument();
+    // First a plain "loading" (a saved report is instant)...
+    expect(await screen.findByText(t("assessment.result.loadingReport"))).toBeInTheDocument();
+    // ...and "preparing" only when it takes long enough to be a first writing.
+    expect(
+      await screen.findByText(t("assessment.result.preparing"), {}, { timeout: 4500 }),
+    ).toBeInTheDocument();
     finish({ assessmentId: "s1", locale: "es", generated: false });
     expect(await screen.findByText("Prepara una consulta programada.")).toBeInTheDocument();
   });

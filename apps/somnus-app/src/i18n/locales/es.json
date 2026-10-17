@@ -411,7 +411,8 @@
       "prepareNotes": "Qué apuntar para tu consulta",
       "preparing": "Preparando tu informe personalizado…",
       "preparingHint": "Puede tardar hasta un par de minutos. Puedes quedarte en esta página.",
-      "emergencyNow": "Busca atención de emergencia ahora."
+      "emergencyNow": "Busca atención de emergencia ahora.",
+      "loadingReport": "Cargando tu informe…"
     },
     "progress": {
       "label": "Progreso de la evaluación",

@@ -104,3 +104,22 @@ def test_clinical_content_is_html_escaped(make_request: RequestBuilder) -> None:
     html = render_html(make_request(level="L4", routes=("INS",)), hostile).html
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;" in html
+
+
+def test_an_emergency_report_gives_the_person_an_instruction_never_the_systems(
+    content: ClinicalContentDTO, make_request: RequestBuilder
+) -> None:
+    html = render_html(make_request(level="L0", routes=(), stop=True), content).html
+    level = next(lv for lv in content.safety_levels if lv.id == "L0")
+    # The artifact's level "action" is written for the system ("Interrumpir el
+    # flujo…"); the person reads the rule's message, or a plain instruction.
+    assert level.action not in html
+    assert "Busca atención de emergencia ahora." in html
+    assert "level-L0" in html
+
+
+def test_every_care_level_card_carries_its_level_colour(
+    content: ClinicalContentDTO, make_request: RequestBuilder
+) -> None:
+    html = render_html(make_request(level="L4"), content).html
+    assert 'class="level-card level-L4"' in html

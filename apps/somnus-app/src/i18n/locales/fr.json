@@ -411,7 +411,8 @@
       "prepareNotes": "Ce qu'il faut noter pour votre consultation",
       "preparing": "Préparation de votre rapport personnalisé…",
       "preparingHint": "Cela peut prendre jusqu'à quelques minutes. Vous pouvez rester sur cette page.",
-      "emergencyNow": "Demandez des soins d'urgence maintenant."
+      "emergencyNow": "Demandez des soins d'urgence maintenant.",
+      "loadingReport": "Chargement de votre rapport…"
     },
     "progress": {
       "label": "Progression de l'évaluation",
