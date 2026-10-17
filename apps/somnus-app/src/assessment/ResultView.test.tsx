@@ -98,7 +98,7 @@ describe("ResultView (§14b output contract)", () => {
     }
   });
 
-  it("shows the person's AI-written report for the assessment, saying it is AI", async () => {
+  it("shows the person's report for the assessment", async () => {
     getPersonReport.mockResolvedValue({
       assessmentId: "s1",
       locale: "es",
@@ -113,7 +113,6 @@ describe("ResultView (§14b output contract)", () => {
     expect(screen.getByText(REPORT.whatToDo[0] ?? "")).toBeInTheDocument();
     expect(screen.getByText(REPORT.recommendations[0] ?? "")).toBeInTheDocument();
     expect(screen.getByText(REPORT.prepare[0] ?? "")).toBeInTheDocument();
-    expect(screen.getByText(t("assessment.result.aiNote"))).toBeInTheDocument();
     // The protocol's raw instruction is not shown next to the AI text.
     expect(screen.queryByText("Prepara una consulta programada.")).not.toBeInTheDocument();
   });

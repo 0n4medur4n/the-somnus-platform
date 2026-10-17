@@ -139,7 +139,7 @@ def test_fired_rule_messages_are_given_as_shown_apart(
     assert data["urgentMessagesShownApart"] == ["No conduzcas."]
 
 
-def test_the_pdf_prints_the_report_with_the_rules_own_words_and_says_it_is_ai(
+def test_the_pdf_prints_the_report_with_the_rules_own_words(
     content: ClinicalContentDTO, make_request: RequestBuilder
 ) -> None:
     with_rules = content.model_copy(
@@ -157,7 +157,8 @@ def test_the_pdf_prints_the_report_with_the_rules_own_words_and_says_it_is_ai(
     assert "Lleva un diario de sueño de 14 días." in html
     assert "Apunta desde cuándo te ocurre." in html
     assert "Pide una consulta." in html
-    assert "inteligencia artificial" in html
+    # Presented as the report, without an "AI" label (owner decision 2026-10-17).
+    assert "inteligencia artificial" not in html
 
 
 class _Replies:

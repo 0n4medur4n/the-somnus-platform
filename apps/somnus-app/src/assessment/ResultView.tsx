@@ -172,7 +172,6 @@ export function ResultView({ result, content, complaints, sessionId }: ResultVie
               <List items={narrative.prepare} />
             </Block>
           ) : null}
-          <p className="text-sm text-somnus-subtle">{t("assessment.result.aiNote")}</p>
         </>
       ) : !preparing && !emergency && routed.length > 0 ? (
         <>
