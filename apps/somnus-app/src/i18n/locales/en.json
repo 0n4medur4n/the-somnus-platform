@@ -411,7 +411,8 @@
       "prepareNotes": "What to note for your appointment",
       "preparing": "Preparing your personal report…",
       "preparingHint": "It can take up to a couple of minutes. You can stay on this page.",
-      "emergencyNow": "Seek emergency care now."
+      "emergencyNow": "Seek emergency care now.",
+      "loadingReport": "Loading your report…"
     },
     "progress": {
       "label": "Assessment progress",

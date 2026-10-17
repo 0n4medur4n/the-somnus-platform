@@ -4,7 +4,7 @@ import type {
   PersonReport,
 } from "@somnus/api-contracts";
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { twMerge } from "tailwind-merge";
 import { activeLocale } from "../i18n/index.js";
@@ -88,6 +88,17 @@ export function ResultView({ result, content, complaints, sessionId }: ResultVie
   const narrative: PersonReport | undefined =
     report.data?.generated && report.data.narrative ? report.data.narrative : undefined;
   const preparing = report.isPending && report.fetchStatus === "fetching";
+  // A saved report comes back in well under a second: say "loading". Only a
+  // report being written for the first time takes longer -- then say so.
+  const [writing, setWriting] = useState(false);
+  useEffect(() => {
+    if (!preparing) {
+      setWriting(false);
+      return;
+    }
+    const timer = setTimeout(() => setWriting(true), 3000);
+    return () => clearTimeout(timer);
+  }, [preparing]);
 
   const levelCard = level ? (
     <section
@@ -134,10 +145,14 @@ export function ResultView({ result, content, complaints, sessionId }: ResultVie
             className="size-5 shrink-0 animate-spin rounded-full border-2 border-somnus-primary border-t-transparent motion-reduce:animate-none"
           />
           <div className="flex flex-col">
-            <span className="font-medium">{t("assessment.result.preparing")}</span>
-            <span className="text-sm text-somnus-subtle">
-              {t("assessment.result.preparingHint")}
+            <span className="font-medium">
+              {writing ? t("assessment.result.preparing") : t("assessment.result.loadingReport")}
             </span>
+            {writing ? (
+              <span className="text-sm text-somnus-subtle">
+                {t("assessment.result.preparingHint")}
+              </span>
+            ) : null}
           </div>
         </div>
       ) : null}

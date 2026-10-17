@@ -19,5 +19,7 @@
   "brand": "Morpheo",
   "byline": "by The Somnus",
   "date": "Date",
-  "reference": "Reference"
+  "reference": "Reference",
+  "page": "Page",
+  "emergencyNow": "Seek emergency care now."
 }
