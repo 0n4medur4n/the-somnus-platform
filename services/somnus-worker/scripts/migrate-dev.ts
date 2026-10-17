@@ -1,6 +1,6 @@
 /**
  * Applies the worker's migrations to a local/CI MySQL, standalone (build plan §5.7
- * / ADR 0010: two independent logical databases + migration histories — one per
+ * / ADR 0010: three independent logical databases + migration histories — one per
  * isolated module). Run from source via @swc-node/register so the migrate helpers
  * resolve their .sql folders (not copied to dist). DB URLs come from the
  * environment; defaults target docker/CI MySQL.
@@ -9,6 +9,9 @@
 import { createAuditDb, createAuditPool } from "../src/modules/audit/db/audit-db.client.js";
 import { loadAuditDbConfig } from "../src/modules/audit/db/audit-db.config.js";
 import { runAuditMigrationsUp } from "../src/modules/audit/db/migrate.js";
+import { createDriveDb, createDrivePool } from "../src/modules/drive/db/drive-db.client.js";
+import { loadDriveDbConfig } from "../src/modules/drive/db/drive-db.config.js";
+import { runDriveMigrationsUp } from "../src/modules/drive/db/migrate.js";
 import { runNotificationMigrationsUp } from "../src/modules/notification/db/migrate.js";
 import {
   createNotificationDb,
@@ -25,3 +28,8 @@ const auditPool = createAuditPool(loadAuditDbConfig(process.env));
 await runAuditMigrationsUp(createAuditDb(auditPool));
 await auditPool.end();
 console.warn("[migrate] somnus_audit migrated");
+
+const drivePool = createDrivePool(loadDriveDbConfig(process.env));
+await runDriveMigrationsUp(createDriveDb(drivePool));
+await drivePool.end();
+console.warn("[migrate] somnus_drive migrated");

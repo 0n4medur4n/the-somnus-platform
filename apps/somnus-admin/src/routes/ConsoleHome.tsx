@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAdminAuth } from "../auth/useAdminAuth.js";
 import { Button } from "../components/Button.js";
+import { DriveScreen } from "../drive/ui/DriveScreen.js";
 import { ConsoleLayout } from "../layouts/ConsoleLayout.js";
 import { AuditViewerScreen } from "../screens/AuditViewerScreen.js";
 import { BreakGlassScreen } from "../screens/BreakGlassScreen.js";
@@ -28,7 +29,8 @@ type ViewId =
   | "breakGlass"
   | "corpus"
   | "corpusSources"
-  | "roles";
+  | "roles"
+  | "drive";
 
 /**
  * Which capability each section needs. Transcribed from Addendum A §A2.2, and
@@ -63,6 +65,9 @@ const VIEW_CAPABILITY: Record<Exclude<ViewId, "overview">, AdminCapability> = {
   corpus: "admin_corpus_manage",
   corpusSources: "admin_corpus_manage",
   roles: "admin_roles_assign",
+  // The staff Drive (ADR 0019): every internal role. What each person can open
+  // inside it is decided by folder membership and the folder keys, not here.
+  drive: "admin_drive",
 };
 
 export function ConsoleHome({ me }: { me: AdminMeResponse }) {
@@ -123,6 +128,8 @@ export function ConsoleHome({ me }: { me: AdminMeResponse }) {
       {view === "corpus" ? <CorpusScreen /> : null}
       {view === "corpusSources" ? <CorpusSourcesScreen /> : null}
       {view === "roles" ? <RolesScreen actingAdminUserId={me.user.id} /> : null}
+      {/* Unmounting the section drops the Drive's keys (see DriveScreen). */}
+      {view === "drive" ? <DriveScreen /> : null}
     </ConsoleLayout>
   );
 }

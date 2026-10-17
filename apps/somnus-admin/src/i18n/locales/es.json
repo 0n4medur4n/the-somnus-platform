@@ -64,7 +64,8 @@
     "admin_break_glass": "Acceso de emergencia a datos clínicos",
     "admin_system_health": "Estado del sistema",
     "admin_corpus_manage": "Gestionar el corpus de referencia",
-    "admin_audit_export": "Exportar el registro de auditoría"
+    "admin_audit_export": "Exportar el registro de auditoría",
+    "admin_drive": "Drive cifrado del equipo (carpetas compartidas)"
   },
   "errors": {
     "required": "Este campo es obligatorio.",
@@ -87,7 +88,8 @@
     "audit": "Registro de auditoría",
     "breakGlass": "Acceso de emergencia",
     "corpus": "Corpus de referencia",
-    "corpusSources": "Fuentes clínicas"
+    "corpusSources": "Fuentes clínicas",
+    "drive": "Drive cifrado"
   },
   "users": {
     "title": "Personas usuarias",
@@ -377,5 +379,229 @@
     "enrichmentsTitle": "Documentos añadidos por la consola",
     "noEnrichments": "Todavía no hay documentos añadidos para esta fuente.",
     "addEnrichment": "Añadir documento a esta fuente"
+  },
+  "drive": {
+    "title": "Drive cifrado",
+    "subtitle": "Protocolos, reglas, algoritmos e instrucciones del equipo, cifrados de extremo a extremo.",
+    "loading": "Abriendo el Drive…",
+    "notForPatients": "Solo para material interno del equipo. Nunca subas datos de pacientes ni información que identifique a una persona.",
+    "lock": "Bloquear",
+    "locked": "Drive bloqueado por seguridad tras 15 minutos sin actividad.",
+    "guide": "Guía de uso",
+    "closeGuide": "Cerrar la guía",
+    "changePassphrase": "Cambiar frase",
+    "yourFingerprint": "Tu huella de seguridad",
+    "fingerprintHint": "Compárala con la de tus colegas por teléfono o en persona para confirmar que nadie se hace pasar por ti.",
+    "working": "Trabajando…",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "setup": {
+      "heading": "Crea tu Drive cifrado",
+      "intro": "Todo lo que guardes aquí se cifra en tu navegador antes de salir de él. Ni The Somnus ni Google pueden leerlo: solo tú y las personas con las que compartas cada carpeta.",
+      "point1": "Elige una frase de paso solo para el Drive. No es tu enlace de acceso y nunca se envía al servidor.",
+      "point2": "Recibirás un código de recuperación. Es la única forma de volver a entrar si olvidas la frase.",
+      "point3": "Si pierdes la frase y el código, nadie podrá recuperar tus archivos. Ni siquiera nosotros.",
+      "passphrase": "Frase de paso del Drive",
+      "passphraseHint": "Al menos 12 caracteres. Mejor una frase larga que una palabra rara: «café-negro-en-la-guardia-de-noche».",
+      "confirm": "Repite la frase de paso",
+      "create": "Crear mi Drive cifrado",
+      "creating": "Generando tus claves…",
+      "tooShort": "La frase debe tener al menos 12 caracteres.",
+      "mismatch": "Las dos frases no coinciden.",
+      "strength": {
+        "weak": "Seguridad: débil",
+        "fair": "Seguridad: aceptable",
+        "strong": "Seguridad: fuerte"
+      }
+    },
+    "recovery": {
+      "heading": "Tu código de recuperación",
+      "intro": "Guárdalo fuera del ordenador: en papel, en un gestor de contraseñas o en una caja fuerte. Se muestra solo esta vez.",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "download": "Descargar como .txt",
+      "fileTitle": "The Somnus · Drive cifrado · Código de recuperación",
+      "fileWarning": "Guarda este código en un lugar seguro. Con él se puede abrir tu Drive si olvidas tu frase de paso.",
+      "confirm": "He guardado el código en un lugar seguro",
+      "continue": "Entrar en mi Drive"
+    },
+    "unlock": {
+      "heading": "Abre tu Drive cifrado",
+      "intro": "Escribe tu frase de paso del Drive. Se usa solo en este navegador para descifrar tus claves.",
+      "passphrase": "Frase de paso del Drive",
+      "open": "Abrir Drive",
+      "opening": "Descifrando tus claves…",
+      "forgot": "¿Has olvidado la frase? Usa tu código de recuperación",
+      "lostEverything": "He perdido la frase y el código"
+    },
+    "recover": {
+      "heading": "Recupera el acceso",
+      "code": "Código de recuperación",
+      "codeHint": "Ocho grupos de cuatro caracteres. Da igual mayúsculas, minúsculas o espacios.",
+      "newPassphrase": "Nueva frase de paso",
+      "confirm": "Repite la nueva frase",
+      "submit": "Recuperar el acceso",
+      "done": "Acceso recuperado. Tu código anterior ya no sirve: guarda el nuevo."
+    },
+    "reset": {
+      "heading": "Restablecer el Drive",
+      "warning": "Se crearán claves nuevas. Perderás el acceso a todas tus carpetas. Las que solo tú tenías se borrarán, porque ya nadie podrá abrirlas. Tus colegas podrán volver a compartirte las demás.",
+      "confirmLabel": "Escribe RESTABLECER para confirmar",
+      "confirmWord": "RESTABLECER",
+      "submit": "Restablecer y crear claves nuevas"
+    },
+    "passphraseChange": {
+      "heading": "Cambiar la frase de paso",
+      "current": "Frase actual",
+      "next": "Nueva frase",
+      "confirm": "Repite la nueva frase",
+      "submit": "Cambiar la frase",
+      "done": "Frase cambiada. Tus archivos y tu código de recuperación no cambian."
+    },
+    "shares": {
+      "heading": "Mis carpetas",
+      "empty": "Aún no tienes carpetas. Crea la primera o pide a un colega que te comparta una.",
+      "new": "Nueva carpeta compartida",
+      "newName": "Nombre de la carpeta",
+      "create": "Crear carpeta",
+      "members_one": "{{count}} persona",
+      "members_other": "{{count}} personas",
+      "unreadable": "No se puede abrir esta carpeta"
+    },
+    "role": {
+      "owner": "Propietaria",
+      "editor": "Puede editar",
+      "viewer": "Solo lectura"
+    },
+    "folder": {
+      "breadcrumb": "Ruta",
+      "root": "Mis carpetas",
+      "empty": "Esta carpeta está vacía.",
+      "dropHint": "Arrastra archivos aquí para subirlos cifrados",
+      "newFolder": "Nueva carpeta",
+      "newFolderName": "Nombre de la nueva carpeta",
+      "newNote": "Nueva nota",
+      "upload": "Subir archivos",
+      "share": "Personas",
+      "trash": "Papelera",
+      "trashCount": "Papelera ({{count}})",
+      "items": "Contenido de la carpeta",
+      "name": "Nombre",
+      "size": "Tamaño",
+      "modified": "Modificado",
+      "by": "Por {{who}}",
+      "unknownAuthor": "persona desconocida",
+      "open": "Abrir",
+      "download": "Descargar",
+      "rename": "Renombrar",
+      "move": "Mover",
+      "moveTo": "Mover a",
+      "toTrash": "A la papelera",
+      "renameTo": "Nuevo nombre",
+      "uploading": "Cifrando y subiendo {{name}}… {{done}}/{{total}}",
+      "uploaded": "{{name}} subido y cifrado.",
+      "verified": "Firma verificada",
+      "unverified": "Firma sin verificar",
+      "unreadable": "No se puede abrir",
+      "kind": {
+        "folder": "Carpeta",
+        "note": "Nota",
+        "file": "Archivo"
+      }
+    },
+    "note": {
+      "heading": "Nota",
+      "title": "Título",
+      "body": "Contenido",
+      "bodyHint": "Instrucciones de uso, pasos de un protocolo, notas de una regla… Se guarda cifrado.",
+      "save": "Guardar nota",
+      "edit": "Editar",
+      "saved": "Nota guardada y cifrada."
+    },
+    "preview": {
+      "heading": "Vista previa",
+      "noPreview": "Este tipo de archivo no se puede previsualizar. Descárgalo para abrirlo."
+    },
+    "trash": {
+      "heading": "Papelera",
+      "empty": "La papelera está vacía.",
+      "restore": "Restaurar",
+      "purge": "Borrar para siempre",
+      "purgeConfirm": "¿Borrar «{{name}}» para siempre? No se puede deshacer.",
+      "ownersOnly": "Solo las propietarias pueden borrar para siempre."
+    },
+    "members": {
+      "heading": "Personas con acceso",
+      "you": "Tú",
+      "fingerprint": "Huella",
+      "markVerified": "He comprobado la huella",
+      "acceptNewKey": "Aceptar su clave nueva",
+      "remove": "Quitar acceso",
+      "removeConfirm": "Se quitará el acceso y se cambiará la clave de la carpeta para todos. ¿Continuar?",
+      "leave": "Salir de la carpeta",
+      "add": "Compartir con un colega",
+      "colleague": "Colega",
+      "chooseColleague": "Elige a quién",
+      "noColleagues": "No hay más colegas con el Drive configurado. Pídeles que entren en Drive cifrado una vez.",
+      "roleLabel": "Permiso",
+      "addSubmit": "Compartir",
+      "checkFingerprint": "Antes de compartir, comprueba con {{who}} que su huella es:",
+      "renameFolder": "Renombrar la carpeta",
+      "deleteFolder": "Eliminar la carpeta",
+      "deleteConfirmLabel": "Escribe el nombre de la carpeta para eliminarla con todo su contenido",
+      "deleteSubmit": "Eliminar para siempre"
+    },
+    "trust": {
+      "self": "Tú",
+      "verified": "Huella verificada",
+      "known": "Huella sin comprobar",
+      "changed": "¡Su clave ha cambiado!",
+      "unknown": "Sin Drive configurado"
+    },
+    "trustHelp": {
+      "changed": "La clave de esta persona no es la que conocías. Puede que haya restablecido su Drive, o que alguien intente suplantarla. Confírmalo con ella antes de aceptar la clave nueva."
+    },
+    "problem": {
+      "wrong_secret": "La frase o el código no son correctos.",
+      "tampered": "El contenido no supera la comprobación de integridad: alguien lo ha alterado o está dañado.",
+      "bad_signature": "La firma no es válida: no se puede confirmar quién te dio acceso.",
+      "unknown_signer": "Quien te dio acceso ya no está en el directorio o su clave ha cambiado."
+    },
+    "errors": {
+      "file_too_large": "El archivo supera el máximo de 20 MB.",
+      "key_changed": "La clave de esa persona ha cambiado. Compruébala antes de compartir.",
+      "recipient_unknown": "Esa persona todavía no ha configurado su Drive.",
+      "content_mismatch": "El archivo no coincide con lo que se firmó. No se ha abierto.",
+      "not_open": "La carpeta se ha actualizado. Vuelve a abrirla.",
+      "drive_last_owner": "La carpeta necesita al menos una propietaria. Nombra otra antes.",
+      "drive_role_insufficient": "Tu permiso en esta carpeta no lo permite.",
+      "drive_stale_key_generation": "La carpeta ha cambiado mientras la tenías abierta. Vuelve a abrirla.",
+      "drive_already_member": "Esa persona ya tiene acceso.",
+      "drive_limit_reached": "Se ha alcanzado el límite de la carpeta.",
+      "drive_invalid_parent": "No se puede mover ahí.",
+      "drive_not_trashed": "Primero hay que moverlo a la papelera.",
+      "drive_recipient_unknown": "Esa persona todavía no ha configurado su Drive."
+    },
+    "guideContent": {
+      "heading": "Cómo usar el Drive cifrado",
+      "s1Title": "1. Tu frase de paso y tu código",
+      "s1Body": "Al entrar por primera vez eliges una frase de paso solo para el Drive y recibes un código de recuperación. La frase no sale nunca de tu navegador. Guarda el código fuera del ordenador. Si pierdes ambas cosas, nadie puede recuperar tus archivos.",
+      "s2Title": "2. Carpetas compartidas",
+      "s2Body": "Cada carpeta compartida tiene su propia clave. Crea una por tema: «Protocolos de seguridad», «Reglas del algoritmo», «Instrucciones del turno». Dentro puedes crear subcarpetas, notas y subir archivos de hasta 20 MB.",
+      "s3Title": "3. Notas e instrucciones de uso",
+      "s3Body": "Con «Nueva nota» escribes directamente en la consola: pasos de un protocolo, cómo se aplica una regla o instrucciones para el equipo. Cada vez que la guardas se crea una versión nueva, cifrada y firmada por ti.",
+      "s4Title": "4. Compartir y permisos",
+      "s4Body": "En «Personas» eliges a un colega y su permiso. «Solo lectura» puede ver y descargar; «Puede editar» además crea, sube, renombra y mueve; «Propietaria» además comparte y borra para siempre. Solo aparecen colegas que ya configuraron su Drive.",
+      "s5Title": "5. Huellas de seguridad",
+      "s5Body": "Cada persona tiene una huella de diez grupos. Compárala una vez por teléfono o en persona y pulsa «He comprobado la huella». Si la clave de alguien cambia, verás un aviso rojo: confírmalo con esa persona antes de aceptar la clave nueva.",
+      "s6Title": "6. Quitar acceso",
+      "s6Body": "Al quitar a alguien, la clave de la carpeta cambia para todos los que se quedan. Lo que se suba después no podrá abrirlo con su copia antigua.",
+      "s7Title": "7. Papelera y bloqueo",
+      "s7Body": "Lo que mandas a la papelera se puede restaurar. Solo una propietaria lo borra para siempre. El Drive se bloquea solo tras 15 minutos sin actividad y al cerrar sesión; para volver a abrirlo basta tu frase.",
+      "s8Title": "8. Qué no subir",
+      "s8Body": "Este Drive es para material interno del equipo. No subas datos de pacientes, informes de personas concretas ni nada que identifique a alguien. Para eso existen los flujos clínicos de la plataforma."
+    }
   }
 }

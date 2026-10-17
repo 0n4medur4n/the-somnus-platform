@@ -41,6 +41,8 @@ export class ApiRequestError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    /** A feature's own stable refusal (e.g. the Drive's `drive_last_owner`), when it gave one. */
+    readonly reason?: string,
   ) {
     super(message);
     this.name = "ApiRequestError";
@@ -63,7 +65,9 @@ async function send(
   token?: string,
 ): Promise<RawResponse> {
   const headers: Record<string, string> = { "x-correlation-id": crypto.randomUUID() };
-  if (body !== undefined) headers["content-type"] = "application/json";
+  const raw = body instanceof Uint8Array;
+  if (body !== undefined)
+    headers["content-type"] = raw ? "application/octet-stream" : "application/json";
   if (token !== undefined) headers["x-csrf-token"] = token;
 
   const init: RequestInit = {
@@ -77,7 +81,8 @@ async function send(
     // proxy that adds a cache lifetime of its own).
     cache: "no-store",
   };
-  if (body !== undefined) init.body = JSON.stringify(body);
+  if (body !== undefined)
+    init.body = raw ? (body as Uint8Array<ArrayBuffer>) : JSON.stringify(body);
 
   const response = await fetch(`${apiBase()}${path}`, init);
   if (response.status === 204) return { status: 204, data: undefined };
@@ -87,10 +92,12 @@ async function send(
 
 function toError(raw: RawResponse): ApiRequestError {
   const err = (raw.data as ApiErrorBody | undefined)?.error;
+  const reason = err?.details?.reason;
   return new ApiRequestError(
     raw.status,
     err?.code ?? "UNKNOWN",
     err?.message ?? `Request failed (${raw.status})`,
+    typeof reason === "string" ? reason : undefined,
   );
 }
 
@@ -170,4 +177,6 @@ export const api = {
   post: <T>(path: string, body?: unknown): Promise<T> => request<T>("POST", path, body),
   patch: <T>(path: string, body?: unknown): Promise<T> => request<T>("PATCH", path, body),
   del: <T>(path: string): Promise<T> => request<T>("DELETE", path),
+  /** Raw bytes as `application/octet-stream`: the Drive's encrypted blocks. */
+  putBytes: (path: string, bytes: Uint8Array): Promise<void> => request<void>("PUT", path, bytes),
 };

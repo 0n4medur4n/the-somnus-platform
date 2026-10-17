@@ -6,6 +6,7 @@ import {
   type EventEnvelope,
   EventEnvelopeSchema,
   INTERNAL_ROLE_KEYS,
+  isKnownEventType,
   ROLE_KEYS,
   type RoleKey,
   UUIDv7,
@@ -13,6 +14,7 @@ import {
 import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AppModule } from "../../src/app.module.js";
+import { registerRawBodyParsers } from "../../src/bootstrap/harden.js";
 import {
   EDGE_EVENT_PUBLISHER,
   type EventPublisher,
@@ -21,7 +23,13 @@ import {
   IDENTITY_CLIENT,
   MORPHEO_CLIENT,
   REPORT_CLIENT,
+  WORKER_CLIENT,
 } from "../../src/infrastructure/internal-clients/internal-clients.module.js";
+import { AdminDriveController } from "../../src/modules/admin/admin-drive.controller.js";
+import {
+  ADMIN_ROUTE_KEY,
+  type AdminRouteMeta,
+} from "../../src/modules/admin/admin-route.decorator.js";
 import { SessionGuard } from "../../src/modules/sessions/session.guard.js";
 import type { SessionRecord } from "../../src/modules/sessions/session.service.js";
 import { makeFakeIdentityClient, type RecordedRequest } from "../support/fake-identity.js";
@@ -49,15 +57,60 @@ const SESSION: SessionRecord = {
 const EXTERNAL_ROLES = ROLE_KEYS.filter((key) => !INTERNAL_ROLE_KEYS.has(key));
 const INTERNAL_ROLES = ROLE_KEYS.filter((key) => INTERNAL_ROLE_KEYS.has(key));
 
+/** Valid opaque ids for the Drive's path parameters, which edge-api validates. */
+const DRIVE_SHARE = "018f0000-0000-7000-8000-00000000d501";
+const DRIVE_NODE = "018f0000-0000-7000-8000-00000000d502";
+const DRIVE_MEMBER = "018f0000-0000-7000-8000-00000000d503";
+const DRIVE_NODE_URL = "/admin/v1/drive/shares/s1/nodes/n1";
+
+/** The staff Drive's routes, transcribed independently of the controller. */
+const DRIVE_ROUTES: Array<{ method: string; url: string }> = [
+  { method: "GET", url: "/admin/v1/drive/account" },
+  { method: "POST", url: "/admin/v1/drive/account" },
+  { method: "POST", url: "/admin/v1/drive/account/rewrap" },
+  { method: "POST", url: "/admin/v1/drive/account/state" },
+  { method: "POST", url: "/admin/v1/drive/account/reset" },
+  { method: "GET", url: "/admin/v1/drive/directory" },
+  { method: "GET", url: "/admin/v1/drive/shares" },
+  { method: "POST", url: "/admin/v1/drive/shares" },
+  { method: "GET", url: "/admin/v1/drive/shares/s1" },
+  { method: "POST", url: "/admin/v1/drive/shares/s1/purge" },
+  { method: "POST", url: "/admin/v1/drive/shares/s1/access" },
+  { method: "POST", url: "/admin/v1/drive/shares/s1/accept" },
+  { method: "POST", url: "/admin/v1/drive/shares/s1/access/m1/role" },
+  { method: "POST", url: "/admin/v1/drive/shares/s1/access/m1/remove" },
+  { method: "POST", url: "/admin/v1/drive/shares/s1/folders" },
+  { method: "POST", url: "/admin/v1/drive/shares/s1/uploads" },
+  { method: "PUT", url: `${DRIVE_NODE_URL}/revisions/1/blocks/0` },
+  { method: "POST", url: `${DRIVE_NODE_URL}/revisions/1/commit` },
+  { method: "GET", url: `${DRIVE_NODE_URL}/revisions/1/blocks/0` },
+  { method: "POST", url: `${DRIVE_NODE_URL}/rename` },
+  { method: "POST", url: `${DRIVE_NODE_URL}/move` },
+  { method: "POST", url: `${DRIVE_NODE_URL}/trash` },
+  { method: "POST", url: `${DRIVE_NODE_URL}/restore` },
+  { method: "POST", url: `${DRIVE_NODE_URL}/purge` },
+];
+
+/** A Drive route with real ids, for tests that need the request past validation. */
+function driveUrl(url: string): string {
+  return url
+    .replace("/s1", `/${DRIVE_SHARE}`)
+    .replace("/n1", `/${DRIVE_NODE}`)
+    .replace("/m1", `/${DRIVE_MEMBER}`);
+}
+
 /** The A2.2 rows, as the policy resolves them. Used to script identity's answers. */
 const CAPABILITIES_BY_ROLE: Record<string, string[]> = {
-  support_agent: ["admin_users_read", "admin_statistics_read", "admin_consent_read"],
-  professional_verifier: ["admin_users_read", "admin_verification_queue"],
+  // `admin_drive` closes every internal row: the staff Drive (ADR 0019) is open
+  // to all internal staff, and folder membership decides the rest.
+  support_agent: ["admin_users_read", "admin_statistics_read", "admin_consent_read", "admin_drive"],
+  professional_verifier: ["admin_users_read", "admin_verification_queue", "admin_drive"],
   clinical_governance_reviewer: [
     "admin_content_review",
     "admin_statistics_read",
     "admin_audit_read",
     "admin_break_glass",
+    "admin_drive",
   ],
   platform_admin: [
     "admin_users_read",
@@ -70,6 +123,7 @@ const CAPABILITIES_BY_ROLE: Record<string, string[]> = {
     "admin_consent_read",
     "admin_break_glass",
     "admin_system_health",
+    "admin_drive",
   ],
   platform_super_admin: [
     "admin_users_read",
@@ -79,6 +133,7 @@ const CAPABILITIES_BY_ROLE: Record<string, string[]> = {
     // no separate clinical-review gate on it, which is exactly why no other role
     // may reach it.
     "admin_corpus_manage",
+    "admin_drive",
   ],
 };
 
@@ -87,6 +142,10 @@ describe("admin console gate (/admin/v1/*)", () => {
   let server: FastifyInstance;
   let requests: RecordedRequest[];
   let published: EventEnvelope[];
+  const workerCalls: Array<{ method: string; path: string; body: unknown }> = [];
+  let driveHeaders: Array<Record<string, string>> = [];
+  /** What the worker stub answers to a GET, when a test needs a valid Drive body. */
+  let workerBlockAnswer: { status: number; body: unknown } | null = null;
   /** The roles identity will report for the acting session. */
   let actorRoles: RoleKey[];
   /**
@@ -204,6 +263,25 @@ describe("admin console gate (/admin/v1/*)", () => {
       post: async () => ({ status: 200, body: {} }),
     };
 
+    // The statistics, audit viewer and staff Drive (ADR 0019) live behind the
+    // worker. Stubbed like the others, and recording what reached it, so the
+    // Drive's raw block body and actor headers can be checked on their way.
+    const workerStub = {
+      get: async (path: string) => {
+        workerCalls.push({ method: "GET", path, body: undefined });
+        return workerBlockAnswer ?? { status: 200, body: {} };
+      },
+      post: async (path: string, options: { body?: unknown; headers?: Record<string, string> }) => {
+        workerCalls.push({ method: "POST", path, body: options.body });
+        driveHeaders.push(options.headers ?? {});
+        return { status: 200, body: {} };
+      },
+      put: async (path: string, options: { body?: unknown }) => {
+        workerCalls.push({ method: "PUT", path, body: options.body });
+        return { status: 204, body: undefined };
+      },
+    };
+
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(IDENTITY_CLIENT)
       .useValue(fake.client)
@@ -211,6 +289,8 @@ describe("admin console gate (/admin/v1/*)", () => {
       .useValue(morpheoStub)
       .overrideProvider(REPORT_CLIENT)
       .useValue(reportStub)
+      .overrideProvider(WORKER_CLIENT)
+      .useValue(workerStub)
       .overrideProvider(EDGE_EVENT_PUBLISHER)
       .useValue(capturingPublisher)
       .overrideGuard(SessionGuard)
@@ -237,6 +317,9 @@ describe("admin console gate (/admin/v1/*)", () => {
     app = moduleRef.createNestApplication<NestFastifyApplication>(adapter);
     await app.init();
     server = app.getHttpAdapter().getInstance();
+    // The raw-body parsers production registers in applyHardening: the Drive's
+    // block upload is an octet-stream body, and must parse here as it does there.
+    registerRawBodyParsers(server);
     await server.ready();
   });
 
@@ -247,6 +330,8 @@ describe("admin console gate (/admin/v1/*)", () => {
   beforeEach(() => {
     requests.length = 0;
     published.length = 0;
+    workerCalls.length = 0;
+    driveHeaders = [];
     actorRoles = [];
     capabilityOverride = null;
   });
@@ -461,6 +546,10 @@ describe("admin console gate (/admin/v1/*)", () => {
         url: "/admin/v1/corpus/sources",
         capability: "admin_corpus_manage",
       },
+      // The staff Drive (owner decision 2026-10-17, ADR 0019). Every internal
+      // role holds admin_drive, so the parametrized run below lets each of them
+      // through, and the external-role sweep above refuses every one of these.
+      ...DRIVE_ROUTES.map((route) => ({ ...route, capability: "admin_drive" })),
     ];
 
     /** Bodies that satisfy each route's contract, so a 4xx can only be the gate. */
@@ -501,7 +590,7 @@ describe("admin console gate (/admin/v1/*)", () => {
 
     it("covers every route the router actually registered", () => {
       const declared = ROUTE_CAPABILITY.map(
-        (r) => `${r.method} ${r.url.replace(/\/(u1|o1|c1|d1|doc1)/g, "/:p")}`,
+        (r) => `${r.method} ${r.url.replace(/\/(u1|o1|c1|d1|doc1|s1|n1|m1|\d+)(?=\/|$)/g, "/:p")}`,
       );
       const registered = adminRoutes.map(
         (r) => `${r.method} ${r.url.replace(/:[A-Za-z]+/g, ":p")}`,
@@ -622,6 +711,142 @@ describe("admin console gate (/admin/v1/*)", () => {
           expect(res.statusCode, role).toBe(403);
         }
       }
+    });
+  });
+
+  // --- The staff Drive (owner decision 2026-10-17, ADR 0019) ---
+
+  describe("the staff Drive", () => {
+    it("an actor holding every capability but admin_drive is refused on every Drive route", async () => {
+      actorRoles = ["platform_super_admin"];
+      capabilityOverride = ADMIN_CAPABILITIES.filter((c) => c !== "admin_drive");
+      for (const route of DRIVE_ROUTES) {
+        const res = await server.inject({ method: route.method, url: driveUrl(route.url) });
+        expect(res.statusCode, `${route.method} ${route.url}`).toBe(403);
+        expect(res.json()).toMatchObject({
+          error: { details: { reasonCode: "DENIED_CAPABILITY_NOT_GRANTED" } },
+        });
+      }
+      expect(workerCalls).toHaveLength(0);
+    });
+
+    it("every Drive read emits one registered audit event", async () => {
+      actorRoles = ["support_agent"];
+      for (const route of DRIVE_ROUTES.filter((r) => r.method === "GET")) {
+        published.length = 0;
+        const res = await server.inject({ method: route.method, url: driveUrl(route.url) });
+        expect(res.statusCode, route.url).not.toBe(403);
+        expect(published, route.url).toHaveLength(res.statusCode < 400 ? 1 : 0);
+      }
+      for (const route of DRIVE_ROUTES) {
+        expect(route.url.startsWith("/admin/v1/drive/")).toBe(true);
+      }
+    });
+
+    it("every Drive handler declares admin_drive and a registered event type", () => {
+      const prototype = AdminDriveController.prototype as unknown as Record<string, unknown>;
+      const metas = Object.getOwnPropertyNames(prototype)
+        .map((name) => Reflect.getMetadata(ADMIN_ROUTE_KEY, prototype[name] as object))
+        .filter((meta): meta is AdminRouteMeta => meta !== undefined);
+      expect(metas).toHaveLength(DRIVE_ROUTES.length);
+      expect(new Set(metas.map((m) => m.eventType)).size).toBe(DRIVE_ROUTES.length);
+      for (const meta of metas) {
+        expect(meta.capability).toBe("admin_drive");
+        expect(isKnownEventType(meta.eventType), meta.eventType).toBe(true);
+        expect(meta.eventType).toMatch(/^admin\.drive_[a-z_]+\.[a-z_]+\.v1$/);
+      }
+    });
+
+    it("records the folder or node as the audit subject, never anything about content", async () => {
+      actorRoles = ["professional_verifier"];
+      workerBlockAnswer = { status: 200, body: { data: "AAEC" } };
+      const res = await server.inject({
+        method: "GET",
+        url: driveUrl(`${DRIVE_NODE_URL}/revisions/1/blocks/0`),
+      });
+      workerBlockAnswer = null;
+      expect(res.statusCode).toBe(200);
+      const event = published[0] as EventEnvelope;
+      expect(event.subject).toEqual({ type: "drive_node", id: DRIVE_NODE });
+      expect(event.data).toEqual({
+        capability: "admin_drive",
+        shareId: DRIVE_SHARE,
+        revision: 1,
+        blockIndex: 0,
+      });
+    });
+
+    it("forwards a raw block to the worker as the same bytes, base64", async () => {
+      actorRoles = ["platform_admin"];
+      const bytes = Buffer.from([0, 255, 1, 254, 2, 253]);
+      const res = await server.inject({
+        method: "PUT",
+        url: driveUrl(`${DRIVE_NODE_URL}/revisions/1/blocks/0`),
+        payload: bytes,
+        headers: { "content-type": "application/octet-stream" },
+      });
+      expect(res.statusCode).toBe(204);
+      expect(workerCalls).toEqual([
+        {
+          method: "PUT",
+          path: `/internal/v1/drive/shares/${DRIVE_SHARE}/nodes/${DRIVE_NODE}/revisions/1/blocks/0`,
+          body: { data: bytes.toString("base64") },
+        },
+      ]);
+    });
+
+    it("refuses a block larger than one encrypted block before it reaches the worker", async () => {
+      actorRoles = ["platform_admin"];
+      const res = await server.inject({
+        method: "PUT",
+        url: driveUrl(`${DRIVE_NODE_URL}/revisions/1/blocks/0`),
+        payload: Buffer.alloc(512 * 1024 + 29),
+        headers: { "content-type": "application/octet-stream" },
+      });
+      expect(res.statusCode).toBe(413);
+      expect(workerCalls).toHaveLength(0);
+    });
+
+    it("refuses malformed path ids before they are spliced into an internal URL", async () => {
+      actorRoles = ["platform_admin"];
+      const cases: Array<{ method: "GET" | "POST"; url: string }> = [
+        { method: "GET", url: "/admin/v1/drive/shares/..%2F..%2Faccount" },
+        { method: "POST", url: `/admin/v1/drive/shares/${DRIVE_SHARE}/nodes/not-an-id/trash` },
+        { method: "GET", url: driveUrl(`${DRIVE_NODE_URL}/revisions/1/blocks/40`) },
+        { method: "GET", url: driveUrl(`${DRIVE_NODE_URL}/revisions/1e3/blocks/0`) },
+      ];
+      for (const { method, url } of cases) {
+        const res = await server.inject({ method, url });
+        expect(res.statusCode, url).toBe(400);
+      }
+      expect(workerCalls).toHaveLength(0);
+    });
+
+    it("enrolls under the session's email, never one the client sends", async () => {
+      actorRoles = ["support_agent"];
+      const b64 = (n: number) => Buffer.alloc(n, 3).toString("base64");
+      const res = await server.inject({
+        method: "POST",
+        url: "/admin/v1/drive/account",
+        headers: { "content-type": "application/json", "x-somnus-actor-email": "evil@x.com" },
+        payload: JSON.stringify({
+          encPublicKey: b64(91),
+          signPublicKey: b64(91),
+          privateKeys: { iv: b64(12), ct: b64(300) },
+          passphraseWrap: {
+            kdf: "PBKDF2-SHA256",
+            iterations: 600000,
+            salt: b64(16),
+            iv: b64(12),
+            ct: b64(48),
+          },
+          recoveryWrap: { kdf: "HKDF-SHA256", salt: b64(16), iv: b64(12), ct: b64(48) },
+        }),
+      });
+      expect(res.statusCode).not.toBe(400);
+      expect(workerCalls.map((c) => c.path)).toEqual(["/internal/v1/drive/account"]);
+      expect(driveHeaders.at(-1)?.["x-somnus-actor-email"]).toBe("admin@example.com");
+      expect(driveHeaders.at(-1)?.["x-somnus-actor-id"]).toBe(ACTOR);
     });
   });
 

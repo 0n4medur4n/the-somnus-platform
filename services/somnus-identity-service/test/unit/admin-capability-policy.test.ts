@@ -50,6 +50,16 @@ const EXPECTED: Readonly<Record<AdminCapability, ReadonlyArray<RoleKey>>> = {
   // admin_content_review -- clinical_governance_reviewer does NOT hold this one,
   // and neither does platform_admin. The per-role loop below asserts both.
   admin_corpus_manage: ["platform_super_admin"],
+  // The staff Drive (owner decision 2026-10-17, ADR 0019): every internal role.
+  // It opens the section only; folder membership and the folder keys decide
+  // what anyone can read, so no external role may hold it either.
+  admin_drive: [
+    "support_agent",
+    "professional_verifier",
+    "clinical_governance_reviewer",
+    "platform_admin",
+    "platform_super_admin",
+  ],
 };
 
 const EXTERNAL_ROLES = ROLE_KEYS.filter((key) => !INTERNAL_ROLE_KEYS.has(key));
@@ -162,6 +172,7 @@ describe("cells the addendum makes deliberately non-obvious", () => {
       "admin_users_read",
       "admin_statistics_read",
       "admin_consent_read",
+      "admin_drive",
     ]);
   });
 
@@ -169,6 +180,7 @@ describe("cells the addendum makes deliberately non-obvious", () => {
     expect(capabilitiesFor("active", ["professional_verifier"])).toEqual([
       "admin_users_read",
       "admin_verification_queue",
+      "admin_drive",
     ]);
   });
 

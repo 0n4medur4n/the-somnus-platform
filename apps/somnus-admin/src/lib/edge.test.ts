@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { get, post, patch, del } = vi.hoisted(() => ({
+const { get, post, patch, del, putBytes } = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
   patch: vi.fn(),
   del: vi.fn(),
+  putBytes: vi.fn(),
 }));
-vi.mock("./api.js", () => ({ api: { get, post, patch, del } }));
+vi.mock("./api.js", () => ({ api: { get, post, patch, del, putBytes } }));
 
 const { edge } = await import("./edge.js");
 
@@ -121,5 +122,49 @@ describe("edge (admin console surface)", () => {
       reason: "Obsoleta.",
       changelog: "Retirada.",
     });
+  });
+
+  /**
+   * The staff Drive (ADR 0019). Every route stays under /admin/v1/drive, ids are
+   * encoded before they reach a path, blocks travel as raw bytes, and nothing
+   * goes through DELETE: permanent removal is a deliberate POST .../purge.
+   */
+  it("keeps every Drive call under /admin/v1/drive, with encoded ids", () => {
+    for (const spy of [get, post, patch, del, putBytes]) spy.mockClear();
+    const d = edge.drive;
+    const bytes = new Uint8Array([1, 2, 3]);
+    const sealed = { iv: "AAAAAAAAAAAAAAAA", ct: "AAAAAAAAAAAAAAAAAAAAAAAA" };
+    const calls = [
+      () => d.account(),
+      () => d.directory(),
+      () => d.shares(),
+      () => d.share("s/1"),
+      () => d.purgeShare("s1"),
+      () => d.setRole("s1", "u1", "editor"),
+      () => d.trash("s1", "n1"),
+      () => d.restore("s1", "n1"),
+      () => d.purgeNode("s1", "n1"),
+      () => d.commit("s1", "n1", 2),
+      () => d.readBlock("s1", "n1", 2, 0),
+      () => d.move("s1", "n1", { parentId: "p1" }),
+      () => d.rename("s1", "n1", { meta: sealed, signature: "x" }),
+      () => d.saveState({ state: sealed }),
+    ] as Array<() => unknown>;
+    for (const call of calls) void call();
+    void d.putBlock("s1", "n1", 2, 3, bytes);
+
+    const paths = [...get.mock.calls, ...post.mock.calls].map(([path]) => path as string);
+    expect(paths.length).toBe(calls.length);
+    for (const path of paths) expect(path.startsWith("/admin/v1/drive/")).toBe(true);
+    expect(paths).toContain("/admin/v1/drive/shares/s%2F1");
+    expect(post).toHaveBeenCalledWith("/admin/v1/drive/shares/s1/access/u1/role", {
+      role: "editor",
+    });
+    expect(putBytes).toHaveBeenCalledWith(
+      "/admin/v1/drive/shares/s1/nodes/n1/revisions/2/blocks/3",
+      bytes,
+    );
+    expect(del).not.toHaveBeenCalled();
+    expect(patch).not.toHaveBeenCalled();
   });
 });

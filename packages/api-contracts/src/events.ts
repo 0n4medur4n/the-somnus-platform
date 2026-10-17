@@ -160,10 +160,44 @@ const PHASE_15_EVENT_TYPES: ReadonlyArray<string> = [
   "admin.corpus_sources.viewed.v1",
 ];
 
+/**
+ * The staff Drive (owner decision 2026-10-17, ADR 0019). One per route, like
+ * every other admin route. The subject is the opaque folder or node id; the
+ * Drive's content is ciphertext the platform cannot read, so no event could
+ * carry it even by mistake.
+ */
+export const DRIVE_EVENT_TYPES: ReadonlyArray<string> = [
+  "admin.drive_account.viewed.v1",
+  "admin.drive_account.enrolled.v1",
+  "admin.drive_account.rewrapped.v1",
+  "admin.drive_account.state_saved.v1",
+  "admin.drive_account.reset.v1",
+  "admin.drive_directory.viewed.v1",
+  "admin.drive_share.listed.v1",
+  "admin.drive_share.created.v1",
+  "admin.drive_share.viewed.v1",
+  "admin.drive_share.purged.v1",
+  "admin.drive_member.added.v1",
+  "admin.drive_member.role_changed.v1",
+  "admin.drive_member.removed.v1",
+  "admin.drive_member.key_accepted.v1",
+  "admin.drive_folder.created.v1",
+  "admin.drive_upload.started.v1",
+  "admin.drive_block.uploaded.v1",
+  "admin.drive_upload.committed.v1",
+  "admin.drive_block.downloaded.v1",
+  "admin.drive_node.renamed.v1",
+  "admin.drive_node.moved.v1",
+  "admin.drive_node.trashed.v1",
+  "admin.drive_node.restored.v1",
+  "admin.drive_node.purged.v1",
+];
+
 const ALL_EVENT_TYPES: ReadonlyArray<string> = [
   ...INITIAL_EVENT_TYPES,
   ...PHASE_14_EVENT_TYPES,
   ...PHASE_15_EVENT_TYPES,
+  ...DRIVE_EVENT_TYPES,
 ];
 
 export function isKnownEventType(value: string): value is EventType {

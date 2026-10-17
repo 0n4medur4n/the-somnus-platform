@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import { AuditModule } from "../src/modules/audit/audit.module.js";
 import { AuditService } from "../src/modules/audit/audit.service.js";
 import { AuditDbModule } from "../src/modules/audit/db/audit-db.module.js";
+import { DriveDbModule } from "../src/modules/drive/db/drive-db.module.js";
+import { DriveModule } from "../src/modules/drive/drive.module.js";
+import { DriveService } from "../src/modules/drive/drive.service.js";
 import { NotificationDbModule } from "../src/modules/notification/db/notification-db.module.js";
 import { NotificationModule } from "../src/modules/notification/notification.module.js";
 import { NotificationService } from "../src/modules/notification/notification.service.js";
@@ -26,10 +29,12 @@ describe("isolated-module boundaries", () => {
   it("each module exports ONLY its public service", () => {
     expect(exportsOf(NotificationModule)).toEqual([NotificationService]);
     expect(exportsOf(AuditModule)).toEqual([AuditService]);
+    expect(exportsOf(DriveModule)).toEqual([DriveService]);
   });
 
   it("the module databases are not global — no cross-module DB access", () => {
     expect(isGlobal(NotificationDbModule)).toBe(false);
     expect(isGlobal(AuditDbModule)).toBe(false);
+    expect(isGlobal(DriveDbModule)).toBe(false);
   });
 });

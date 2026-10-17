@@ -1520,6 +1520,8 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
         "admin_users_read",
         "admin_statistics_read",
         "admin_consent_read",
+        // The staff Drive (ADR 0019) is every internal role's.
+        "admin_drive",
       ]);
     });
 
