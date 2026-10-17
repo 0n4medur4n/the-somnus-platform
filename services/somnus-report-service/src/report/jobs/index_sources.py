@@ -34,6 +34,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from report.application.source_indexer import IndexResult, SourceIndexer
 from report.infrastructure.db import create_engine_from_url
 from report.infrastructure.llm.openai_embedding_adapter import OpenAiEmbeddingAdapter
+from report.infrastructure.llm.openai_endpoint import endpoint_line
 from report.infrastructure.llm.provider import (
     EmbeddingProvider,
     EmbeddingRequest,
@@ -96,6 +97,9 @@ def run_index(
 
 def main() -> int:
     settings = load_settings()
+    # stderr: stdout carries the job's JSON result.
+    endpoint = endpoint_line(enabled=bool(settings.openai_api_key))
+    print(f"[index_sources] {endpoint}", file=sys.stderr)
     engine = create_engine_from_url(settings.database_url)
     try:
         result = run_index(

@@ -4,10 +4,14 @@ The OpenAI SDK is imported lazily so the service boots (and tests run) without a
 key or the SDK loaded; in tests the provider is mocked and this adapter is never
 called. It only embeds the approved corpus/query terms and returns vectors — no
 business logic, and never on the clinical decision path (§14b).
+
+The embeddings API takes no `store` parameter: an embedding request is not a
+stored completion. Only approved corpus text and query terms are sent here.
 """
 
 from __future__ import annotations
 
+from report.infrastructure.llm.openai_endpoint import openai_base_url
 from report.infrastructure.llm.provider import EmbeddingRequest, EmbeddingResponse
 
 
@@ -18,7 +22,7 @@ class OpenAiEmbeddingAdapter:
     def embed(self, request: EmbeddingRequest) -> EmbeddingResponse:
         from openai import OpenAI
 
-        client = OpenAI(api_key=self._api_key)
+        client = OpenAI(api_key=self._api_key, base_url=openai_base_url())
         response = client.embeddings.create(
             model=request.model,
             input=request.inputs,

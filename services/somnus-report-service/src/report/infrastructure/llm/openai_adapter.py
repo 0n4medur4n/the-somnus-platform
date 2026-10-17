@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from report.infrastructure.llm.openai_endpoint import openai_base_url
 from report.infrastructure.llm.provider import LlmRequest, LlmResponse
 
 if TYPE_CHECKING:
@@ -25,7 +26,7 @@ class OpenAiAdapter:
     def complete(self, request: LlmRequest) -> LlmResponse:
         from openai import OpenAI, omit
 
-        client = OpenAI(api_key=self._api_key)
+        client = OpenAI(api_key=self._api_key, base_url=openai_base_url())
         messages: list[ChatCompletionMessageParam] = [
             {"role": "system", "content": request.system},
             {"role": "user", "content": request.user},
@@ -34,6 +35,9 @@ class OpenAiAdapter:
         response_format: ResponseFormatJSONObject | Omit = (
             {"type": "json_object"} if request.json_output else omit
         )
+        # store=False on every call: the completion is not kept as a stored
+        # completion in the OpenAI platform (the API default today, stated here
+        # so a default change upstream cannot start keeping health text).
         if effort is not None and effort != "none":
             # Reasoning on: OpenAI rejects sampling parameters, so no temperature.
             completion = client.chat.completions.create(
@@ -41,6 +45,7 @@ class OpenAiAdapter:
                 reasoning_effort=cast("ReasoningEffort", effort),
                 messages=messages,
                 response_format=response_format,
+                store=False,
             )
         elif effort == "none":
             completion = client.chat.completions.create(
@@ -49,6 +54,7 @@ class OpenAiAdapter:
                 temperature=request.temperature,
                 messages=messages,
                 response_format=response_format,
+                store=False,
             )
         else:
             completion = client.chat.completions.create(
@@ -56,6 +62,7 @@ class OpenAiAdapter:
                 temperature=request.temperature,
                 messages=messages,
                 response_format=response_format,
+                store=False,
             )
         text = completion.choices[0].message.content or ""
         return LlmResponse(text=text, model=completion.model)
