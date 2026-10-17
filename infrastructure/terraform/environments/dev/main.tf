@@ -348,7 +348,10 @@ module "run_worker" {
     NODE_ENV             = "production"
     NOTIFICATIONS_DB_SSL = "true"
     AUDIT_DB_SSL         = "true"
-    ENV                  = "production"
+    # The staff Drive's private bucket (ADR 0019). No credential: the worker's
+    # own identity holds objectAdmin on that bucket alone.
+    DRIVE_BUCKET = module.staff_drive_bucket.bucket_name
+    ENV          = "production"
     # Transactional email from the domain authenticated in Brevo (DKIM brevo1/
     # brevo2 + DMARC on thesomnus.com), so it reaches the inbox.
     BREVO_SENDER_EMAIL = "access@thesomnus.com"
@@ -429,6 +432,26 @@ module "profile_photos_bucket" {
   region                        = var.region
   bucket_name                   = "${var.project_id}-profile-photos"
   writer_members                = [module.sa_edge_api.member]
+  versioning                    = false
+  soft_delete_retention_seconds = 0
+
+  depends_on = [module.project_apis_backend]
+}
+
+# --- Storage: the staff Drive (ADR 0019, owner decisions 2026-10-17/18) ---
+#
+# End-to-end encrypted in the admin console: the bucket holds ciphertext,
+# public keys and folder manifests, nothing the platform can read. No database
+# (the owner chose against TiDB for it) and no secret. No versioning and no
+# soft delete: a folder owner's permanent delete, a key reset or an account
+# erasure removes the objects for good, and nothing deleted keeps costing.
+# Only the worker reads and writes it.
+module "staff_drive_bucket" {
+  source                        = "../../modules/cloud-storage-bucket"
+  project_id                    = var.project_id
+  region                        = var.region
+  bucket_name                   = "${var.project_id}-staff-drive"
+  writer_members                = [module.sa_worker.member]
   versioning                    = false
   soft_delete_retention_seconds = 0
 

@@ -48,6 +48,9 @@ export default defineConfig({
         "src/modules/drive/drive.policy.ts",
         "src/modules/drive/drive.controller.ts",
         "src/modules/drive/drive-actor.ts",
+        "src/modules/drive/drive.service.ts",
+        "src/modules/drive/storage/drive-store.ts",
+        "src/modules/drive/storage/object-store.ts",
       ],
       thresholds: {
         lines: 80,

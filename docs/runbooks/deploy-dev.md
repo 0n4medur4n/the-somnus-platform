@@ -274,22 +274,14 @@ depends on them is rolled out.
   corpus* below; `0004_source_text_hash.py` has to be applied first). The existing corpus keeps working
   throughout: rows written before the column read back as "cited by no rule",
   which is exactly the previous behaviour.
-- **The staff Drive (ADR 0019) needs its database before the worker that
-  carries it is useful.** Not applied in any environment yet. In order:
-  1. Create the logical database `somnus_drive` (utf8mb4 / `utf8mb4_0900_ai_ci`)
-     and a dedicated user with rights on that schema only (§3.9).
-  2. Store its URL (TLS) in Secret Manager as `drive-db-url`, grant the worker's
-     service account `secretAccessor` on it, and add
-     `DRIVE_DATABASE_URL = { secret_id = "drive-db-url", version = "latest" }` and
-     `DRIVE_DB_SSL = "true"` to `module.run_worker` in Terraform. Not added in
-     the Drive's commit on purpose: a revision mounting a secret that does not
-     exist yet fails to start, and would take notifications and audit down with it.
-  3. Apply `services/somnus-worker/src/modules/drive/migrations/0000_drive_initial.sql`
-     and record it in that schema's `__drizzle_migrations`, the same way as the
-     audit and notification histories (the image carries no migrator).
-     `0000_drive_initial.down.sql` reverses it, and destroys every key and file.
-  4. Deploy the worker, then edge-api, then the admin console. Until step 3
-     the Drive section answers with an error and nothing else is affected.
+- **The staff Drive (ADR 0019) has no database and no secret.** It lives in
+  the private bucket `<project>-staff-drive` (`module.staff_drive_bucket`),
+  reached with the worker's own identity (`objectAdmin` on that bucket only),
+  and the worker finds it through `DRIVE_BUCKET`. Order: `terraform apply`
+  (bucket, IAM, env), then deploy the worker, then edge-api (its account
+  deletion calls the worker's Drive erase), then the admin console. A worker
+  without `DRIVE_BUCKET` refuses Drive requests and treats account erasure as
+  nothing to erase, so no other feature depends on the order.
 - **Invitation emails do not send yet.** The Checkpoint 14.2 accept flow is
   complete and works from a link, but no producer enqueues the notification
   task: the async layer (Pub/Sub topic + Cloud Tasks queue + the Brevo key in

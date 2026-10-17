@@ -769,6 +769,9 @@ importers:
       '@fastify/static':
         specifier: 10.1.0
         version: 10.1.0
+      '@google-cloud/storage':
+        specifier: 8.2.0
+        version: 8.2.0
       '@nestjs/common':
         specifier: 11.1.28
         version: 11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -12757,6 +12760,7 @@ snapshots:
       jws: 4.0.1
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   google-auth-library@10.5.0(supports-color@8.1.1):
     dependencies:
@@ -12831,6 +12835,7 @@ snapshots:
       rimraf: 5.0.10
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   google-gax@5.0.8(supports-color@8.1.1):
     dependencies:
@@ -12893,6 +12898,7 @@ snapshots:
       jws: 4.0.1
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   gtoken@8.0.0(supports-color@8.1.1):
     dependencies:
@@ -14449,6 +14455,7 @@ snapshots:
       teeny-request: 10.1.4
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   retry-request@8.0.4(supports-color@8.1.1):
     dependencies:
@@ -14988,6 +14995,7 @@ snapshots:
       stream-events: 1.0.5
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   teeny-request@10.1.4(supports-color@8.1.1):
     dependencies:

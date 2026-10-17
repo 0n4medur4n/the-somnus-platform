@@ -29,7 +29,7 @@ or query ever crosses a database boundary.
 | `somnus_content` | report/morpheo content | Curated clinical artifacts (safety rules, templates, sources) — **no personal data** | No |
 | `somnus_notifications` | Notification module (isolated) | Notification log (recipient reference, template, status) | No (contact) |
 | `somnus_audit` | Audit module (isolated) | Normalized audit events — **hashes and identifiers only, never raw health text or free text** | No |
-| `somnus_drive` | Drive module (isolated, worker; ADR 0019) | Internal staff only: the session email as a directory label, public keys, folder membership and roles; every name, note and file **end-to-end encrypted in the browser — unreadable to the platform** | No (by policy: internal material only, the console forbids patient data) |
+| Cloud Storage `<project>-staff-drive` | Drive module (isolated, worker; ADR 0019) | Internal staff only: the session email as a directory label, public keys, folder membership and roles; every name, note and file **end-to-end encrypted in the browser — unreadable to the platform** | No (by policy: internal material only, the console forbids patient data) |
 | Firebase Auth | Firebase (Google) | Authentication identity (Firebase UID, sign-in method) | No |
 | Firestore | edge-api | Short-lived server-side sessions, idempotency/workflow state, claim-token coordination — **not a source of truth** | No |
 | Cloud Storage (GCS) | report-service | Generated report artifacts (PDF/HTML), reached only via short-lived signed URLs | **Yes — derived from health data** |
@@ -95,7 +95,7 @@ recorded and honoured.
 | Audit events (`somnus_audit`) | **Retained** past account deletion (security / legal obligation) — hashes only, no raw health | Documented legal basis, §21 |
 | Registered account data | Until account deletion / erasure request | Account-deletion workflow (§6) |
 
-| Staff Drive content and keys (`somnus_drive`) | Until a folder owner deletes it; abandoned uploads after 24 h | Drive module (owner purge, upload cleanup) |
+| Staff Drive content and keys (bucket `<project>-staff-drive`, soft delete off) | Until a folder owner deletes it; abandoned uploads after 24 h | Drive module (owner purge, upload cleanup) |
 
 Both TTL policies (30 days, 72 h) are stated in the public privacy policy.
 

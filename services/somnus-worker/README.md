@@ -13,7 +13,7 @@ reached only through its public interface (ADR 0010):
   event id, with a privacy-safe BigQuery export and the Phase 15 read side: the
   audit log viewer and the statistics dashboards.
 
-- **Drive** (`somnus_drive`, owner decision 2026-10-17, ADR 0019) — the admin
+- **Drive** (a private Cloud Storage bucket, owner decisions 2026-10-17/18, ADR 0019) — the admin
   console's staff Drive. Stores **ciphertext, public keys and folder membership
   only**: names, notes and files are encrypted in the browser, and this module
   holds no key that opens them. It decides who may *ask* for what (membership,
@@ -51,16 +51,17 @@ Plus scheduled jobs (Cloud Scheduler): unclaimed-assessment and claim-token clea
   `x-somnus-actor-id` (and `x-somnus-actor-email` on enroll/reset) from the
   server-side session after identity granted `admin_drive`. A request without a
   well-formed actor is refused before any Drive rule runs.
-- Pure rules in `drive.policy.ts` (unit-tested), the service over a
-  `DriveStore` interface, `DriveRepository` on Drizzle (integration-tested
-  against MySQL, migrations down and up included).
-- Files are 512 KiB AES-GCM blocks in `MEDIUMBLOB`, at most 40 per file (20 MiB).
-  A new revision replaces the previous one's blocks on commit. Abandoned uploads
-  are cleared after 24 h, opportunistically on the next upload to that folder.
-- No foreign keys or cascades (§8): children are deleted explicitly in the same
-  transaction. No delete of a node outside the trash; owners only.
-- Deploying it needs the database, user, secret and migration first: see
-  `docs/runbooks/deploy-dev.md`.
+- Pure rules in `drive.policy.ts`, the service over `DriveStore`, and
+  `DriveStore` over an `ObjectStore`: `GcsObjectStore` in production (the
+  worker's own identity, no key), `MemoryObjectStore` in development and tests
+  -- same generation preconditions, so the service tests exercise the real
+  compare-and-swap, concurrent writers included.
+- One manifest object per folder, replaced only by compare-and-swap on its
+  generation; every rule is checked inside the swap. Blocks are separate
+  objects (512 KiB AES-GCM, at most 40 per file). A new revision deletes the
+  previous one's blocks on commit; abandoned uploads go after 24 h.
+- `DRIVE_BUCKET` unset: memory in development, a refusal in production
+  (account erasure then has nothing to erase). See `docs/runbooks/deploy-dev.md`.
 
 ## Develop
 
