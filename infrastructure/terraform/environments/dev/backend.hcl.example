@@ -1,0 +1,8 @@
+# Copy to backend.hcl (gitignored) and fill in the GCS state bucket, then:
+#   terraform init -backend-config=backend.hcl
+#
+# The bucket must already exist with object versioning, uniform bucket-level
+# access and public access prevention, in europe-west3. `prefix` is set in
+# versions.tf. First time from the old local state:
+# docs/runbooks/terraform-state-dev.md.
+bucket = "the-somnus-tfstate-dev"
