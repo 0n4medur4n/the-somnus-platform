@@ -57,6 +57,8 @@ export interface DriveStore {
   ): Promise<void>;
   /** Lost keys: memberships go, empty folders go, ownerless folders get an owner, keys are replaced. */
   resetAccount(userId: string, keys: AccountKeys): Promise<{ removedShares: number }>;
+  /** Account deletion: the same departure from every folder, then the account row itself. */
+  eraseAccount(userId: string): Promise<{ removedShares: number }>;
 
   findShare(shareId: string): Promise<ShareRow | null>;
   createShare(input: { share: ShareRow; root: NewNode; owner: NewMember }): Promise<void>;
@@ -150,39 +152,7 @@ export class DriveRepository implements DriveStore {
 
   async resetAccount(userId: string, keys: AccountKeys): Promise<{ removedShares: number }> {
     return this.db.transaction(async (tx) => {
-      const memberships = await tx
-        .select()
-        .from(driveMembers)
-        .where(eq(driveMembers.userId, userId));
-      await tx.delete(driveMembers).where(eq(driveMembers.userId, userId));
-
-      let removedShares = 0;
-      for (const membership of memberships) {
-        const remaining = await tx
-          .select()
-          .from(driveMembers)
-          .where(eq(driveMembers.shareId, membership.shareId))
-          .orderBy(asc(driveMembers.createdAt));
-        if (remaining.length === 0) {
-          // Nobody else holds this folder's key: its content is unreadable by
-          // anyone from now on, so keeping the ciphertext would only be clutter.
-          await purgeShareIn(tx, membership.shareId);
-          removedShares += 1;
-          continue;
-        }
-        const longest = remaining[0];
-        if (longest && !remaining.some((m) => m.role === "owner")) {
-          await tx
-            .update(driveMembers)
-            .set({ role: "owner", updatedAt: new Date() })
-            .where(
-              and(
-                eq(driveMembers.shareId, membership.shareId),
-                eq(driveMembers.userId, longest.userId),
-              ),
-            );
-        }
-      }
+      const removedShares = await leaveAllSharesIn(tx, userId);
 
       const [current] = await tx
         .select({ keyVersion: driveAccounts.keyVersion })
@@ -197,6 +167,14 @@ export class DriveRepository implements DriveStore {
           updatedAt: new Date(),
         })
         .where(eq(driveAccounts.userId, userId));
+      return { removedShares };
+    });
+  }
+
+  async eraseAccount(userId: string): Promise<{ removedShares: number }> {
+    return this.db.transaction(async (tx) => {
+      const removedShares = await leaveAllSharesIn(tx, userId);
+      await tx.delete(driveAccounts).where(eq(driveAccounts.userId, userId));
       return { removedShares };
     });
   }
@@ -500,6 +478,44 @@ export class DriveRepository implements DriveStore {
 }
 
 type Tx = Parameters<Parameters<DriveDb["transaction"]>[0]>[0];
+
+/**
+ * Takes a person out of every folder they belong to. A folder nobody else holds
+ * the key to is deleted (its content is unreadable by anyone from then on); a
+ * folder left without an owner gets its longest-standing member as owner.
+ * Returns how many folders were deleted.
+ */
+async function leaveAllSharesIn(tx: Tx, userId: string): Promise<number> {
+  const memberships = await tx.select().from(driveMembers).where(eq(driveMembers.userId, userId));
+  await tx.delete(driveMembers).where(eq(driveMembers.userId, userId));
+
+  let removedShares = 0;
+  for (const membership of memberships) {
+    const remaining = await tx
+      .select()
+      .from(driveMembers)
+      .where(eq(driveMembers.shareId, membership.shareId))
+      .orderBy(asc(driveMembers.createdAt));
+    if (remaining.length === 0) {
+      await purgeShareIn(tx, membership.shareId);
+      removedShares += 1;
+      continue;
+    }
+    const longest = remaining[0];
+    if (longest && !remaining.some((m) => m.role === "owner")) {
+      await tx
+        .update(driveMembers)
+        .set({ role: "owner", updatedAt: new Date() })
+        .where(
+          and(
+            eq(driveMembers.shareId, membership.shareId),
+            eq(driveMembers.userId, longest.userId),
+          ),
+        );
+    }
+  }
+  return removedShares;
+}
 
 async function purgeNodesIn(tx: Tx, nodeIds: ReadonlyArray<string>): Promise<void> {
   if (nodeIds.length === 0) return;

@@ -23,6 +23,8 @@ export {
   DriveDirectorySchema,
   type DriveEnrollRequest,
   DriveEnrollRequestSchema,
+  type DriveEraseResult,
+  DriveEraseResultSchema,
   type DriveErrorReason,
   DriveErrorReasonSchema,
   type DriveFolderCreateRequest,

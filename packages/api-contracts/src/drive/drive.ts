@@ -363,6 +363,16 @@ export type DriveMemberRemoveRequest = z.infer<typeof DriveMemberRemoveRequestSc
 export const DriveKeyGenerationResultSchema = z.object({ keyGeneration: z.number().int().min(1) });
 export type DriveKeyGenerationResult = z.infer<typeof DriveKeyGenerationResultSchema>;
 
+/**
+ * Right to erasure (§6 of the DPIA): what deleting a person's account did to
+ * their Drive. Idempotent -- `erased: false` means they never set it up.
+ */
+export const DriveEraseResultSchema = z.object({
+  erased: z.boolean(),
+  removedShares: z.number().int().min(0),
+});
+export type DriveEraseResult = z.infer<typeof DriveEraseResultSchema>;
+
 export const DrivePurgeResultSchema = z.object({ purged: z.number().int().min(0) });
 export type DrivePurgeResult = z.infer<typeof DrivePurgeResultSchema>;
 

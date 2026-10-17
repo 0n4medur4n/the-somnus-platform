@@ -119,10 +119,8 @@ swap needs no business-logic change. Note: OpenAI embeddings and GPT-5.6 are not
 available through Vertex, so a switch also re-hosts embeddings on a Vertex model.
 
 **Open verification items** (living-document actions):
-- [ ] **Staff Drive erasure (ADR 0019):** the account-deletion workflow (§6) does
-  not yet erase a person's `drive_accounts` row (email label + public keys) or
-  their folder memberships. Internal staff only; wire it into `DELETE /v1/me`
-  before a staff account is ever erased.
+- [x] **Staff Drive erasure (ADR 0019):** the account-deletion workflow (§6) now
+  erases the person's Drive identity and folder memberships (step 2 below).
 - [ ] Confirm TiDB Cloud cluster is EU-region and TLS-only on the DPA.
 - [ ] Confirm OpenAI API training-opt-out, retention (ZDR?), and EU residency on the signed DPA.
 
@@ -136,12 +134,18 @@ access:
 
 1. **Morpheo** — `POST /internal/v1/maintenance/user-assessments/delete` erases
    the user's claimed assessments (sessions, answers, snapshots, tokens).
-2. **Identity** — `DELETE /v1/me` erases the account in one transaction
+2. **Staff Drive** — `POST /internal/v1/drive/account/erase` (worker, ADR 0019)
+   removes the person from every shared folder, deletes the folders nobody else
+   can open, gives an ownerless folder its longest-standing member as owner, and
+   deletes their `drive_accounts` row (email label + keys). A no-op for anyone
+   who never set up the Drive. What they wrote stays in folders they shared, as
+   ciphertext only the remaining colleagues can open.
+3. **Identity** — `DELETE /v1/me` erases the account in one transaction
    (user, profiles, memberships, invitations, access grants, credentials,
    verification cases, role assignments, session revocations, status history,
    deletion requests) **and** the isolated Consent module erases its receipts +
    withdrawals via `ConsentService.eraseUser`.
-3. **Session** — the edge revokes the session so the cookie dies immediately.
+4. **Session** — the edge revokes the session so the cookie dies immediately.
 
 The **audit trail (`somnus_audit`) is deliberately retained** (§21, security /
 legal obligation) and holds only hashes/identifiers — no raw health data — so
