@@ -537,7 +537,7 @@ Initially, all AI-generated health-related text requires human review before rel
 - an L0 emergency never reaches a model;
 - the model receives no identity (no name, email or ids) — only the level, the routed patterns and the protocol's own wording;
 - its answer must parse into a bounded schema and pass the forbidden-phrase scanner (forbidden phrases + every BLOQUEAR claim); otherwise it is discarded and the protocol's wording is shown;
-- it is written once per assessment and stored; the screen and the PDF show the same text, labelled as AI-assisted and not a diagnosis.
+- it is written once per assessment and stored; the screen and the PDF show the same text, presented as the report (no "AI" label, owner decision 2026-10-17), always with the "not a diagnosis" limits.
 Open obligations from this decision: list OpenAI as a processor of health data in the privacy policy and the DPIA (§ 21), with its data-residency/retention terms. The per-sentence review queue (Checkpoint 15.3) remains for the fixed report sentences.
 
 Log per generation: model identifier; template version; prompt-template identifier; structured input hash; response hash; timestamp; review status. Never log unnecessary raw health information.
