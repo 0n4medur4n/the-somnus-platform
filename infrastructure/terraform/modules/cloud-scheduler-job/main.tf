@@ -21,6 +21,9 @@ resource "google_cloud_scheduler_job" "this" {
       for_each = var.oidc_service_account_email == null ? [] : [var.oidc_service_account_email]
       content {
         service_account_email = oidc_token.value
+        # Cloud Run checks the token's audience against the service URL; the
+        # default (the full target URI, path included) is not that.
+        audience = var.oidc_audience
       }
     }
   }

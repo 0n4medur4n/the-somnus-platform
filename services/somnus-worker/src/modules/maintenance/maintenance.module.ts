@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { CLOCK, type Clock, SystemClock } from "../../common/clock.js";
+import { identityHeaders } from "../../common/identity-token.js";
 import { loadMaintenanceConfig } from "./maintenance.config.js";
 import { MaintenanceController } from "./maintenance.controller.js";
 import { MaintenanceService } from "./maintenance.service.js";
@@ -21,7 +22,10 @@ export const MORPHEO_MAINTENANCE_CLIENT = Symbol("MORPHEO_MAINTENANCE_CLIENT");
     {
       provide: MORPHEO_MAINTENANCE_CLIENT,
       useFactory: (): MorpheoMaintenanceClient =>
-        new HttpMorpheoMaintenanceClient(loadMaintenanceConfig(process.env).MORPHEO_BASE_URL),
+        new HttpMorpheoMaintenanceClient(
+          loadMaintenanceConfig(process.env).MORPHEO_BASE_URL,
+          identityHeaders(),
+        ),
     },
     {
       provide: MaintenanceService,

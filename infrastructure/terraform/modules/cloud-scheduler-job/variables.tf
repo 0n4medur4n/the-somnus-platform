@@ -41,3 +41,9 @@ variable "paused" {
   type        = bool
   default     = false
 }
+
+variable "oidc_audience" {
+  description = "Audience of the OIDC token: the target Cloud Run service's base URL. Null keeps Cloud Scheduler's default (the full URI)."
+  type        = string
+  default     = null
+}

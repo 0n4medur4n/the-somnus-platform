@@ -55,3 +55,28 @@ describe("HttpMorpheoMaintenanceClient", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("HttpMorpheoMaintenanceClient on Cloud Run", () => {
+  it("sends an ID token for Morpheo's own URL, so a private Morpheo lets it in", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ deleted: 2 }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const audiences: string[] = [];
+    const client = new HttpMorpheoMaintenanceClient(
+      "https://morpheo.example.run.app/",
+      async (a) => {
+        audiences.push(a);
+        return { authorization: "Bearer id-token" };
+      },
+    );
+
+    await client.deleteUnclaimedAssessments("2026-09-18T03:30:00.000Z");
+
+    expect(audiences).toEqual(["https://morpheo.example.run.app"]);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer id-token");
+  });
+});
