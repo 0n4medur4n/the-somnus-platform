@@ -22,6 +22,8 @@ const fakeResolver = { resolve: async () => ACTOR } as unknown as ActorResolver;
 /** Morpheo + session collaborators are unused by getMe/patchProfile; deleteAccount drives its own. */
 const { client: unusedMorpheo } = makeFakeIdentityClient(() => ({ status: 204 }));
 const noopSessions = { revoke: async () => undefined } as unknown as SessionService;
+/** The worker is reached only by deleteAccount (the staff Drive's erasure). */
+const { client: unusedWorker } = makeFakeIdentityClient(() => ({ status: 200, body: {} }));
 
 const FAST_RETRY = {
   maxAttempts: 3,
@@ -55,6 +57,7 @@ describe("MeService (composition)", () => {
       fakeResolver,
       noopSessions,
       new InMemoryProfilePhotoStore(),
+      unusedWorker,
     );
 
     const result = await service.getMe(SESSION, "corr-1");
@@ -77,6 +80,7 @@ describe("MeService (composition)", () => {
       fakeResolver,
       noopSessions,
       new InMemoryProfilePhotoStore(),
+      unusedWorker,
     );
 
     await expect(
@@ -93,6 +97,7 @@ describe("MeService (composition)", () => {
       fakeResolver,
       noopSessions,
       new InMemoryProfilePhotoStore(),
+      unusedWorker,
     );
 
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({ code: "INTERNAL" });
@@ -109,6 +114,7 @@ describe("MeService (composition)", () => {
       fakeResolver,
       noopSessions,
       new InMemoryProfilePhotoStore(),
+      unusedWorker,
     );
 
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -135,7 +141,20 @@ describe("MeService (composition)", () => {
     } as unknown as SessionService;
     const photos = new InMemoryProfilePhotoStore();
     await photos.put(ACTOR, { bytes: Buffer.from("photo"), type: "image/webp" });
-    const service = new MeService(identity.client, morpheo.client, fakeResolver, sessions, photos);
+    const worker = makeFakeIdentityClient((req) => {
+      expect(req.path).toBe("/internal/v1/drive/account/erase");
+      expect(req.method).toBe("POST");
+      expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
+      return { status: 200, body: { erased: true, removedShares: 0 } };
+    });
+    const service = new MeService(
+      identity.client,
+      morpheo.client,
+      fakeResolver,
+      sessions,
+      photos,
+      worker.client,
+    );
 
     await expect(service.deleteAccount(SESSION, "corr-1")).resolves.toBeUndefined();
 
@@ -143,6 +162,8 @@ describe("MeService (composition)", () => {
     expect(await photos.get(ACTOR)).toBeNull();
     expect(morpheo.requests).toHaveLength(1);
     expect(identity.requests).toHaveLength(1);
+    // The staff Drive identity goes too (ADR 0019): email label and keys.
+    expect(worker.requests).toHaveLength(1);
     expect(revoked).toEqual(["s1"]);
   });
 });
@@ -164,6 +185,7 @@ describe("MeService timeout/retry behavior", () => {
       fakeResolver,
       noopSessions,
       new InMemoryProfilePhotoStore(),
+      unusedWorker,
     );
 
     const result = await service.getMe(SESSION, "corr-1");
@@ -193,6 +215,7 @@ describe("MeService timeout/retry behavior", () => {
       fakeResolver,
       noopSessions,
       new InMemoryProfilePhotoStore(),
+      unusedWorker,
     );
 
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({

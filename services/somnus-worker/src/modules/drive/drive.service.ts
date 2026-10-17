@@ -5,6 +5,7 @@ import {
   type DriveAccount,
   type DriveDirectory,
   type DriveEnrollRequest,
+  type DriveEraseResult,
   type DriveFolderCreateRequest,
   type DriveKeyGenerationResult,
   type DriveMember,
@@ -106,6 +107,20 @@ export class DriveService {
     await this.requireAccount(actorId);
     await this.store.resetAccount(actorId, { email, ...body });
     return this.account(actorId);
+  }
+
+  /**
+   * Right to erasure, called by edge-api's account deletion. Removes the person
+   * from every folder (deleting the ones nobody else can open, never leaving one
+   * ownerless) and deletes their account row -- email label and keys. What they
+   * wrote stays in the folders they shared, as ciphertext only colleagues can
+   * open, like any document a former colleague left in a shared drive.
+   * Idempotent: someone who never set up the Drive has nothing to erase.
+   */
+  async erase(actorId: string): Promise<DriveEraseResult> {
+    const hadAccount = (await this.store.findAccount(actorId)) !== null;
+    const { removedShares } = await this.store.eraseAccount(actorId);
+    return { erased: hadAccount, removedShares };
   }
 
   async directory(actorId: string): Promise<DriveDirectory> {

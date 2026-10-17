@@ -7,6 +7,7 @@ import { ACTOR_ID_HEADER } from "../../infrastructure/internal-clients/headers.j
 import {
   IDENTITY_CLIENT,
   MORPHEO_CLIENT,
+  WORKER_CLIENT,
 } from "../../infrastructure/internal-clients/internal-clients.module.js";
 import {
   PROFILE_PHOTO_STORE,
@@ -31,6 +32,7 @@ export class MeService {
     private readonly actorResolver: ActorResolver,
     private readonly sessions: SessionService,
     @Inject(PROFILE_PHOTO_STORE) private readonly photos: ProfilePhotoStore,
+    @Inject(WORKER_CLIENT) private readonly worker: CloudRunClient,
   ) {}
 
   private actorOf(session: SessionRecord | undefined, correlationId: string): Promise<string> {
@@ -133,9 +135,11 @@ export class MeService {
 
   /**
    * Account deletion (build plan §21 / Checkpoint 13.2, right to erasure). The
-   * edge orchestrates: erase the user's assessments in Morpheo, erase the profile
-   * photo from edge-api's own bucket, erase the identity account (and its
-   * isolated consent), then revoke the session so the cookie dies immediately.
+   * edge orchestrates: erase the user's assessments in Morpheo, erase their staff
+   * Drive identity in the worker (ADR 0019 -- a no-op for anyone who never set it
+   * up), erase the profile photo from edge-api's own bucket, erase the identity
+   * account (and its isolated consent), then revoke the session so the cookie
+   * dies immediately.
    * Each service owns and erases its own data (§7).
    */
   async deleteAccount(
@@ -149,6 +153,10 @@ export class MeService {
     await this.morpheo.post("/internal/v1/maintenance/user-assessments/delete", {
       correlationId,
       body: { userId: actorId },
+    });
+    await this.worker.post("/internal/v1/drive/account/erase", {
+      correlationId,
+      headers: { [ACTOR_ID_HEADER]: actorId },
     });
     await this.photos.remove(actorId);
     await this.identity.delete("/v1/me", {

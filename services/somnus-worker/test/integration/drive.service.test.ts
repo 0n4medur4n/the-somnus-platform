@@ -714,6 +714,48 @@ describe("resetting lost keys", () => {
   });
 });
 
+describe("erasing an account (right to erasure)", () => {
+  it("removes the person from every folder, deletes their keys, and leaves colleagues' folders intact", async () => {
+    await enrollAll();
+    const solo = await newShare(alice);
+    const shared = await newShare(alice);
+    const theirs = await newShare(bob);
+    await drive.addMember(alice, shared.shareId, {
+      userId: bob,
+      role: "editor",
+      keyGeneration: 1,
+      memberKey: memberKey(),
+    });
+    await drive.addMember(bob, theirs.shareId, {
+      userId: alice,
+      role: "viewer",
+      keyGeneration: 1,
+      memberKey: memberKey(),
+    });
+
+    expect(await drive.erase(alice)).toEqual({ erased: true, removedShares: 1 });
+
+    expect(await repo.findAccount(alice)).toBeNull();
+    expect(await repo.listMembershipsFor(alice)).toEqual([]);
+    expect(await repo.findShare(solo.shareId)).toBeNull();
+    // Bob keeps both folders, and owns the one Alice owned.
+    const bobShares = await drive.listShares(bob);
+    expect(bobShares.shares.map((s) => s.shareId).sort()).toEqual(
+      [shared.shareId, theirs.shareId].sort(),
+    );
+    expect(bobShares.shares.find((s) => s.shareId === shared.shareId)?.role).toBe("owner");
+    // Alice no longer appears in the directory anyone shares from.
+    expect((await drive.directory(bob)).entries.map((e) => e.userId)).not.toContain(alice);
+  });
+
+  it("is idempotent: someone who never set up the Drive has nothing to erase", async () => {
+    expect(await drive.erase(carol)).toEqual({ erased: false, removedShares: 0 });
+    await drive.enroll(carol, "carol@thesomnus.com", enrollBody());
+    expect((await drive.erase(carol)).erased).toBe(true);
+    expect(await drive.erase(carol)).toEqual({ erased: false, removedShares: 0 });
+  });
+});
+
 describe("migrations", () => {
   it("go down and up again cleanly", async () => {
     await runDriveMigrationsDown(pool);

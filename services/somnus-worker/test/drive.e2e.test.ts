@@ -36,6 +36,7 @@ describe("drive controller (e2e)", () => {
       "rewrap",
       "saveState",
       "reset",
+      "erase",
       "directory",
       "listShares",
       "createShare",
@@ -214,6 +215,7 @@ describe("drive controller (e2e)", () => {
         calls: "saveState",
       },
       { method: "POST", url: "/internal/v1/drive/account/reset", body: enroll, calls: "reset" },
+      { method: "POST", url: "/internal/v1/drive/account/erase", calls: "erase" },
       { method: "GET", url: "/internal/v1/drive/directory", calls: "directory" },
       { method: "GET", url: "/internal/v1/drive/shares", calls: "listShares" },
       {

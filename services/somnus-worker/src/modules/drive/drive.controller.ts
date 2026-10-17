@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type {
   DriveAccount,
   DriveDirectory,
+  DriveEraseResult,
   DriveKeyGenerationResult,
   DriveMember,
   DriveNode,
@@ -89,6 +90,13 @@ export class DriveController {
     @Body() body: DriveEnrollDto,
   ): Promise<DriveAccount> {
     return this.drive.reset(actor, email, body);
+  }
+
+  @Post("account/erase")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Account deletion: leave every folder and delete the Drive identity." })
+  erase(@DriveActor() actor: string): Promise<DriveEraseResult> {
+    return this.drive.erase(actor);
   }
 
   @Get("directory")

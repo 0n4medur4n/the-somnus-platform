@@ -56,6 +56,8 @@ raised later).
   exposes. It cannot read names or content and cannot forge a folder key.
 - It could still roll a file back to an older revision it kept, or show a
   member a stale tree; it cannot alter content undetected.
+- Account deletion (`DELETE /v1/me`) erases the person's Drive identity and
+  memberships through `POST /internal/v1/drive/account/erase`.
 - The Drive is not for patient data; the console says so. It is outside §15's
   scope: no model ever sees it.
 - Deploy needs a `somnus_drive` database and user, a `drive-db-url` secret
