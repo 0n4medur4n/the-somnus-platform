@@ -14,6 +14,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
+from report.rendering.dates import format_datetime
 from report.rendering.i18n import strings_for
 from report.schemas.narrative import NarrativeDTO
 from report.schemas.render import ClinicalContentDTO, ReportRenderRequestDTO
@@ -87,6 +88,7 @@ def render_html(
         template_version=template_version,
         narrative=narrative,
         urgent=urgent,
+        completed_display=format_datetime(request.completed_at, request.locale),
     )
     return RenderedReport(
         html=html,

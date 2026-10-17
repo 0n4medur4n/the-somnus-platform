@@ -2,19 +2,26 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <title>Informe de orientación del sueño</title>
+    <title>Morpheo · Informe de orientación del sueño</title>
+    <style>
+      @page { margin: 22mm 18mm; }
+      body { font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #1f2937; line-height: 1.45; }
+      .report-header { border-bottom: 2px solid #2f6ae0; padding-bottom: 8pt; margin-bottom: 14pt; }
+      .brand { font-size: 22pt; font-weight: bold; color: #2f6ae0; margin: 0; letter-spacing: 0.5pt; }
+      .byline { margin: 0 0 6pt; color: #475569; }
+      h1 { font-size: 15pt; margin: 4pt 0; }
+      h2 { font-size: 12pt; color: #1d4ed8; margin: 14pt 0 4pt; }
+      .report-date { color: #475569; margin: 0; }
+      .urgent { font-weight: bold; }
+      .report-footer { margin-top: 18pt; border-top: 1px solid #cbd5e1; padding-top: 6pt; font-size: 8pt; color: #64748b; }
+    </style>
   </head>
   <body>
     <header class="report-header">
+      <p class="brand">Morpheo</p>
+      <p class="byline">por The Somnus</p>
       <h1>Informe de orientación del sueño</h1>
-      <dl class="report-meta">
-        <dt>Evaluación</dt>
-        <dd class="assessment-id">assess-123</dd>
-        <dt>Completado</dt>
-        <dd class="completed-at">2026-08-17T12:00:00Z</dd>
-        <dt>Versiones (plantilla / definición / contenido)</dt>
-        <dd class="versions">report_v1 / 1.0 / 1.2</dd>
-      </dl>
+      <p class="report-date"><span class="date-label">Fecha:</span> <span class="completed-at">17 de agosto de 2026, 14:00</span></p>
     </header>
     <section class="care-level emergency" role="alert">
       <h2>Nivel de atención y acción</h2>
@@ -28,5 +35,10 @@
       <p>Un resultado orientativo bajo no descarta un trastorno; consulta si los síntomas persisten o preocupan.</p>
       <p>Información general y preguntas para comentar con tu profesional.</p>
     </section>
+    <footer class="report-footer">
+      Referencia: <span class="assessment-id">assess-123</span>
+      · <span class="versions">report_v1 / 1.0 / 1.2</span>
+      · <span class="completed-stamp">2026-08-17T12:00:00Z</span>
+    </footer>
   </body>
 </html>

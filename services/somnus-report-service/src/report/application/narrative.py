@@ -38,7 +38,7 @@ from report.schemas.render import ClinicalContentDTO, ReportRenderRequestDTO
 logger = logging.getLogger("report.narrative")
 
 PROMPT_ID = "person_report"
-PROMPT_VERSION = "person_report_v1"
+PROMPT_VERSION = "person_report_v2"
 
 _LANGUAGE = {"es": "español", "en": "English", "ca": "català", "fr": "français"}
 
@@ -60,8 +60,12 @@ Reglas que no puedes romper:
   «no tienes»), en ninguna frase: di «has comunicado», «te ocurre», «notas», «si te
   surgen dudas».
 - El nivel de atención ya está decidido: descríbelo, no lo cambies ni lo suavices.
-- Las instrucciones urgentes ya se muestran aparte con sus palabras exactas: no las
-  repitas ni las contradigas.
+- Las instrucciones urgentes («urgentMessages») ya figuran en el informe con sus
+  palabras exactas: no las copies ni las contradigas, y NO digas que aparecen en otro
+  sitio ni «por separado».
+- Habla directamente a quien lee. No menciones el sistema, el protocolo, las reglas,
+  los datos recibidos ni que el nivel ha sido «asignado»: di, por ejemplo, «Lo
+  indicado es una valoración urgente hoy».
 - No recomiendes empezar, dejar ni cambiar medicamentos o dosis.
 - Las recomendaciones salen SOLO de la acción del nivel y de las reglas del protocolo
   de cada patrón, convertidas en pasos prácticos para quien lee.
@@ -120,7 +124,7 @@ def structured_input(
         "level": None
         if level is None
         else {"id": level.id, "name": level.name, "protocolAction": level.action},
-        "urgentMessagesShownApart": [
+        "urgentMessages": [
             rules[rule_id].message for rule_id in request.triggered_rules if rule_id in rules
         ],
         "patterns": [
