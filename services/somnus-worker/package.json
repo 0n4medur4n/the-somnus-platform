@@ -15,12 +15,12 @@
     "test:integration": "vitest run --config test/integration/vitest.config.ts --coverage",
     "db:generate:notifications": "drizzle-kit generate --config drizzle.notifications.config.ts",
     "db:generate:audit": "drizzle-kit generate --config drizzle.audit.config.ts",
-    "db:generate:drive": "drizzle-kit generate --config drizzle.drive.config.ts",
     "db:migrate": "node --import @swc-node/register/esm-register scripts/migrate-dev.ts"
   },
   "dependencies": {
     "@fastify/helmet": "13.1.0",
     "@fastify/static": "10.1.0",
+    "@google-cloud/storage": "8.2.0",
     "@nestjs/common": "11.1.28",
     "@nestjs/core": "11.1.28",
     "@nestjs/platform-fastify": "11.1.28",

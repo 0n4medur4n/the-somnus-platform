@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { AuditModule } from "../src/modules/audit/audit.module.js";
 import { AuditService } from "../src/modules/audit/audit.service.js";
 import { AuditDbModule } from "../src/modules/audit/db/audit-db.module.js";
-import { DriveDbModule } from "../src/modules/drive/db/drive-db.module.js";
 import { DriveModule } from "../src/modules/drive/drive.module.js";
 import { DriveService } from "../src/modules/drive/drive.service.js";
+import { DriveStore } from "../src/modules/drive/storage/drive-store.js";
 import { NotificationDbModule } from "../src/modules/notification/db/notification-db.module.js";
 import { NotificationModule } from "../src/modules/notification/notification.module.js";
 import { NotificationService } from "../src/modules/notification/notification.service.js";
@@ -35,6 +35,8 @@ describe("isolated-module boundaries", () => {
   it("the module databases are not global — no cross-module DB access", () => {
     expect(isGlobal(NotificationDbModule)).toBe(false);
     expect(isGlobal(AuditDbModule)).toBe(false);
-    expect(isGlobal(DriveDbModule)).toBe(false);
+    // The Drive keeps its bucket handle (DriveStore) to itself: exported is
+    // only the service, so nothing else in the worker can reach the objects.
+    expect(exportsOf(DriveModule)).not.toContain(DriveStore);
   });
 });

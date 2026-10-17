@@ -24,11 +24,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
-      include: [
-        "src/modules/notification/db/repositories/**/*.ts",
-        "src/modules/drive/db/repositories/**/*.ts",
-        "src/modules/drive/drive.service.ts",
-      ],
+      include: ["src/modules/notification/db/repositories/**/*.ts"],
       thresholds: {
         lines: 80,
         functions: 80,

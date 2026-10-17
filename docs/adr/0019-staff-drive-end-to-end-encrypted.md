@@ -1,9 +1,10 @@
 # ADR 0019 — The staff Drive: end-to-end encrypted, in the worker
 
-- Status: Accepted (owner decision, 2026-10-17)
-- Date: 2026-10-17
-- Decides: §2 and §5.7 (a third isolated module in `somnus-worker`), §3.9 (a new
-  logical database `somnus_drive`), Addendum A §A2.2 (a new capability row)
+- Status: Accepted (owner decisions, 2026-10-17 and 2026-10-18)
+- Date: 2026-10-17; storage revised 2026-10-18
+- Decides: §2 and §5.7 (a third isolated module in `somnus-worker`), §9 (a
+  private Cloud Storage bucket for it, no database), Addendum A §A2.2 (a new
+  capability row)
 
 ## Context
 
@@ -33,18 +34,32 @@ what staff keep there.
   re-signs their own copy on first open, so their access no longer depends on
   the granter's keys. Colleague keys are pinned on first use and shown as
   fingerprints; a changed key is flagged and is not used until accepted.
-- **Placement.** An isolated `drive` module in `somnus-worker`, logical database
-  `somnus_drive`, own migrations; reached only through `/admin/v1/drive/*` on
-  edge-api, behind `admin_drive` (every internal role) and the admin audit
-  interceptor. Blocks are stored in the database (`MEDIUMBLOB`), max 20 MiB per
-  file, no new bucket.
+- **Placement.** An isolated `drive` module in `somnus-worker`, reached only
+  through `/admin/v1/drive/*` on edge-api, behind `admin_drive` (every internal
+  role) and the admin audit interceptor. Max 20 MiB per file.
+- **Storage (owner decision 2026-10-18): one private Cloud Storage bucket, no
+  database.** `<project>-staff-drive` in `europe-west3`: uniform access,
+  public access prevention, no versioning, soft delete off (a delete is final,
+  and nothing deleted keeps costing). The worker's service account holds
+  `roles/storage.objectAdmin` on that bucket alone and needs no credential.
+  Layout: `accounts/{user}.json`; `shares/{share}/manifest.json` (key
+  generation, members, nodes, pending uploads); `shares/{share}/blocks/...`;
+  `memberships/{user}/{share}` as an index. The manifest is replaced only with
+  a compare-and-swap on its generation (`ifGenerationMatch`), and every rule is
+  checked inside that swap, so a rotation is one atomic write and two people
+  acting at once cannot both pass a check meant for one. The index is written
+  before an add and removed after a removal, so it may over-report, never
+  under-report; the manifest always decides.
 - **Lost secrets.** Recovery code → new passphrase and a new code. Both lost →
   reset: new keys; folders nobody else holds are deleted, ownerless folders get
   their longest-standing member as owner.
 
 Rejected: a module in identity (adds file traffic to the service that
-authorizes every request); Cloud Storage for blocks (new Terraform and signed
-URLs for ciphertext that gains nothing from a bucket at this size);
+authorizes every request); a TiDB logical database (the owner chose against
+TiDB for the Drive: it needs a database user and a password secret, and stores
+blobs where object storage is cheaper); Cloudflare R2 (free up to 10 GB, but a
+new processor, an API key in Secret Manager and a new SDK, against a cost
+difference of cents);
 server-side escrow by a super admin (breaks end-to-end encryption); Argon2id
 (needs a WASM dependency; PBKDF2's parameters are recorded per wrap and can be
 raised later).
@@ -60,6 +75,9 @@ raised later).
   memberships through `POST /internal/v1/drive/account/erase`.
 - The Drive is not for patient data; the console says so. It is outside §15's
   scope: no model ever sees it.
-- Deploy needs a `somnus_drive` database and user, a `drive-db-url` secret
-  mounted as `DRIVE_DATABASE_URL` on the worker, and its migrations applied
+- Cost: Standard storage in `europe-west3` (~0.023 USD per GB-month) plus
+  operations at fractions of a cent per thousand; traffic to Cloud Run in the
+  same region is free. A few GB of team documents cost cents a month.
+- Deploy is Terraform (the bucket, its IAM, `DRIVE_BUCKET` on the worker) and
+  the images; there is no secret and no migration
   (see `docs/runbooks/deploy-dev.md`).

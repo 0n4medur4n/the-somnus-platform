@@ -20,8 +20,3 @@ CREATE DATABASE IF NOT EXISTS somnus_consent
 -- deployable, with its own Alembic history (alembic_content.ini).
 CREATE DATABASE IF NOT EXISTS somnus_content
   CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-
--- The staff Drive, owned by the worker's isolated Drive module (owner decision
--- 2026-10-17, ADR 0019). Ciphertext, public keys and folder membership only.
-CREATE DATABASE IF NOT EXISTS somnus_drive
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
