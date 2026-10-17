@@ -95,7 +95,7 @@ def test_the_model_sees_the_result_and_the_protocol_never_who(
     sent = model.requests[0].user
     assert request.assessment_id not in sent
     data = json.loads(sent)
-    assert set(data) == {"level", "urgentMessagesShownApart", "patterns", "limits"}
+    assert set(data) == {"level", "urgentMessages", "patterns", "limits"}
     # Morpheo's template quotes and [placeholders] never reach the model.
     summaries = [pattern["protocolSummary"] for pattern in data["patterns"]]
     assert summaries and all("[" not in s and "«" not in s for s in summaries)
@@ -123,7 +123,7 @@ def test_malformed_or_failing_answers_fall_back_to_the_protocol(
     assert _service(None).for_assessment(request, content).generated is False
 
 
-def test_fired_rule_messages_are_given_as_shown_apart(
+def test_fired_rule_messages_are_given_to_the_model_as_urgent(
     content: ClinicalContentDTO, make_request: RequestBuilder
 ) -> None:
     with_rules = content.model_copy(
@@ -136,7 +136,7 @@ def test_fired_rule_messages_are_given_as_shown_apart(
     data = structured_input(
         make_request(level="L1", routes=("SLP",), triggered_rules=("SAFE-003",)), with_rules
     )
-    assert data["urgentMessagesShownApart"] == ["No conduzcas."]
+    assert data["urgentMessages"] == ["No conduzcas."]
 
 
 def test_the_pdf_prints_the_report_with_the_rules_own_words(

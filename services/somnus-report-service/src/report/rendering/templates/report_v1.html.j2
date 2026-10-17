@@ -2,19 +2,26 @@
 <html lang="{{ request.locale }}">
   <head>
     <meta charset="utf-8" />
-    <title>{{ strings.title }}</title>
+    <title>{{ strings.brand }} · {{ strings.title }}</title>
+    <style>
+      @page { margin: 22mm 18mm; }
+      body { font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #1f2937; line-height: 1.45; }
+      .report-header { border-bottom: 2px solid #2f6ae0; padding-bottom: 8pt; margin-bottom: 14pt; }
+      .brand { font-size: 22pt; font-weight: bold; color: #2f6ae0; margin: 0; letter-spacing: 0.5pt; }
+      .byline { margin: 0 0 6pt; color: #475569; }
+      h1 { font-size: 15pt; margin: 4pt 0; }
+      h2 { font-size: 12pt; color: #1d4ed8; margin: 14pt 0 4pt; }
+      .report-date { color: #475569; margin: 0; }
+      .urgent { font-weight: bold; }
+      .report-footer { margin-top: 18pt; border-top: 1px solid #cbd5e1; padding-top: 6pt; font-size: 8pt; color: #64748b; }
+    </style>
   </head>
   <body>
     <header class="report-header">
+      <p class="brand">{{ strings.brand }}</p>
+      <p class="byline">{{ strings.byline }}</p>
       <h1>{{ strings.title }}</h1>
-      <dl class="report-meta">
-        <dt>{{ strings.assessment }}</dt>
-        <dd class="assessment-id">{{ request.assessment_id }}</dd>
-        <dt>{{ strings.generatedAt }}</dt>
-        <dd class="completed-at">{{ request.completed_at }}</dd>
-        <dt>{{ strings.versions }}</dt>
-        <dd class="versions">{{ template_version }} / {{ request.definition_version }} / {{ request.content_version }}</dd>
-      </dl>
+      <p class="report-date"><span class="date-label">{{ strings.date }}:</span> <span class="completed-at">{{ completed_display }}</span></p>
     </header>
     {% if is_emergency %}
     <section class="care-level emergency" role="alert">
@@ -163,5 +170,10 @@
       <p>{{ sentence }}</p>
       {% endfor %}
     </section>
+    <footer class="report-footer">
+      {{ strings.reference }}: <span class="assessment-id">{{ request.assessment_id }}</span>
+      · <span class="versions">{{ template_version }} / {{ request.definition_version }} / {{ request.content_version }}</span>
+      · <span class="completed-stamp">{{ request.completed_at }}</span>
+    </footer>
   </body>
 </html>
