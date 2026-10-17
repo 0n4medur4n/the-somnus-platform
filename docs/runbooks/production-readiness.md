@@ -96,8 +96,13 @@ The **application code** meets the DoD. The remaining items are **operational**
 10. **DPIA open verification items.** Confirm the TiDB Cloud cluster is EU-region and
     the OpenAI API training-opt-out / ZDR / EU-residency terms on the signed DPAs. →
     `docs/security/dpia.md` §5.
-11. **AI rewriting disabled** by `AI_REWRITE_ENABLED` until a human-review mechanism
-    exists (build plan §15). Deliberate safety hold, not a bug.
+11. **The AI report is ON** (corrected 2026-10-18; this item used to say it was
+    disabled). Owner decision 2026-10-16 (build plan §15 as amended): the person's
+    report is written live by `gpt-6-luna` (effort `xhigh`) and shown without human
+    review; `AI_REWRITE_ENABLED` defaults to `true`. It is served from
+    `api.openai.com` (**US processing**) with no EU residency or Zero Data
+    Retention yet (requested, pending) and no confirmed DPA. Before production:
+    the DPIA §5 open items, and erasing `person_reports` on account deletion.
 12. **Morpheo clinical content incomplete for ca/en/fr**, plus deferred safety items
     (SAFE-004 escalation signal, SAFE-002 ops pathway). Spanish + English content is in.
 13. **Firebase dev Hosting deploy** needs the `FIREBASE_SERVICE_ACCOUNT` secret (the

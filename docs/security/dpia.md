@@ -8,9 +8,11 @@ revised whenever a new data category, processor, or flow is introduced.
 
 - **Owner:** Data Protection lead (platform owner until a DPO is appointed).
 - **Region:** all compute and primary storage in `europe-west3` (EU). Any
-  processor outside the EEA is called out below with its transfer basis.
-- **Last reviewed:** 2026-08-21 (initial). Review on every processor change and
-  at least annually.
+  processor outside the EEA is called out below with its transfer basis. **Today
+  one is: OpenAI, reached at `api.openai.com` (US processing) -- see §5.**
+- **Last reviewed:** 2026-10-18 (corrected to match the deployed system: the AI
+  report is on, GPT-6 Luna, US endpoint). Review on every processor change and at
+  least annually.
 
 ---
 
@@ -48,10 +50,20 @@ verified professionals, and organization administrators.
 2. **Claim** — after Firebase sign-in, the anonymous assessment is claimed
    **exactly once** with a single-use 72 h token, producing an immutable snapshot
    bound to the now-known user, and an async report request is emitted.
-3. **Report** — worker → report-service renders the approved structured result to
-   HTML/PDF, stored in GCS; access is via short-lived signed URLs only. Optional
-   LLM prose is **prose-only over already-approved text** and is currently
-   **disabled** by `AI_REWRITE_ENABLED` (see §5).
+3. **Report** — report-service renders the approved structured result to HTML and,
+   on request, to a PDF that is generated on demand and not stored.
+   **The person's report is written by an AI model, live, without human review**
+   (owner decision 2026-10-16, build plan §15 as amended): `gpt-6-luna` at
+   reasoning effort `xhigh`, via the OpenAI API (`api.openai.com`, US). What the
+   model receives (`report.application.narrative.structured_input`): the safety
+   level and its protocol action, the fired rules' messages, the protocol wording
+   of the routed patterns and the limits text -- **no name, email, ids, age or free
+   text**. An L0 emergency is never sent. The answer is stored once per assessment
+   and language in `somnus_reporting.person_reports`; other languages are a
+   translation of that text by the same model (low effort). A separate operator
+   job (`generate_rewrites`) sends approved protocol sentences, not personal data,
+   for rewording into a review queue. Every chat call is sent with `store: false`;
+   the service logs the API base URL in use at startup.
 4. **Notification** — worker's Notification module sends transactional email via
    Brevo (claim confirmations, report-ready).
 5. **Audit** — every service emits audit events; the Audit module normalizes and
@@ -106,23 +118,26 @@ Both TTL policies (30 days, 72 h) are stated in the public privacy policy.
 | Processor | Role | Location / transfer basis | Residency & retention notes |
 |-----------|------|---------------------------|-----------------------------|
 | **Google Cloud (GCP)** | Compute + storage: Cloud Run, Cloud Storage, Cloud Tasks, Pub/Sub, Cloud Scheduler, Secret Manager, BigQuery | `europe-west3` (EU) | Data stays in-region; Google DPA + SCCs. |
-| **Firebase (Google)** | Hosting, Authentication, Firestore | EU project (`the-somnuss`); Google DPA | Auth identity + short-lived state only. |
+| **Firebase (Google)** | Hosting, Authentication, Firestore | Same project as the backend, `the-somnus` (ADR 0017); Google DPA | Auth identity + short-lived state only. |
 | **TiDB Cloud** | Managed MySQL — the seven logical databases | **Must be EU-region cluster; TLS enforced** | ⚠️ Confirm the cluster region is EU on the signed DPA before production. |
 | **Brevo** (Sendinblue) | Transactional email (Notification module) | France (EU) | EU processor; DPA in place. No health content in emails. |
-| **OpenAI** | GPT-5.6 (prose rewrite) + `text-embedding-3-large` (clinical retrieval), via the report-service provider-abstraction module | US — **transfer basis: SCCs + signed DPA** | Record on the signed DPA: (a) **API data is not used for training by default**; (b) API abuse-monitoring retention (≤30 days) or **Zero Data Retention** if granted; (c) EU data-residency option if eligible. ⚠️ **Verify these against the signed OpenAI DPA.** |
+| **OpenAI** | `gpt-6-luna` writes and translates the person's report (live, on); `text-embedding-3-large` embeds the approved clinical corpus. Via the report-service provider abstraction. | **US today**: endpoint `api.openai.com`, no EU data-residency project, no Zero Data Retention. Transfer basis must be SCCs + a signed DPA -- **not yet confirmed** | (a) API data is not used for training by default; (b) without ZDR, OpenAI keeps API inputs/outputs up to 30 days for abuse monitoring; (c) EU data residency (`eu.api.openai.com`) and ZDR both need OpenAI's approval -- requested by the owner, pending. `store: false` is sent on every completion. ⚠️ Until (c) lands, report content tied to identifiable users' assessments is processed in the US. |
 
 **Fallback decision (recorded, per §3/§21):** if OpenAI's residency or retention
 terms cannot be met for EU health-adjacent data, switch the report-service LLM
 adapter to **Gemini on Vertex AI with EU region pinning**. The provider
 abstraction (`report-service/infrastructure/llm/`) exists specifically so this
-swap needs no business-logic change. Note: OpenAI embeddings and GPT-5.6 are not
+swap needs no business-logic change. Note: OpenAI embeddings and GPT-6 Luna are not
 available through Vertex, so a switch also re-hosts embeddings on a Vertex model.
 
 **Open verification items** (living-document actions):
 - [x] **Staff Drive erasure (ADR 0019):** the account-deletion workflow (§6) now
   erases the person's Drive identity and folder memberships (step 2 below).
 - [ ] Confirm TiDB Cloud cluster is EU-region and TLS-only on the DPA.
-- [ ] Confirm OpenAI API training-opt-out, retention (ZDR?), and EU residency on the signed DPA.
+- [ ] Sign / confirm the OpenAI DPA (training opt-out, SCCs).
+- [ ] OpenAI EU data residency + Zero Data Retention (requested 2026-10-18, pending); then set `OPENAI_BASE_URL=https://eu.api.openai.com/v1` and check the startup log line.
+- [ ] Name OpenAI as processor, and the US processing until residency lands, in the privacy policy and the health-data consent text.
+- [ ] **Account deletion does not erase the AI-written report** (`somnus_reporting.person_reports` and its translations). §6 covers morpheo, identity and consent only. Fix before production.
 
 ---
 
@@ -165,7 +180,7 @@ retention does not re-expose personal content.
 |------|-----------|-----------|
 | Unauthorized access to health data | Default-deny authorization (administrative ≠ clinical access); tenant-scoped repositories | negative-authorization immutable suite; `docs/security/threat-validation.md` #4–7 |
 | Health data leaking into logs | One redaction pipeline in the shared logger; audit records carry only hashes | threat-validation #12 |
-| LLM inventing or altering clinical content | LLMs never score/flag/diagnose; prose-only over approved text; forbidden-phrase scanner; output `pending_review`; **`AI_REWRITE_ENABLED` off** until human review exists | §15; threat-validation #13 |
+| LLM inventing or altering clinical content | LLMs never score/flag/diagnose/route; the level and the fired rules' messages are printed verbatim, outside the AI text; L0 never reaches a model; bounded output schema + forbidden-phrase scanner (forbidden phrases and every BLOQUEAR claim), one corrected retry, else the protocol's wording. **The person's report is shown without human review** (owner decision 2026-10-16) | §15 (amended); `report.application.narrative`; threat-validation #13 |
 | Token replay (claim / invitation / report link) | Single-use, expiring, exactly-once-under-concurrency tokens; short-lived signed URLs | threat-validation #8–10 |
 | Over-permissioned infrastructure | One least-privilege service account per service; owner/editor/IAM-admin/wildcard grants fail CI | `scripts/check-terraform-least-privilege.mjs`; threat-validation #11 |
 | Cross-service data access | Service-owned data; isolated modules reachable only via public interface | ADR 0003, ADR 0010 |
@@ -177,9 +192,11 @@ retention does not re-expose personal content.
 ## 8. Residual risk
 
 - **Paraphrased clinical claim** slipping past the literal forbidden-phrase
-  scanner is documented and accepted; AI rewriting is disabled until a human
-  review mechanism lands (threat-validation #13, notes).
-- **OpenAI / TiDB residency** items in §5 remain open until the signed DPAs are
-  confirmed; the Vertex fallback is the standing mitigation.
+  scanner: higher than first assessed, because the person's report is now written
+  live and shown **without human review** (owner decision 2026-10-16). Accepted by
+  the owner; mitigations in §7 (threat-validation #13, notes).
+- **US processing by OpenAI** of report content tied to identifiable users'
+  assessments until EU residency + ZDR are granted; TiDB residency still to
+  confirm. The Vertex fallback remains the standing mitigation.
 
 This DPIA is revisited whenever those items resolve or a new processor/flow is added.
