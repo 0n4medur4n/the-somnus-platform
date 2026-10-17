@@ -1,8 +1,12 @@
-# Local backend: state is a local file (gitignored: infrastructure/
-# terraform/**/*.tfstate*), appropriate for a single-operator dev
-# environment. Before staging/production (build plan §20 Checkpoint
-# 13.3) go live, migrate to a GCS remote backend so state is shared and
-# locked -- `terraform init -migrate-state` once that bucket exists.
+# Remote GCS backend, like staging and production. Dev state used to be a
+# local file on one laptop: unversioned, unlocked, lost with the disk. The
+# bucket is supplied at init via partial configuration (backend blocks cannot
+# use variables):
+#
+#   terraform init -backend-config=backend.hcl
+#
+# Copy backend.hcl.example to backend.hcl (gitignored). The one-time move of
+# the existing local state is docs/runbooks/terraform-state-dev.md.
 
 terraform {
   required_version = ">= 1.9.0"
@@ -18,8 +22,9 @@ terraform {
     }
   }
 
-  backend "local" {
-    path = "terraform.tfstate"
+  backend "gcs" {
+    # bucket comes from -backend-config (see backend.hcl.example).
+    prefix = "terraform/state/dev"
   }
 }
 
