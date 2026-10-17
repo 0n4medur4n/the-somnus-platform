@@ -129,6 +129,16 @@ module "sa_report" {
   depends_on = [module.project_apis_backend]
 }
 
+module "sa_scheduler" {
+  source       = "../../modules/service-account"
+  project_id   = var.project_id
+  account_id   = "somnus-scheduler"
+  display_name = "Cloud Scheduler -> somnus-worker jobs"
+  description  = "Identity of the scheduled retention jobs. Holds run.invoker on somnus-worker and nothing else."
+
+  depends_on = [module.project_apis_backend]
+}
+
 module "sa_worker" {
   source        = "../../modules/service-account"
   project_id    = var.project_id
@@ -354,6 +364,9 @@ module "run_worker" {
     ENV          = "production"
     # Transactional email from the domain authenticated in Brevo (DKIM brevo1/
     # brevo2 + DMARC on thesomnus.com), so it reaches the inbox.
+    # The retention jobs call Morpheo's maintenance endpoints (it owns the
+    # data). Unset, the worker defaulted to 127.0.0.1 and every cleanup failed.
+    MORPHEO_BASE_URL   = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
     BREVO_SENDER_EMAIL = "access@thesomnus.com"
     BREVO_SENDER_NAME  = "The Somnus"
   }
@@ -389,7 +402,8 @@ module "iam_morpheo" {
   # edge-api, and the report service: it reads Morpheo's approved content and
   # clinical sources to render a report and to run its jobs (generate_rewrites,
   # index_sources). Without it every report render was refused with a 403.
-  invoker_members = [module.sa_edge_api.member, module.sa_report.member]
+  # The worker too: its scheduled jobs ask Morpheo to delete expired rows.
+  invoker_members = [module.sa_edge_api.member, module.sa_report.member, module.sa_worker.member]
 }
 
 module "iam_report" {
@@ -401,11 +415,12 @@ module "iam_report" {
 }
 
 module "iam_worker" {
-  source          = "../../modules/cloud-run-iam"
-  project_id      = var.project_id
-  region          = var.region
-  service_name    = module.run_worker.service_name
-  invoker_members = [module.sa_edge_api.member]
+  source       = "../../modules/cloud-run-iam"
+  project_id   = var.project_id
+  region       = var.region
+  service_name = module.run_worker.service_name
+  # edge-api (notifications, audit) and the scheduled retention jobs.
+  invoker_members = [module.sa_edge_api.member, module.sa_scheduler.member]
 }
 
 # --- Storage: report PDFs (build plan §5.6, §9) ---
@@ -584,6 +599,26 @@ resource "google_service_account_iam_member" "edge_tasks_act_as_self" {
 # has (2026-10-16, ~9 s of edge-api cold start on sign-in). Every 10 minutes,
 # 07:00-24:00 Europe/Madrid, a GET to the public liveness route. Nothing else
 # is kept warm; min instances stay 0 everywhere.
+# --- Retention: unclaimed assessments after 30 days (build plan §14) ---
+#
+# The privacy policy promises it; nothing ran it. Daily, Cloud Scheduler calls
+# the worker (OIDC as somnus-scheduler), the worker computes the cutoff and asks
+# Morpheo, which owns the data, to delete open sessions older than 30 days.
+
+module "cleanup_unclaimed_assessments" {
+  source                     = "../../modules/cloud-scheduler-job"
+  project_id                 = var.project_id
+  region                     = var.region
+  job_id                     = "cleanup-unclaimed-assessments"
+  schedule                   = "30 3 * * *"
+  time_zone                  = "Europe/Madrid"
+  http_uri                   = "${module.run_worker.url}/internal/v1/jobs/cleanup-unclaimed-assessments"
+  oidc_service_account_email = module.sa_scheduler.email
+  oidc_audience              = module.run_worker.url
+
+  depends_on = [module.project_apis_backend, module.iam_worker]
+}
+
 module "edge_api_warm_ping" {
   source      = "../../modules/cloud-scheduler-job"
   project_id  = var.project_id
