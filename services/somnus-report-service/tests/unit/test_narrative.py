@@ -43,12 +43,28 @@ class _Model:
 class _Store:
     def __init__(self) -> None:
         self.rows: dict[tuple[str, str], NarrativeDTO] = {}
+        self.sources: dict[tuple[str, str], str | None] = {}
 
     def get(self, assessment_id: str, locale: str) -> NarrativeDTO | None:
         return self.rows.get((assessment_id, locale))
 
-    def put(self, assessment_id: str, locale: str, narrative: NarrativeDTO, **_: object) -> None:
-        self.rows.setdefault((assessment_id, locale), narrative)
+    def put(
+        self,
+        assessment_id: str,
+        locale: str,
+        narrative: NarrativeDTO,
+        translated_from: str | None = None,
+        **_: object,
+    ) -> None:
+        if (assessment_id, locale) not in self.rows:
+            self.rows[(assessment_id, locale)] = narrative
+            self.sources[(assessment_id, locale)] = translated_from
+
+    def original(self, assessment_id: str) -> tuple[str, NarrativeDTO] | None:
+        for (aid, locale), narrative in self.rows.items():
+            if aid == assessment_id and self.sources.get((aid, locale)) is None:
+                return locale, narrative
+        return None
 
 
 def _service(model: _Model | None, store: _Store | None = None) -> NarrativeService:
@@ -208,3 +224,47 @@ def test_two_refusals_fall_back_to_the_protocol(
     result = service.for_assessment(make_request(level="L3", routes=("INS",)), content)
     assert result.generated is False
     assert len(model.requests) == 2
+
+
+def test_in_another_language_it_is_the_same_report_translated(
+    content: ClinicalContentDTO, make_request: RequestBuilder
+) -> None:
+    translated = dict(
+        GOOD,
+        summary="Ens has explicat que et costa dormir.",
+        whatToDo=["Demana una consulta programada."],
+    )
+    model = _Replies(GOOD_JSON, json.dumps(translated))
+    store = _Store()
+    service = NarrativeService(
+        provider=model, store=store, chat_model="m", reasoning_effort="xhigh", temperature=0.2
+    )
+    service.for_assessment(make_request(level="L3", routes=("INS",), locale="es"), content)
+    ca = service.for_assessment(make_request(level="L3", routes=("INS",), locale="ca"), content)
+
+    assert ca.generated is True
+    assert ca.narrative is not None
+    assert ca.narrative.summary == "Ens has explicat que et costa dormir."
+    # The second call translated the stored Spanish report -- it did not write a new one.
+    second = model.requests[1]
+    assert json.loads(second.user)["summary"] == GOOD["summary"]
+    assert "català" in second.system
+    assert second.reasoning_effort == "low"
+    # Recorded as a translation of the Spanish original.
+    assert store.sources[(ca.assessment_id, "ca")] == "es"
+    # And it is stored: a third view makes no call.
+    service.for_assessment(make_request(level="L3", routes=("INS",), locale="ca"), content)
+    assert len(model.requests) == 2
+
+
+def test_a_translation_that_adds_or_drops_items_is_refused(
+    content: ClinicalContentDTO, make_request: RequestBuilder
+) -> None:
+    padded = dict(GOOD, whatToDo=[*GOOD["whatToDo"], "Un paso inventado."])
+    model = _Replies(GOOD_JSON, json.dumps(padded))
+    service = NarrativeService(
+        provider=model, store=_Store(), chat_model="m", reasoning_effort="xhigh", temperature=0.2
+    )
+    service.for_assessment(make_request(level="L3", routes=("INS",), locale="es"), content)
+    fr = service.for_assessment(make_request(level="L3", routes=("INS",), locale="fr"), content)
+    assert fr.generated is False
