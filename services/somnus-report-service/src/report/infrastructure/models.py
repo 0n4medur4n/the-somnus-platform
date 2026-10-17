@@ -114,6 +114,8 @@ class PersonReportRow(Base):
     model_id: Mapped[str] = mapped_column(String(64), nullable=False)
     prompt_version: Mapped[str] = mapped_column(String(32), nullable=False)
     input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    # NULL for the original; the source language for a translation of it.
+    translated_from: Mapped[str | None] = mapped_column(String(5), nullable=True)
     # The validated NarrativeDTO, as JSON.
     narrative: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

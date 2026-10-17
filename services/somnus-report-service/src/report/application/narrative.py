@@ -39,6 +39,14 @@ logger = logging.getLogger("report.narrative")
 
 PROMPT_ID = "person_report"
 PROMPT_VERSION = "person_report_v2"
+TRANSLATE_ID = "person_report_translation"
+TRANSLATE_VERSION = "person_report_translation_v1"
+
+_TRANSLATE = """Traduce fielmente este informe de orientación del sueño del {source} al {target}.
+Reglas: no añadas, quites, resumas ni cambies nada; mismo tono y mismas frases, solo en
+otro idioma. Conserva exactamente las claves JSON y el número de elementos de cada
+lista. Los nombres de los patrones se traducen. No escribas «tienes»/«no tienes» ni
+sus equivalentes como diagnóstico. Responde SOLO con el objeto JSON."""
 
 _LANGUAGE = {"es": "español", "en": "English", "ca": "català", "fr": "français"}
 
@@ -100,6 +108,10 @@ def _clean(text: str) -> str:
 class NarrativeStore(Protocol):
     def get(self, assessment_id: str, locale: str) -> NarrativeDTO | None: ...
 
+    def original(self, assessment_id: str) -> tuple[str, NarrativeDTO] | None:
+        """The first report written for this assessment, in whichever language."""
+        ...
+
     def put(
         self,
         assessment_id: str,
@@ -109,6 +121,7 @@ class NarrativeStore(Protocol):
         content_version: str,
         model_id: str,
         input_hash: str,
+        translated_from: str | None = None,
     ) -> None: ...
 
 
@@ -171,11 +184,18 @@ class NarrativeService:
         if stored is not None:
             return none.model_copy(update={"generated": True, "narrative": stored})
 
-        data = structured_input(request, content)
-        written = self._write(request, content, data)
+        # One report per assessment: in another language it is the SAME report,
+        # translated -- not a second one written from scratch.
+        original = self._store.original(request.assessment_id)
+        written = (
+            self._translate(request, content, *original)
+            if original is not None
+            else self._write(request, content, structured_input(request, content))
+        )
         if written is None:
             return none
         narrative, model_id, input_text = written
+        translated_from = None if original is None else original[0]
         self._store.put(
             request.assessment_id,
             request.locale,
@@ -190,8 +210,76 @@ class NarrativeService:
                 response_text="",
                 review_status="published",
             ).input_hash,
+            translated_from=translated_from,
         )
         return none.model_copy(update={"generated": True, "narrative": narrative})
+
+    def _translate(
+        self,
+        request: ReportRenderRequestDTO,
+        content: ClinicalContentDTO,
+        source_locale: str,
+        source: NarrativeDTO,
+    ) -> tuple[NarrativeDTO, str, str] | None:
+        """The stored report, translated faithfully into the requested language.
+
+        Same guardrails as writing: bounded schema, forbidden-phrase scan, §15 hash
+        logging. Low reasoning effort: translating is not reasoning, and the person
+        is waiting. A refused translation leaves the protocol's wording.
+        """
+        assert self._provider is not None
+        system = _TRANSLATE.format(
+            source=_LANGUAGE.get(source_locale, "español"),
+            target=_LANGUAGE.get(request.locale, "español"),
+        )
+        user = source.model_dump_json(by_alias=True)
+        scanner = ForbiddenPhraseScanner(
+            forbidden_phrases=list(content.output_contract.forbidden_phrases),
+            blocked_claims=list(content.blocked_claims),
+        )
+        try:
+            response = self._provider.complete(
+                LlmRequest(
+                    system=system,
+                    user=user,
+                    model=self._model,
+                    temperature=0.0,
+                    reasoning_effort="low",
+                    json_output=True,
+                )
+            )
+        except Exception as exc:
+            logger.warning(
+                "person report not translated: model call failed (%s)", type(exc).__name__
+            )
+            return None
+        status = "published"
+        narrative: NarrativeDTO | None = None
+        try:
+            narrative = NarrativeDTO.model_validate_json(response.text)
+        except ValidationError:
+            status = "rejected_shape"
+        if narrative is not None and (
+            scanner.scan(_all_text(narrative))
+            or len(narrative.patterns) != len(source.patterns)
+            or len(narrative.what_to_do) != len(source.what_to_do)
+        ):
+            # Forbidden wording, or items added/dropped: not a faithful translation.
+            status = "rejected_translation"
+            narrative = None
+        log_generation(
+            build_audit(
+                model=response.model,
+                template_version=TRANSLATE_VERSION,
+                prompt_template_id=TRANSLATE_ID,
+                structured_input=user,
+                response_text=response.text,
+                review_status=status,
+            )
+        )
+        if narrative is None:
+            return None
+        return narrative, response.model, user
 
     def _write(
         self,

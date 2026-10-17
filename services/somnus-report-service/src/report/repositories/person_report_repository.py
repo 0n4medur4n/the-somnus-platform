@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,21 @@ class PersonReportRepositorySql:
             row = session.get(PersonReportRow, (assessment_id, locale))
             return None if row is None else NarrativeDTO.model_validate_json(row.narrative)
 
+    def original(self, assessment_id: str) -> tuple[str, NarrativeDTO] | None:
+        with self._session_factory() as session:
+            row = session.scalars(
+                select(PersonReportRow)
+                .where(
+                    PersonReportRow.assessment_id == assessment_id,
+                    PersonReportRow.translated_from.is_(None),
+                )
+                .order_by(PersonReportRow.created_at.asc())
+                .limit(1)
+            ).first()
+            if row is None:
+                return None
+            return row.locale, NarrativeDTO.model_validate_json(row.narrative)
+
     def put(
         self,
         assessment_id: str,
@@ -34,6 +50,7 @@ class PersonReportRepositorySql:
         content_version: str,
         model_id: str,
         input_hash: str,
+        translated_from: str | None = None,
     ) -> None:
         with self._session_factory() as session:
             session.add(
@@ -44,6 +61,7 @@ class PersonReportRepositorySql:
                     model_id=model_id[:64],
                     prompt_version=PROMPT_VERSION,
                     input_hash=input_hash,
+                    translated_from=translated_from,
                     narrative=narrative.model_dump_json(by_alias=True),
                 )
             )
