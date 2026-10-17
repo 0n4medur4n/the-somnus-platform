@@ -685,10 +685,25 @@ module "budget_alert_backend" {
 # A conservative placeholder, not a tuned SLO (build plan Checkpoint
 # 13.3 re-tunes thresholds from real traffic). Watches somnus-edge-api,
 # the only publicly-reachable service, for a sustained 5xx rate.
+#
+# An alert with no notification channel fires into the console and tells
+# no one; this one emails the operations inbox.
+
+resource "google_monitoring_notification_channel" "ops_email" {
+  project      = var.project_id
+  display_name = "The Somnus operations (email)"
+  type         = "email"
+  labels = {
+    email_address = var.ops_alert_email
+  }
+
+  depends_on = [module.project_apis_backend]
+}
 
 module "alert_edge_api_5xx" {
   source                 = "../../modules/monitoring-alert"
   project_id             = var.project_id
+  notification_channels  = [google_monitoring_notification_channel.ops_email.id]
   display_name           = "somnus-edge-api: sustained 5xx rate"
   condition_display_name = "5xx responses > 5/min for 5 minutes"
   filter                 = <<-EOT
