@@ -1,0 +1,1941 @@
+{
+  "meta": {
+    "source_document": "Morpheo_algoritmo_embudo_v02.pdf",
+    "source_sha256": "98beaab6a6d1d33bdc90cd13b23a17d18d86c08dde17d7c5ac036ccfac51caf1",
+    "content_version": "2.0-draft",
+    "active": false,
+    "status": "pending_clinical_review"
+  },
+  "source": {
+    "meta": {
+      "product": "Morpheo",
+      "source_document": "Morpheo_algoritmo_embudo_v02.pdf",
+      "source_title": "Primera consulta · Diseño clínico y funcional · v0.2",
+      "source_date": "17 octubre 2026",
+      "population": "Adultos",
+      "source_footer": "Propuesta pendiente de validación clínica",
+      "content_version": "2.0-draft",
+      "active": false,
+      "status": "pending_clinical_review",
+      "transcription_note": "Texto clínico copiado literalmente del PDF (capa de texto). Solo se han unido los saltos de línea de la maquetación. 'answer_type' queda en null: v0.2 no lo define (ver preguntas para Jesús). En la página 04 las notas de la columna derecha aparecen desplazadas una fila en la capa de texto; se han asignado por contenido, coherente con las páginas 06 y 08."
+    },
+    "funnel": {
+      "page": 1,
+      "intro": "De lo abierto a lo concreto. Cada pregunta se formula solo si su respuesta no consta ya.",
+      "steps": [
+        {
+          "id": "F1",
+          "text": "Confirmar edad adulta. «Cuénteme qué le preocupa de su sueño».",
+          "note": "Escuchar el relato y el objetivo sin ofrecer diagnósticos."
+        },
+        {
+          "id": "F2",
+          "text": "Concretar una noche habitual, el inicio del problema y su efecto durante el día.",
+          "note": "Preguntas Q01-Q12, en orden. Páginas 02-03."
+        },
+        {
+          "id": "F3",
+          "text": "Revisar contexto y señales de otros problemas de sueño.",
+          "note": "Preguntas Q13-Q18, en orden. Página 04."
+        },
+        {
+          "id": "F4",
+          "text": "Profundizar solo en las ramas que se hayan activado.",
+          "note": "Orden: I → R → H → D → P → N. Páginas 05-08."
+        },
+        {
+          "id": "F5",
+          "text": "Presentar el texto de transición y hacer las preguntas finales de protección.",
+          "note": "Texto en página 09. Preguntas S1-S4 en página 10."
+        },
+        {
+          "id": "F6",
+          "text": "Resumir, confirmar y ofrecer explicación y siguiente paso.",
+          "note": "Corregir datos si procede; integrar todas las orientaciones."
+        }
+      ],
+      "cross_cutting_exception": "Excepción transversal: si aparece un riesgo inmediato en cualquier respuesta, actuar en ese momento; no esperar al bloque final. La comprobación rutinaria de seguridad queda al final, antes de la orientación. Una respuesta positiva activa una rama, pero no elimina las demás. Los identificadores I/R/H/D/P/N se conservan para facilitar la implementación.",
+      "order": [
+        "AGE",
+        "Q01-Q18",
+        "I",
+        "R",
+        "H",
+        "D",
+        "P",
+        "N",
+        "PROTECTION_TEXT",
+        "S1-S4",
+        "Z1-Z2"
+      ],
+      "order_source": "Página 14: «Orden de embudo: Q01-Q18 → I/R/H/D/P/N activadas → texto de protección → S1-S4 → Z1-Z2»."
+    },
+    "age_gate": {
+      "id": "AGE",
+      "id_status": "[CAMBIO PROPUESTO] v0.2 no le da identificador; se propone AGE.",
+      "page": 2,
+      "text": "¿Qué edad tiene?",
+      "note": "Antes de Q01: «¿Qué edad tiene?». Menores de 18: ruta pediátrica. Edad desconocida: aclarar antes de seguir.",
+      "status": "pending_clinical_review"
+    },
+    "questions": [
+      {
+        "id": "Q01",
+        "page": 2,
+        "kind": "question",
+        "text": "Cuénteme, ¿qué le preocupa de su sueño?",
+        "note": "Relato libre. No enumerar síntomas antes de escuchar.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q02",
+        "page": 2,
+        "kind": "question",
+        "text": "¿Qué le gustaría que mejorara?",
+        "note": "Registrar su objetivo con sus propias palabras.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q03",
+        "page": 2,
+        "kind": "question",
+        "text": "¿Desde cuándo le ocurre?",
+        "note": "Registrar duración aproximada; no exigir una fecha exacta.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q04",
+        "page": 2,
+        "kind": "question",
+        "text": "¿Recuerda si cambió algo en su vida cuando empezó?",
+        "note": "Si sí: pedir qué cambió, sin asumir que sea la causa.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q05",
+        "page": 2,
+        "kind": "question",
+        "text": "En una semana habitual, ¿cuántas noches le ocurre?",
+        "note": "Registrar 0-7 o una estimación; aceptar «no lo sé».",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q06",
+        "page": 2,
+        "kind": "question",
+        "text": "Cuénteme cómo suele ser una noche, desde que se acuesta hasta que se levanta.",
+        "note": "Recoger primero el relato; completar los detalles en Q07.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q07",
+        "page": 3,
+        "kind": "question",
+        "text": "¿A qué hora se acuesta, intenta dormir, se despierta y se levanta?",
+        "note": "Completar solo horarios que falten; separar cada pregunta.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q08",
+        "page": 3,
+        "kind": "question",
+        "text": "¿Qué parte de la noche le resulta más difícil?",
+        "note": "Si falta aclarar: dormirse, despertares o despertar antes de lo deseado.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q09",
+        "page": 3,
+        "kind": "question",
+        "text": "Aproximadamente, ¿cuánto cree que duerme en total?",
+        "note": "Según Q08: tiempo para dormirse, despertares y tiempo despierto.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q10",
+        "page": 3,
+        "kind": "question",
+        "text": "¿Cómo le afecta al día siguiente?",
+        "note": "Si precisa: ánimo, concentración, tareas o malestar.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q11",
+        "page": 3,
+        "kind": "question",
+        "text": "¿Siente cansancio, llega a quedarse dormido sin querer, o ambas cosas?",
+        "note": "Si se duerme: cuándo y en qué situaciones. Riesgo: actuar ahora.",
+        "opens_branch": "D",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q12",
+        "page": 3,
+        "kind": "question",
+        "text": "¿Suele dormir siesta o cabecear durante el día?",
+        "note": "Si sí: a qué hora, cuánto tiempo y si ocurre sin querer.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q13",
+        "page": 4,
+        "kind": "question",
+        "text": "¿Tiene tiempo y un lugar adecuados para dormir?",
+        "note": "Preguntar después qué cambia en días libres y si trabaja por turnos.",
+        "opens_branch": "H",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q14",
+        "page": 4,
+        "kind": "question",
+        "text": "¿Hay alguna molestia, enfermedad o tratamiento que influya en su descanso?",
+        "note": "Después: medicinas, café, alcohol, otras sustancias y lo ya probado.",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q15",
+        "page": 4,
+        "kind": "question",
+        "text": "¿Ronca fuerte, le han visto dejar de respirar o se despierta con sensación de ahogo?",
+        "note": "Sí o sospecha: activar R. Si no sabe: conservar la incertidumbre.",
+        "opens_branch": "R",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q16",
+        "page": 4,
+        "kind": "question",
+        "text": "¿Una molestia en las piernas le obliga a moverlas cuando está descansando?",
+        "note": "Sí: activar P. No: seguir a Q17.",
+        "opens_branch": "P",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q17",
+        "page": 4,
+        "kind": "question",
+        "text": "¿Le han visto caminar, gritar o dar golpes mientras duerme?",
+        "note": "Sí: activar N. Preguntar también si parece actuar un sueño.",
+        "opens_branch": "N",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      },
+      {
+        "id": "Q18",
+        "page": 4,
+        "kind": "question",
+        "text": "Si puede elegir su horario, ¿duerme mejor?",
+        "note": "Sí: activar H. Después, profundizar en las ramas pendientes.",
+        "opens_branch": "H",
+        "answer_type": null,
+        "answer_type_status": "pending_clinical_review",
+        "always_allowed_answers": [
+          "no lo sé",
+          "prefiero no responder"
+        ],
+        "status": "pending_clinical_review"
+      }
+    ],
+    "question_block_notes": [
+      {
+        "page": 2,
+        "text": "Recorrido: Q01 → Q02 → Q03 → Q04 → Q05 → Q06 → Q07. No repetir lo que ya se ha explicado. Si no se entiende «me cuesta dormir», aclarar con las palabras de la persona. Evitar interrumpir el relato con una lista de diagnósticos."
+      },
+      {
+        "page": 3,
+        "text": "Pasar de la descripción general a datos observables. Cada subpregunta se muestra de una en una."
+      },
+      {
+        "page": 3,
+        "text": "Recorrido: Q07 → Q08 → Q09 → Q10 → Q11 → Q12 → Q13. No confundir tiempo en cama con tiempo dormido. Una respuesta en Q11 sobre conducción peligrosa activa protección inmediata, aunque el bloque rutinario de seguridad todavía no haya llegado."
+      },
+      {
+        "page": 4,
+        "text": "Estas seis comprobaciones se hacen a todos, salvo que ya estén respondidas. Después se abren las ramas necesarias."
+      },
+      {
+        "page": 4,
+        "text": "Q14 se desglosa: molestias → enfermedades → tratamientos y cambios → sustancias/cantidad/hora → ayudas ya probadas. Registrar embarazo, epilepsia o bipolaridad si corresponde (S5 original). Activar I por dificultad nocturna; D por Q11 positivo. Orden fijo de ramas: I, R, H, D, P, N; omitir las no activadas. Al acabar, pasar siempre al texto de protección de la página 09."
+      }
+    ],
+    "branches": [
+      {
+        "id": "I",
+        "page": 5,
+        "title": "Dificultad para dormir: ¿terapia o apoyo?",
+        "opens_when": "Abrir si cuesta conciliar, mantener el sueño o hay despertar antes de lo deseado. Base: [1, 2, 4].",
+        "opened_by": [
+          "dificultad nocturna (página 04)"
+        ],
+        "items": [
+          {
+            "id": "I1",
+            "page": 5,
+            "kind": "question",
+            "text": "¿Le cuesta dormir incluso cuando tiene tiempo y un lugar adecuados?",
+            "note": null,
+            "outcomes": {
+              "No": "Si la oportunidad es insuficiente: plan para proteger el descanso.",
+              "Sí": "→ I2"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "I2",
+            "page": 5,
+            "kind": "question",
+            "text": "¿Esto afecta a su día a día o le produce un malestar importante?",
+            "note": null,
+            "outcomes": {
+              "No": "Si no: explorar expectativas; no etiquetar insomnio crónico.",
+              "Sí": "→ I3"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "I3",
+            "page": 5,
+            "kind": "question",
+            "text": "¿Ocurre al menos 3 noches por semana y desde hace 3 meses o más?",
+            "note": null,
+            "outcomes": {
+              "No": "Si no: problema reciente o intermitente; apoyo y revisión.",
+              "Sí": "→ I4"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "I4",
+            "page": 5,
+            "kind": "question",
+            "text": "¿Duerme bien si puede elegir su horario?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Explorar módulo H. El horario puede explicar parte del problema.",
+              "Seguir": "→ I5"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "I5",
+            "page": 5,
+            "kind": "question",
+            "text": "¿Hay otra sospecha activa o una condición que requiera adaptar el tratamiento?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Evaluación y terapia coordinadas; conservar ambas rutas.",
+              "Seguir": "→ I6"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "I6",
+            "page": 5,
+            "kind": "conclusion",
+            "text": "Si I1-I3 son sí y no hay una explicación mejor: patrón compatible con insomnio persistente.",
+            "note": "Proponer TCC-I; diario e ISI como apoyo, sin retrasar la atención.",
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          }
+        ],
+        "footer": "I1-I3 negativos llevan a sus rutas laterales tras completar el cribado común. I4-I5 no cancelan el insomnio por sí solos. Un cuadro reciente con mucho impacto también merece ayuda clínica, sin esperar tres meses. No exigir más de 30 minutos para reconocer un problema. TCC-I = terapia cognitivo-conductual para el insomnio; no equivale a consejos de hábitos. No se necesita PSG rutinaria para insomnio aislado."
+      },
+      {
+        "id": "R",
+        "page": 6,
+        "title": "Respiración: elegir la evaluación adecuada",
+        "opens_when": "Rama activada por Q15 o por otra sospecha respiratoria. No repetir respuestas conocidas. Base: [3].",
+        "opened_by": [
+          "Q15",
+          "otra sospecha respiratoria"
+        ],
+        "items": [
+          {
+            "id": "R1",
+            "page": 6,
+            "kind": "question",
+            "text": "¿Hay pausas observadas o despertares repetidos con sensación de ahogo?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Activar sospecha respiratoria y evaluación clínica.",
+              "Seguir": "→ R2"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "R2",
+            "page": 6,
+            "kind": "question",
+            "text": "¿Ronca a menudo? ¿Se duerme sin querer? ¿Tiene la tensión alta?",
+            "note": "Síntomas combinados refuerzan la sospecha; registrar cada uno.",
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "R3",
+            "page": 6,
+            "kind": "question",
+            "text": "¿Duerme solo o no sabe si ronca?",
+            "note": null,
+            "outcomes": {
+              "Sí": "«No lo sé» no descarta apnea. Revisar síntomas y riesgos.",
+              "Seguir": "→ R4"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "R4",
+            "page": 6,
+            "kind": "question",
+            "text": "Si hay sospecha: ¿hay enfermedad cardiopulmonar relevante, ictus, opioides, debilidad respiratoria o insomnio grave?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Valorar PSG en laboratorio; también ante posible hipoventilación.",
+              "No": "→ R5"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "R5",
+            "page": 6,
+            "kind": "conclusion",
+            "text": "Si no hay complejidad: evaluación médica de probabilidad y elección del estudio.",
+            "note": "Puede ser estudio respiratorio en casa o PSG.",
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "R6",
+            "page": 6,
+            "kind": "question",
+            "text": "¿Ya hubo un estudio respiratorio domiciliario negativo, dudoso o no válido?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Con sospecha clínica: valorar PSG, no cerrar el caso."
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          }
+        ],
+        "footer": "R1 positivo basta para evaluación, no para confirmar apnea. Regla operativa adicional: ronquido habitual + somnolencia o hipertensión activa evaluación; ronquido aislado abre revisión de riesgos, no PSG automática. El criterio AASM de mayor riesgo para estudio domiciliario es somnolencia + al menos dos: ronquido habitual intenso, apneas/ahogos observados, hipertensión. La decisión y complejidad se confirman clínicamente; no se exige ese patrón para derivar. Ausencia de ronquido no excluye apnea."
+      },
+      {
+        "id": "H",
+        "page": 7,
+        "title": "Horario desajustado o sueño insuficiente",
+        "opens_when": "Abrir tras Q13 o cuando el sueño cambia mucho entre días de trabajo y días libres. Base: [1, 5].",
+        "opened_by": [
+          "Q13 (página 07)",
+          "Q18 (página 04)",
+          "I4 (página 05)",
+          "sueño muy distinto entre días de trabajo y libres (página 07)"
+        ],
+        "items": [
+          {
+            "id": "H1",
+            "page": 7,
+            "kind": "question",
+            "text": "Cuando puede elegir cuándo dormir, ¿duerme bien y se encuentra mejor?",
+            "note": null,
+            "outcomes": {
+              "No": "Si no: mantener ruta de insomnio u otras causas.",
+              "Seguir": "→ H2"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "H2",
+            "page": 7,
+            "kind": "question",
+            "text": "¿A qué hora le entra sueño y a qué hora se despierta sin despertador?",
+            "note": "Registrar días libres y días con obligaciones.",
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "H3",
+            "page": 7,
+            "kind": "question",
+            "text": "¿Su horario de trabajo o de cuidados le obliga a dormir a otra hora? ¿Hace turnos?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Posible desajuste de horarios; plan adaptado a la vida real.",
+              "Seguir": "→ H4"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "H4",
+            "page": 7,
+            "kind": "question",
+            "text": "¿Duerme poco porque no puede reservar más tiempo, aunque dormiría más?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Posible sueño insuficiente: ampliar oportunidad si es viable.",
+              "Seguir": "→ H5"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "H5",
+            "page": 7,
+            "kind": "question",
+            "text": "¿Este patrón se mantiene, le afecta mucho o persiste pese a poder descansar?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Consulta; diario y, si aporta información, registro de actividad.",
+              "No": "→ H6"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "H6",
+            "page": 7,
+            "kind": "conclusion",
+            "text": "Si el problema es leve y no hay otras alertas: acordar uno o dos cambios posibles.",
+            "note": "Diario 7-14 días y revisión propuesta a las 2-4 semanas.",
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          }
+        ],
+        "footer": "H1 positivo solo orienta, no confirma un trastorno del reloj del sueño. No fijar «8 horas» como requisito para todos ni inferir sueño suficiente por tiempo en cama. No pautar automáticamente melatonina, luz intensa o acostarse cada vez antes. La persistencia, el impacto y la convivencia con otros síntomas pueden justificar consulta sin probar primero hábitos. Los plazos de revisión son decisiones de diseño, no umbrales diagnósticos."
+      },
+      {
+        "id": "D",
+        "page": 8,
+        "title": "Somnolencia",
+        "opens_when": "Activadas por Q11, Q16 y Q17. Orden: D → P → N; omitir las ramas negativas. Base: [5, 6].",
+        "opened_by": [
+          "Q11 positivo (página 04)"
+        ],
+        "items": [
+          {
+            "id": "D1",
+            "page": 8,
+            "kind": "question",
+            "text": "¿Se queda dormido sin querer durante el día, aunque intente estar despierto?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Si sí: cuánto duerme realmente, fármacos, respiración y riesgo.",
+              "Seguir": "→ D2"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "D2",
+            "page": 8,
+            "kind": "question",
+            "text": "¿Continúa pese a dormir suficiente? ¿Pierde fuerza al reírse, sin perder el conocimiento?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Valoración por especialista; PSG y prueba de siestas si procede."
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          }
+        ]
+      },
+      {
+        "id": "P",
+        "page": 8,
+        "title": "Piernas",
+        "opened_by": [
+          "Q16"
+        ],
+        "items": [
+          {
+            "id": "P1",
+            "page": 8,
+            "kind": "question",
+            "text": "¿Una molestia en las piernas le obliga a moverlas al descansar?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Preguntar si empeora de noche y mejora al caminar o moverlas.",
+              "Seguir": "→ P2"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "P2",
+            "page": 8,
+            "kind": "question",
+            "text": "¿Ocurre en reposo, mejora con movimiento y es peor por la tarde o noche?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Si no es solo calambre o postura: posible piernas inquietas."
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          }
+        ]
+      },
+      {
+        "id": "N",
+        "page": 8,
+        "title": "Conductas nocturnas",
+        "opened_by": [
+          "Q17"
+        ],
+        "items": [
+          {
+            "id": "N1",
+            "page": 8,
+            "kind": "question",
+            "text": "¿Le han visto caminar, gritar, dar golpes o actuar como si viviera un sueño?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Preguntar por recuerdo, lesiones, inicio, frecuencia y testigos.",
+              "Seguir": "→ N2"
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          },
+          {
+            "id": "N2",
+            "page": 8,
+            "kind": "question",
+            "text": "¿Hay lesiones, violencia, episodios nuevos en adulto o dudas con convulsiones?",
+            "note": null,
+            "outcomes": {
+              "Sí": "Evaluación prioritaria; valorar video-PSG según el caso."
+            },
+            "answer_type": null,
+            "answer_type_status": "pending_clinical_review",
+            "always_allowed_answers": [
+              "no lo sé",
+              "prefiero no responder"
+            ],
+            "status": "pending_clinical_review"
+          }
+        ],
+        "footer": "D2: no diagnosticar narcolepsia por conversación; parálisis del sueño aislada no basta. La prueba de siestas requiere preparación y evaluación especializada. P2: consulta para descartar imitadores y valorar hierro; no dar hierro sin evaluación ni pedir PSG rutinaria por piernas inquietas. N2: reducir peligros del dormitorio; atención inmediata ante lesión grave o episodio agudo. N1 recurrente, aunque sin lesión: consulta programada. Respuestas negativas: volver a integrar todas las rutas."
+      }
+    ],
+    "branch_order": [
+      "I",
+      "R",
+      "H",
+      "D",
+      "P",
+      "N"
+    ],
+    "branch_order_source": "Páginas 01, 04 y 14. Página 04: «Orden fijo de ramas: I, R, H, D, P, N; omitir las no activadas».",
+    "protection": {
+      "page": 9,
+      "when": "Leer este mensaje después de las ramas específicas y antes de S1-S4. No emitir todavía la orientación final.",
+      "text": "«Para finalizar, voy a proponerle una serie de preguntas que no tienen otra intencionalidad que asegurarme de que usted, en su actual situación, no se encuentra en un punto crítico de su problema del sueño. Esta información nos servirá para tomar medidas para protegerle».",
+      "how_to_introduce": "Mantener un tono sereno, respetuoso y sin dramatizar. Mostrar el texto completo antes de la primera pregunta de protección. Se han corregido únicamente «si problema» por «su problema» y la puntuación del texto facilitado. Formular S1 → S2 → S3 → S4, una pregunta cada vez. Si una ya se respondió claramente y sigue vigente, confirmar brevemente en vez de repetirla. Permitir «no lo sé» o «prefiero no responder».",
+      "what_happens_next": [
+        "Si no aparece una alerta: resumir lo entendido, permitir correcciones y ofrecer la orientación y el siguiente paso.",
+        "Si aparece una alerta: explicar primero qué medida de protección procede. La ayuda tiene prioridad sobre terminar el cuestionario o mostrar recomendaciones de hábitos.",
+        "Si falta información de seguridad y no se puede aclarar: explicar esa limitación. No presentar el autocuidado como única respuesta ni activar tratamiento automático. Mantener cualquier derivación que ya esté justificada."
+      ],
+      "exception": "El orden de embudo organiza las preguntas rutinarias; no aplaza la respuesta a un peligro que la persona revele espontáneamente. Ante una señal inmediata, interrumpir la secuencia y aplicar la ruta de protección correspondiente.",
+      "status": "pending_clinical_review"
+    },
+    "safety_and_close": {
+      "page": 10,
+      "intro": "Después de leer el texto de la página 09. Una respuesta de riesgo cambia la prioridad de la salida.",
+      "items": [
+        {
+          "id": "S1",
+          "page": 10,
+          "kind": "question",
+          "text": "¿Ahora tiene dificultad intensa para respirar, dolor fuerte en el pecho o una confusión nueva?",
+          "note": null,
+          "outcomes": {
+            "Sí": "URGENTE: atención inmediata; emergencias locales.",
+            "No": "→ S2"
+          },
+          "answer_type": null,
+          "answer_type_status": "pending_clinical_review",
+          "always_allowed_answers": [
+            "no lo sé",
+            "prefiero no responder"
+          ],
+          "status": "pending_clinical_review"
+        },
+        {
+          "id": "S2",
+          "page": 10,
+          "kind": "question",
+          "text": "¿Se queda dormido al conducir o al hacer algo en lo que podría hacerse daño?",
+          "note": null,
+          "outcomes": {
+            "Sí": "No conducir ni usar maquinaria. Evaluación prioritaria.",
+            "Seguir": "→ S3"
+          },
+          "answer_type": null,
+          "answer_type_status": "pending_clinical_review",
+          "always_allowed_answers": [
+            "no lo sé",
+            "prefiero no responder"
+          ],
+          "status": "pending_clinical_review"
+        },
+        {
+          "id": "S3",
+          "page": 10,
+          "kind": "question",
+          "text": "¿Lleva varias noches durmiendo muy poco y, aun así, con energía fuera de lo habitual?",
+          "note": null,
+          "outcomes": {
+            "Sí": "Aclarar impulsividad o agitación. Si se confirma: atención hoy.",
+            "Seguir": "→ S4"
+          },
+          "answer_type": null,
+          "answer_type_status": "pending_clinical_review",
+          "always_allowed_answers": [
+            "no lo sé",
+            "prefiero no responder"
+          ],
+          "status": "pending_clinical_review"
+        },
+        {
+          "id": "S4",
+          "page": 10,
+          "kind": "question",
+          "text": "¿El malestar le hace sentir que podría hacerse daño o que no está a salvo?",
+          "note": null,
+          "outcomes": {
+            "Sí": "Activar ruta de crisis; peligro inmediato: ayuda urgente.",
+            "No": "→ Z1"
+          },
+          "answer_type": null,
+          "answer_type_status": "pending_clinical_review",
+          "always_allowed_answers": [
+            "no lo sé",
+            "prefiero no responder"
+          ],
+          "status": "pending_clinical_review"
+        },
+        {
+          "id": "Z1",
+          "page": 10,
+          "kind": "question",
+          "text": "Esto es lo que he entendido: [resumen]. ¿Es correcto?",
+          "note": null,
+          "outcomes": {
+            "No": "Si no: corregir, volver a evaluar y confirmar.",
+            "Seguir": "→ Z2"
+          },
+          "answer_type": null,
+          "answer_type_status": "pending_clinical_review",
+          "always_allowed_answers": [
+            "no lo sé",
+            "prefiero no responder"
+          ],
+          "status": "pending_clinical_review"
+        },
+        {
+          "id": "Z2",
+          "page": 10,
+          "kind": "question",
+          "text": "Explicar posible problema y siguiente paso. ¿Qué le facilitaría seguir este plan?",
+          "note": "Acordar acción posible, apoyos necesarios y seguimiento.",
+          "answer_type": null,
+          "answer_type_status": "pending_clinical_review",
+          "always_allowed_answers": [
+            "no lo sé",
+            "prefiero no responder"
+          ],
+          "status": "pending_clinical_review"
+        }
+      ],
+      "footer": "S1 o peligro inmediato en S4: detener entrevista y orientar a ayuda inmediata. S2: primero advertencia; seguir solo si está en un lugar seguro. S3 confirmado: atención hoy. Si no hay alerta, avanzar hasta Z1-Z2. Desconocido: aclarar sin forzar. La comprobación de edad se realiza al inicio y S5 se recoge en Q14; no se repiten en este bloque."
+    },
+    "templates": [
+      {
+        "id": "T_HABITOS",
+        "page": 11,
+        "title": "Apoyo y revisión",
+        "text": "«Por lo que cuenta, sus horarios o el poco tiempo que tiene para descansar pueden estar influyendo en cómo duerme. Podemos empezar por [cambio elegido] y anotar cómo le va durante una o dos semanas. Revisaremos si nota mejoría. Si empeora o le afecta mucho durante el día, pida una valoración antes.»",
+        "guidance": "Elegir con la persona: proteger tiempo de descanso, hacer más regular la hora de levantarse si su vida lo permite, reducir cafeína cuando interfiera o mejorar luz/ruido. No responsabilizarla por trabajo o cuidados.",
+        "placeholders": [
+          "cambio elegido"
+        ]
+      },
+      {
+        "id": "T_INSOMNIO",
+        "page": 11,
+        "title": "Proponer terapia",
+        "text": "«Nos ha contado que [dificultad], [frecuencia] y desde hace [duración], incluso cuando puede dormir. Además, [impacto]. Esto encaja con un posible insomnio persistente. Le proponemos una terapia específica para el insomnio, llamada TCC-I. Ayuda a cambiar hábitos y preocupaciones que mantienen el problema. Un profesional puede confirmar que es adecuada para usted y decidir si necesita algún ajuste.»",
+        "guidance": "Si no hay otras señales: «Por ahora, lo que cuenta no indica que necesites un estudio del sueño de forma rutinaria». No afirmar que una prueba nunca será necesaria.",
+        "placeholders": [
+          "dificultad",
+          "frecuencia",
+          "duración",
+          "impacto"
+        ]
+      },
+      {
+        "id": "T_RESPIRACION",
+        "page": 11,
+        "title": "Consultar por posible apnea",
+        "text": "«[Pausas/ahogos/otras señales confirmadas] hacen pensar que su respiración podría interrumpirse mientras duerme. La conversación no permite saberlo con seguridad. Le recomendamos una valoración para decidir qué estudio del sueño necesita. En algunas personas puede hacerse en casa; en otras conviene un estudio más completo.»",
+        "placeholders": [
+          "Pausas/ahogos/otras señales confirmadas"
+        ]
+      },
+      {
+        "id": "T_PSG",
+        "page": 11,
+        "title": "Evaluación con posible polisomnografía",
+        "text": "«Por [motivo concreto], conviene que le valore un especialista del sueño. Es recomendable que valore una polisomnografía: una prueba que registra cómo duerme, cómo respira y sus movimientos. El profesional confirmará qué prueba aporta más información en su caso.»",
+        "placeholders": [
+          "motivo concreto"
+        ]
+      },
+      {
+        "id": "T_COMBINADO",
+        "page": 12,
+        "title": "Insomnio y posible apnea",
+        "text": "«Ha contado dificultades persistentes para dormir y también [señal respiratoria]. Pueden coexistir dos problemas. Conviene estudiar su respiración y valorar al mismo tiempo una terapia para el insomnio. El profesional organizará ambos pasos y adaptará el tratamiento si tiene mucho sueño durante el día.»",
+        "placeholders": [
+          "señal respiratoria"
+        ]
+      },
+      {
+        "id": "T_HORARIO",
+        "page": 12,
+        "title": "Horario",
+        "text": "«Parece que duerme mejor en un horario distinto al que necesita seguir. Vamos a registrar ambos horarios y valorar un plan que se adapte a su día a día».",
+        "placeholders": []
+      },
+      {
+        "id": "T_PIERNAS",
+        "page": 12,
+        "title": "Piernas",
+        "text": "«Lo que cuenta podría encajar con piernas inquietas. Conviene una consulta para revisar otras causas y decidir si hace falta una analítica. No suele necesitar un estudio del sueño de entrada».",
+        "placeholders": []
+      },
+      {
+        "id": "T_SOMNOLENCIA",
+        "page": 12,
+        "title": "Somnolencia",
+        "text": "«Quedarse dormido sin querer merece una valoración, especialmente si ocurre aunque pueda descansar. Si le pasa conduciendo, no conduzca y busque ayuda médica con prioridad».",
+        "placeholders": []
+      },
+      {
+        "id": "T_NOCTURNO",
+        "page": 12,
+        "title": "Conductas nocturnas",
+        "text": "«Estos episodios conviene revisarlos para entender qué ocurre. Si hay golpes o riesgo de lesión, aparte objetos peligrosos del dormitorio y busque atención con prioridad».",
+        "placeholders": []
+      },
+      {
+        "id": "T_INCOMPLETO",
+        "page": 12,
+        "title": "No inventar una conclusión",
+        "text": "«Todavía me falta saber [dato] para orientarle mejor. Puede responder de forma aproximada o decir que no lo sabe. Si prefiere no seguir y el problema persiste o le afecta mucho, puede consultar con un profesional».",
+        "guidance": "Si ya hay un motivo suficiente de consulta, mantenerlo aunque falten datos de otras ramas. La incertidumbre no debe retrasar atención por una alerta conocida.",
+        "placeholders": [
+          "dato"
+        ]
+      },
+      {
+        "id": "T_SEGURIDAD",
+        "page": 12,
+        "title": "Interrumpir la entrevista",
+        "text": "«Lo que describe necesita atención antes de seguir hablando de hábitos de sueño. [Acción concreta según S1-S4]. Podemos retomar esta conversación después».",
+        "guidance": "Mostrar recurso local confirmado; no inventar teléfonos.",
+        "placeholders": [
+          "Acción concreta según S1-S4"
+        ]
+      }
+    ],
+    "templates_general": [
+      {
+        "page": 11,
+        "text": "Texto breve: lo que ha contado + posible explicación + una acción concreta. Completar solo con datos confirmados."
+      },
+      {
+        "page": 12,
+        "text": "La acción principal no borra las demás necesidades. La explicación nunca debe confirmar un diagnóstico no demostrado."
+      }
+    ],
+    "rules": [
+      {
+        "id": "R01",
+        "page": 13,
+        "text": "R01: comprobar alertas en cualquier momento. Peligro inmediato → EMERGENCIA; riesgo al conducir, episodios lesivos o somnolencia marcada → EVALUACION_PRIORITARIA. S3 confirmado → atención el mismo día. Estas prioridades requieren aprobación clínica local.",
+        "condition_draft": [
+          {
+            "if": "S1 == 'sí' OR S4_peligro_inmediato == 'sí'",
+            "then": "alerta EMERGENCIA",
+            "ambiguous": [
+              "«Peligro inmediato»: S4 es una sola pregunta; no hay un dato que distinga «peligro inmediato» de «ruta de crisis» (página 10)."
+            ]
+          },
+          {
+            "if": "S2 == 'sí' OR Q11_riesgo_conduccion == 'sí' OR N2 == 'sí' OR somnolencia_marcada",
+            "then": "alerta EVALUACION_PRIORITARIA",
+            "ambiguous": [
+              "«somnolencia marcada»: no está definida sobre Q11/D1/R2.",
+              "«riesgo al conducir» en Q11 sale de una nota, no de una pregunta.",
+              "«episodios lesivos»: ¿N2 completo o solo «lesiones/violencia»?"
+            ]
+          },
+          {
+            "if": "S3 == 'sí' AND S3_confirmado",
+            "then": "alerta ATENCION_MISMO_DIA",
+            "ambiguous": [
+              "«Aclarar impulsividad o agitación»: no hay pregunta escrita para confirmar S3.",
+              "«atención el mismo día» no figura en el orden de R08."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "R02",
+        "page": 13,
+        "text": "R02: edad <18 → RUTA_PEDIATRICA. Edad desconocida al inicio o seguridad desconocida antes del cierre → ACLARAR; si no se obtiene respuesta, INFORMACION_INSUFICIENTE. Una alerta ya detectada prevalece.",
+        "condition_draft": [
+          {
+            "if": "AGE < 18",
+            "then": "RUTA_PEDIATRICA (no definida en v0.2)"
+          },
+          {
+            "if": "AGE is null OR any(S1..S4 is null) at close",
+            "then": "ACLARAR; si sigue null → INFORMACION_INSUFICIENTE",
+            "ambiguous": [
+              "Cuántos intentos de aclarar antes de INFORMACION_INSUFICIENTE (página 14: «No repetir preguntas omitidas indefinidamente»)."
+            ]
+          },
+          {
+            "if": "alerta ya detectada",
+            "then": "prevalece sobre ACLARAR / INFORMACION_INSUFICIENTE"
+          }
+        ]
+      },
+      {
+        "id": "R03",
+        "page": 13,
+        "text": "R03: toda respuesta admite sí / no / no sé / prefiero no responder. Guardar desconocido como null con un motivo separado. Nunca convertir null en false.",
+        "condition_draft": [
+          {
+            "invariant": "value is null ⇒ motivo_de_ausencia ∈ {'no lo sé','prefiero no responder', ...}; null nunca se evalúa como false"
+          }
+        ]
+      },
+      {
+        "id": "R04",
+        "page": 13,
+        "text": "R04: candidato a insomnio persistente = dificultad nocturna + oportunidad adecuada + impacto o malestar + frecuencia ≥3 noches/semana + duración ≥3 meses. Verificar explicaciones alternativas; permite comorbilidad.",
+        "condition_draft": [
+          {
+            "if": "dificultad_nocturna AND I1 == 'sí' AND I2 == 'sí' AND (Q05 >= 3) AND (Q03 >= 3 meses) [o I3 == 'sí']",
+            "then": "orientación INSOMNIO_PERSISTENTE (candidato)",
+            "ambiguous": [
+              "«dificultad nocturna»: ¿de Q08, de Q01 o de I1?",
+              "Si Q05/Q03 e I3 discrepan, ¿cuál prevalece?",
+              "«Verificar explicaciones alternativas»: no evaluable sin definición (ver I6 «explicación mejor»)."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "R05",
+        "page": 13,
+        "text": "R05: sospecha respiratoria = pausas observadas o ahogos repetidos, o ronquido habitual junto a somnolencia o hipertensión. Señales adicionales o juicio clínico pueden activar revisión aunque esta regla no se cumpla. Es una regla operativa sensible, no una escala validada.",
+        "condition_draft": [
+          {
+            "if": "R1 == 'sí' OR (ronquido_habitual AND (somnolencia OR hipertension))",
+            "then": "orientación SOSPECHA_RESPIRATORIA",
+            "ambiguous": [
+              "«ronquido habitual»: Q15 dice «Ronca fuerte»; R2 dice «Ronca a menudo».",
+              "«somnolencia»: ¿Q11, D1 o R2 «Se duerme sin querer»?",
+              "«Señales adicionales o juicio clínico»: no evaluable por el motor."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "R06",
+        "page": 13,
+        "text": "R06: autoayuda exclusiva solo si cribado común completo, sin alerta, sin sospecha que requiera evaluación y con problema leve ligado a oportunidad/hábitos. Insomnio persistente → propuesta TCC-I; problema reciente intenso → apoyo clínico, no espera obligatoria.",
+        "condition_draft": [
+          {
+            "if": "cribado_comun_completo AND no alertas AND no sospecha_que_requiera_evaluacion AND problema_leve AND ligado_a_oportunidad_o_habitos",
+            "then": "acción HABITOS (T_HABITOS)",
+            "ambiguous": [
+              "«cribado común completo»: ¿Q01-Q18 sin null? ¿«prefiero no responder» cuenta como completo?",
+              "«problema leve» y «problema reciente intenso» no definidos."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "R07",
+        "page": 13,
+        "text": "R07: bipolaridad, epilepsia no controlada, somnolencia marcada, riesgo laboral o síntomas mentales agudos requieren revisión/adaptación antes de componentes como restricción de tiempo en cama. Morpheo propone terapia, no inicia automáticamente esa restricción.",
+        "condition_draft": [
+          {
+            "if": "bipolaridad OR epilepsia_no_controlada OR somnolencia_marcada OR riesgo_laboral OR sintomas_mentales_agudos",
+            "then": "marca ADAPTAR_TERAPIA (no restricción automática)",
+            "ambiguous": [
+              "«epilepsia no controlada», «riesgo laboral» y «síntomas mentales agudos»: ninguna pregunta los recoge (Q14 solo registra «embarazo, epilepsia o bipolaridad si corresponde»)."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "R08",
+        "page": 13,
+        "text": "R08: guardar todas las orientaciones. Prioridad de acción: emergencia > evaluación prioritaria > consulta/estudio > terapia > hábitos. Si apnea + insomnio, emitir T_COMBINADO; las demás combinaciones unen recomendaciones sin contradicción.",
+        "condition_draft": [
+          {
+            "priority_order": [
+              "EMERGENCIA",
+              "EVALUACION_PRIORITARIA",
+              "CONSULTA_ESTUDIO",
+              "TERAPIA",
+              "HABITOS"
+            ]
+          },
+          {
+            "if": "INSOMNIO_PERSISTENTE AND SOSPECHA_RESPIRATORIA",
+            "then": "plantilla T_COMBINADO"
+          },
+          {
+            "ambiguous": [
+              "«unen recomendaciones sin contradicción»: no hay definición de contradicción entre plantillas.",
+              "«atención el mismo día» (R01/S3) no está en este orden."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "R09",
+        "page": 13,
+        "text": "R09: revisión propuesta en 2-4 semanas para apoyo leve; antes si empeora. Sin mejoría → revisar datos y derivar. Fracaso de TCC-I adecuada → reevaluación clínica, posible PSG según hallazgos; no PSG automática por fracasar consejos.",
+        "condition_draft": [
+          {
+            "note": "Regla de seguimiento: requiere una segunda visita/consulta que la app no tiene hoy. No evaluable en una primera consulta."
+          }
+        ]
+      }
+    ],
+    "rules_intro": {
+      "page": 13,
+      "text": "Diseño del motor: registrar hallazgos, resolver urgencia y combinar rutas. No asignar una sola enfermedad por usuario."
+    },
+    "data_contract": {
+      "page": 14,
+      "per_answer_fields_verbatim": "Cada respuesta: question_id, valor, unidad, motivo_de_ausencia, texto_original, confirmado_por_usuario.",
+      "per_answer_fields": [
+        "question_id",
+        "valor",
+        "unidad",
+        "motivo_de_ausencia",
+        "texto_original",
+        "confirmado_por_usuario"
+      ],
+      "field_name_note": "El PDF usa nombres en español (valor, unidad, motivo_de_ausencia, texto_original, confirmado_por_usuario); el encargo los cita en inglés (value, unit, reason_for_absence, original_text, confirmed_by_user).",
+      "formats": "Frecuencia: entero 0-7; duración: valor y unidad o fecha aproximada; horarios: hora y día asociado, incluidos cruces de medianoche. No exigir precisión al minuto.",
+      "derived_fields_verbatim": "Campos derivados: alertas[], orientaciones[], accion_principal, acciones_asociadas[], prueba_a_valorar, rule_ids[], datos_pendientes[], salida_texto, version_reglas. No generar porcentajes de probabilidad sin un modelo validado.",
+      "null_policy": "R03 (página 13): Guardar desconocido como null con un motivo separado. Nunca convertir null en false.",
+      "always_allowed": "Página 14: Ofrecer siempre «no lo sé» y «prefiero no responder».",
+      "pipeline_verbatim": "Extraer del relato → completar Q01-Q18 → profundizar en ramas activadas → presentar texto de protección → completar S1-S4 → confirmar hechos relevantes → evaluar todas las reglas → ordenar acciones → generar texto desde resultados → comprobar que el texto no añade hechos o consejos ajenos al motor.",
+      "language_model_boundary": "Las reglas deben vivir fuera del generador de lenguaje."
+    },
+    "conversation_notes": {
+      "page": 14,
+      "text": [
+        "Orden de embudo: Q01-Q18 → I/R/H/D/P/N activadas → texto de protección → S1-S4 → Z1-Z2. Una pregunta por turno; si la persona ya respondió, no repetir. Usar «¿Lo he entendido bien?» para aclarar. Permitir corregir y pausar. No repetir preguntas omitidas indefinidamente. Separar somnolencia («me duermo») de cansancio («me falta energía»).",
+        "Mostrar primero la preocupación principal de la persona. Explicar para qué se pregunta algo sensible. Ofrecer siempre «no lo sé» y «prefiero no responder». Confirmar el plan: «¿Qué cambio le resultaría posible?» o «¿Qué le dificultaría pedir esa valoración?»."
+      ]
+    },
+    "instruments": {
+      "page": 14,
+      "text": "Diario 7-14 días para horarios y evolución; ISI para intensidad del insomnio; Epworth para somnolencia; STOP-Bang/STOP si el equipo elige un cribado respiratorio. Usar versiones españolas validadas y revisar permisos. No reformular ítems y conservar sus puntos de corte como si siguieran validados. Ninguna escala confirma apnea ni sustituye la entrevista.",
+      "status": "pending_clinical_review"
+    },
+    "acceptance_cases": [
+      {
+        "id": "FT-1",
+        "page": 14,
+        "text": "Insomnio 4 noches/semana durante 6 meses, oportunidad e impacto, sin otras señales → T_INSOMNIO.",
+        "expected": "T_INSOMNIO"
+      },
+      {
+        "id": "FT-2",
+        "page": 14,
+        "text": "Mismo caso + pausas observadas → T_COMBINADO.",
+        "expected": "T_COMBINADO"
+      },
+      {
+        "id": "FT-3",
+        "page": 14,
+        "text": "Solo 5 horas disponibles por trabajo → explorar oportunidad, no diagnosticar insomnio por horas.",
+        "expected": "no T_INSOMNIO; ruta de oportunidad (H/T_HABITOS u otra: PENDIENTE)"
+      },
+      {
+        "id": "FT-4",
+        "page": 14,
+        "text": "Vive solo, desconoce ronquido y se duerme al volante → seguridad y evaluación.",
+        "expected": "EVALUACION_PRIORITARIA (S2/R01) + evaluación respiratoria por R3 (PENDIENTE confirmar plantilla)"
+      },
+      {
+        "id": "FT-5",
+        "page": 14,
+        "text": "Estudio domiciliario negativo + sospecha vigente → valorar PSG.",
+        "expected": "T_PSG"
+      },
+      {
+        "id": "FT-6",
+        "page": 14,
+        "text": "Bipolaridad + insomnio → terapia adaptada, sin restricción automática.",
+        "expected": "TERAPIA con marca ADAPTAR_TERAPIA (R07)"
+      },
+      {
+        "id": "FT-7",
+        "page": 14,
+        "text": "Duración desconocida → aclarar, no etiquetar crónico.",
+        "expected": "ACLARAR / T_INCOMPLETO; nunca T_INSOMNIO"
+      },
+      {
+        "id": "FT-8",
+        "page": 14,
+        "text": "Piernas con patrón completo → consulta, no PSG rutinaria.",
+        "expected": "T_PIERNAS; nunca T_PSG por piernas"
+      }
+    ],
+    "sources": {
+      "page": 15,
+      "items": [
+        "[1] Riemann et al. (2023). European Insomnia Guideline. Entrevista, cronicidad, terapia e indicaciones selectivas de PSG.",
+        "[2] Edinger et al. (2021). AASM: tratamientos conductuales y psicológicos del insomnio. TCC-I y límites de los hábitos como tratamiento único.",
+        "[3] Kapur et al. (2017). AASM: pruebas diagnósticas de apnea en adultos. Elección entre estudio domiciliario y PSG; pruebas no concluyentes.",
+        "[4] VA/DoD (2025). Guía de insomnio crónico y apnea obstructiva. Actualiza la referencia de 2019 citada en los adjuntos; adaptación de terapia.",
+        "[5] Australasian Sleep Association (2024). Guidelines for sleep studies in adults. Indicaciones y límites de PSG, video-PSG y pruebas de somnolencia.",
+        "[6] Winkelman et al. (2025). AASM: piernas inquietas y movimientos periódicos. Historia clínica y evaluación del hierro en piernas inquietas."
+      ],
+      "scope_verbatim": "Las indicaciones de evaluación y terapia se apoyan en las fuentes citadas. El orden conversacional, identificadores, redacción, reglas de prioridad, combinación de resultados y revisión a 2-4 semanas son propuestas de diseño de Morpheo; no constituyen un algoritmo clínico validado.",
+      "before_use_verbatim": "Antes del uso asistencial: revisión por el responsable clínico, casos de prueba incluyendo falsos negativos y datos ausentes, y prueba de comprensión con público general. Esta versión define la entrevista y la orientación; no ejecuta tratamiento, prescribe fármacos ni solicita pruebas por sí misma."
+    }
+  },
+  "engine": {
+    "content_version": "2.0-draft",
+    "rules_version": "2.0-draft",
+    "status": "pending_clinical_review",
+    "note": "Construido sobre la transcripción verificada de v0.2. Los DEFAULT (D-xx) son los del registro docs/clinical/morpheo_embudo_v02_resoluciones.md; Jesús puede cambiarlos.",
+    "steps": [
+      {
+        "id": "AGE",
+        "source": "AGE",
+        "stage": "start",
+        "type": "number",
+        "unit": "años",
+        "min": 0,
+        "max": 120
+      },
+      {
+        "id": "S1",
+        "source": "S1",
+        "stage": "start",
+        "type": "yes_no",
+        "safety": true
+      },
+      {
+        "id": "S4",
+        "source": "S4",
+        "stage": "start",
+        "type": "yes_no",
+        "safety": true
+      },
+      {
+        "id": "Q01",
+        "source": "Q01",
+        "stage": "core",
+        "type": "free_text",
+        "risk_scan": true
+      },
+      {
+        "id": "Q02",
+        "source": "Q02",
+        "stage": "core",
+        "type": "free_text",
+        "risk_scan": true
+      },
+      {
+        "id": "Q03",
+        "source": "Q03",
+        "stage": "core",
+        "type": "duration",
+        "clarify_once": true
+      },
+      {
+        "id": "Q04",
+        "source": "Q04",
+        "stage": "core",
+        "type": "yes_no_note",
+        "risk_scan": true
+      },
+      {
+        "id": "Q05",
+        "source": "Q05",
+        "stage": "core",
+        "type": "number",
+        "unit": "noches por semana",
+        "min": 0,
+        "max": 7,
+        "clarify_once": true
+      },
+      {
+        "id": "Q06",
+        "source": "Q06",
+        "stage": "core",
+        "type": "free_text",
+        "risk_scan": true
+      },
+      {
+        "id": "Q07",
+        "source": "Q07",
+        "stage": "core",
+        "type": "times",
+        "fields": [
+          {
+            "key": "acostarse",
+            "label": "se acuesta"
+          },
+          {
+            "key": "intentar_dormir",
+            "label": "intenta dormir"
+          },
+          {
+            "key": "despertarse",
+            "label": "se despierta"
+          },
+          {
+            "key": "levantarse",
+            "label": "se levanta"
+          }
+        ]
+      },
+      {
+        "id": "Q08",
+        "source": "Q08",
+        "stage": "core",
+        "type": "multi",
+        "options_from": "note",
+        "options": [
+          {
+            "key": "dormirse",
+            "label": "dormirse"
+          },
+          {
+            "key": "despertares",
+            "label": "despertares"
+          },
+          {
+            "key": "despertar_precoz",
+            "label": "despertar antes de lo deseado"
+          }
+        ],
+        "none_option": true
+      },
+      {
+        "id": "Q09",
+        "source": "Q09",
+        "stage": "core",
+        "type": "duration"
+      },
+      {
+        "id": "Q10",
+        "source": "Q10",
+        "stage": "core",
+        "type": "free_text",
+        "risk_scan": true
+      },
+      {
+        "id": "Q11",
+        "source": "Q11",
+        "stage": "core",
+        "type": "single",
+        "options": [
+          {
+            "key": "cansancio",
+            "label": "cansancio"
+          },
+          {
+            "key": "dormido_sin_querer",
+            "label": "quedarse dormido sin querer"
+          },
+          {
+            "key": "ambas",
+            "label": "ambas cosas"
+          }
+        ],
+        "none_option": true,
+        "then_ask_now": {
+          "when": [
+            "dormido_sin_querer",
+            "ambas"
+          ],
+          "ask": [
+            "S2"
+          ],
+          "default": "D-37"
+        }
+      },
+      {
+        "id": "Q12",
+        "source": "Q12",
+        "stage": "core",
+        "type": "yes_no"
+      },
+      {
+        "id": "Q13",
+        "source": "Q13",
+        "stage": "core",
+        "type": "yes_no"
+      },
+      {
+        "id": "Q14",
+        "source": "Q14",
+        "stage": "core",
+        "type": "free_text",
+        "risk_scan": true,
+        "extracts": [
+          "bipolaridad",
+          "epilepsia",
+          "embarazo",
+          "opioides",
+          "sustancias",
+          "medicacion"
+        ]
+      },
+      {
+        "id": "Q15",
+        "source": "Q15",
+        "stage": "core",
+        "type": "multi",
+        "options": [
+          {
+            "key": "ronca_fuerte",
+            "label": "Ronca fuerte"
+          },
+          {
+            "key": "dejar_de_respirar",
+            "label": "le han visto dejar de respirar"
+          },
+          {
+            "key": "ahogo",
+            "label": "se despierta con sensación de ahogo"
+          }
+        ],
+        "none_option": true
+      },
+      {
+        "id": "Q16",
+        "source": "Q16",
+        "stage": "core",
+        "type": "yes_no"
+      },
+      {
+        "id": "Q17",
+        "source": "Q17",
+        "stage": "core",
+        "type": "yes_no"
+      },
+      {
+        "id": "Q18",
+        "source": "Q18",
+        "stage": "core",
+        "type": "yes_no"
+      },
+      {
+        "id": "I1",
+        "source": "I1",
+        "stage": "I",
+        "type": "yes_no"
+      },
+      {
+        "id": "I2",
+        "source": "I2",
+        "stage": "I",
+        "type": "yes_no"
+      },
+      {
+        "id": "I3",
+        "source": "I3",
+        "stage": "I",
+        "type": "yes_no"
+      },
+      {
+        "id": "I4",
+        "source": "I4",
+        "stage": "I",
+        "type": "yes_no",
+        "same_as": "Q18"
+      },
+      {
+        "id": "R1",
+        "source": "R1",
+        "stage": "R",
+        "type": "yes_no",
+        "inferred_from": {
+          "question": "Q15",
+          "any_of": [
+            "dejar_de_respirar",
+            "ahogo"
+          ]
+        }
+      },
+      {
+        "id": "R2a",
+        "source": "R2",
+        "stage": "R",
+        "type": "yes_no",
+        "fragment": "¿Ronca a menudo?"
+      },
+      {
+        "id": "R2b",
+        "source": "R2",
+        "stage": "R",
+        "type": "yes_no",
+        "fragment": "¿Se duerme sin querer?"
+      },
+      {
+        "id": "R2c",
+        "source": "R2",
+        "stage": "R",
+        "type": "yes_no",
+        "fragment": "¿Tiene la tensión alta?"
+      },
+      {
+        "id": "R3",
+        "source": "R3",
+        "stage": "R",
+        "type": "yes_no"
+      },
+      {
+        "id": "R4",
+        "source": "R4",
+        "stage": "R",
+        "type": "multi",
+        "options": [
+          {
+            "key": "cardiopulmonar",
+            "label": "enfermedad cardiopulmonar relevante"
+          },
+          {
+            "key": "ictus",
+            "label": "ictus"
+          },
+          {
+            "key": "opioides",
+            "label": "opioides"
+          },
+          {
+            "key": "debilidad_respiratoria",
+            "label": "debilidad respiratoria"
+          },
+          {
+            "key": "insomnio_grave",
+            "label": "insomnio grave"
+          }
+        ],
+        "none_option": true
+      },
+      {
+        "id": "R6",
+        "source": "R6",
+        "stage": "R",
+        "type": "yes_no"
+      },
+      {
+        "id": "H1",
+        "source": "H1",
+        "stage": "H",
+        "type": "yes_no",
+        "same_as": "Q18"
+      },
+      {
+        "id": "H2",
+        "source": "H2",
+        "stage": "H",
+        "type": "times",
+        "fields": [
+          {
+            "key": "sueno",
+            "label": "A qué hora le entra sueño"
+          },
+          {
+            "key": "despertar",
+            "label": "a qué hora se despierta sin despertador"
+          }
+        ]
+      },
+      {
+        "id": "H3a",
+        "source": "H3",
+        "stage": "H",
+        "type": "yes_no",
+        "fragment": "¿Su horario de trabajo o de cuidados le obliga a dormir a otra hora?"
+      },
+      {
+        "id": "H3b",
+        "source": "H3",
+        "stage": "H",
+        "type": "yes_no",
+        "fragment": "¿Hace turnos?"
+      },
+      {
+        "id": "H4",
+        "source": "H4",
+        "stage": "H",
+        "type": "yes_no"
+      },
+      {
+        "id": "H5",
+        "source": "H5",
+        "stage": "H",
+        "type": "yes_no"
+      },
+      {
+        "id": "D1",
+        "source": "D1",
+        "stage": "D",
+        "type": "yes_no",
+        "inferred_from": {
+          "question": "Q11",
+          "any_of": [
+            "dormido_sin_querer",
+            "ambas"
+          ]
+        }
+      },
+      {
+        "id": "D2a",
+        "source": "D2",
+        "stage": "D",
+        "type": "yes_no",
+        "fragment": "¿Continúa pese a dormir suficiente?"
+      },
+      {
+        "id": "D2b",
+        "source": "D2",
+        "stage": "D",
+        "type": "yes_no",
+        "fragment": "¿Pierde fuerza al reírse, sin perder el conocimiento?"
+      },
+      {
+        "id": "P1",
+        "source": "P1",
+        "stage": "P",
+        "type": "yes_no",
+        "inferred_from": {
+          "question": "Q16",
+          "equals": "si"
+        }
+      },
+      {
+        "id": "P2",
+        "source": "P2",
+        "stage": "P",
+        "type": "yes_no"
+      },
+      {
+        "id": "N1",
+        "source": "N1",
+        "stage": "N",
+        "type": "yes_no",
+        "inferred_from": {
+          "question": "Q17",
+          "equals": "si"
+        }
+      },
+      {
+        "id": "N2",
+        "source": "N2",
+        "stage": "N",
+        "type": "multi",
+        "options": [
+          {
+            "key": "lesiones",
+            "label": "lesiones"
+          },
+          {
+            "key": "violencia",
+            "label": "violencia"
+          },
+          {
+            "key": "episodios_nuevos",
+            "label": "episodios nuevos en adulto"
+          },
+          {
+            "key": "convulsiones",
+            "label": "dudas con convulsiones"
+          }
+        ],
+        "none_option": true
+      },
+      {
+        "id": "PROT",
+        "source": "PROT",
+        "stage": "end",
+        "type": "info"
+      },
+      {
+        "id": "S1",
+        "source": "S1",
+        "stage": "end",
+        "type": "yes_no",
+        "safety": true
+      },
+      {
+        "id": "S2",
+        "source": "S2",
+        "stage": "end",
+        "type": "yes_no",
+        "safety": true
+      },
+      {
+        "id": "S3",
+        "source": "S3",
+        "stage": "end",
+        "type": "yes_no",
+        "safety": true
+      },
+      {
+        "id": "S4",
+        "source": "S4",
+        "stage": "end",
+        "type": "yes_no",
+        "safety": true
+      },
+      {
+        "id": "Z1",
+        "source": "Z1",
+        "stage": "end",
+        "type": "yes_no"
+      },
+      {
+        "id": "Z2",
+        "source": "Z2",
+        "stage": "end",
+        "type": "free_text",
+        "risk_scan": true
+      }
+    ],
+    "branch_order": [
+      "I",
+      "R",
+      "H",
+      "D",
+      "P",
+      "N"
+    ],
+    "always_allowed_absence": [
+      "no_lo_se",
+      "prefiero_no_responder"
+    ],
+    "risk_terms": {
+      "default": "D-01, D-02",
+      "S1": [
+        "no puedo respirar",
+        "me ahogo",
+        "me estoy ahogando",
+        "me cuesta mucho respirar",
+        "dolor fuerte en el pecho",
+        "dolor en el pecho",
+        "confusión",
+        "confundido",
+        "confundida",
+        "labios azules",
+        "labios morados",
+        "piel azul",
+        "piel morada",
+        "cara azul",
+        "cara morada",
+        "labios grises",
+        "piel gris"
+      ],
+      "S4": [
+        "quitarme la vida",
+        "suicid",
+        "matarme",
+        "hacerme daño",
+        "no quiero vivir",
+        "acabar con todo",
+        "no estoy a salvo",
+        "desaparecer para siempre"
+      ],
+      "S2": [
+        "al volante",
+        "conduciendo",
+        "conducir",
+        "me dormí conduciendo",
+        "maquinaria",
+        "carretilla",
+        "camión",
+        "camionero",
+        "taxista",
+        "conductor"
+      ]
+    },
+    "priority_order": {
+      "default": "R08 (p. 13) + D-06 + D-38",
+      "order": [
+        "EMERGENCIA",
+        "ATENCION_MISMO_DIA",
+        "EVALUACION_PRIORITARIA",
+        "CONSULTA_ESTUDIO",
+        "INFORMACION_INSUFICIENTE",
+        "TERAPIA",
+        "HABITOS"
+      ]
+    },
+    "resources": {
+      "default": "D-07 (aprobado por Jesús el 18/10/2026)",
+      "EMERGENCIA": "112",
+      "S4_extra": "024 (línea de atención a la conducta suicida)"
+    },
+    "pending_texts": {
+      "S2_driver_warning": "PENDIENTE – texto de Jesús",
+      "recent_high_impact": "PENDIENTE – texto de Jesús"
+    },
+    "template_overrides": [
+      {
+        "template": "T_INSOMNIO.sin_otras_senales",
+        "default": "D-31",
+        "from": "necesites",
+        "to": "necesite",
+        "reason": "Concordancia con el trato de usted del resto de v0.2."
+      }
+    ]
+  }
+}
