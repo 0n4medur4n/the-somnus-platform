@@ -179,6 +179,30 @@ describe("the guard is wired to the admin console's deploys, not just available"
     );
   });
 
+  /**
+   * The console calls edge-api same-origin, so every API path it uses must be
+   * forwarded by Hosting before the SPA catch-all. Until 2026-10-18 only `/v1/**`
+   * was: `/admin/v1/me` came back as index.html with a 200, the console read it
+   * as "no session", and sign-in spent the magic link without opening anything.
+   */
+  it("forwards both API prefixes the console uses to edge-api, before the SPA fallback", () => {
+    const config = JSON.parse(readFileSync(join(REPO_ROOT, "firebase.json"), "utf8")) as {
+      hosting: {
+        target: string;
+        rewrites?: { source: string; run?: { serviceId: string }; destination?: string }[];
+      }[];
+    };
+    const rewrites = config.hosting.find((target) => target.target === "admin")?.rewrites ?? [];
+    const fallback = rewrites.findIndex((r) => r.source === "**");
+    expect(fallback).toBeGreaterThan(-1);
+    for (const prefix of ["/v1/**", "/admin/v1/**"]) {
+      const index = rewrites.findIndex((r) => r.source === prefix);
+      expect(index, prefix).toBeGreaterThan(-1);
+      expect(index, `${prefix} must come before the SPA fallback`).toBeLessThan(fallback);
+      expect(rewrites[index]?.run?.serviceId).toBe("somnus-edge-api");
+    }
+  });
+
   it("ci.yml's Hosting deploy builds the console in hosting mode", () => {
     // The defect in one line: this job used to run `@somnus/admin build`.
     const ci = readFileSync(join(REPO_ROOT, ".github/workflows/ci.yml"), "utf8");

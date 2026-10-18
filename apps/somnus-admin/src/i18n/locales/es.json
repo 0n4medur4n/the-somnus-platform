@@ -28,7 +28,8 @@
     "emailIntro": "Has abierto el enlace en un navegador o una pestaña distinta de donde lo pediste, así que necesitamos que nos confirmes a qué dirección lo enviamos.",
     "emailHint": "La misma dirección a la que llegó el enlace.",
     "emailSubmit": "Continuar",
-    "emailMismatch": "Esa dirección no coincide con el enlace. Revísala e inténtalo de nuevo: el enlace sigue siendo válido."
+    "emailMismatch": "Esa dirección no coincide con el enlace. Revísala e inténtalo de nuevo: el enlace sigue siendo válido.",
+    "sessionError": "Tu enlace era correcto y ya se ha usado, pero la consola no ha podido abrir tu sesión. Pide un enlace nuevo; si vuelve a pasar, avisa al equipo técnico."
   },
   "denied": {
     "title": "No tienes acceso a la consola",

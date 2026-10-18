@@ -28,7 +28,8 @@
     "emailIntro": "You opened the link in a different browser or tab from the one where you requested it, so we need you to confirm which address we sent it to.",
     "emailHint": "The same address the link arrived at.",
     "emailSubmit": "Continue",
-    "emailMismatch": "That address does not match the link. Check it and try again -- the link is still valid."
+    "emailMismatch": "That address does not match the link. Check it and try again -- the link is still valid.",
+    "sessionError": "Your link was valid and has now been used, but the console could not open your session. Request a new link; if it happens again, tell the technical team."
   },
   "denied": {
     "title": "You do not have console access",

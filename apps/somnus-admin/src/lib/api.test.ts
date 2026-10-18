@@ -318,4 +318,24 @@ describe("api client", () => {
     await expect(api.get("/v1/me")).rejects.toBeInstanceOf(ApiRequestError);
     await expect(api.get("/v1/me")).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
   });
+
+  /**
+   * 2026-10-18: Hosting served the console's index.html, with a 200, for an API
+   * path it did not forward. Parsing that threw, the caller read the throw as
+   * "no session", and sign-in looked like a button that did nothing.
+   */
+  it("treats a non-JSON answer as a gateway failure, never as data", async () => {
+    const { api, ApiRequestError } = await loadApi();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        text: async () => "<!doctype html><html><body>console</body></html>",
+      })),
+    );
+    const error = await api.get("/admin/v1/me").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiRequestError);
+    expect(error).toMatchObject({ status: 502, code: "NON_JSON_RESPONSE" });
+  });
 });

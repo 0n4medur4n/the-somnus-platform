@@ -48,7 +48,7 @@ const ConfirmEmailSchema = z.object({
 });
 type ConfirmEmailForm = z.infer<typeof ConfirmEmailSchema>;
 
-type Phase = "verifying" | "needs-email" | "error";
+type Phase = "verifying" | "needs-email" | "error" | "session-error";
 
 export function AuthCallback() {
   const { t } = useTranslation();
@@ -56,6 +56,8 @@ export function AuthCallback() {
   const { state, refresh } = useAdminAuth();
   const [phase, setPhase] = useState<Phase>("verifying");
   const started = useRef(false);
+  /** Set once the link was redeemed and a session created: the link is now spent. */
+  const redeemed = useRef(false);
 
   /**
    * Redeem the link, exchange it for a session, hand over to the gate.
@@ -70,6 +72,7 @@ export function AuthCallback() {
       try {
         const idToken = await completeEmailLinkSignIn(email, window.location.href);
         await edge.createSession(idToken);
+        redeemed.current = true;
         await refresh();
       } catch (error) {
         if (onRecoverable && !isLinkFailure(error)) {
@@ -110,7 +113,13 @@ export function AuthCallback() {
     // Both outcomes live at the root: the gate decides which one renders.
     if (state.status === "authorized" || state.status === "denied") {
       navigate("/", { replace: true });
+      return;
     }
+    // The link was spent and a session created, yet the console could not read
+    // it back. Staying on this screen would look like a button that does
+    // nothing, and a second press would only report the spent link as expired
+    // (2026-10-18). Say what actually happened.
+    if (redeemed.current && state.status === "unauthenticated") setPhase("session-error");
   }, [state.status, navigate]);
 
   if (phase === "error") {
@@ -119,6 +128,17 @@ export function AuthCallback() {
         <h1 className="text-2xl font-semibold text-somnus-text">{t("callback.title")}</h1>
         <p role="alert" className="text-somnus-danger">
           {t("callback.error")}
+        </p>
+      </ConsoleLayout>
+    );
+  }
+
+  if (phase === "session-error") {
+    return (
+      <ConsoleLayout>
+        <h1 className="text-2xl font-semibold text-somnus-text">{t("callback.title")}</h1>
+        <p role="alert" className="text-somnus-danger">
+          {t("callback.sessionError")}
         </p>
       </ConsoleLayout>
     );
