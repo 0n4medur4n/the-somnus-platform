@@ -47,10 +47,16 @@ def _fill_from_catalogue(text: str, template: str, selector: Selector) -> str:
 def question_text(
     definition: StepDef, iv: Interview, catalogue: Catalogue | None = None
 ) -> tuple[str, list[str]]:
-    """The question as the person sees it; Z1 carries the summary to confirm."""
+    """The question as the person sees it.
+
+    Z1 carries the summary to confirm; the steps v0.2 gives only as an
+    instruction (the S2 warning and safe-place question) carry their draft.
+    """
+    selector = Selector(catalogue or funnel_catalogue(), iv)
+    if definition.id in selector.c.drafts:
+        return selector.draft(definition.id), selector.used
     if definition.id != "Z1":
         return definition.text, []
-    selector = Selector(catalogue or funnel_catalogue(), iv)
     return _fill_from_catalogue(definition.text, "Z1", selector), selector.used
 
 

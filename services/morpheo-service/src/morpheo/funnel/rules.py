@@ -19,6 +19,7 @@ from typing import Any
 from morpheo.funnel.artifact import FunnelArtifact
 from morpheo.funnel.interview import (
     NO,
+    S2_PAUSED,
     SAFETY,
     YES,
     Answer,
@@ -98,6 +99,19 @@ def evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> FunnelR
         orient(
             "EMERGENCIA", "T_SEGURIDAD", "R01", "S4 = Sí (D-03: cualquier Sí es peligro inmediato)"
         )
+    if stopped == S2_PAUSED:
+        # p. 10: not in a safe place after an S2 "Sí" -- pause, keep the warning.
+        alerts.append("EVALUACION_PRIORITARIA")
+        orient(
+            "EVALUACION_PRIORITARIA",
+            "T_SOMNOLENCIA",
+            "R01",
+            "S2 = Sí: conducción o tarea de riesgo",
+        )
+        orient(
+            "EVALUACION_PRIORITARIA", "S2_pausa", "R01", "S2: no está en un lugar seguro (p. 10)"
+        )
+        return _result(artifact, stopped, alerts, orientations, [], flags, rules, trace, iv=iv)
     if stopped:
         return _result(artifact, stopped, alerts, orientations, [], flags, rules, trace, iv=iv)
     if s("S3") == YES:

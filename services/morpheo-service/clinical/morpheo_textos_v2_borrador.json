@@ -193,9 +193,19 @@
   },
   "drafts": {
     "S2_aviso": {
-      "describes": "Aviso a quien se duerme al conducir o al usar maquinaria (S2 = Sí); se muestra justo antes del texto de somnolencia. v0.2 p. 10 solo dice «No conducir ni usar maquinaria. Evaluación prioritaria».",
+      "describes": "Aviso a quien se duerme al conducir o al usar maquinaria (S2 = Sí). Se muestra en ese momento de la entrevista, antes de seguir, y otra vez en el texto final, justo antes del texto de somnolencia. v0.2 p. 10 solo dice «No conducir ni usar maquinaria. Evaluación prioritaria».",
       "status": "BORRADOR – Jesús",
       "text": "Si conduce o maneja maquinaria, sobre todo por trabajo, lo más seguro es que no lo haga mientras tenga este sueño y hasta que un profesional lo valore. Si el sueño le sorprende al volante, pare en cuanto pueda en un lugar seguro y descanse. La somnolencia suele tener solución, y por eso merece la pena pedir esa valoración pronto. Si conduce por trabajo, el servicio de salud laboral de su empresa también puede ayudarle."
+    },
+    "S2_seguro": {
+      "describes": "Pregunta que sigue al aviso en cuanto S2 = Sí, antes de seguir con la entrevista. v0.2 p. 10: «S2: primero advertencia; seguir solo si está en un lugar seguro». Cualquier respuesta que no sea «Sí» pausa la entrevista.",
+      "status": "BORRADOR – Jesús",
+      "text": "Antes de seguir: ¿está ahora en un lugar seguro, sin conducir ni manejar maquinaria?"
+    },
+    "S2_pausa": {
+      "describes": "Lo que se muestra si, tras el aviso, la persona no está en un lugar seguro: la entrevista se pausa.",
+      "status": "BORRADOR – Jesús",
+      "text": "Lo importante ahora es su seguridad. Si está conduciendo o manejando maquinaria, pare en cuanto pueda en un lugar seguro y descanse. Podemos seguir esta conversación cuando esté a salvo."
     },
     "T_RECIENTE": {
       "describes": "Cuadro reciente con mucho impacto (I1 e I2 = Sí, menos de 3 meses). v0.2 p. 5: «Un cuadro reciente con mucho impacto también merece ayuda clínica, sin esperar tres meses», pero no da plantilla.",

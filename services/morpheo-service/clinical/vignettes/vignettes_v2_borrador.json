@@ -305,6 +305,7 @@
           "unit": "meses"
         },
         "S2@ask_now": "si",
+        "S2_seguro": "si",
         "R1": {
           "absence": "no_lo_se"
         },
@@ -768,6 +769,7 @@
           "text": "Que me ayuden a organizarme"
         },
         "S2@exception": "si",
+        "S2_seguro": "si",
         "Q08": [],
         "Q05": 3,
         "Q03": {
@@ -792,7 +794,9 @@
           "T_RESPIRACION"
         ],
         "asked_include": [
-          "S2@exception:Q01"
+          "S2@exception:Q01",
+          "S2_aviso",
+          "S2_seguro"
         ],
         "asked_exclude": [
           "S2@ask_now",
