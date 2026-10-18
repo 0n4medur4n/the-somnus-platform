@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     # Morpheo v2.0, the embudo v0.2 engine (ADR 0020). Off, and invisible to
     # users, until the clinical lead approves it after testing with vignettes.
     funnel_v2_enabled: bool = Field(default=False, alias="FUNNEL_V2_ENABLED")
+    # ISI, Epworth and STOP-Bang (D-34): their own switch, off until the
+    # licences are confirmed. The licensed item files are never in the repo
+    # or the image; they are mounted at runtime into this directory.
+    instruments_enabled: bool = Field(default=False, alias="INSTRUMENTS_ENABLED")
+    instruments_source_dir: str | None = Field(default=None, alias="INSTRUMENTS_SOURCE_DIR")
 
 
 def load_settings() -> Settings:

@@ -50,6 +50,25 @@ fleets:
 | `LOG_LEVEL`     | `info`                                                          |
 | `LOG_FORMAT`    | `json`                                                          |
 | `DATABASE_URL`  | `mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_morpheo`     |
+| `FUNNEL_V2_ENABLED` | `false` -- Morpheo v2.0, the embudo v0.2 engine (ADR 0020)   |
+| `INSTRUMENTS_ENABLED` | `false` -- ISI, Epworth, STOP-Bang (D-34), see below       |
+| `INSTRUMENTS_SOURCE_DIR` | unset -- directory holding the licensed instrument files |
+
+### Validated instruments (ISI, Epworth, STOP-Bang)
+
+`src/morpheo/instruments/` loads and scores them. The items, response
+options, instructions and scoring bands are **licensed** and are never in
+the repository or the image: the licensor's validated Spanish version is
+transcribed as delivered into one JSON file per instrument (`ISI.json`,
+`ESS.json`, `STOP-BANG.json`) and mounted at runtime into
+`INSTRUMENTS_SOURCE_DIR`. The code knows only each instrument's shape (item
+count and response values) and refuses a file that does not match it, a
+synthetic test file, or an expired licence. With the switch on, an invalid
+file stops the service at startup. Licences may arrive one at a time: the
+files present are loaded, at least one is required. Each result records
+the file's SHA-256. A score is a fact for the clinician; it never feeds the
+v0.2 rules. The file format is the one in `tests/unit/instruments/synthetic.py`,
+whose texts and bands are placeholders, not the instruments.
 
 ## Local development
 
