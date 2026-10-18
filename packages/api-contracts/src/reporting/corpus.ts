@@ -81,6 +81,63 @@ export const CorpusRightsEvidenceSchema = z
   .strict();
 export type CorpusRightsEvidence = z.infer<typeof CorpusRightsEvidenceSchema>;
 
+/**
+ * Where a document's text came from (owner decision 2026-10-18, Addendum B §B6
+ * item 3): an uploaded PDF or Word file, kept as the original and downloadable,
+ * or one web page by URL. Null for a document whose text was typed.
+ */
+export const CORPUS_ORIGIN_KINDS = ["file", "web_page"] as const;
+export const CorpusOriginKindSchema = z.enum(CORPUS_ORIGIN_KINDS);
+
+/** The largest original the console may upload; the report service enforces the same. */
+export const CORPUS_FILE_MAX_BYTES = 20 * 1024 * 1024;
+/** PDF and Word (.docx). The report service decides the type by the file's bytes. */
+export const CORPUS_FILE_CONTENT_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+] as const;
+
+export const CorpusDocumentOriginSchema = z
+  .object({
+    kind: CorpusOriginKindSchema,
+    filename: z.string().max(255).nullish(),
+    contentType: z.string().max(128).nullish(),
+    sizeBytes: z.number().int().nonnegative().nullish(),
+    sourceUrl: z.string().max(2048).nullish(),
+    addedAt: z.iso.datetime(),
+  })
+  .strict();
+export type CorpusDocumentOrigin = z.infer<typeof CorpusDocumentOriginSchema>;
+
+/** `POST /admin/v1/corpus/documents/:id/web-page` -- fetch one page into a draft. */
+export const CorpusWebPageRequestSchema = z
+  .object({ url: z.string().trim().url().max(2048) })
+  .strict();
+export type CorpusWebPageRequest = z.infer<typeof CorpusWebPageRequestSchema>;
+
+/**
+ * An original between edge-api and the report service (internal): base64 in
+ * JSON, as the other byte payloads between services travel. The console sends
+ * edge-api the raw bytes; edge-api never interprets them.
+ */
+const CORPUS_FILE_MAX_BASE64 = Math.ceil(CORPUS_FILE_MAX_BYTES / 3) * 4;
+export const CorpusFileUploadRequestSchema = z
+  .object({
+    filename: z.string().trim().min(1).max(255),
+    contentBase64: z.string().min(1).max(CORPUS_FILE_MAX_BASE64),
+  })
+  .strict();
+export type CorpusFileUploadRequest = z.infer<typeof CorpusFileUploadRequestSchema>;
+
+export const CorpusFileSchema = z
+  .object({
+    filename: z.string().min(1).max(255),
+    contentType: z.string().min(1).max(128),
+    contentBase64: z.string(),
+  })
+  .strict();
+export type CorpusFile = z.infer<typeof CorpusFileSchema>;
+
 export const CorpusDocumentSchema = z
   .object({
     id: z.string().min(1).max(36),
@@ -98,6 +155,8 @@ export const CorpusDocumentSchema = z
     retiredReason: z.string().nullable(),
     scopes: z.array(CorpusScopeSchema),
     chunkCount: z.number().int().nonnegative(),
+    /** `.nullish()`: absent from a report service that predates origins. */
+    origin: CorpusDocumentOriginSchema.nullish(),
   })
   .strict();
 export type CorpusDocument = z.infer<typeof CorpusDocumentSchema>;
@@ -254,4 +313,8 @@ export const CORPUS_CONTRACT_SCHEMAS = {
   CorpusVersionResult: CorpusVersionResultSchema,
   CorpusSearchRequest: CorpusSearchRequestSchema,
   SrcEnrichmentPage: SrcEnrichmentPageSchema,
+  CorpusDocumentOrigin: CorpusDocumentOriginSchema,
+  CorpusWebPageRequest: CorpusWebPageRequestSchema,
+  CorpusFileUploadRequest: CorpusFileUploadRequestSchema,
+  CorpusFile: CorpusFileSchema,
 } as const;

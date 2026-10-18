@@ -30,6 +30,7 @@ from report.corpus.chunking import chunk_text
 from report.corpus.models import (
     CorpusVersionRow,
     ReferenceDocumentChunkRow,
+    ReferenceDocumentOriginRow,
     ReferenceDocumentRow,
     ReferenceDocumentScopeRow,
 )
@@ -72,6 +73,40 @@ class ReferenceDocument:
     retired_reason: str | None
     scopes: tuple[DocumentScope, ...]
     chunk_count: int = 0
+
+
+ORIGIN_FILE = "file"
+ORIGIN_WEB_PAGE = "web_page"
+
+
+@dataclass(frozen=True)
+class DocumentOrigin:
+    """Where a document's text came from (owner decision 2026-10-18)."""
+
+    kind: str
+    object_name: str | None
+    filename: str | None
+    content_type: str | None
+    size_bytes: int | None
+    sha256: str | None
+    source_url: str | None
+    added_by: str
+    added_at: datetime
+
+
+def _origin(row: ReferenceDocumentOriginRow) -> DocumentOrigin:
+    return DocumentOrigin(
+        kind=row.kind,
+        object_name=row.object_name,
+        filename=row.filename,
+        content_type=row.content_type,
+        size_bytes=row.size_bytes,
+        sha256=row.sha256,
+        source_url=row.source_url,
+        added_by=row.added_by,
+        # A naive DATETIME column; every value in it is UTC.
+        added_at=row.added_at.replace(tzinfo=UTC) if row.added_at.tzinfo is None else row.added_at,
+    )
 
 
 @dataclass(frozen=True)
@@ -321,6 +356,70 @@ class CorpusRepository:
             )
             self._session.flush()
             self._store_chunks(document_id, chunks)
+
+    # --- origins (owner decision 2026-10-18) --------------------------------
+
+    def set_origin(
+        self,
+        document_id: str,
+        *,
+        kind: str,
+        added_by: str,
+        object_name: str | None = None,
+        filename: str | None = None,
+        content_type: str | None = None,
+        size_bytes: int | None = None,
+        sha256: str | None = None,
+        source_url: str | None = None,
+    ) -> None:
+        """Record (or replace) where a DRAFT's text came from.
+
+        Only a draft: a published document's origin is part of what its corpus
+        version means, exactly like its text.
+        """
+        if kind not in (ORIGIN_FILE, ORIGIN_WEB_PAGE):
+            raise CorpusStateError(f"unknown origin kind {kind!r}")
+        row = self._row(document_id)
+        if row.status != STATUS_DRAFT:
+            raise CorpusStateError(
+                f"document {document_id} is {row.status}; only a draft takes a new origin"
+            )
+        self._session.execute(
+            delete(ReferenceDocumentOriginRow).where(
+                ReferenceDocumentOriginRow.document_id == document_id
+            )
+        )
+        self._session.flush()
+        self._session.add(
+            ReferenceDocumentOriginRow(
+                document_id=document_id,
+                kind=kind,
+                object_name=object_name,
+                filename=filename,
+                content_type=content_type,
+                size_bytes=size_bytes,
+                sha256=sha256,
+                source_url=source_url,
+                added_by=added_by,
+                added_at=datetime.now(UTC).replace(tzinfo=None),
+            )
+        )
+        self._session.flush()
+
+    def origin(self, document_id: str) -> DocumentOrigin | None:
+        row = self._session.get(ReferenceDocumentOriginRow, document_id)
+        return _origin(row) if row is not None else None
+
+    def origins(self, document_ids: Sequence[str]) -> dict[str, DocumentOrigin]:
+        """The origins of many documents in one query, for a list screen."""
+        if not document_ids:
+            return {}
+        rows = self._session.scalars(
+            select(ReferenceDocumentOriginRow).where(
+                ReferenceDocumentOriginRow.document_id.in_(list(document_ids))
+            )
+        )
+        return {row.document_id: _origin(row) for row in rows}
 
     def store_embeddings(
         self,

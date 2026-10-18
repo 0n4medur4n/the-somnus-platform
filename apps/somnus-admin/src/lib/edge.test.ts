@@ -1,15 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { get, post, patch, del, putBytes } = vi.hoisted(() => ({
+const { get, post, patch, del, putBytes, postFile, getFile } = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
   patch: vi.fn(),
   del: vi.fn(),
   putBytes: vi.fn(),
+  postFile: vi.fn(),
+  getFile: vi.fn(),
 }));
-vi.mock("./api.js", () => ({ api: { get, post, patch, del, putBytes } }));
+vi.mock("./api.js", () => ({ api: { get, post, patch, del, putBytes, postFile, getFile } }));
 
 const { edge } = await import("./edge.js");
+const { RawUpload } = await import("./raw-upload.js");
 
 /**
  * The console's entire backend surface (Addendum A §A2.1). The point of these
@@ -21,6 +24,18 @@ describe("edge (admin console surface)", () => {
   it("exchanges the magic-link token on the shared session route", () => {
     void edge.createSession("id-token");
     expect(post).toHaveBeenCalledWith("/v1/sessions", { idToken: "id-token" });
+  });
+
+  it("uploads a corpus original raw, with its name URL-encoded in a header", () => {
+    postFile.mockClear();
+    const file = new File(["%PDF-1.4"], "guía nueva.pdf", { type: "application/pdf" });
+    void edge.uploadCorpusFile("doc 1", file, "application/pdf");
+    const [path, upload] = postFile.mock.calls[0] as [string, InstanceType<typeof RawUpload>];
+    expect(path).toBe("/admin/v1/corpus/documents/doc%201/file");
+    expect(upload).toBeInstanceOf(RawUpload);
+    expect(upload.bytes).toBe(file);
+    expect(upload.contentType).toBe("application/pdf");
+    expect(upload.headers).toEqual({ "x-somnus-filename": "gu%C3%ADa%20nueva.pdf" });
   });
 
   it("lists an organization's members on the route edge serves", () => {
@@ -41,7 +56,7 @@ describe("edge (admin console surface)", () => {
 
   it("touches no path outside /admin/v1 and the shared session routes", () => {
     // Earlier tests in this file already drove some of these mocks.
-    for (const spy of [get, post, patch, del]) spy.mockClear();
+    for (const spy of [get, post, patch, del, postFile, getFile]) spy.mockClear();
 
     // Every method is driven and every path it produced is checked, so the
     // assertion holds as the console grows rather than freezing today's list.
@@ -101,6 +116,14 @@ describe("edge (admin console surface)", () => {
       () => edge.publishCorpusDocument("doc-1", { changelog: "Alta." }),
       () => edge.retireCorpusDocument("doc-1", { reason: "Obsoleta.", changelog: "Retirada." }),
       () => edge.corpusSources(),
+      () =>
+        edge.uploadCorpusFile(
+          "doc-1",
+          new File(["%PDF-1.4"], "guía.pdf", { type: "application/pdf" }),
+          "application/pdf",
+        ),
+      () => edge.fetchCorpusWebPage("doc-1", { url: "https://example.org/guia" }),
+      () => edge.downloadCorpusFile("doc-1"),
       () => edge.adminMe(),
       () => edge.createSession("token"),
       () => edge.logout(),
@@ -108,7 +131,14 @@ describe("edge (admin console surface)", () => {
     ];
     for (const call of calls) void call();
 
-    const paths = [...get.mock.calls, ...post.mock.calls, ...patch.mock.calls, ...del.mock.calls]
+    const paths = [
+      ...get.mock.calls,
+      ...post.mock.calls,
+      ...patch.mock.calls,
+      ...del.mock.calls,
+      ...postFile.mock.calls,
+      ...getFile.mock.calls,
+    ]
       .map(([path]) => path as string)
       .filter((path) => path !== undefined);
 

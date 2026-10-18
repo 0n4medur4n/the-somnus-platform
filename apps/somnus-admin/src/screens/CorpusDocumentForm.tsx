@@ -11,6 +11,12 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../components/Button.js";
 import { Field } from "../components/Field.js";
 import { SelectField } from "../components/SelectField.js";
+import {
+  type ContentSource,
+  ContentSourcePicker,
+  corpusFileProblem,
+  webUrlProblem,
+} from "./CorpusContent.js";
 
 /**
  * The one form that creates and edits a reference document (Addendum B §B3 /
@@ -49,6 +55,10 @@ export type CorpusFormState = {
   evidence: CorpusRightsEvidence;
   scopes: CorpusScope[];
   text: string;
+  /** Where the text comes from (owner decision 2026-10-18). */
+  contentSource: ContentSource;
+  file: File | null;
+  url: string;
 };
 
 export function emptyCorpusForm(scope?: CorpusScope): CorpusFormState {
@@ -61,7 +71,17 @@ export function emptyCorpusForm(scope?: CorpusScope): CorpusFormState {
     evidence: {},
     scopes: [scope ?? { scopeType: "module", scopeKey: "" }],
     text: "",
+    contentSource: "text",
+    file: null,
+    url: "",
   };
+}
+
+/** True when the chosen content source has what it needs to be sent. */
+export function contentReady(form: CorpusFormState): boolean {
+  if (form.contentSource === "file") return corpusFileProblem(form.file) === null;
+  if (form.contentSource === "web") return webUrlProblem(form.url) === null;
+  return true;
 }
 
 export function CorpusDocumentForm({
@@ -193,23 +213,20 @@ export function CorpusDocumentForm({
         ))}
       </fieldset>
 
-      <label htmlFor={`${idPrefix}-text`} className="text-sm font-medium text-somnus-text">
-        {t("corpus.textLabel")}
-      </label>
-      <p id={`${idPrefix}-text-hint`} className="text-sm text-somnus-subtle">
-        {t("corpus.textHint")}
-      </p>
-      <textarea
-        id={`${idPrefix}-text`}
-        aria-describedby={`${idPrefix}-text-hint`}
-        rows={8}
-        className="rounded-md border border-somnus-muted/40 bg-somnus-surface px-3 py-2 text-somnus-text"
-        value={form.text}
-        onChange={(event) => onChange({ ...form, text: event.target.value })}
+      <ContentSourcePicker
+        idPrefix={idPrefix}
+        source={form.contentSource}
+        text={form.text}
+        file={form.file}
+        url={form.url}
+        onSource={(contentSource) => onChange({ ...form, contentSource })}
+        onText={(text) => onChange({ ...form, text })}
+        onFile={(file) => onChange({ ...form, file })}
+        onUrl={(url) => onChange({ ...form, url })}
       />
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={busy || form.title.trim() === ""}>
+        <Button type="submit" disabled={busy || form.title.trim() === "" || !contentReady(form)}>
           {editing ? t("corpus.save") : t("corpus.create")}
         </Button>
         {editing && onCancel ? (

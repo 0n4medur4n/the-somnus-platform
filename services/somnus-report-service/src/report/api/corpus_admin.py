@@ -29,27 +29,42 @@ two admin surfaces behave alike for the console.
 
 from __future__ import annotations
 
+import base64
+import binascii
+import hashlib
+
 from fastapi import APIRouter, Header, HTTPException, Request, status
 
+from report.corpus.extraction import MAX_FILE_BYTES, ExtractionError, extract
+from report.corpus.file_store import CorpusFileStore, CorpusFileStoreError, object_name
 from report.corpus.repository import (
+    ORIGIN_FILE,
+    ORIGIN_WEB_PAGE,
     CorpusRepository,
     CorpusStateError,
+    DocumentOrigin,
     DocumentScope,
     ReferenceDocument,
 )
 from report.corpus.rights import RightsError, build_evidence, parse_evidence
+from report.corpus.web_page import WebPageError
+from report.corpus.web_page import fetch as fetch_web_page
 from report.schemas.corpus import (
     CorpusDocumentCreateRequestDTO,
     CorpusDocumentDetailDTO,
     CorpusDocumentDTO,
     CorpusDocumentEditRequestDTO,
+    CorpusDocumentOriginDTO,
     CorpusDocumentPageDTO,
+    CorpusFileDTO,
+    CorpusFileUploadRequestDTO,
     CorpusPublishRequestDTO,
     CorpusRetireRequestDTO,
     CorpusRightsEvidenceDTO,
     CorpusScopeDTO,
     CorpusSearchRequestDTO,
     CorpusVersionResultDTO,
+    CorpusWebPageRequestDTO,
     SrcArtifactFieldsDTO,
     SrcEnrichmentPageDTO,
     SrcEnrichmentViewDTO,
@@ -97,7 +112,20 @@ def _evidence_json(evidence: CorpusRightsEvidenceDTO | None) -> str | None:
     )
 
 
-def _to_dto(document: ReferenceDocument) -> CorpusDocumentDTO:
+def _origin_dto(origin: DocumentOrigin | None) -> CorpusDocumentOriginDTO | None:
+    if origin is None:
+        return None
+    return CorpusDocumentOriginDTO(
+        kind="file" if origin.kind == ORIGIN_FILE else "web_page",
+        filename=origin.filename,
+        content_type=origin.content_type,
+        size_bytes=origin.size_bytes,
+        source_url=origin.source_url,
+        added_at=origin.added_at,
+    )
+
+
+def _to_dto(document: ReferenceDocument, origin: DocumentOrigin | None = None) -> CorpusDocumentDTO:
     return CorpusDocumentDTO(
         id=document.id,
         title=document.title,
@@ -116,7 +144,16 @@ def _to_dto(document: ReferenceDocument) -> CorpusDocumentDTO:
             for scope in document.scopes
         ],
         chunk_count=document.chunk_count,
+        origin=_origin_dto(origin),
     )
+
+
+def _to_dtos(
+    repository: CorpusRepository, documents: list[ReferenceDocument]
+) -> list[CorpusDocumentDTO]:
+    """Many documents with their origins, read in one query."""
+    origins = repository.origins([document.id for document in documents])
+    return [_to_dto(document, origins.get(document.id)) for document in documents]
 
 
 def _scopes(scopes: list[CorpusScopeDTO]) -> list[DocumentScope]:
@@ -153,7 +190,7 @@ def search_documents(body: CorpusSearchRequestDTO, request: Request) -> CorpusDo
             limit=body.limit or _DEFAULT_SEARCH_LIMIT,
         )
         return CorpusDocumentPageDTO(
-            documents=[_to_dto(document) for document in documents],
+            documents=_to_dtos(repository, list(documents)),
             current_version=repository.current_version(),
         )
 
@@ -177,7 +214,8 @@ def get_document(document_id: str, request: Request) -> CorpusDocumentDetailDTO:
         except CorpusStateError as error:
             raise _refuse(error) from error
         return CorpusDocumentDetailDTO(
-            document=_to_dto(document), chunks=repository.chunk_texts(document_id)
+            document=_to_dto(document, repository.origin(document_id)),
+            chunks=repository.chunk_texts(document_id),
         )
 
 
@@ -247,7 +285,7 @@ def edit_document(
         except (CorpusStateError, RightsError) as error:
             raise _refuse(error) from error
         session.commit()
-        return _to_dto(document)
+        return _to_dto(document, repository.origin(document_id))
 
 
 @router.post(
@@ -340,13 +378,190 @@ def list_sources(request: Request) -> SrcEnrichmentPageDTO:
                     cited_by_rules=list(source.cited_by_rules),
                 ),
                 content_version=artifact.content_version,
-                enrichments=[
-                    _to_dto(document)
-                    for document in repository.search(
-                        scope_type="clinical_source", scope_key=source.id, limit=200
-                    )
-                ],
+                enrichments=_to_dtos(
+                    repository,
+                    list(
+                        repository.search(
+                            scope_type="clinical_source", scope_key=source.id, limit=200
+                        )
+                    ),
+                ),
             )
             for source in artifact.sources
         ]
     return SrcEnrichmentPageDTO(sources=views)
+
+
+# --- originals: an uploaded file or one web page (owner decision 2026-10-18) ----
+
+
+def _file_store(request: Request) -> CorpusFileStore:
+    store: CorpusFileStore | None = getattr(request.app.state, "corpus_file_store", None)
+    if store is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="no storage is configured for corpus originals",
+        )
+    return store
+
+
+def _filename(raw: str, extension: str) -> str:
+    """A display name for the original: the uploader's, made safe, with the right extension."""
+    name = raw.replace("\\", "/").rsplit("/", 1)[-1]
+    name = "".join(ch for ch in name if ch.isprintable() and ch not in '<>:"|?*').strip(" .")
+    stem = name.rsplit(".", 1)[0] if "." in name else name
+    return f"{(stem or 'documento')[:200]}.{extension}"
+
+
+def _replace_text(
+    request: Request,
+    document_id: str,
+    actor: str,
+    text: str,
+    *,
+    kind: str,
+    object_name: str | None = None,
+    filename: str | None = None,
+    content_type: str | None = None,
+    size_bytes: int | None = None,
+    sha256: str | None = None,
+    source_url: str | None = None,
+) -> CorpusDocumentDTO:
+    """Set a draft's text and its origin together, or neither (one transaction)."""
+    with request.app.state.corpus_session_factory() as session:
+        repository = CorpusRepository(session)
+        try:
+            repository.edit_draft(document_id, text=text)
+            repository.set_origin(
+                document_id,
+                kind=kind,
+                added_by=actor,
+                object_name=object_name,
+                filename=filename,
+                content_type=content_type,
+                size_bytes=size_bytes,
+                sha256=sha256,
+                source_url=source_url,
+            )
+            document = repository.get(document_id)
+        except (CorpusStateError, RightsError) as error:
+            raise _refuse(error) from error
+        session.commit()
+        return _to_dto(document, repository.origin(document_id))
+
+
+def _require_draft(request: Request, document_id: str) -> None:
+    """Refuse before any parsing, fetching or storing when the document cannot take a text."""
+    with request.app.state.corpus_session_factory() as session:
+        try:
+            document = CorpusRepository(session).get(document_id)
+        except CorpusStateError as error:
+            raise _refuse(error) from error
+    if document.status != "draft":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"document {document_id} is {document.status}; only a draft takes a new text",
+        )
+
+
+@router.post(
+    "/documents/{document_id}/file",
+    response_model=CorpusDocumentDTO,
+    summary="Upload a PDF or Word original; its text becomes the draft's text.",
+)
+def upload_file(
+    document_id: str,
+    body: CorpusFileUploadRequestDTO,
+    request: Request,
+    x_somnus_actor_id: str | None = Header(default=None),
+) -> CorpusDocumentDTO:
+    """The bytes decide the type (never the name); the original is kept as uploaded."""
+    actor = _actor(x_somnus_actor_id)
+    store = _file_store(request)
+    # Checked on the encoded length first, so an oversized body is never decoded.
+    if len(body.content_base64) > (MAX_FILE_BYTES * 4) // 3 + 4:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="the file is larger than the corpus accepts",
+        )
+    try:
+        data = base64.b64decode(body.content_base64, validate=True)
+    except (binascii.Error, ValueError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="the file is not valid base64"
+        ) from error
+    _require_draft(request, document_id)
+    try:
+        extracted = extract(data)
+    except ExtractionError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)
+        ) from error
+    digest = hashlib.sha256(data).hexdigest()
+    name = object_name(document_id, digest, extracted.extension)
+    try:
+        store.put(name, data, extracted.content_type)
+    except CorpusFileStoreError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)
+        ) from error
+    return _replace_text(
+        request,
+        document_id,
+        actor,
+        extracted.text,
+        kind=ORIGIN_FILE,
+        object_name=name,
+        filename=_filename(body.filename, extracted.extension),
+        content_type=extracted.content_type,
+        size_bytes=len(data),
+        sha256=digest,
+    )
+
+
+@router.post(
+    "/documents/{document_id}/web-page",
+    response_model=CorpusDocumentDTO,
+    summary="Fetch one web page; its readable text becomes the draft's text.",
+)
+def fetch_page(
+    document_id: str,
+    body: CorpusWebPageRequestDTO,
+    request: Request,
+    x_somnus_actor_id: str | None = Header(default=None),
+) -> CorpusDocumentDTO:
+    """One page, on request, never a crawl. Fetched again only when asked again."""
+    actor = _actor(x_somnus_actor_id)
+    _require_draft(request, document_id)
+    fetcher = getattr(request.app.state, "corpus_web_fetcher", fetch_web_page)
+    try:
+        page = fetcher(body.url)
+    except WebPageError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)
+        ) from error
+    return _replace_text(
+        request, document_id, actor, page.text, kind=ORIGIN_WEB_PAGE, source_url=page.url
+    )
+
+
+@router.get(
+    "/documents/{document_id}/file",
+    response_model=CorpusFileDTO,
+    summary="The uploaded original, exactly as it was uploaded.",
+)
+def download_file(document_id: str, request: Request) -> CorpusFileDTO:
+    store = _file_store(request)
+    with request.app.state.corpus_session_factory() as session:
+        origin = CorpusRepository(session).origin(document_id)
+    if origin is None or origin.kind != ORIGIN_FILE or not origin.object_name:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="no uploaded original")
+    try:
+        data = store.get(origin.object_name)
+    except CorpusFileStoreError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    return CorpusFileDTO(
+        filename=origin.filename or "documento",
+        content_type=origin.content_type or "application/octet-stream",
+        content_base64=base64.b64encode(data).decode("ascii"),
+    )

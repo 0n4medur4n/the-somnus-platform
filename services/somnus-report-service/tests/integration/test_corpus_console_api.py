@@ -26,6 +26,7 @@ from report.corpus.chunking import CITATION_ONLY_MAX_CHARACTERS
 from report.corpus.models import (
     CorpusVersionRow,
     ReferenceDocumentChunkRow,
+    ReferenceDocumentOriginRow,
     ReferenceDocumentRow,
     ReferenceDocumentScopeRow,
 )
@@ -89,6 +90,7 @@ def sources() -> _StubSources:
 def client(corpus_engine: Engine, sources: _StubSources) -> Iterator[TestClient]:
     with Session(corpus_engine) as session:
         for table in (
+            ReferenceDocumentOriginRow,
             ReferenceDocumentScopeRow,
             ReferenceDocumentChunkRow,
             ReferenceDocumentRow,
@@ -336,7 +338,10 @@ def test_no_route_deletes_anything(client: TestClient) -> None:
     assert served, "the application serves nothing at all"
 
     corpus = [(path, method) for path, method in served if path.startswith(CORPUS)]
-    assert len(corpus) == 7, f"expected the seven corpus routes, got {sorted(corpus)}"
+    # Seven from Checkpoint 16.3, plus three from the owner decision of 2026-10-18
+    # (Addendum B §B6 item 3): upload an original, fetch a web page, download the
+    # original. None of the three deletes; the assertions below still hold for all.
+    assert len(corpus) == 10, f"expected the ten corpus routes, got {sorted(corpus)}"
 
     # Nothing anywhere in this service deletes, not just nothing in the corpus:
     # §B3's rule is about the data, and a delete route elsewhere would reach the

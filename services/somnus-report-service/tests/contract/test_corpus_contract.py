@@ -15,6 +15,7 @@ owns.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,13 +27,17 @@ from report.schemas.corpus import (
     CorpusDocumentDetailDTO,
     CorpusDocumentDTO,
     CorpusDocumentEditRequestDTO,
+    CorpusDocumentOriginDTO,
     CorpusDocumentPageDTO,
+    CorpusFileDTO,
+    CorpusFileUploadRequestDTO,
     CorpusPublishRequestDTO,
     CorpusRetireRequestDTO,
     CorpusRightsEvidenceDTO,
     CorpusScopeDTO,
     CorpusSearchRequestDTO,
     CorpusVersionResultDTO,
+    CorpusWebPageRequestDTO,
     SrcArtifactFieldsDTO,
     SrcEnrichmentPageDTO,
     SrcEnrichmentViewDTO,
@@ -59,8 +64,37 @@ DOCUMENT = CorpusDocumentDTO(
     chunk_count=2,
 )
 
+FILE_ORIGIN = CorpusDocumentOriginDTO(
+    kind="file",
+    filename="guia-higiene.pdf",
+    content_type="application/pdf",
+    size_bytes=182_331,
+    added_at=datetime(2026, 10, 18, 9, 30, tzinfo=UTC),
+)
+
 CASES: list[tuple[str, Any]] = [
     ("CorpusDocument", DOCUMENT),
+    ("CorpusDocument", DOCUMENT.model_copy(update={"origin": FILE_ORIGIN})),
+    ("CorpusDocumentOrigin", FILE_ORIGIN),
+    (
+        "CorpusDocumentOrigin",
+        CorpusDocumentOriginDTO(
+            kind="web_page",
+            source_url="https://example.org/higiene",
+            added_at=datetime(2026, 10, 18, 9, 30, tzinfo=UTC),
+        ),
+    ),
+    ("CorpusWebPageRequest", CorpusWebPageRequestDTO(url="https://example.org/higiene")),
+    (
+        "CorpusFileUploadRequest",
+        CorpusFileUploadRequestDTO(filename="guia.pdf", content_base64="JVBERi0xLjQK"),
+    ),
+    (
+        "CorpusFile",
+        CorpusFileDTO(
+            filename="guia.pdf", content_type="application/pdf", content_base64="JVBERi0xLjQK"
+        ),
+    ),
     ("CorpusDocumentDetail", CorpusDocumentDetailDTO(document=DOCUMENT, chunks=["Un párrafo."])),
     ("CorpusDocumentPage", CorpusDocumentPageDTO(documents=[DOCUMENT], current_version=3)),
     (

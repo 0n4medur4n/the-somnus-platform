@@ -369,6 +369,29 @@
       "licence": "Licence",
       "url": "Link",
       "holder": "Licence holder"
+    },
+    "content": {
+      "title": "Content",
+      "source": {
+        "text": "Type text",
+        "file": "Upload PDF or Word",
+        "web": "Web page"
+      },
+      "fileLabel": "File",
+      "fileHint": "PDF or Word (.docx), up to 20 MB. The original is kept and its text is extracted into this draft; scanned PDFs need OCR before uploading.",
+      "fileMissing": "Choose a file.",
+      "fileType": "Only PDF or Word (.docx) files are accepted.",
+      "fileEmpty": "The file is empty.",
+      "fileTooLarge": "The file is larger than 20 MB.",
+      "urlLabel": "Page address",
+      "urlHint": "One page is fetched (never the whole site) and its text goes into this draft. You can fetch it again by editing the draft.",
+      "urlInvalid": "Enter a full address starting with https://",
+      "fileRefused": "The file could not be read. Check it is a PDF or Word file with text (not scanned or password-protected) and under 20 MB.",
+      "pageRefused": "The page could not be fetched: it must be a public http(s) address that answers with a web page.",
+      "added": "Content added to the draft.",
+      "fromFile": "Text extracted from {{name}}",
+      "fromPage": "Text from the page",
+      "download": "Download original"
     }
   },
   "corpusSources": {

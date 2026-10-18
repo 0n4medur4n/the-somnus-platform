@@ -31,6 +31,7 @@ import type {
   CorpusRetireRequest,
   CorpusSearchRequest,
   CorpusVersionResult,
+  CorpusWebPageRequest,
   Dashboards,
   DriveAccount,
   DriveBlock,
@@ -64,7 +65,8 @@ import type {
   StaffInvitationListResponse,
   StaffInvitationPendingResponse,
 } from "@somnus/api-contracts";
-import { api } from "./api.js";
+import { api, type DownloadedFile } from "./api.js";
+import { RawUpload } from "./raw-upload.js";
 
 /**
  * The console's entire backend surface (Addendum A §A2.1): the shared session
@@ -220,6 +222,25 @@ export const edge = {
     ),
   corpusSources: (): Promise<SrcEnrichmentPage> =>
     api.get<SrcEnrichmentPage>("/admin/v1/corpus/sources"),
+  // Owner decision 2026-10-18: a draft's text from a PDF/Word original or one
+  // web page, and the original downloaded again. The bytes go up raw; the name
+  // rides URL-encoded in a header (a header carries ASCII only).
+  uploadCorpusFile: (
+    documentId: string,
+    file: File,
+    contentType: string,
+  ): Promise<CorpusDocument> =>
+    api.postFile<CorpusDocument>(
+      `/admin/v1/corpus/documents/${encodeURIComponent(documentId)}/file`,
+      new RawUpload(file, contentType, { "x-somnus-filename": encodeURIComponent(file.name) }),
+    ),
+  fetchCorpusWebPage: (documentId: string, body: CorpusWebPageRequest): Promise<CorpusDocument> =>
+    api.post<CorpusDocument>(
+      `/admin/v1/corpus/documents/${encodeURIComponent(documentId)}/web-page`,
+      body,
+    ),
+  downloadCorpusFile: (documentId: string): Promise<DownloadedFile> =>
+    api.getFile(`/admin/v1/corpus/documents/${encodeURIComponent(documentId)}/file`),
 
   // --- Internal roles (admin_roles_assign, platform_super_admin only) ---
   assignRole: (body: AdminRoleAssignRequest): Promise<AdminRoleAssignResponse> =>

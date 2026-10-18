@@ -108,3 +108,27 @@ class ReferenceDocumentScopeRow(CorpusBase):
     scope_type: Mapped[str] = mapped_column(String(16), primary_key=True)
     # INS, SAFE-006, SRC-05 — or the empty string for `general`, which has no key.
     scope_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+
+
+class ReferenceDocumentOriginRow(CorpusBase):
+    """Where a document's text came from (owner decision 2026-10-18).
+
+    `file`: an uploaded PDF or Word document, kept in the corpus module's private
+    bucket under `object_name`. `web_page`: one page fetched from `source_url`.
+    At most one per document.
+    """
+
+    __tablename__ = "reference_document_origins"
+
+    document_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("reference_documents.id"), primary_key=True
+    )
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    object_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    content_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    added_by: Mapped[str] = mapped_column(String(36), nullable=False)
+    added_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)

@@ -33,15 +33,34 @@ export class AdminCorpusService {
     correlationId: string;
     schema: ZodType<T>;
     body?: unknown;
+    /** Longer for the routes that read a file or fetch a page. */
+    timeoutMs?: number;
   }): Promise<T> {
     const options = {
       correlationId: input.correlationId,
       headers: { [ACTOR_ID_HEADER]: input.actorId },
+      ...(input.timeoutMs ? { timeoutMs: input.timeoutMs } : {}),
     };
-    const response =
-      input.method === "GET"
-        ? await this.report.get(input.path, options)
-        : await this.report.post(input.path, { ...options, body: input.body ?? {} });
+    let response: Awaited<ReturnType<CloudRunClient["get"]>>;
+    try {
+      response =
+        input.method === "GET"
+          ? await this.report.get(input.path, options)
+          : await this.report.post(input.path, { ...options, body: input.body ?? {} });
+    } catch (error) {
+      // The report service refuses a file or a page it cannot use (unreadable,
+      // scanned, protected, too large, not public) with a 4xx the shared client
+      // would otherwise surface as a 500. It is the admin's input that was
+      // refused, so it is a validation failure -- and never a 5xx alert.
+      const upstream = error instanceof SomnusError ? error.details["upstreamStatus"] : undefined;
+      if (upstream === 400 || upstream === 413 || upstream === 422) {
+        throw new SomnusError(ErrorCode.VALIDATION_FAILED, "The corpus refused this input.", {
+          correlationId: input.correlationId,
+          details: { reason: "CORPUS_INPUT_REFUSED", upstreamStatus: upstream },
+        });
+      }
+      throw error;
+    }
 
     // A shape the report service did not promise is an INTERNAL error, never
     // something the console renders as the state of the corpus -- an admin who

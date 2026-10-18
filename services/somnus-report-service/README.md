@@ -140,6 +140,28 @@ cambia.
 uv run alembic -c alembic_content.ini upgrade head
 ```
 
+### Originales: PDF, Word y páginas web (decisión del propietario 2026-10-18)
+
+El texto de un **borrador** puede venir de un archivo PDF o Word (.docx) o de
+**una** página web (nunca un rastreo del sitio), además de escribirse a mano.
+Después sigue exactamente las mismas reglas: borrador, `rights_status` antes de
+publicar, troceado con el tope de §B4 y embeddings solo al publicar.
+
+- `corpus/extraction.py` decide el tipo por los **bytes** (nunca por el nombre) y
+  extrae el texto con `pypdf` y `python-docx`, con límites explícitos (20 MB,
+  600 páginas, tamaño descomprimido del .docx, 1 M caracteres). Un PDF escaneado
+  o protegido se rechaza con un motivo, nunca se lee a medias.
+- `corpus/web_page.py` descarga una página con guarda SSRF: solo http/https en
+  puertos estándar, todas las direcciones resueltas deben ser públicas, las
+  redirecciones se siguen a mano y se vuelven a comprobar, y el cuerpo se lee con
+  límite de tamaño y tiempo.
+- `corpus/file_store.py` guarda el original en el bucket privado del módulo
+  (`CORPUS_FILES_BUCKET`, API JSON de Cloud Storage con la identidad del
+  servicio) o, en desarrollo y tests, en `CORPUS_FILES_DIR`. Un despliegue sin
+  bucket rechaza las subidas (503).
+- `reference_document_origins` (migración `0002_document_origins`) guarda de
+  dónde vino el texto: nombre, tipo, tamaño y SHA-256 del archivo, o la URL.
+
 ## Layout
 
 `src/report/{main, api, infrastructure, schemas, settings}` — the same shell as

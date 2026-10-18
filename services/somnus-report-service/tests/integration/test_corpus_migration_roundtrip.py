@@ -15,6 +15,8 @@ CORPUS_TABLES = {
     "reference_documents",
     "reference_document_chunks",
     "reference_document_scopes",
+    # 0002 (owner decision 2026-10-18): the uploaded file or web page behind a document.
+    "reference_document_origins",
 }
 
 
