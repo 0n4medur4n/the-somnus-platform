@@ -118,3 +118,16 @@ def test_same_day_care_gets_the_drafted_s3_action() -> None:
     text = dict(evaluate(A, CALM | {"S3@end": YES}).texts)["T_SEGURIDAD"]
     assert "hoy mismo" in text and "112" in text
     assert "Aclarar impulsividad" not in text
+
+
+def test_a_paused_interview_keeps_the_warning_and_says_why_it_stopped() -> None:
+    answers = CALM | {
+        "Q11": Answer(value="dormido_sin_querer"),
+        "S2@ask_now:Q11": YES,
+        "S2_aviso": Answer(value="visto"),
+        "S2_seguro": NO,
+    }
+    result = evaluate(A, answers)
+    assert result.stopped_by == "S2_PAUSA"
+    assert result.accion_principal == "EVALUACION_PRIORITARIA"
+    assert [t for t, _ in result.texts] == ["S2_aviso", "T_SOMNOLENCIA", "S2_pausa"]

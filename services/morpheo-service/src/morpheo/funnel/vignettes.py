@@ -200,7 +200,7 @@ def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = Non
             if spec is None
             else _from_script(spec, step.definition)
         )
-        if step.kind == "info":
+        if step.key == "PROT":
             question = artifact.protection_text
         else:
             # Z1 shows the summary built from the answers given so far.

@@ -30,7 +30,7 @@ CATALOGUE_FILE = (
 CATALOGUE_STATUS = "BORRADOR \N{EN DASH} Jesús lo aprueba"
 # Patient-facing texts v0.2 gives only as system instructions, or not at all.
 DRAFT_STATUS = "BORRADOR \N{EN DASH} Jesús"
-REQUIRED_DRAFTS = ("S2_aviso", "T_RECIENTE")
+REQUIRED_DRAFTS = ("S2_aviso", "S2_seguro", "S2_pausa", "T_RECIENTE")
 MAX_PHRASE_LENGTH = 160
 MAX_DRAFT_LENGTH = 600
 _PLACEHOLDER = re.compile(r"\[([^\]]+)\]")

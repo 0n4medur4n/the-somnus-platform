@@ -113,3 +113,14 @@ def test_the_cli_fails_when_a_vignette_fails(
     cases.write_text(json.dumps({"vignettes": [broken]}, ensure_ascii=False), encoding="utf-8")
     assert main(["--file", str(cases)]) == 1
     assert "0/1" in capsys.readouterr().out
+
+
+def test_the_driver_sees_the_warning_in_the_interview_before_continuing() -> None:
+    run = run_vignette(_vignette("V-10"))
+    keys = [a.key for a in run.asked]
+    at = keys.index("S2@exception:Q01")
+    assert keys[at + 1 : at + 3] == ["S2_aviso", "S2_seguro"]
+    drafts = funnel_catalogue().drafts
+    assert run.asked[at + 1].question == drafts["S2_aviso"].text
+    assert run.asked[at + 2].question == drafts["S2_seguro"].text
+    assert run.asked[at + 2].answer == "Sí"

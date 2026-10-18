@@ -142,7 +142,7 @@ def test_the_z1_summary_joins_with_semicolons_and_has_a_fallback() -> None:
 
 
 def test_drafts_are_marked_for_the_clinical_lead() -> None:
-    assert set(C.drafts) == {"S2_aviso", "T_RECIENTE"}
+    assert set(C.drafts) == {"S2_aviso", "S2_seguro", "S2_pausa", "T_RECIENTE"}
     assert all(d.status == DRAFT_STATUS == "BORRADOR \N{EN DASH} Jesús" for d in C.drafts.values())
     assert C.lists["accion_seguridad"].status == DRAFT_STATUS
 

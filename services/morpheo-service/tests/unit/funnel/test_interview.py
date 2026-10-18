@@ -117,3 +117,35 @@ def test_unknown_never_closes_a_branch() -> None:
 def test_a_no_to_i1_ends_branch_i() -> None:
     keys = _walk({"AGE": ADULT, "Q08": Answer(value=["despertares"]), "I1": Answer(value="no")})
     assert "I1" in keys and "I2" not in keys
+
+
+# --- p. 10: «S2: primero advertencia; seguir solo si está en un lugar seguro» ---
+
+DROWSY = {"AGE": ADULT, "Q11": Answer(value="dormido_sin_querer"), "S2@ask_now": Answer(value="si")}
+
+
+def test_an_s2_yes_brings_the_warning_and_the_safe_place_question_at_once() -> None:
+    keys = _walk(DROWSY | {"S2_seguro": Answer(value="si")})
+    at = keys.index("S2@ask_now:Q11")
+    assert keys[at + 1 : at + 3] == ["S2_aviso", "S2_seguro"]
+    assert keys.count("S2_aviso") == 1 and keys.count("S2_seguro") == 1
+    assert keys[-2:] == ["Z1", "Z2"]
+
+
+def test_the_warning_also_follows_an_s2_yes_from_the_narrative() -> None:
+    narrative = Answer(value="x", text="Soy camionero y conduzco de noche")
+    keys = _walk(
+        {"AGE": ADULT, "Q01": narrative, "S2@exception": Answer(value="si")}, stop_at="Q02"
+    )
+    assert keys[-3:] == ["S2@exception:Q01", "S2_aviso", "S2_seguro"]
+
+
+def test_not_being_in_a_safe_place_pauses_the_interview() -> None:
+    for unsafe in (Answer(value="no"), Answer(absence=NO_LO_SE), Answer(absence=PREFIERO)):
+        keys = _walk(DROWSY | {"S2_seguro": unsafe})
+        assert keys[-1] == "S2_seguro", unsafe
+
+
+def test_an_s2_no_brings_no_warning() -> None:
+    keys = _walk({"AGE": ADULT, "Q11": Answer(value="dormido_sin_querer")})
+    assert "S2_aviso" not in keys and "S2_seguro" not in keys

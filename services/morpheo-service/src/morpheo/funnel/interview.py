@@ -15,6 +15,11 @@ Order (v0.2 p. 14, with Jesús's 18/10/2026 change, V-02):
   (D-08); "prefiero no responder" is never pressed.
 * A "Sí" to S1 or S4, anywhere, ends the interview (p. 10). So does AGE < 18
   (D-33) or an age still unknown after one clarification (R02).
+* A "Sí" to S2, wherever it is asked, is followed at once by the driving
+  warning and by a question on whether the person is in a safe place now
+  (p. 10: "S2: primero advertencia; seguir solo si está en un lugar seguro").
+  Anything but "Sí" pauses the interview. Both texts are drafts for the
+  clinical lead (the phrase catalogue); v0.2 gives only the instruction.
 
 Answers are stored by step key: the step id, plus "@stage" for the safety
 questions that can be asked more than once (S1@start, S4@exception:Q06,
@@ -34,6 +39,12 @@ from morpheo.funnel.artifact import FunnelArtifact, StepDef
 YES, NO = "si", "no"
 NO_LO_SE, PREFIERO = "no_lo_se", "prefiero_no_responder"
 SAFETY = ("S1", "S2", "S3", "S4")
+# The steps after an S2 "Sí" (p. 10). Their text is a catalogue draft, filled
+# by `render.question_text`, so the definitions carry none.
+S2_WARNING, S2_SAFE = "S2_aviso", "S2_seguro"
+S2_PAUSED = "S2_PAUSA"
+_S2_WARNING_STEP = StepDef(S2_WARNING, "p. 10", "safety", "info", "", None)
+_S2_SAFE_STEP = StepDef(S2_SAFE, "p. 10", "safety", "yes_no", "", None)
 
 
 @dataclass(frozen=True)
@@ -144,6 +155,9 @@ class Interview:
             return "S1"
         if self.safety("S4") == YES:
             return "S4"
+        safe = self.answers.get(S2_SAFE)
+        if safe is not None and safe.value != YES:
+            return S2_PAUSED
         age = self.answer("AGE")
         if age is not None and isinstance(age.value, int) and age.value < 18:
             return "AGE_MENOR"
@@ -208,6 +222,15 @@ def next_step(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> Step |
     iv = Interview(artifact, answers)
     if iv.stopped():
         return None
+
+    # 0. After an S2 "Sí": first the warning, then continue only if safe (p. 10).
+    if iv.safety("S2") == YES:
+        if S2_WARNING not in answers:
+            return Step(S2_WARNING, _S2_WARNING_STEP, "info", "p. 10: S2 = Sí, primero advertencia")
+        if S2_SAFE not in answers:
+            return Step(
+                S2_SAFE, _S2_SAFE_STEP, "ask", "p. 10: seguir solo si está en un lugar seguro"
+            )
 
     def already_settled(question: str) -> bool:
         # A "Sí" needs no second asking. S1/S4 are asked again when a later
