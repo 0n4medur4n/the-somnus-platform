@@ -97,7 +97,7 @@
   },
   "users": {
     "title": "Users",
-    "searchLabel": "Search by email",
+    "searchLabel": "Filter by email",
     "searchCta": "Search",
     "truncated": "There are more results than fit. Narrow your search.",
     "empty": "No account matches.",
@@ -114,7 +114,9 @@
     "reactivate": "Reactivate account",
     "reasonLabel": "Reason",
     "reasonHint": "Recorded against your identity. Required.",
-    "statusChanged": "Status updated."
+    "statusChanged": "Status updated.",
+    "colCreated": "Signed up",
+    "colActions": "Actions"
   },
   "status": {
     "active": "Active",
@@ -691,7 +693,10 @@
       "assessmentsCompleted": "Assessments completed",
       "reportsGenerated": "Reports generated",
       "notificationsRequested": "Emails sent"
-    }
+    },
+    "driveTitle": "Team Drive",
+    "driveBody": "Protocols, rules and algorithms, end-to-end encrypted.",
+    "openDrive": "Open the Drive"
   },
   "ui": {
     "close": "Close"

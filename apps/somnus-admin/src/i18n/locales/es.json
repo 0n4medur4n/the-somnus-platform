@@ -97,7 +97,7 @@
   },
   "users": {
     "title": "Personas usuarias",
-    "searchLabel": "Buscar por correo",
+    "searchLabel": "Filtrar por correo",
     "searchCta": "Buscar",
     "truncated": "Hay más resultados de los que caben. Afina la búsqueda.",
     "empty": "Ninguna cuenta coincide.",
@@ -114,7 +114,9 @@
     "reactivate": "Reactivar cuenta",
     "reasonLabel": "Motivo",
     "reasonHint": "Queda registrado con tu identidad. Obligatorio.",
-    "statusChanged": "Estado actualizado."
+    "statusChanged": "Estado actualizado.",
+    "colCreated": "Alta",
+    "colActions": "Acciones"
   },
   "status": {
     "active": "Activa",
@@ -691,7 +693,10 @@
       "assessmentsCompleted": "Cuestionarios completados",
       "reportsGenerated": "Informes generados",
       "notificationsRequested": "Correos enviados"
-    }
+    },
+    "driveTitle": "Drive del equipo",
+    "driveBody": "Protocolos, reglas y algoritmos, cifrados de extremo a extremo.",
+    "openDrive": "Abrir el Drive"
   },
   "ui": {
     "close": "Cerrar"
