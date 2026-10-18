@@ -11,6 +11,8 @@ session conflicts with the build plan, the build plan wins.
 Also read before coding: the root README, every ADR relevant to the task,
 and the README of every service you will touch.
 
+Morpheo: the embudo v0.2 (`services/morpheo-service/clinical/Morpheo_algoritmo_embudo_v02.pdf`) prevails over Algoritmos v1, the 22 safety signals, L0-L4, the CORE questions and the claims registry wherever they conflict (ADR 0020).
+
 ## Non-negotiable rules
 
 (summarized from the build plan; the plan's full text governs)
