@@ -87,7 +87,16 @@ async function send(
   const response = await fetch(`${apiBase()}${path}`, init);
   if (response.status === 204) return { status: 204, data: undefined };
   const text = await response.text();
-  return { status: response.status, data: text.length > 0 ? JSON.parse(text) : undefined };
+  if (text.length === 0) return { status: response.status, data: undefined };
+  try {
+    return { status: response.status, data: JSON.parse(text) };
+  } catch {
+    // Not an API answer at all -- typically the console's own index.html, served
+    // by Hosting for a path it does not forward to edge-api. Reading it as "no
+    // session" is how sign-in once failed silently (2026-10-18); it is a
+    // gateway failure, and says so.
+    return { status: 502, data: { error: { code: "NON_JSON_RESPONSE" } } };
+  }
 }
 
 function toError(raw: RawResponse): ApiRequestError {
