@@ -1,0 +1,987 @@
+{
+  "status": "BORRADOR – Jesús las corrige",
+  "note": "Casos simulados para probar el motor v2.0 antes de publicarlo. Ocho salen de las pruebas funcionales de v0.2 (p. 14) y cuatro son casos límite. Jesús puede corregirlos o sustituirlos por los suyos. Las respuestas que un caso no da toman un valor por defecto visible en la salida.",
+  "vignettes": [
+    {
+      "id": "FT-1",
+      "title": "Insomnio persistente sin otras señales",
+      "origin": "v0.2 p. 14, prueba 1",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Desde hace unos seis meses me despierto casi todas las noches y me cuesta volver a dormirme.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto, tardo en dormirme y me despierto varias veces"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": [],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [
+          "despertares"
+        ],
+        "Q05": 4,
+        "Q03": {
+          "value": 6,
+          "unit": "meses"
+        },
+        "I1": "si",
+        "I2": "si"
+      },
+      "expected": {
+        "accion_principal": "TERAPIA",
+        "templates_include": [
+          "T_INSOMNIO"
+        ],
+        "templates_exclude": [
+          "T_PSG",
+          "T_COMBINADO",
+          "T_HABITOS",
+          "T_RESPIRACION"
+        ]
+      }
+    },
+    {
+      "id": "FT-2",
+      "title": "Mismo caso + pausas observadas",
+      "origin": "v0.2 p. 14, prueba 2",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Desde hace seis meses me despierto muchas noches y mi mujer dice que a veces dejo de respirar.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto, tardo en dormirme y me despierto varias veces"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": [
+          "dejar_de_respirar"
+        ],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [
+          "despertares"
+        ],
+        "Q05": 4,
+        "Q03": {
+          "value": 6,
+          "unit": "meses"
+        },
+        "I1": "si",
+        "I2": "si",
+        "R2a": "no",
+        "R2b": "no",
+        "R2c": "no",
+        "R3": "no",
+        "R4": [],
+        "R6": "no"
+      },
+      "expected": {
+        "accion_principal": "CONSULTA_ESTUDIO",
+        "templates_include": [
+          "T_COMBINADO"
+        ],
+        "templates_exclude": [
+          "T_INSOMNIO",
+          "T_RESPIRACION",
+          "T_PSG"
+        ],
+        "asked_exclude": [
+          "R1"
+        ]
+      }
+    },
+    {
+      "id": "FT-3",
+      "title": "Solo 5 horas disponibles por trabajo",
+      "origin": "v0.2 p. 14, prueba 3",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Trabajo muchas horas y solo puedo dormir unas cinco. Cuando duermo, duermo bien.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto a la una, me duermo enseguida y a las seis suena el despertador"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 5,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "no",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": [],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "si",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [],
+        "Q05": 5,
+        "Q03": {
+          "value": 1,
+          "unit": "años"
+        },
+        "T_HABITOS.cambio": "proteger tiempo de descanso",
+        "H2": {
+          "value": {
+            "sueno": "23:00",
+            "despertar": "09:00"
+          }
+        },
+        "H3a": "no",
+        "H3b": "no",
+        "H4": "si",
+        "H5": "no"
+      },
+      "expected": {
+        "accion_principal": "HABITOS",
+        "templates_include": [
+          "T_HABITOS"
+        ],
+        "templates_exclude": [
+          "T_INSOMNIO",
+          "T_COMBINADO"
+        ]
+      }
+    },
+    {
+      "id": "FT-4",
+      "title": "Vive solo, desconoce el ronquido y se duerme al volante",
+      "origin": "v0.2 p. 14, prueba 4",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Vivo solo y me noto con mucho sueño durante el día.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Duermo de un tirón, pero me levanto cansado"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "dormido_sin_querer",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": {
+          "absence": "no_lo_se"
+        },
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [],
+        "Q05": 2,
+        "Q03": {
+          "value": 3,
+          "unit": "meses"
+        },
+        "S2@ask_now": "si",
+        "R1": {
+          "absence": "no_lo_se"
+        },
+        "R2a": {
+          "absence": "no_lo_se"
+        },
+        "R2b": "si",
+        "R2c": "no",
+        "R3": "si",
+        "R4": [],
+        "R6": "no",
+        "D2a": "no",
+        "D2b": "no"
+      },
+      "expected": {
+        "accion_principal": "EVALUACION_PRIORITARIA",
+        "templates_include": [
+          "S2_aviso",
+          "T_SOMNOLENCIA",
+          "T_RESPIRACION"
+        ],
+        "asked_include": [
+          "S2@ask_now"
+        ]
+      }
+    },
+    {
+      "id": "FT-5",
+      "title": "Estudio domiciliario negativo y sospecha vigente",
+      "origin": "v0.2 p. 14, prueba 5",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Ronco muy fuerte y me duermo sin querer. Ya me hicieron un estudio en casa y salió bien.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Duermo de un tirón, pero me levanto cansado"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": [
+          "ronca_fuerte"
+        ],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [],
+        "Q05": 0,
+        "Q03": {
+          "value": 2,
+          "unit": "años"
+        },
+        "R1": "no",
+        "R2a": "si",
+        "R2b": "si",
+        "R2c": "no",
+        "R3": "no",
+        "R4": [],
+        "R6": "si"
+      },
+      "expected": {
+        "accion_principal": "CONSULTA_ESTUDIO",
+        "templates_include": [
+          "T_PSG"
+        ],
+        "templates_exclude": [
+          "T_RESPIRACION"
+        ]
+      }
+    },
+    {
+      "id": "FT-6",
+      "title": "Bipolaridad e insomnio",
+      "origin": "v0.2 p. 14, prueba 6",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Me despierto casi todas las noches desde hace meses.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto, tardo en dormirme y me despierto varias veces"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Tengo trastorno bipolar y tomo litio",
+          "extracted": {
+            "bipolaridad": true
+          }
+        },
+        "Q15": [],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [
+          "despertares"
+        ],
+        "Q05": 4,
+        "Q03": {
+          "value": 6,
+          "unit": "meses"
+        },
+        "I1": "si",
+        "I2": "si"
+      },
+      "expected": {
+        "accion_principal": "TERAPIA",
+        "templates_include": [
+          "T_INSOMNIO"
+        ],
+        "flags_include": [
+          "ADAPTAR_TERAPIA"
+        ]
+      }
+    },
+    {
+      "id": "FT-7",
+      "title": "Duración desconocida",
+      "origin": "v0.2 p. 14, prueba 7",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Me cuesta mucho dormirme, no sabría decir desde cuándo.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto, tardo en dormirme y me despierto varias veces"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": [],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [
+          "dormirse"
+        ],
+        "Q05": 4,
+        "Q03": {
+          "absence": "no_lo_se"
+        },
+        "Q03@aclarar": {
+          "absence": "no_lo_se"
+        },
+        "I1": "si",
+        "I2": "si",
+        "I3": {
+          "absence": "no_lo_se"
+        }
+      },
+      "expected": {
+        "accion_principal": "INFORMACION_INSUFICIENTE",
+        "templates_include": [
+          "T_INCOMPLETO"
+        ],
+        "templates_exclude": [
+          "T_INSOMNIO"
+        ],
+        "asked_include": [
+          "Q03@aclarar"
+        ],
+        "pending_include": [
+          "desde cuándo le ocurre"
+        ]
+      }
+    },
+    {
+      "id": "FT-8",
+      "title": "Piernas con patrón completo",
+      "origin": "v0.2 p. 14, prueba 8",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Por la noche noto una molestia en las piernas que me obliga a moverlas y no me deja dormir.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto, tardo en dormirme y me despierto varias veces"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": [],
+        "Q16": "si",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [
+          "dormirse"
+        ],
+        "Q05": 5,
+        "Q03": {
+          "value": 8,
+          "unit": "meses"
+        },
+        "I1": "si",
+        "I2": "no",
+        "P2": "si"
+      },
+      "expected": {
+        "accion_principal": "CONSULTA_ESTUDIO",
+        "templates_include": [
+          "T_PIERNAS"
+        ],
+        "templates_exclude": [
+          "T_PSG"
+        ],
+        "asked_exclude": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "V-09",
+      "title": "Insomnio con ideación suicida",
+      "origin": "caso límite",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Llevo meses sin dormir bien y estoy muy cansada. A veces pienso que lo mejor sería quitarme la vida.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto, tardo en dormirme y me despierto varias veces"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": [],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "S4@exception": "si"
+      },
+      "expected": {
+        "accion_principal": "EMERGENCIA",
+        "stopped_by": "S4",
+        "templates_include": [
+          "T_SEGURIDAD"
+        ],
+        "asked_include": [
+          "S4@exception:Q01"
+        ],
+        "max_questions": 5
+      },
+      "note": "S4 se contesta «No» al principio; el relato la hace preguntar otra vez en ese momento (D-01)."
+    },
+    {
+      "id": "V-10",
+      "title": "Conductor profesional con somnolencia",
+      "origin": "caso límite",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Soy camionero y hago rutas largas de noche. Últimamente me cuesta mantenerme despierto.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto, tardo en dormirme y me despierto varias veces"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "dormido_sin_querer",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": [
+          "ronca_fuerte"
+        ],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "S2@exception": "si",
+        "Q08": [],
+        "Q05": 3,
+        "Q03": {
+          "value": 4,
+          "unit": "meses"
+        },
+        "R1": "no",
+        "R2a": "si",
+        "R2b": "si",
+        "R2c": "si",
+        "R3": "no",
+        "R4": [],
+        "R6": "no",
+        "D2a": "no",
+        "D2b": "no"
+      },
+      "expected": {
+        "accion_principal": "EVALUACION_PRIORITARIA",
+        "templates_include": [
+          "S2_aviso",
+          "T_SOMNOLENCIA",
+          "T_RESPIRACION"
+        ],
+        "asked_include": [
+          "S2@exception:Q01"
+        ],
+        "asked_exclude": [
+          "S2@ask_now",
+          "S2@end"
+        ]
+      },
+      "note": "S2 se pregunta en cuanto el relato dice «camionero» y no se repite tras Q11 ni al final (se confirma)."
+    },
+    {
+      "id": "V-11",
+      "title": "Duración desconocida, frecuencia no respondida y mucho impacto",
+      "origin": "caso límite",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "No duermo bien y lo noto muchísimo en el trabajo.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto, tardo en dormirme y me despierto varias veces"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "No puedo con mi vida, lo noto mucho en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Nada en especial"
+        },
+        "Q15": [],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": {
+          "absence": "prefiero_no_responder"
+        },
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [
+          "despertares"
+        ],
+        "Q05": {
+          "absence": "prefiero_no_responder"
+        },
+        "Q03": {
+          "absence": "no_lo_se"
+        },
+        "Q03@aclarar": {
+          "absence": "no_lo_se"
+        },
+        "I1": "si",
+        "I2": "si",
+        "I3": {
+          "absence": "no_lo_se"
+        }
+      },
+      "expected": {
+        "accion_principal": "INFORMACION_INSUFICIENTE",
+        "templates_include": [
+          "T_INCOMPLETO"
+        ],
+        "templates_exclude": [
+          "T_INSOMNIO",
+          "T_HABITOS"
+        ],
+        "asked_exclude": [
+          "Q05@aclarar",
+          "S3@end@aclarar"
+        ],
+        "pending_include": [
+          "S3"
+        ]
+      },
+      "note": "«Prefiero no responder» no se vuelve a preguntar; «No lo sé» sí, una vez (D-08)."
+    },
+    {
+      "id": "V-12",
+      "title": "Insomnio y posible apnea, con complejidad",
+      "origin": "caso límite",
+      "status": "BORRADOR – Jesús las corrige",
+      "narrative": "Desde hace un año duermo fatal, ronco y me despierto ahogándome. Tomo tramadol por la espalda.",
+      "answers": {
+        "AGE": 45,
+        "S1@start": "no",
+        "S4@start": "no",
+        "Q02": {
+          "text": "Descansar y estar bien durante el día"
+        },
+        "Q04": "no",
+        "Q06": {
+          "text": "Me acuesto, tardo en dormirme y me despierto varias veces"
+        },
+        "Q07": {
+          "value": {
+            "acostarse": "23:30",
+            "intentar_dormir": "23:45",
+            "despertarse": "07:00",
+            "levantarse": "07:15"
+          }
+        },
+        "Q09": {
+          "value": 6,
+          "unit": "horas"
+        },
+        "Q10": {
+          "text": "Estoy agotado y me cuesta concentrarme en el trabajo"
+        },
+        "Q11": "cansancio",
+        "Q12": "no",
+        "Q13": "si",
+        "Q14": {
+          "text": "Dolor de espalda, tomo tramadol",
+          "extracted": {
+            "opioides": true
+          }
+        },
+        "Q15": [
+          "ronca_fuerte",
+          "ahogo"
+        ],
+        "Q16": "no",
+        "Q17": "no",
+        "Q18": "no",
+        "PROT": "visto",
+        "S1@confirm": "sigue_igual",
+        "S2@confirm": "sigue_igual",
+        "S4@confirm": "sigue_igual",
+        "S2@end": "no",
+        "S3@end": "no",
+        "Z1": "si",
+        "Z2": {
+          "text": "Que me ayuden a organizarme"
+        },
+        "Q08": [
+          "despertares"
+        ],
+        "Q05": 4,
+        "Q03": {
+          "value": 1,
+          "unit": "años"
+        },
+        "I1": "si",
+        "I2": "si",
+        "R2a": "si",
+        "R2b": "no",
+        "R2c": "no",
+        "R3": "no",
+        "R4": [
+          "opioides"
+        ],
+        "R6": "no"
+      },
+      "expected": {
+        "accion_principal": "CONSULTA_ESTUDIO",
+        "templates_include": [
+          "T_COMBINADO",
+          "T_PSG"
+        ],
+        "templates_exclude": [
+          "T_INSOMNIO",
+          "T_RESPIRACION"
+        ]
+      },
+      "note": "«me despierto ahogándome» no es un término de riesgo de S1 (habla de la noche, no de ahora)."
+    }
+  ]
+}
