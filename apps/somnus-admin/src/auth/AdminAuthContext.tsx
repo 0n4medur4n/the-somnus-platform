@@ -1,4 +1,4 @@
-import type { AdminMeResponse } from "@somnus/api-contracts";
+import type { AdminMeResponse, StaffInvitationPendingResponse } from "@somnus/api-contracts";
 import { createContext } from "react";
 
 /**
@@ -9,12 +9,20 @@ import { createContext } from "react";
  * denial screen for them rather than a broken app or a retry loop. It is
  * distinct from `unauthenticated`, which means there is no session at all.
  *
+ * `invited` is the one way out of `denied` that the console offers: the
+ * signed-in address has a staff invitation waiting (owner decision 2026-10-18),
+ * and the person may accept it themselves.
+ *
  * The server decides. This mirrors the answer; it never derives it.
  */
 export type AdminAuthState =
   | { status: "loading" }
   | { status: "unauthenticated" }
   | { status: "denied" }
+  | {
+      status: "invited";
+      invitation: NonNullable<StaffInvitationPendingResponse["invitation"]>;
+    }
   | { status: "authorized"; me: AdminMeResponse };
 
 export type AdminAuthContextValue = {

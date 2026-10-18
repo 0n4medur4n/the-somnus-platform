@@ -7,6 +7,7 @@ import {
   deletionRequests,
   individualProfiles,
   organizationInvitations,
+  staffInvitations,
   organizationMemberships,
   professionalCredentials,
   professionalProfiles,
@@ -89,6 +90,13 @@ export class AccountDeletionRepository {
           or(eq(accessGrants.subjectUserId, userId), eq(accessGrants.professionalUserId, userId)),
         );
       await tx.delete(organizationInvitations).where(eq(organizationInvitations.invitedBy, userId));
+      // The person's own staff invitation holds their name and address; the ones
+      // they issued hold other people's and go the way organization ones do.
+      await tx
+        .delete(staffInvitations)
+        .where(
+          or(eq(staffInvitations.acceptedUserId, userId), eq(staffInvitations.invitedBy, userId)),
+        );
       await tx.delete(organizationMemberships).where(eq(organizationMemberships.userId, userId));
       await tx.delete(roleAssignments).where(eq(roleAssignments.userId, userId));
       await tx.delete(professionalProfiles).where(eq(professionalProfiles.userId, userId));

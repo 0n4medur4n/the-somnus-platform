@@ -700,5 +700,49 @@
   },
   "ui": {
     "close": "Close"
+  },
+  "invited": {
+    "title": "Hello, {{name}}",
+    "body": "You've been invited to The Somnus console as {{role}}. Accepting creates your staff account with that role.",
+    "expires": "The invitation is valid until {{date}}.",
+    "privacy": "I have read and accept the",
+    "privacyLink": "privacy policy",
+    "accept": "Accept and enter",
+    "failed": "The invitation could not be accepted. It may have expired or already been used; ask whoever invited you to send it again."
+  },
+  "staff": {
+    "title": "The Somnus staff",
+    "subtitle": "Invite someone on the team with their role. They'll get an email to sign in to the console and accept.",
+    "add": "Add a person",
+    "formTitle": "Invite a team member",
+    "formHint": "The account is created when the person signs in with the link and accepts; until then they have access to nothing.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "colName": "Name",
+    "colRole": "Role",
+    "colDate": "Expires / accepted",
+    "chooseRole": "Choose a role",
+    "emailLanguage": "Email language",
+    "locale": {
+      "es": "Español",
+      "en": "English",
+      "ca": "Català",
+      "fr": "Français"
+    },
+    "send": "Send invitation",
+    "cancel": "Cancel",
+    "sent": "Invitation sent to {{email}}.",
+    "savedNotSent": "Invitation saved, but the email to {{email}} could not be sent. Press \"Resend\".",
+    "failed": "That could not be completed. Please try again.",
+    "revoked": "Invitation to {{email}} withdrawn.",
+    "resend": "Resend",
+    "revoke": "Withdraw",
+    "empty": "You haven't invited anyone yet.",
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "revoked": "Withdrawn",
+      "expired": "Expired"
+    }
   }
 }

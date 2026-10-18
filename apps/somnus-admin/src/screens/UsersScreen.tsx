@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../components/Button.js";
 import { Field } from "../components/Field.js";
 import { edge } from "../lib/edge.js";
+import { StaffInvitations } from "./StaffInvitations.js";
 import { useAdminAction } from "./useAdminAction.js";
 
 /**
@@ -19,7 +20,14 @@ import { useAdminAction } from "./useAdminAction.js";
  * The suspend control only appears when the server said this admin holds
  * `admin_account_status_write`: the console renders from the decision.
  */
-export function UsersScreen({ canChangeStatus }: { canChangeStatus: boolean }) {
+export function UsersScreen({
+  canChangeStatus,
+  canInvite = false,
+}: {
+  canChangeStatus: boolean;
+  /** `admin_roles_assign`: may invite staff (owner decision 2026-10-18). */
+  canInvite?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const date = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" });
   const { run, busy, error, notice } = useAdminAction();
@@ -216,6 +224,12 @@ export function UsersScreen({ canChangeStatus }: { canChangeStatus: boolean }) {
               </Button>
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {canInvite ? (
+        <div className="mt-4 border-t border-white/10 pt-6">
+          <StaffInvitations />
         </div>
       ) : null}
     </section>

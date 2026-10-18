@@ -58,12 +58,17 @@ import type {
   SessionResponse,
   SignInLinkRequest,
   SrcEnrichmentPage,
+  StaffInvitation,
+  StaffInvitationCreateRequest,
+  StaffInvitationCreateResponse,
+  StaffInvitationListResponse,
+  StaffInvitationPendingResponse,
 } from "@somnus/api-contracts";
 import { api } from "./api.js";
 
 /**
  * The console's entire backend surface (Addendum A §A2.1): the shared session
- * exchange, and `/admin/v1/*`. It never calls a consumer route -- the console
+ * exchange, the invited person's own staff invitation, and `/admin/v1/*`. It never calls a consumer route -- the console
  * has no business composing `/v1/me` or reading anyone's profile, and keeping
  * that out of this file makes the boundary visible rather than a convention.
  *
@@ -91,6 +96,26 @@ export const edge = {
   setUserStatus: (userId: string, body: AdminAccountStatusRequest): Promise<void> =>
     api.patch<void>(`/admin/v1/users/${encodeURIComponent(userId)}/status`, body),
 
+  // --- Staff invitations (admin_roles_assign; owner decision 2026-10-18) ---
+  staffInvitations: (): Promise<StaffInvitationListResponse> =>
+    api.get<StaffInvitationListResponse>("/admin/v1/staff-invitations"),
+  /** Also how the console resends: a new invitation replaces the pending one. */
+  inviteStaff: (body: StaffInvitationCreateRequest): Promise<StaffInvitationCreateResponse> =>
+    api.post<StaffInvitationCreateResponse>("/admin/v1/staff-invitations", body),
+  revokeStaffInvitation: (invitationId: string): Promise<StaffInvitation> =>
+    api.post<StaffInvitation>(
+      `/admin/v1/staff-invitations/${encodeURIComponent(invitationId)}/revoke`,
+      {},
+    ),
+  /**
+   * The signed-in person's OWN invitation, before they hold any role: looked up
+   * by the address the session verified, so it reads nobody else's data.
+   */
+  myStaffInvitation: (): Promise<StaffInvitationPendingResponse> =>
+    api.get<StaffInvitationPendingResponse>("/v1/staff-invitation"),
+  acceptStaffInvitation: (): Promise<void> =>
+    api.post<void>("/v1/staff-invitation/accept", { privacyPolicyAcknowledged: true }),
+
   // --- Deletion requests (admin_deletion_requests_process) ---
   deletionRequests: (): Promise<AdminDeletionRequest[]> =>
     api.get<AdminDeletionRequest[]>("/admin/v1/deletion-requests"),
@@ -112,7 +137,7 @@ export const edge = {
     ),
   organizationMembers: (organizationId: string): Promise<AdminOrganizationMember[]> =>
     api.get<AdminOrganizationMember[]>(
-      `/admin/v1/organizations/${encodeURIComponent(organizationId)}/access`,
+      `/admin/v1/organizations/${encodeURIComponent(organizationId)}/members`,
     ),
 
   // --- Professional verification queue (admin_verification_queue) ---

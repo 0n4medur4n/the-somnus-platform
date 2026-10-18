@@ -8,4 +8,5 @@ export * from "./organizations.repository.js";
 export * from "./professional-profiles.repository.js";
 export * from "./role-assignments.repository.js";
 export * from "./roles.repository.js";
+export * from "./staff-invitations.repository.js";
 export * from "./users.repository.js";

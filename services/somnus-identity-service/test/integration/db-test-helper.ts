@@ -30,6 +30,7 @@ const TABLES_IN_DELETE_ORDER = [
   // between tests would make every test that assigns or checks a role
   // (which is most of them) responsible for re-seeding reference data
   // that isn't theirs to manage.
+  schema.staffInvitations,
   schema.organizationInvitations,
   schema.organizationMemberships,
   schema.organizationLocations,

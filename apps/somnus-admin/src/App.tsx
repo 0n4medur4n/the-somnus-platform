@@ -8,6 +8,7 @@ import { FullPageStatus } from "./components/FullPageStatus.js";
 import { AuthCallback } from "./routes/AuthCallback.js";
 import { ConsoleHome } from "./routes/ConsoleHome.js";
 import { Denied } from "./routes/Denied.js";
+import { Invited } from "./routes/Invited.js";
 import { Login } from "./routes/Login.js";
 
 const queryClient = new QueryClient({
@@ -19,7 +20,7 @@ const queryClient = new QueryClient({
  *
  * There is no route table of admin screens to protect one by one, and that is
  * deliberate: the console renders exactly one of four things, chosen by what
- * the server said. A screen cannot be reached by typing its URL, because until
+ * the server said (or, for an invited person, the invitation to accept). A screen cannot be reached by typing its URL, because until
  * `/admin/v1/me` succeeds there are no screens to reach.
  */
 export function Gate() {
@@ -29,6 +30,7 @@ export function Gate() {
   if (state.status === "loading") return <FullPageStatus message={t("common.loading")} />;
   if (state.status === "unauthenticated") return <Login />;
   if (state.status === "denied") return <Denied />;
+  if (state.status === "invited") return <Invited invitation={state.invitation} />;
   return <ConsoleHome me={state.me} />;
 }
 
