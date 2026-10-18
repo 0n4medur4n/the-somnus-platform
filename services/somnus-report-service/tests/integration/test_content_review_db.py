@@ -10,11 +10,13 @@ identity and decision timestamp immutable on an approved item.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
+from report.api.content_review import _to_dto
 from report.application.content_review import (
     STATUS_APPROVED,
     STATUS_PENDING,
@@ -91,6 +93,31 @@ def test_a_queued_item_round_trips_with_its_generation_record(
     assert stored.reviewer_id is None
     assert stored.decided_at is None
     assert stored.reason is None
+
+
+def test_timestamps_read_back_as_utc_and_serialize_with_a_z(
+    service: ContentReviewService, scanner: ForbiddenPhraseScanner, db_session: Session
+) -> None:
+    """Regression: a naive DATETIME serialized without an offset, and edge's
+    `z.iso.datetime()` rejected the whole queue with a 500 in production."""
+    item_id = _enqueue(service, scanner, CANDIDATE)
+    assert item_id is not None
+    db_session.commit()
+    service.decide(
+        item_id, status=STATUS_APPROVED, reviewer_id="reviewer-1", reason="Fiel al texto."
+    )
+    db_session.commit()
+
+    stored = service.get(item_id)
+    assert stored is not None
+    assert stored.created_at.tzinfo is not None
+    assert stored.created_at.utcoffset() == timedelta(0)
+    assert stored.decided_at is not None
+    assert stored.decided_at.utcoffset() == timedelta(0)
+
+    wire = _to_dto(stored).model_dump(mode="json", by_alias=True)
+    assert wire["createdAt"].endswith("Z")
+    assert wire["decidedAt"].endswith("Z")
 
 
 def test_only_an_approved_row_is_renderable(

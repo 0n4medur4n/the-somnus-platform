@@ -19,7 +19,7 @@ Two behaviours are deliberate rather than incidental:
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, cast
 
 from sqlalchemy import CursorResult, select, update
@@ -31,6 +31,18 @@ from report.application.content_review import (
     ContentReviewItem,
 )
 from report.infrastructure.models import AiContentReviewItemRow
+
+
+def _utc(moment: datetime | None) -> datetime | None:
+    """A DATETIME column comes back naive; every value in it was written as UTC.
+
+    Left naive, Pydantic serializes it without an offset and edge's contract
+    (`z.iso.datetime()`, which requires the `Z`) rejects the whole queue -- the
+    production console showed "something went wrong" for exactly this.
+    """
+    if moment is None or moment.tzinfo is not None:
+        return moment
+    return moment.replace(tzinfo=UTC)
 
 
 def _to_item(row: AiContentReviewItemRow) -> ContentReviewItem:
@@ -45,9 +57,9 @@ def _to_item(row: AiContentReviewItemRow) -> ContentReviewItem:
         candidate_text=row.candidate_text,
         status=row.status,
         reviewer_id=row.reviewer_id,
-        decided_at=row.decided_at,
+        decided_at=_utc(row.decided_at),
         reason=row.reason,
-        created_at=row.created_at,
+        created_at=cast(datetime, _utc(row.created_at)),
         text_ref=row.text_ref,
     )
 
