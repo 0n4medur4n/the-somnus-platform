@@ -1,5 +1,5 @@
 import type { AdminUserDetail, AdminUserSummary } from "@somnus/api-contracts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../components/Button.js";
 import { Field } from "../components/Field.js";
@@ -20,7 +20,8 @@ import { useAdminAction } from "./useAdminAction.js";
  * `admin_account_status_write`: the console renders from the decision.
  */
 export function UsersScreen({ canChangeStatus }: { canChangeStatus: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const date = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" });
   const { run, busy, error, notice } = useAdminAction();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AdminUserSummary[] | null>(null);
@@ -31,7 +32,7 @@ export function UsersScreen({ canChangeStatus }: { canChangeStatus: boolean }) {
   async function search() {
     const trimmed = query.trim();
     const response = await run(() =>
-      edge.searchUsers({ ...(trimmed ? { email: trimmed } : {}), limit: 25 }),
+      edge.searchUsers({ ...(trimmed ? { email: trimmed } : {}), limit: 100 }),
     );
     if (response) {
       setResults(response.users);
@@ -39,6 +40,11 @@ export function UsersScreen({ canChangeStatus }: { canChangeStatus: boolean }) {
       setDetail(null);
     }
   }
+
+  // The screen opens on the accounts themselves, not on an empty search box.
+  useEffect(() => {
+    void search();
+  }, []);
 
   async function open(userId: string) {
     const found = await run(() => edge.userDetail(userId));
@@ -74,7 +80,7 @@ export function UsersScreen({ canChangeStatus }: { canChangeStatus: boolean }) {
           <Field
             id="user-search"
             label={t("users.searchLabel")}
-            type="email"
+            type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -101,20 +107,60 @@ export function UsersScreen({ canChangeStatus }: { canChangeStatus: boolean }) {
       ) : null}
 
       {results && results.length > 0 ? (
-        <ul data-testid="user-results" className="flex flex-col gap-2">
-          {results.map((user) => (
-            <li
-              key={user.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-somnus-subtle/15 bg-somnus-surface px-3 py-2"
-            >
-              <span className="text-somnus-text">{user.email}</span>
-              <span className="text-sm text-somnus-subtle">{t(`status.${user.status}`)}</span>
-              <Button variant="secondary" type="button" onClick={() => void open(user.id)}>
-                {t("users.view")}
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <div className="overflow-x-auto rounded-xl border border-white/10">
+          <table data-testid="user-results" className="w-full text-left text-sm">
+            <caption className="sr-only">{t("users.title")}</caption>
+            <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-somnus-muted">
+              <tr>
+                <th scope="col" className="px-4 py-3 font-medium">
+                  {t("users.colEmail")}
+                </th>
+                <th scope="col" className="px-4 py-3 font-medium">
+                  {t("users.colStatus")}
+                </th>
+                <th scope="col" className="hidden px-4 py-3 font-medium sm:table-cell">
+                  {t("users.colCreated")}
+                </th>
+                <th scope="col" className="px-4 py-3 text-right font-medium">
+                  <span className="sr-only">{t("users.colActions")}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {results.map((user) => (
+                <tr
+                  key={user.id}
+                  className={detail?.user.id === user.id ? "bg-somnus-primary/10" : undefined}
+                >
+                  <td className="max-w-[16rem] truncate px-4 py-3 text-somnus-text">
+                    {user.email}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
+                        user.status === "active"
+                          ? "bg-somnus-success/15 text-somnus-success"
+                          : user.status === "suspended"
+                            ? "bg-somnus-danger/15 text-somnus-danger"
+                            : "bg-white/10 text-somnus-subtle"
+                      }`}
+                    >
+                      {t(`status.${user.status}`)}
+                    </span>
+                  </td>
+                  <td className="hidden px-4 py-3 text-somnus-subtle tabular-nums sm:table-cell">
+                    {date.format(new Date(user.createdAt))}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button variant="secondary" type="button" onClick={() => void open(user.id)}>
+                      {t("users.view")}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
 
       {detail ? (

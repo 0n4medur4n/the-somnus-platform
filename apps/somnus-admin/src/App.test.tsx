@@ -1,5 +1,5 @@
 import type { AdminMeResponse } from "@somnus/api-contracts";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AdminAuthContextValue } from "./auth/AdminAuthContext.js";
@@ -140,14 +140,15 @@ describe("the console gate", () => {
       renderWithProviders(<Gate />, { auth: auth({ status: "authorized", me: ME }) });
 
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(t("console.title"));
-      // The role shows in the sidebar's account card and in the access card.
+      // The role shows in the sidebar's account card.
       expect(screen.getAllByText(t("role.professional_verifier")).length).toBeGreaterThan(0);
 
-      const listed = screen.getByTestId("capability-list").querySelectorAll("li");
-      expect([...listed].map((li) => li.textContent)).toEqual([
-        t("capability.admin_users_read"),
-        t("capability.admin_verification_queue"),
-      ]);
+      // The sidebar is the capability table: one section per granted capability.
+      const nav = screen.getByRole("navigation", { name: t("console.title") });
+      const listed = within(nav)
+        .getAllByRole("button")
+        .map((button) => button.querySelector("span")?.textContent);
+      expect(listed).toEqual([t("nav.overview"), t("nav.users"), t("nav.verification")]);
     });
 
     it("shows no control for a capability the server withheld", () => {
@@ -183,6 +184,23 @@ describe("the console gate", () => {
       expect(screen.queryByText(t("dashboard.pendingReviews"))).toBeNull();
       expect(screen.queryByText(t("dashboard.totalOrganizations"))).toBeNull();
       expect(screen.queryByText(t("dashboard.activity"))).toBeNull();
+      expect(screen.queryByText(t("dashboard.driveTitle"))).toBeNull();
+    });
+
+    it("the dashboard opens the Drive in one click for anyone who holds it", async () => {
+      renderWithProviders(<Gate />, {
+        auth: auth({
+          status: "authorized",
+          me: { ...ME, capabilities: [...ME.capabilities, "admin_drive"] },
+        }),
+      });
+
+      await userEvent.click(screen.getByRole("button", { name: t("dashboard.openDrive") }));
+
+      const nav = screen.getByRole("navigation", { name: t("console.title") });
+      expect(within(nav).getByRole("button", { current: "page" })).toHaveTextContent(
+        t("nav.drive"),
+      );
     });
   });
 

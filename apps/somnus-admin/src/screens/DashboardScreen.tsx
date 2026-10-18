@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { BarChart, HBarChart } from "../components/charts/charts.js";
 import { Icon } from "../components/ui/Icon.js";
-import { Badge, Card, SectionTitle, StatTile } from "../components/ui/ui.js";
+import { Card, SectionTitle, StatTile } from "../components/ui/ui.js";
 import { edge } from "../lib/edge.js";
 import { usePendingCounts, type ViewId } from "../routes/sections.js";
 
@@ -90,6 +90,37 @@ export function DashboardScreen({
           {t("dashboard.refresh")}
         </button>
       </div>
+
+      {me.capabilities.length === 0 ? (
+        <p className="text-somnus-subtle">{t("console.noCapabilities")}</p>
+      ) : null}
+
+      {held.has("admin_drive") ? (
+        <Card aria-labelledby="dash-drive" className="relative overflow-hidden">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-somnus-primary/15 text-somnus-primary">
+              <Icon name="drive" className="h-6 w-6" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 id="dash-drive" className="text-lg font-semibold text-somnus-text">
+                {t("dashboard.driveTitle")}
+              </h2>
+              <p className="flex items-center gap-1.5 text-sm text-somnus-subtle">
+                <Icon name="lock" className="h-3.5 w-3.5 shrink-0" />
+                {t("dashboard.driveBody")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate("drive")}
+              className="inline-flex items-center gap-2 rounded-lg bg-somnus-primary-strong px-4 py-2 text-sm font-medium text-white hover:brightness-110"
+            >
+              {t("dashboard.openDrive")}
+              <Icon name="chevronRight" className="h-4 w-4" />
+            </button>
+          </div>
+        </Card>
+      ) : null}
 
       {queues.length > 0 ? (
         <section aria-labelledby="dash-attention">
@@ -266,35 +297,6 @@ export function DashboardScreen({
           </div>
         </section>
       ) : null}
-
-      <Card aria-labelledby="roles-heading">
-        <SectionTitle id="roles-heading">{t("console.rolesTitle")}</SectionTitle>
-        <ul className="mb-5 flex flex-wrap gap-2">
-          {me.roleKeys.map((role) => (
-            <li key={role}>
-              <Badge tone="primary">{t(`role.${role}`)}</Badge>
-            </li>
-          ))}
-        </ul>
-        <h3 id="capabilities-heading" className="mb-3 text-sm font-medium text-somnus-subtle">
-          {t("console.capabilitiesTitle")}
-        </h3>
-        {me.capabilities.length === 0 ? (
-          <p className="text-somnus-subtle">{t("console.noCapabilities")}</p>
-        ) : (
-          <ul data-testid="capability-list" className="grid gap-2 sm:grid-cols-2">
-            {me.capabilities.map((capability) => (
-              <li
-                key={capability}
-                className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 text-sm text-somnus-text"
-              >
-                <Icon name="check" className="h-4 w-4 shrink-0 text-somnus-success" />
-                {t(`capability.${capability}`)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
     </div>
   );
 }
