@@ -17,6 +17,7 @@ report's `corpus_version` unexplainable.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from report.schemas.base import ContractModel
@@ -24,6 +25,7 @@ from report.schemas.base import ContractModel
 CorpusDocumentStatus = Literal["draft", "published", "retired"]
 CorpusRightsStatus = Literal["own_document", "open_access", "licensed", "citation_only"]
 CorpusScopeType = Literal["module", "safety_rule", "clinical_source", "general"]
+CorpusOriginKind = Literal["file", "web_page"]
 
 
 class CorpusScopeDTO(ContractModel):
@@ -35,6 +37,37 @@ class CorpusRightsEvidenceDTO(ContractModel):
     licence: str | None = None
     url: str | None = None
     holder: str | None = None
+
+
+class CorpusDocumentOriginDTO(ContractModel):
+    """Where a document's text came from (owner decision 2026-10-18)."""
+
+    kind: CorpusOriginKind
+    filename: str | None = None
+    content_type: str | None = None
+    size_bytes: int | None = None
+    source_url: str | None = None
+    #: Always timezone-aware UTC, so it serializes with the `Z` edge requires.
+    added_at: datetime
+
+
+class CorpusWebPageRequestDTO(ContractModel):
+    url: str
+
+
+class CorpusFileUploadRequestDTO(ContractModel):
+    """An original from edge-api: the bytes as base64, the name as the uploader gave it."""
+
+    filename: str
+    content_base64: str
+
+
+class CorpusFileDTO(ContractModel):
+    """An original on its way back to the console, exactly as it was uploaded."""
+
+    filename: str
+    content_type: str
+    content_base64: str
 
 
 class CorpusDocumentDTO(ContractModel):
@@ -52,6 +85,7 @@ class CorpusDocumentDTO(ContractModel):
     retired_reason: str | None
     scopes: list[CorpusScopeDTO]
     chunk_count: int
+    origin: CorpusDocumentOriginDTO | None = None
 
 
 class CorpusDocumentDetailDTO(ContractModel):

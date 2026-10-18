@@ -33,6 +33,7 @@ from report.application.retrieval import (
 )
 from report.corpus.db import create_corpus_engine
 from report.corpus.embedding_gate import CorpusEmbeddingGate
+from report.corpus.file_store import create_corpus_file_store
 from report.corpus.indexer import CorpusIndexer
 from report.corpus.repository import CorpusRepository, DocumentScope, ScopedDocument
 from report.corpus.retrieval import CorpusRetriever
@@ -93,6 +94,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # service that owns them rather than mirrored here, so the console has nothing
     # local it could write. Constructed eagerly, connects on first call only.
     app.state.corpus_sources_provider = MorpheoSourcesClient(settings.morpheo_base_url)
+    # Uploaded originals (owner decision 2026-10-18): the corpus module's private
+    # bucket when one is configured. A deployed service without one refuses
+    # uploads (None) rather than writing to an instance's throwaway disk.
+    app.state.corpus_file_store = (
+        create_corpus_file_store(settings.corpus_files_bucket, settings.corpus_files_dir)
+        if settings.corpus_files_bucket or settings.env in ("development", "test")
+        else None
+    )
 
     # Index B (Addendum B §B3.1 / Checkpoint 16.4): supporting material for the
     # professional report, scoped to what the deterministic result activated.

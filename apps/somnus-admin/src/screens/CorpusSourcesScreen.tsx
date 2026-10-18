@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../components/Button.js";
 import { Field } from "../components/Field.js";
 import { edge } from "../lib/edge.js";
+import { applyCorpusContent } from "./CorpusContent.js";
 import { CorpusDocumentForm, type CorpusFormState, emptyCorpusForm } from "./CorpusDocumentForm.js";
 import { CorpusDocumentSummary } from "./CorpusScreen.js";
 import { useAdminAction } from "./useAdminAction.js";
@@ -98,15 +99,22 @@ function SourcePanel({
           scopes: [scope],
           ...(form.rightsStatus ? { rightsStatus: form.rightsStatus } : {}),
           rightsEvidence: form.evidence,
-          ...(form.text.trim() ? { text: form.text } : {}),
+          ...(form.contentSource === "text" && form.text.trim() ? { text: form.text } : {}),
         }),
       "corpus.created",
     );
-    if (saved) {
-      setForm(emptyCorpusForm(scope));
-      setOpen(false);
-      await onChanged();
+    if (!saved) return;
+    if (form.contentSource !== "text") {
+      // The enrichment exists as a draft; its text comes from the file or page.
+      // Shown in the list either way, where it can be filled again by editing.
+      await run(
+        () => applyCorpusContent(saved.id, form.contentSource, form.file, form.url),
+        "corpus.content.added",
+      );
     }
+    setForm(emptyCorpusForm(scope));
+    setOpen(false);
+    await onChanged();
   }
 
   return (

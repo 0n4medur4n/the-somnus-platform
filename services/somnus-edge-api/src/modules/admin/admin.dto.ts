@@ -14,6 +14,7 @@ import {
   CorpusPublishRequestSchema,
   CorpusRetireRequestSchema,
   CorpusSearchRequestSchema,
+  CorpusWebPageRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
@@ -72,3 +73,4 @@ export class CorpusDocumentCreateDto extends createZodDto(CorpusDocumentCreateRe
 export class CorpusDocumentEditDto extends createZodDto(CorpusDocumentEditRequestSchema) {}
 export class CorpusPublishDto extends createZodDto(CorpusPublishRequestSchema) {}
 export class CorpusRetireDto extends createZodDto(CorpusRetireRequestSchema) {}
+export class CorpusWebPageDto extends createZodDto(CorpusWebPageRequestSchema) {}

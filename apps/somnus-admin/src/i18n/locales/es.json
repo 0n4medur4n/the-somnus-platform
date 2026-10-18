@@ -369,6 +369,29 @@
       "licence": "Licencia",
       "url": "Enlace",
       "holder": "Titular de la licencia"
+    },
+    "content": {
+      "title": "Contenido",
+      "source": {
+        "text": "Escribir texto",
+        "file": "Subir PDF o Word",
+        "web": "Página web"
+      },
+      "fileLabel": "Archivo",
+      "fileHint": "PDF o Word (.docx), hasta 20 MB. Se guarda el original y se extrae su texto en este borrador; los PDF escaneados necesitan OCR antes de subirlos.",
+      "fileMissing": "Elige un archivo.",
+      "fileType": "Solo se aceptan PDF o Word (.docx).",
+      "fileEmpty": "El archivo está vacío.",
+      "fileTooLarge": "El archivo supera los 20 MB.",
+      "urlLabel": "Dirección de la página",
+      "urlHint": "Se descarga una sola página (no el sitio entero) y su texto pasa a este borrador. Puedes volver a traerla editando el borrador.",
+      "urlInvalid": "Escribe una dirección completa que empiece por https://",
+      "fileRefused": "No se ha podido leer el archivo. Comprueba que es un PDF o Word con texto (no escaneado ni protegido con contraseña) y de menos de 20 MB.",
+      "pageRefused": "No se ha podido traer la página: debe ser una dirección pública http(s) que responda con una página web.",
+      "added": "Contenido añadido al borrador.",
+      "fromFile": "Texto extraído de {{name}}",
+      "fromPage": "Texto de la página",
+      "download": "Descargar original"
     }
   },
   "corpusSources": {

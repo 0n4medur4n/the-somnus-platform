@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     content_database_url: str = Field(
         default=DEFAULT_LOCAL_CONTENT_DATABASE_URL, min_length=1, alias="CONTENT_DATABASE_URL"
     )
+    # The corpus module's private bucket for uploaded originals (owner decision
+    # 2026-10-18). Empty locally and in tests: files then go to CORPUS_FILES_DIR,
+    # a private directory; production names the bucket and never uses the disk.
+    corpus_files_bucket: str = Field(default="", alias="CORPUS_FILES_BUCKET")
+    corpus_files_dir: str = Field(default="./.corpus-files", alias="CORPUS_FILES_DIR")
     # The private morpheo service, source of the approved clinical content (§5.5).
     morpheo_base_url: str = Field(default="http://127.0.0.1:8080", alias="MORPHEO_BASE_URL")
     # Where rendered reports are stored + the base for their signed URLs (§9).

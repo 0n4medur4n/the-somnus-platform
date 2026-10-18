@@ -20,6 +20,7 @@ one database must never require touching another.
 | `somnus_notifications` | Notification module | P3 |
 | `somnus_audit` | Audit module | P2 (append-only, retained) |
 | GCS report bucket | report-service | P2 |
+| GCS corpus-files bucket (`<project>-corpus-files`) | report-service (corpus module) | P1 with `somnus_content` (uploaded originals; soft delete 7 days, not re-derivable) |
 
 ---
 

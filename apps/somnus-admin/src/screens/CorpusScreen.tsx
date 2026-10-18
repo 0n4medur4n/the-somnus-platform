@@ -11,6 +11,7 @@ import { Button } from "../components/Button.js";
 import { Field } from "../components/Field.js";
 import { SelectField } from "../components/SelectField.js";
 import { edge } from "../lib/edge.js";
+import { applyCorpusContent, CorpusOriginLine, contentErrorKey } from "./CorpusContent.js";
 import { CorpusDocumentForm, type CorpusFormState, emptyCorpusForm } from "./CorpusDocumentForm.js";
 import { useAdminAction } from "./useAdminAction.js";
 
@@ -43,6 +44,7 @@ export function CorpusScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [changelog, setChangelog] = useState("");
   const [reason, setReason] = useState("");
+  const [contentError, setContentError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const page = await run(() =>
@@ -84,6 +86,9 @@ export function CorpusScreen() {
       // The text it is about to replace, so nobody overwrites approved wording
       // they never saw.
       text: detail.chunks.join("\n\n"),
+      contentSource: "text",
+      file: null,
+      url: "",
     });
   }
 
@@ -96,15 +101,32 @@ export function CorpusScreen() {
       scopes: form.scopes,
       ...(form.rightsStatus ? { rightsStatus: form.rightsStatus } : {}),
       rightsEvidence: form.evidence,
-      ...(form.text.trim() ? { text: form.text } : {}),
+      ...(form.contentSource === "text" && form.text.trim() ? { text: form.text } : {}),
     };
+    setContentError(null);
     const saved = editingId
       ? await run(() => edge.editCorpusDocument(editingId, payload), "corpus.saved")
       : await run(() => edge.createCorpusDocument(payload), "corpus.created");
-    if (saved) {
-      resetForm();
-      await load();
+    if (!saved) return;
+    if (form.contentSource !== "text") {
+      // The draft exists now; its text comes from the file or the page. If that
+      // fails, the form stays on this draft so the admin can try again.
+      const filled = await run(async () => {
+        try {
+          return await applyCorpusContent(saved.id, form.contentSource, form.file, form.url);
+        } catch (failure) {
+          setContentError(contentErrorKey(failure, form.contentSource));
+          throw failure;
+        }
+      }, "corpus.content.added");
+      if (!filled) {
+        setEditingId(saved.id);
+        await load();
+        return;
+      }
     }
+    resetForm();
+    await load();
   }
 
   async function publish(documentId: string) {
@@ -148,6 +170,11 @@ export function CorpusScreen() {
       {error ? (
         <p role="alert" className="text-somnus-danger">
           {error}
+        </p>
+      ) : null}
+      {contentError ? (
+        <p role="alert" className="text-somnus-danger">
+          {t(contentError)}
         </p>
       ) : null}
       {notice ? (
@@ -310,6 +337,7 @@ export function CorpusDocumentSummary({ document }: { document: CorpusDocument }
         </span>
       </div>
       <p className="text-sm text-somnus-subtle">{document.citation}</p>
+      <CorpusOriginLine document={document} />
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-somnus-subtle md:grid-cols-4">
         <dt>{t("corpus.localeLabel")}</dt>
         <dd>{document.locale}</dd>

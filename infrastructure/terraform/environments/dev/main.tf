@@ -314,6 +314,8 @@ module "run_report" {
     SERVICE_NAME     = "somnus-report-service"
     LOG_FORMAT       = "json"
     MORPHEO_BASE_URL = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
+    # Uploaded corpus originals (owner decision 2026-10-18, Addendum B §B6.3).
+    CORPUS_FILES_BUCKET = module.corpus_files_bucket.bucket_name
   }
   # OPENAI_API_KEY: embeddings, and the AI wording job
   # (`python -m report.jobs.generate_rewrites`, GPT-6 Luna at xhigh effort -- the
@@ -324,6 +326,10 @@ module "run_report" {
   secret_env_vars = {
     DATABASE_URL   = { secret_id = "report-db-url", version = "latest" }
     OPENAI_API_KEY = { secret_id = "OPENAI_API_KEY", version = "latest" }
+    # The reference corpus's own logical database (Addendum B §B3, ADR 0010).
+    # Never set before 2026-10-18, so the service fell back to its local-dev
+    # default (127.0.0.1) and every corpus route answered 500 in production.
+    CONTENT_DATABASE_URL = { secret_id = "content-db-url", version = "latest" }
   }
   labels = { app = "somnus", service = "report", env = var.env }
 
@@ -333,6 +339,7 @@ module "run_report" {
   depends_on = [
     module.project_apis_backend,
     google_secret_manager_secret_iam_member.report_openai_api_key,
+    google_secret_manager_secret_iam_member.report_content_db_url,
   ]
 }
 
@@ -473,6 +480,25 @@ module "staff_drive_bucket" {
   depends_on = [module.project_apis_backend]
 }
 
+# --- Storage: reference-corpus originals (owner decision 2026-10-18) ---
+#
+# The PDF and Word files admins upload to the corpus, kept as uploaded so they
+# can be viewed and downloaded again. Admin-authored and not re-derivable, so
+# Google's default soft delete stays on (deleted objects recoverable for 7 days);
+# no versioning, because every object name carries its SHA-256 and is written
+# once. Only the report service's corpus module reads and writes it; the
+# console downloads through edge-api, never from the bucket.
+module "corpus_files_bucket" {
+  source         = "../../modules/cloud-storage-bucket"
+  project_id     = var.project_id
+  region         = var.region
+  bucket_name    = "${var.project_id}-corpus-files"
+  writer_members = [module.sa_report.member]
+  versioning     = false
+
+  depends_on = [module.project_apis_backend]
+}
+
 # --- The former Firebase project, the-somnuss: no longer managed ---
 #
 # Firebase moved into var.project_id (ADR 0017, firebase-consolidation.tf).
@@ -555,6 +581,24 @@ data "google_secret_manager_secret" "openai_api_key" {
 resource "google_secret_manager_secret_iam_member" "report_openai_api_key" {
   project   = var.project_id
   secret_id = data.google_secret_manager_secret.openai_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = module.sa_report.member
+}
+
+# --- The reference corpus's database URL (Addendum B §B3) ---
+#
+# Created by hand like every other database secret (see the secrets note above)
+# -- it holds a credential -- and referenced here only to grant the report
+# service read on it. `data` fails the plan loudly if it does not exist yet,
+# which is the right order: the secret first, then the service that mounts it.
+data "google_secret_manager_secret" "content_db_url" {
+  project   = var.project_id
+  secret_id = "content-db-url"
+}
+
+resource "google_secret_manager_secret_iam_member" "report_content_db_url" {
+  project   = var.project_id
+  secret_id = data.google_secret_manager_secret.content_db_url.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = module.sa_report.member
 }

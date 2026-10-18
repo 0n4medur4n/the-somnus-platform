@@ -1,5 +1,6 @@
 import { env } from "../config/env.js";
 import { SAME_ORIGIN } from "../config/env-schema.js";
+import { RawUpload } from "./raw-upload.js";
 
 const STATE_CHANGING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -66,7 +67,9 @@ async function send(
 ): Promise<RawResponse> {
   const headers: Record<string, string> = { "x-correlation-id": crypto.randomUUID() };
   const raw = body instanceof Uint8Array;
-  if (body !== undefined)
+  const upload = body instanceof RawUpload ? body : undefined;
+  if (upload) Object.assign(headers, upload.headers, { "content-type": upload.contentType });
+  else if (body !== undefined)
     headers["content-type"] = raw ? "application/octet-stream" : "application/json";
   if (token !== undefined) headers["x-csrf-token"] = token;
 
@@ -81,7 +84,8 @@ async function send(
     // proxy that adds a cache lifetime of its own).
     cache: "no-store",
   };
-  if (body !== undefined)
+  if (upload) init.body = upload.bytes;
+  else if (body !== undefined)
     init.body = raw ? (body as Uint8Array<ArrayBuffer>) : JSON.stringify(body);
 
   const response = await fetch(`${apiBase()}${path}`, init);
@@ -181,6 +185,44 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return raw.data as T;
 }
 
+/** A file the server sent, with the name it gave it. */
+export type DownloadedFile = { blob: Blob; filename: string };
+
+/** The name in a `content-disposition` header (RFC 6266 `filename*` or plain). */
+function filenameOf(disposition: string | null): string {
+  const star = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  if (star) {
+    try {
+      return decodeURIComponent(star);
+    } catch {
+      // fall through to the plain form
+    }
+  }
+  return disposition?.match(/filename="?([^";]+)"?/i)?.[1] ?? "documento";
+}
+
+/** A GET whose answer is a file, not JSON (a download). */
+async function getFile(path: string): Promise<DownloadedFile> {
+  const response = await fetch(`${apiBase()}${path}`, {
+    headers: { "x-correlation-id": crypto.randomUUID() },
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      data = undefined;
+    }
+    throw toError({ status: response.status, data });
+  }
+  return {
+    blob: await response.blob(),
+    filename: filenameOf(response.headers.get("content-disposition")),
+  };
+}
+
 export const api = {
   get: <T>(path: string): Promise<T> => request<T>("GET", path),
   post: <T>(path: string, body?: unknown): Promise<T> => request<T>("POST", path, body),
@@ -188,4 +230,7 @@ export const api = {
   del: <T>(path: string): Promise<T> => request<T>("DELETE", path),
   /** Raw bytes as `application/octet-stream`: the Drive's encrypted blocks. */
   putBytes: (path: string, bytes: Uint8Array): Promise<void> => request<void>("PUT", path, bytes),
+  /** A file with its own content type and headers (a corpus original). */
+  postFile: <T>(path: string, upload: RawUpload): Promise<T> => request<T>("POST", path, upload),
+  getFile,
 };

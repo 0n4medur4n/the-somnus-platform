@@ -282,6 +282,35 @@ depends on them is rolled out.
   deletion calls the worker's Drive erase), then the admin console. A worker
   without `DRIVE_BUCKET` refuses Drive requests and treats account erasure as
   nothing to erase, so no other feature depends on the order.
+- **Staff invitations (owner decision 2026-10-18): identity migration
+  `0006_staff_invitations.sql` before identity, identity before edge-api.** The
+  identity image ships no migrations; apply it with a one-off Cloud Run Job from
+  the new identity image (`DATABASE_URL` from `identity-db-url`) that refuses
+  unless `__drizzle_migrations` is exactly at 0005, creates the table and records
+  the row (hash = SHA-256 of the committed `.sql`, `created_at` = the journal's
+  `when`). Then identity, then edge-api (its new routes call identity's), then
+  the console. Applied in production on 2026-10-18.
+- **The reference corpus (`somnus_content`) was never provisioned in production
+  until 2026-10-18.** Without `CONTENT_DATABASE_URL` the report service falls
+  back to its local default (127.0.0.1) and every `/admin/v1/corpus/*` route
+  answers 500. To provision it, in this order:
+  1. Create the logical database `somnus_content` on the TiDB cluster.
+  2. Create the secret `content-db-url` by hand (like every database secret),
+     holding the same connection as `report-db-url` but naming
+     `somnus_content`. Nobody but the operator reads either value.
+  3. Apply the corpus history to it: `alembic -c alembic_content.ini upgrade
+     head` from the report image, as a one-off Job with `CONTENT_DATABASE_URL`
+     mounted from `content-db-url`.
+  4. `terraform apply`: the `content-db-url` read grant for the report service,
+     `CONTENT_DATABASE_URL` and `CORPUS_FILES_BUCKET` on the report service, and
+     the private bucket `<project>-corpus-files` (`module.corpus_files_bucket`,
+     `objectAdmin` for the report service only). The plan fails at the `data`
+     lookup if step 2 has not happened -- that is the intended order.
+  5. Deploy edge-api **before** the report service: corpus documents now carry
+     an `origin` field, which edge-api's strict contract must accept first.
+  A report service without `CORPUS_FILES_BUCKET` refuses uploads (503) rather
+  than writing to an instance's throwaway disk; web pages and typed text work
+  without it.
 - **Invitation emails do not send yet.** The Checkpoint 14.2 accept flow is
   complete and works from a link, but no producer enqueues the notification
   task: the async layer (Pub/Sub topic + Cloud Tasks queue + the Brevo key in

@@ -11,6 +11,7 @@ import {
   type RoleKey,
   UUIDv7,
 } from "@somnus/api-contracts";
+import { ErrorCode, SomnusError } from "@somnus/errors";
 import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AppModule } from "../../src/app.module.js";
@@ -146,6 +147,11 @@ describe("admin console gate (/admin/v1/*)", () => {
   let driveHeaders: Array<Record<string, string>> = [];
   /** What the worker stub answers to a GET, when a test needs a valid Drive body. */
   let workerBlockAnswer: { status: number; body: unknown } | null = null;
+  /** What reached the report service, and what it answers when a test needs a body. */
+  const reportCalls: Array<{ method: string; path: string; body: unknown }> = [];
+  let reportAnswer: { status: number; body: unknown } | null = null;
+  /** Thrown by the report stub instead of answering, as the real client throws on a 4xx. */
+  let reportError: Error | null = null;
   /** The roles identity will report for the acting session. */
   let actorRoles: RoleKey[];
   /**
@@ -277,8 +283,15 @@ describe("admin console gate (/admin/v1/*)", () => {
     // the report service. Stubbed for the same reason morpheo is: the gate is
     // what is under test, so a 4xx here can only have come from the guard.
     const reportStub = {
-      get: async () => ({ status: 200, body: {} }),
-      post: async () => ({ status: 200, body: {} }),
+      get: async (path: string) => {
+        reportCalls.push({ method: "GET", path, body: undefined });
+        return reportAnswer ?? { status: 200, body: {} };
+      },
+      post: async (path: string, options: { body?: unknown }) => {
+        reportCalls.push({ method: "POST", path, body: options.body });
+        if (reportError) throw reportError;
+        return reportAnswer ?? { status: 200, body: {} };
+      },
     };
 
     // The statistics, audit viewer and staff Drive (ADR 0019) live behind the
@@ -575,6 +588,24 @@ describe("admin console gate (/admin/v1/*)", () => {
         url: "/admin/v1/corpus/sources",
         capability: "admin_corpus_manage",
       },
+      // Owner decision 2026-10-18 (Addendum B §B6 item 3): a draft's text from an
+      // uploaded original or one web page, and the original downloaded again.
+      // Same single-holder capability as every other corpus route.
+      {
+        method: "POST",
+        url: "/admin/v1/corpus/documents/doc1/file",
+        capability: "admin_corpus_manage",
+      },
+      {
+        method: "POST",
+        url: "/admin/v1/corpus/documents/doc1/web-page",
+        capability: "admin_corpus_manage",
+      },
+      {
+        method: "GET",
+        url: "/admin/v1/corpus/documents/doc1/file",
+        capability: "admin_corpus_manage",
+      },
       // The staff Drive (owner decision 2026-10-17, ADR 0019). Every internal
       // role holds admin_drive, so the parametrized run below lets each of them
       // through, and the external-role sweep above refuses every one of these.
@@ -617,6 +648,7 @@ describe("admin console gate (/admin/v1/*)", () => {
       },
       "POST /admin/v1/corpus/documents/doc1/edit": { title: "Higiene del sueño (rev.)" },
       "POST /admin/v1/corpus/documents/doc1/publish": { changelog: "Alta de la guía." },
+      "POST /admin/v1/corpus/documents/doc1/web-page": { url: "https://example.org/guia" },
       "POST /admin/v1/corpus/documents/doc1/retire": {
         reason: "Sustituida por la edición de 2027.",
         changelog: "Retirada.",
@@ -673,7 +705,7 @@ describe("admin console gate (/admin/v1/*)", () => {
      * each of those roles is missing several capabilities at once, so it cannot
      * show WHICH absence did the refusing. This describes an actor holding every
      * admin capability the platform defines except `admin_corpus_manage` -- and
-     * still refused on all seven routes.
+     * still refused on every corpus route.
      */
     it("an actor holding every capability but admin_corpus_manage is refused", async () => {
       actorRoles = ["platform_super_admin"];
@@ -746,6 +778,158 @@ describe("admin console gate (/admin/v1/*)", () => {
           expect(res.statusCode, role).toBe(403);
         }
       }
+    });
+  });
+
+  // --- Reference-corpus originals (owner decision 2026-10-18) ---
+
+  describe("reference-corpus originals", () => {
+    const DOCUMENT = {
+      id: "018f0000-0000-7000-8000-0000000000cd",
+      title: "Guía",
+      citation: "The Somnus (2026).",
+      sourceType: "guideline",
+      locale: "es",
+      status: "draft",
+      rightsStatus: "own_document",
+      rightsEvidence: {},
+      addedBy: ACTOR,
+      corpusVersionAdded: null,
+      corpusVersionRetired: null,
+      retiredReason: null,
+      scopes: [{ scopeType: "general", scopeKey: "" }],
+      chunkCount: 1,
+      origin: {
+        kind: "file",
+        filename: "Guía.pdf",
+        contentType: "application/pdf",
+        sizeBytes: 8,
+        sourceUrl: null,
+        addedAt: "2026-10-18T10:00:00.000Z",
+      },
+    };
+    const PDF = Buffer.from("%PDF-1.4\n");
+
+    beforeEach(() => {
+      reportCalls.length = 0;
+      reportAnswer = null;
+      reportError = null;
+      actorRoles = ["platform_super_admin"];
+    });
+
+    it("a file or page the report service refuses is the admin's input refused: 400, never a 5xx", async () => {
+      for (const upstreamStatus of [400, 413, 422]) {
+        reportError = new SomnusError(ErrorCode.INTERNAL, "Upstream returned an error", {
+          correlationId: "c",
+          details: { upstreamStatus },
+        });
+        const res = await server.inject({
+          method: "POST",
+          url: "/admin/v1/corpus/documents/doc1/web-page",
+          payload: JSON.stringify({ url: "https://example.org/guia" }),
+          headers: { "content-type": "application/json" },
+        });
+        expect(res.statusCode, String(upstreamStatus)).toBe(400);
+        expect(res.json()).toMatchObject({
+          error: { code: "VALIDATION_FAILED", details: { reason: "CORPUS_INPUT_REFUSED" } },
+        });
+      }
+    });
+
+    it("forwards the raw upload as base64 with the decoded name, and audits only its size", async () => {
+      reportAnswer = { status: 200, body: DOCUMENT };
+      published.length = 0;
+      const res = await server.inject({
+        method: "POST",
+        url: "/admin/v1/corpus/documents/doc1/file",
+        payload: PDF,
+        headers: {
+          "content-type": "application/pdf",
+          "x-somnus-filename": encodeURIComponent("Guía.pdf"),
+        },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toMatchObject({ origin: { kind: "file", filename: "Guía.pdf" } });
+      expect(reportCalls).toEqual([
+        {
+          method: "POST",
+          path: "/internal/v1/admin/corpus/documents/doc1/file",
+          body: { filename: "Guía.pdf", contentBase64: PDF.toString("base64") },
+        },
+      ]);
+      const event = published[0] as EventEnvelope;
+      expect(event.eventType).toBe("admin.corpus_file.uploaded.v1");
+      expect(event.data).toEqual({ capability: "admin_corpus_manage", sizeBytes: PDF.length });
+    });
+
+    it("refuses text and unregistered types before anything reaches the report service", async () => {
+      for (const contentType of ["text/plain", "application/x-msdownload"]) {
+        const res = await server.inject({
+          method: "POST",
+          url: "/admin/v1/corpus/documents/doc1/file",
+          payload: "MZ hola",
+          headers: { "content-type": contentType },
+        });
+        // text/plain has Fastify's own parser (a string, refused by the handler);
+        // an unregistered type never reaches a handler at all.
+        expect([400, 415], contentType).toContain(res.statusCode);
+      }
+      expect(reportCalls).toHaveLength(0);
+    });
+
+    it("refuses a JSON body on the upload route: an original is raw bytes", async () => {
+      const res = await server.inject({
+        method: "POST",
+        url: "/admin/v1/corpus/documents/doc1/file",
+        payload: JSON.stringify({ contentBase64: "JVBERi0=" }),
+        headers: { "content-type": "application/json" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(reportCalls).toHaveLength(0);
+    });
+
+    it("serves the original back as bytes, as an attachment that is never sniffed", async () => {
+      reportAnswer = {
+        status: 200,
+        body: {
+          filename: "Guía.pdf",
+          contentType: "application/pdf",
+          contentBase64: PDF.toString("base64"),
+        },
+      };
+      const res = await server.inject({
+        method: "GET",
+        url: "/admin/v1/corpus/documents/doc1/file",
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.rawPayload.equals(PDF)).toBe(true);
+      expect(res.headers["content-type"]).toBe("application/pdf");
+      expect(res.headers["content-disposition"]).toBe(
+        `attachment; filename*=UTF-8''${encodeURIComponent("Guía.pdf")}`,
+      );
+      expect(res.headers["x-content-type-options"]).toBe("nosniff");
+    });
+
+    it("forwards a web page request as it came", async () => {
+      reportAnswer = {
+        status: 200,
+        body: {
+          ...DOCUMENT,
+          origin: {
+            kind: "web_page",
+            sourceUrl: "https://example.org/guia",
+            addedAt: "2026-10-18T10:00:00.000Z",
+          },
+        },
+      };
+      const res = await server.inject({
+        method: "POST",
+        url: "/admin/v1/corpus/documents/doc1/web-page",
+        payload: JSON.stringify({ url: "https://example.org/guia" }),
+        headers: { "content-type": "application/json" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(reportCalls[0]?.body).toEqual({ url: "https://example.org/guia" });
     });
   });
 
