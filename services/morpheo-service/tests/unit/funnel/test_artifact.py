@@ -69,9 +69,8 @@ def test_the_draft_is_inactive_and_pending_clinical_review() -> None:
     assert artifact.content_version == "2.0-draft"
     # D-07, approved by the clinical lead on 18/10/2026.
     assert artifact.engine["resources"]["EMERGENCIA"] == "112"
-    # No invented wording: the drowsy-driver message waits for the clinical lead.
-    pending = artifact.engine["pending_texts"]["S2_driver_warning"]
-    assert pending == "PENDIENTE \N{EN DASH} texto de Jesús"
+    # Texts v0.2 does not give are drafts in the phrase catalogue, not here.
+    assert "pending_texts" not in artifact.engine
 
 
 def test_t_insomnio_extra_sentence_comes_from_its_v02_guidance() -> None:

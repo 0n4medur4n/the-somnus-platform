@@ -28,12 +28,18 @@ CATALOGUE_FILE = (
     Path(__file__).resolve().parents[3] / "clinical" / "morpheo_textos_v2_borrador.json"
 )
 CATALOGUE_STATUS = "BORRADOR \N{EN DASH} Jesús lo aprueba"
+# Patient-facing texts v0.2 gives only as system instructions, or not at all.
+DRAFT_STATUS = "BORRADOR \N{EN DASH} Jesús"
+REQUIRED_DRAFTS = ("S2_aviso", "T_RECIENTE")
 MAX_PHRASE_LENGTH = 160
-# Placeholders whose text comes from somewhere other than the catalogue lists.
-_FILLED_ELSEWHERE = {("T_SEGURIDAD", "Acción concreta según S1-S4")}
+MAX_DRAFT_LENGTH = 600
 _PLACEHOLDER = re.compile(r"\[([^\]]+)\]")
 _LIST_SLOT = re.compile(r"\{list:([a-z_]+)\}")
+_SLOT = re.compile(r"\{([^}]+)\}")
+# Resource slots are filled from the artifact's confirmed resources (D-07).
+_RESOURCE_SLOTS = {"EMERGENCIA", "S4_extra"}
 _PENDING_CODES = {"AGE", "S1", "S2", "S3", "S4", "Q03", "Q05"}
+_SAFETY = {"S1", "S2", "S3", "S4"}
 
 
 @dataclass(frozen=True)
@@ -50,8 +56,19 @@ class PhraseList:
     describes: str
     mode: str  # "all" | "first"
     phrases: tuple[Phrase, ...]
+    status: str
     joiner: str | None = None
     choice_key: str | None = None
+
+
+@dataclass(frozen=True)
+class Draft:
+    """A whole patient-facing text written for the clinical lead to approve."""
+
+    id: str
+    describes: str
+    text: str
+    status: str
 
 
 @dataclass(frozen=True)
@@ -66,6 +83,7 @@ class Catalogue:
     raw: dict[str, Any]
     lists: dict[str, PhraseList]
     placeholders: dict[str, dict[str, Slot]]
+    drafts: dict[str, Draft]
     status: str
 
     def phrase(self, phrase_id: str) -> Phrase:
@@ -103,6 +121,10 @@ def _validate_condition(cond: Mapping[str, Any], artifact: FunnelArtifact, where
         return
     if "list" in cond:
         return
+    if "safety" in cond:
+        if cond["safety"] not in _SAFETY:
+            raise FunnelArtifactError(f"{where}: unknown safety question {cond['safety']!r}")
+        return
     if "branch" in cond:
         if cond["branch"] not in artifact.engine["branch_order"]:
             raise FunnelArtifactError(f"{where}: unknown branch {cond['branch']!r}")
@@ -121,6 +143,14 @@ def _validate_condition(cond: Mapping[str, Any], artifact: FunnelArtifact, where
             raise FunnelArtifactError(f"{where}: {cond['q']} answers sí/no, not {key!r}")
 
 
+def _validate_text(text: str, limit: int, where: str) -> None:
+    if "[" in text or "]" in text or len(text) > limit or text != text.strip():
+        raise FunnelArtifactError(f"{where}: not a short, finished phrase: {text!r}")
+    for slot in _SLOT.findall(text):
+        if slot not in ("n", "duración", *_RESOURCE_SLOTS) and not slot.startswith("list:"):
+            raise FunnelArtifactError(f"{where}: unknown slot {{{slot}}}")
+
+
 def parse_catalogue(raw: dict[str, Any], artifact: FunnelArtifact) -> Catalogue:
     status = raw["meta"]["status"]
     if status != CATALOGUE_STATUS:
@@ -128,6 +158,10 @@ def parse_catalogue(raw: dict[str, Any], artifact: FunnelArtifact) -> Catalogue:
     lists: dict[str, PhraseList] = {}
     seen_ids: set[str] = set()
     for name, spec in raw["lists"].items():
+        list_status = spec.get("status", status)
+        if list_status not in (CATALOGUE_STATUS, DRAFT_STATUS):
+            raise FunnelArtifactError(f"list {name}: unknown status {list_status!r}")
+        limit = MAX_DRAFT_LENGTH if list_status == DRAFT_STATUS else MAX_PHRASE_LENGTH
         phrases = []
         for p in spec["phrases"]:
             where = f"phrase {p['id']}"
@@ -135,8 +169,7 @@ def parse_catalogue(raw: dict[str, Any], artifact: FunnelArtifact) -> Catalogue:
                 raise FunnelArtifactError(f"{where}: duplicate id")
             seen_ids.add(p["id"])
             text = p["text"]
-            if "[" in text or "]" in text or len(text) > MAX_PHRASE_LENGTH or text != text.strip():
-                raise FunnelArtifactError(f"{where}: not a short, finished phrase: {text!r}")
+            _validate_text(text, limit, where)
             if p.get("when") is not None:
                 _validate_condition(p["when"], artifact, where)
             phrases.append(Phrase(p["id"], text, p.get("when"), p.get("fallback", False)))
@@ -147,6 +180,7 @@ def parse_catalogue(raw: dict[str, Any], artifact: FunnelArtifact) -> Catalogue:
             describes=spec["describes"],
             mode=spec["mode"],
             phrases=tuple(phrases),
+            status=list_status,
             joiner=spec.get("joiner"),
             choice_key=spec.get("choice_key"),
         )
@@ -172,10 +206,19 @@ def parse_catalogue(raw: dict[str, Any], artifact: FunnelArtifact) -> Catalogue:
     }
     needed |= {("Z1", name) for name in _PLACEHOLDER.findall(artifact.step("Z1").text)}
     covered = {(t, n) for t, slots in placeholders.items() for n in slots}
-    missing = needed - covered - _FILLED_ELSEWHERE
+    missing = needed - covered
     if missing:
         raise FunnelArtifactError(f"placeholders without a phrase list: {sorted(missing)}")
-    return Catalogue(raw=raw, lists=lists, placeholders=placeholders, status=status)
+    drafts: dict[str, Draft] = {}
+    for draft_id, spec in raw.get("drafts", {}).items():
+        if spec["status"] != DRAFT_STATUS:
+            raise FunnelArtifactError(f"draft {draft_id}: status must be {DRAFT_STATUS!r}")
+        _validate_text(spec["text"], MAX_DRAFT_LENGTH, f"draft {draft_id}")
+        drafts[draft_id] = Draft(draft_id, spec["describes"], spec["text"], spec["status"])
+    absent = [d for d in REQUIRED_DRAFTS if d not in drafts]
+    if absent:
+        raise FunnelArtifactError(f"drafts missing: {absent}")
+    return Catalogue(raw=raw, lists=lists, placeholders=placeholders, drafts=drafts, status=status)
 
 
 def load_catalogue(
@@ -224,7 +267,18 @@ class Selector:
         self.c = catalogue
         self.iv = iv
         self.pending = tuple(pending)
+        self.resources: Mapping[str, str] = iv.a.engine["resources"]
         self.used: list[str] = []
+
+    def _resources(self, text: str) -> str:
+        for slot in _RESOURCE_SLOTS:
+            text = text.replace(f"{{{slot}}}", self.resources[slot])
+        return text
+
+    def draft(self, draft_id: str) -> str:
+        if draft_id not in self.used:
+            self.used.append(draft_id)
+        return self._resources(self.c.drafts[draft_id].text)
 
     def holds(self, cond: Mapping[str, Any] | None) -> bool:
         if cond is None:
@@ -244,6 +298,8 @@ class Selector:
             return bool(self._choose(self.c.lists[cond["list"]]))
         if "branch" in cond:
             return iv.branch_open(cond["branch"])
+        if "safety" in cond:
+            return iv.safety(cond["safety"]) == "si"
         value = iv.value(cond["q"])
         if "has" in cond:
             return isinstance(value, list) and cond["has"] in value
@@ -289,7 +345,7 @@ class Selector:
             text = text.replace("{n}", str(value)).replace("{duración}", duration_text(value) or "")
         for ref in _LIST_SLOT.findall(text):
             text = text.replace(f"{{list:{ref}}}", self.text(ref) or "")
-        return text
+        return self._resources(text)
 
     def select(self, list_name: str) -> Selection:
         phrase_list = self.c.lists[list_name]

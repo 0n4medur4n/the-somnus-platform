@@ -99,7 +99,7 @@ def test_insomnia_with_habits_keeps_therapy_as_the_main_action() -> None:
     assert result.rule_ids == ("R04",)
 
 
-def test_recent_insomnia_with_high_impact_waits_for_the_clinical_text() -> None:
+def test_recent_insomnia_with_high_impact_gets_clinical_help_without_waiting() -> None:
     recent = {
         "Q08": Answer(value=["despertares"]),
         "Q05": Answer(value=5),
@@ -107,6 +107,14 @@ def test_recent_insomnia_with_high_impact_waits_for_the_clinical_text() -> None:
         "I1": YES,
         "I2": YES,
     }
-    texts = dict(evaluate(A, CALM | recent).texts)
-    assert texts["PENDIENTE:recent_high_impact"].startswith("PENDIENTE \N{EN DASH} texto de Jesús")
+    result = evaluate(A, CALM | recent)
+    texts = dict(result.texts)
+    assert texts["T_RECIENTE"].startswith("Nos ha contado que desde hace poco le cuesta dormir")
     assert "T_INSOMNIO" not in texts
+    assert result.accion_principal == "CONSULTA_ESTUDIO"
+
+
+def test_same_day_care_gets_the_drafted_s3_action() -> None:
+    text = dict(evaluate(A, CALM | {"S3@end": YES}).texts)["T_SEGURIDAD"]
+    assert "hoy mismo" in text and "112" in text
+    assert "Aclarar impulsividad" not in text

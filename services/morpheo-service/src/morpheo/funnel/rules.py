@@ -209,12 +209,8 @@ def evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> FunnelR
     if v("H5") == YES:
         orient("CONSULTA_ESTUDIO", "T_HORARIO", "R08", "H5 = Sí: el patrón persiste o afecta mucho")
     if recent_high_impact:
-        orient(
-            "CONSULTA_ESTUDIO",
-            "PENDIENTE:recent_high_impact",
-            "R06",
-            "cuadro reciente con mucho impacto (D-19)",
-        )
+        # v0.2 has no template for it (p. 5): the text is a draft (T_RECIENTE).
+        orient("CONSULTA_ESTUDIO", "T_RECIENTE", "R06", "cuadro reciente con mucho impacto (D-19)")
 
     # --- therapy ---
     if insomnia and not breathing:
