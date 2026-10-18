@@ -45,6 +45,18 @@ describe("ActorResolver", () => {
     expect(setSomnusUserId).toHaveBeenCalledWith("018f0000-0000-7000-8000-000000000001", ACTOR);
   });
 
+  it("puts the id on the in-request session too, so later handlers see it", async () => {
+    const { client } = makeFakeIdentityClient(() => ({
+      status: 200,
+      body: { userId: ACTOR, email: "u@example.com", locale: "es", status: "active" },
+    }));
+    const session = sessionWith(null);
+
+    await new ActorResolver(client, sessions).resolve(session, "corr-1");
+
+    expect(session.somnusUserId).toBe(ACTOR);
+  });
+
   it("short-circuits when the id is already memoized (no identity call)", async () => {
     const { client, requests } = makeFakeIdentityClient(() => {
       throw new Error("should not be called");
