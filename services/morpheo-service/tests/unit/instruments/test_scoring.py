@@ -1,0 +1,64 @@
+"""Scoring: the sum of item values, banded by the licensed file only."""
+
+from __future__ import annotations
+
+import datetime as dt
+
+import pytest
+
+from morpheo.instruments.definitions import InstrumentDefinition, parse_definition
+from morpheo.instruments.scoring import score
+
+from .synthetic import synthetic
+
+TODAY = dt.date(2026, 10, 18)
+
+
+def _definition(code: str) -> InstrumentDefinition:
+    return parse_definition(synthetic(code), "a" * 64, today=TODAY, allow_synthetic=True)
+
+
+def test_the_total_is_the_sum_and_the_band_comes_from_the_file() -> None:
+    isi = _definition("ISI")
+    result = score(isi, {f"i{n}": 4 for n in range(1, 8)})
+    assert result.total == 28
+    assert result.band == isi.bands[-1].label
+    assert result.complete
+    assert (result.code, result.version, result.source_sha256) == ("ISI", "test-0", "a" * 64)
+
+
+def test_band_edges_are_inclusive() -> None:
+    ess = _definition("ESS")
+    edge = ess.bands[0].max  # 12 in the synthetic file
+    answers = {f"i{n}": 0 for n in range(1, 9)}
+    for n in range(1, edge // 3 + 1):
+        answers[f"i{n}"] = 3
+    assert score(ess, answers).total == edge
+    assert score(ess, answers).band == ess.bands[0].label
+    answers["i8"] = 1
+    assert score(ess, answers).band == ess.bands[1].label
+
+
+def test_an_unanswered_item_is_unknown_not_zero() -> None:
+    stop_bang = _definition("STOP-BANG")
+    answers: dict[str, int | None] = {f"i{n}": 0 for n in range(1, 9)}
+    answers["i8"] = None
+    result = score(stop_bang, answers)
+    assert result.total is None and result.band is None
+    assert result.missing == ("i8",)
+    assert not result.complete
+
+
+def test_an_item_never_answered_is_missing_too() -> None:
+    result = score(_definition("ISI"), {"i1": 2})
+    assert result.missing == ("i2", "i3", "i4", "i5", "i6", "i7")
+
+
+def test_a_value_outside_the_items_options_is_refused() -> None:
+    with pytest.raises(ValueError, match="invalid response value"):
+        score(_definition("STOP-BANG"), {"i1": 2})
+
+
+def test_an_unknown_item_is_refused() -> None:
+    with pytest.raises(ValueError, match="unknown items"):
+        score(_definition("ESS"), {"i9": 1})
