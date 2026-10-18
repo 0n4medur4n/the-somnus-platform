@@ -78,7 +78,11 @@ export class UsersRepository {
     byRole: Array<{ role: string | null; total: number }>;
     daily: Array<{ day: string; total: number }>;
   }> {
-    const day = sql<string>`DATE_FORMAT(${users.createdAt}, '%Y-%m-%d')`;
+    // Spelled out, not `${users.createdAt}`: Drizzle renders a column unqualified
+    // in the select list and qualified in GROUP BY, and TiDB's only_full_group_by
+    // does not see those as the same expression (MySQL does) -- the production
+    // console got ER_WRONG_FIELD_WITH_GROUP. One literal, identical in both.
+    const day = sql<string>`DATE_FORMAT(\`users\`.\`created_at\`, '%Y-%m-%d')`;
     const [byStatus, byRole, daily] = await Promise.all([
       this.db.select({ status: users.status, total: count() }).from(users).groupBy(users.status),
       this.db
