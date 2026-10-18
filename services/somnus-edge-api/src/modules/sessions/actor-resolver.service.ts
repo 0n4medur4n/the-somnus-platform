@@ -40,6 +40,11 @@ export class ActorResolver {
     }
 
     await this.sessions.setSomnusUserId(session.sessionId, parsed.data.userId);
+    // Also on THIS request's session object: handlers after the guard read
+    // `session.somnusUserId`, and the store write above only reaches the next
+    // request. Without it, the first admin request of a fresh session called
+    // identity with an empty actor id (401/400) once the guard had let it in.
+    session.somnusUserId = parsed.data.userId;
     return parsed.data.userId;
   }
 }
