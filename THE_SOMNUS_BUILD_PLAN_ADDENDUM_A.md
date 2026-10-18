@@ -26,6 +26,7 @@ Rules that hold across all rows:
 - A professional who self-registers is a normal individual until verified. The verification queue is the only way to become a professional.
 - Nox has no public registration page. Its entry point is the invitation email. An invitation is single-use and expires (existing behavior).
 - Minors never register. Every pediatric interaction is through a guardian account with the guardian role, in the Morpheo Kids flow.
+- **Staff invitations — owner decision, 2026-10-18.** A holder of `admin_roles_assign` may invite a member of staff from the console: first name, last name, address, one internal role. The email carries a console sign-in link; **no account exists until the invited person signs in with that address and accepts**, acknowledging the privacy policy themselves (a consent receipt, source `staff_invitation`). The role is then granted through the same single path as every internal role, on behalf of the admin who invited — so "never to oneself" holds (an admin cannot invite their own address). Internal roles only; people who use the platform and professionals keep registering on their own. Pending for 7 days; a new invitation to the same address replaces the pending one.
 
 # A2. Admin console scope
 

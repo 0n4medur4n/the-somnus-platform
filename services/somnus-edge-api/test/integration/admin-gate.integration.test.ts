@@ -205,6 +205,24 @@ describe("admin console gate (/admin/v1/*)", () => {
             },
           };
         }
+        if (req.path.includes("/staff-invitations")) {
+          const invitation = {
+            id: UUIDv7(),
+            firstName: "Ana",
+            lastName: "García",
+            email: "ana@example.com",
+            roleKey: "support_agent",
+            locale: "es",
+            status: "pending",
+            invitedBy: ACTOR,
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+            acceptedAt: null,
+          };
+          return req.method === "GET"
+            ? { status: 200, body: { invitations: [invitation] } }
+            : { status: 201, body: invitation };
+        }
         if (req.path.includes("/organizations") && req.method === "POST") {
           return {
             status: 201,
@@ -468,6 +486,15 @@ describe("admin console gate (/admin/v1/*)", () => {
         capability: "admin_verification_queue",
       },
       { method: "POST", url: "/admin/v1/roles/assign", capability: "admin_roles_assign" },
+      // Staff invitations (owner decision 2026-10-18): accepting one grants an
+      // internal role, so they sit behind the same capability as granting it.
+      { method: "GET", url: "/admin/v1/staff-invitations", capability: "admin_roles_assign" },
+      { method: "POST", url: "/admin/v1/staff-invitations", capability: "admin_roles_assign" },
+      {
+        method: "POST",
+        url: "/admin/v1/staff-invitations/s1/revoke",
+        capability: "admin_roles_assign",
+      },
       // Checkpoint 15.3 -- the AI content review queue. §A2.2 grants
       // admin_content_review to clinical_governance_reviewer and
       // platform_super_admin only; every other internal role, support_agent
@@ -567,6 +594,12 @@ describe("admin console gate (/admin/v1/*)", () => {
       },
       "POST /admin/v1/roles/assign": {
         targetUserId: "018f0000-0000-7000-8000-0000000000ff",
+        roleKey: "support_agent",
+      },
+      "POST /admin/v1/staff-invitations": {
+        firstName: "Ana",
+        lastName: "García",
+        email: "ana@example.com",
         roleKey: "support_agent",
       },
       "POST /admin/v1/break-glass/reveal": {

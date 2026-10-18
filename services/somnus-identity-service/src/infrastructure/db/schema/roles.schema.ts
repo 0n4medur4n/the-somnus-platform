@@ -79,3 +79,30 @@ export const roleAssignments = mysqlTable("role_assignments", {
   revokedAt: timestamp("revoked_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+/**
+ * Staff invitations from the admin console (owner decision 2026-10-18). Bound
+ * to the address, not to a token: the email carries a console sign-in link, and
+ * the invitation is matched against the address the sign-in VERIFIED. At most
+ * one row per address is `pending` -- a new invitation revokes the old one.
+ */
+export const staffInvitations = mysqlTable("staff_invitations", {
+  id: id(),
+  email: varchar("email", { length: 320 }).notNull(),
+  firstName: varchar("first_name", { length: 120 }).notNull(),
+  lastName: varchar("last_name", { length: 120 }).notNull(),
+  roleKey: mysqlEnum("role_key", [
+    "support_agent",
+    "professional_verifier",
+    "clinical_governance_reviewer",
+    "platform_admin",
+    "platform_super_admin",
+  ]).notNull(),
+  locale: mysqlEnum("locale", ["es", "en", "ca", "fr"]).notNull().default("es"),
+  status: mysqlEnum("status", ["pending", "accepted", "revoked"]).notNull().default("pending"),
+  invitedBy: uuidRef("invited_by").notNull(),
+  acceptedUserId: uuidRef("accepted_user_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+});

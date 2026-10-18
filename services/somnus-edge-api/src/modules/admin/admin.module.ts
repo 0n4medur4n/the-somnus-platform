@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { SessionsModule } from "../sessions/sessions.module.js";
+import { StaffInvitationModule } from "../staff-invitation/staff-invitation.module.js";
 import { AdminProxyService } from "./admin.service.js";
 import { AdminAuditInterceptor } from "./admin-audit.interceptor.js";
 import { AdminBreakGlassController } from "./admin-break-glass.controller.js";
@@ -15,6 +16,7 @@ import { AdminInsightsController } from "./admin-insights.controller.js";
 import { AdminInsightsService } from "./admin-insights.service.js";
 import { AdminMeController } from "./admin-me.controller.js";
 import { AdminOperationsController } from "./admin-operations.controller.js";
+import { AdminStaffInvitationsController } from "./admin-staff-invitations.controller.js";
 
 /**
  * The `/admin/v1/*` surface (Addendum A §A2.1 / Checkpoint 15.1). A separate
@@ -25,7 +27,8 @@ import { AdminOperationsController } from "./admin-operations.controller.js";
  * client and the event publisher come from the global modules.
  */
 @Module({
-  imports: [SessionsModule],
+  // StaffInvitationModule for the invitation email sender (owner decision 2026-10-18).
+  imports: [SessionsModule, StaffInvitationModule],
   controllers: [
     AdminMeController,
     AdminOperationsController,
@@ -34,6 +37,7 @@ import { AdminOperationsController } from "./admin-operations.controller.js";
     AdminBreakGlassController,
     AdminCorpusController,
     AdminDriveController,
+    AdminStaffInvitationsController,
   ],
   providers: [
     AdminProxyService,

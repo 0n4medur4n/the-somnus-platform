@@ -111,7 +111,7 @@ export function AuthCallback() {
 
   useEffect(() => {
     // Both outcomes live at the root: the gate decides which one renders.
-    if (state.status === "authorized" || state.status === "denied") {
+    if (state.status === "authorized" || state.status === "denied" || state.status === "invited") {
       navigate("/", { replace: true });
       return;
     }

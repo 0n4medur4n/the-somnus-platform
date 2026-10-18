@@ -3,6 +3,7 @@ export * from "./consent/index.js";
 export * from "./drive/index.js";
 export { type ApiErrorResponse, ApiErrorResponseSchema } from "./error.js";
 export {
+  CONSOLE_2026_10_EVENT_TYPES,
   DRIVE_EVENT_TYPES,
   type EventEnvelope,
   EventEnvelopeSchema,

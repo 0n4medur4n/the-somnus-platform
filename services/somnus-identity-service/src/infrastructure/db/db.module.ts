@@ -12,6 +12,7 @@ import {
   ProfessionalProfilesRepository,
   RoleAssignmentsRepository,
   RolesRepository,
+  StaffInvitationsRepository,
   UsersRepository,
 } from "./repositories/index.js";
 
@@ -67,6 +68,11 @@ export const DB = Symbol("DB");
     },
     { provide: RolesRepository, useFactory: (db: Db) => new RolesRepository(db), inject: [DB] },
     {
+      provide: StaffInvitationsRepository,
+      useFactory: (db: Db) => new StaffInvitationsRepository(db),
+      inject: [DB],
+    },
+    {
       provide: RoleAssignmentsRepository,
       useFactory: (db: Db) => new RoleAssignmentsRepository(db),
       inject: [DB],
@@ -88,6 +94,7 @@ export const DB = Symbol("DB");
     OrganizationMembershipsRepository,
     OrganizationInvitationsRepository,
     RolesRepository,
+    StaffInvitationsRepository,
     RoleAssignmentsRepository,
     AccessGrantsRepository,
     AuditRepository,

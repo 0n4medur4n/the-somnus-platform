@@ -23,6 +23,12 @@ describe("edge (admin console surface)", () => {
     expect(post).toHaveBeenCalledWith("/v1/sessions", { idToken: "id-token" });
   });
 
+  it("lists an organization's members on the route edge serves", () => {
+    // Regression: the Drive's /members -> /access rename once reached this call.
+    void edge.organizationMembers("o1");
+    expect(get).toHaveBeenCalledWith("/admin/v1/organizations/o1/members");
+  });
+
   it("reads the shell from /admin/v1/me", () => {
     void edge.adminMe();
     expect(get).toHaveBeenCalledWith("/admin/v1/me");
@@ -50,6 +56,18 @@ describe("edge (admin console surface)", () => {
       () => edge.createOrganization({ name: "Org" }),
       () => edge.setOrganizationStatus("o1", { status: "active", reason: "why" }),
       () => edge.organizationMembers("o1"),
+      () => edge.staffInvitations(),
+      () =>
+        edge.inviteStaff({
+          firstName: "Ana",
+          lastName: "García",
+          email: "ana@example.com",
+          roleKey: "support_agent",
+          locale: "es",
+        }),
+      () => edge.revokeStaffInvitation("s1"),
+      () => edge.myStaffInvitation(),
+      () => edge.acceptStaffInvitation(),
       () => edge.verificationQueue(),
       () => edge.decideVerification("c1", { decision: "approve", reason: "why" }),
       () =>
@@ -97,8 +115,15 @@ describe("edge (admin console surface)", () => {
     expect(paths.length).toBe(calls.length);
     // Shared with the app, all about signing in: none reads anyone's data.
     const SHARED_SESSION_ROUTES = ["/v1/sessions", "/v1/sessions/current", "/v1/auth/email-link"];
+    // The invited person's OWN staff invitation (owner decision 2026-10-18),
+    // looked up by the session's verified address: they hold no internal role
+    // yet, so it cannot live under /admin/v1, and it reads nobody else's data.
+    const OWN_INVITATION_ROUTES = ["/v1/staff-invitation", "/v1/staff-invitation/accept"];
     for (const path of paths) {
-      const allowed = path.startsWith("/admin/v1/") || SHARED_SESSION_ROUTES.includes(path);
+      const allowed =
+        path.startsWith("/admin/v1/") ||
+        SHARED_SESSION_ROUTES.includes(path) ||
+        OWN_INVITATION_ROUTES.includes(path);
       expect(allowed, `${path} is outside the console's surface`).toBe(true);
     }
   });

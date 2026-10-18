@@ -78,7 +78,10 @@ export function ConsoleHome({ me }: { me: AdminMeResponse }) {
       ) : (
         <Card>
           {view === "users" ? (
-            <UsersScreen canChangeStatus={held.has("admin_account_status_write")} />
+            <UsersScreen
+              canChangeStatus={held.has("admin_account_status_write")}
+              canInvite={held.has("admin_roles_assign")}
+            />
           ) : null}
           {view === "deletions" ? <DeletionRequestsScreen /> : null}
           {view === "organizations" ? <OrganizationsScreen /> : null}

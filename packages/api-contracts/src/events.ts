@@ -195,11 +195,28 @@ export const DRIVE_EVENT_TYPES: ReadonlyArray<string> = [
   "admin.drive_node.purged.v1",
 ];
 
+/**
+ * Owner decisions 2026-10-18: inviting staff from the console, and corpus
+ * documents uploaded as files or fetched from a web page. Admin routes, one
+ * event each; identity records the acceptance itself (no route is called by an
+ * admin when the invited person accepts).
+ */
+export const CONSOLE_2026_10_EVENT_TYPES: ReadonlyArray<string> = [
+  "admin.staff_invitation.listed.v1",
+  "admin.staff_invitation.created.v1",
+  "admin.staff_invitation.revoked.v1",
+  "identity.staff_invitation.accepted.v1",
+  "admin.corpus_file.uploaded.v1",
+  "admin.corpus_file.downloaded.v1",
+  "admin.corpus_web_page.fetched.v1",
+];
+
 const ALL_EVENT_TYPES: ReadonlyArray<string> = [
   ...INITIAL_EVENT_TYPES,
   ...PHASE_14_EVENT_TYPES,
   ...PHASE_15_EVENT_TYPES,
   ...DRIVE_EVENT_TYPES,
+  ...CONSOLE_2026_10_EVENT_TYPES,
 ];
 
 export function isKnownEventType(value: string): value is EventType {

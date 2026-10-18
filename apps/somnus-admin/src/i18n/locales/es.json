@@ -700,5 +700,49 @@
   },
   "ui": {
     "close": "Cerrar"
+  },
+  "invited": {
+    "title": "Hola, {{name}}",
+    "body": "Te han invitado a la consola de The Somnus como {{role}}. Al aceptar se crea tu cuenta de personal con ese rol.",
+    "expires": "La invitación es válida hasta el {{date}}.",
+    "privacy": "He leído y acepto la",
+    "privacyLink": "política de privacidad",
+    "accept": "Aceptar y entrar",
+    "failed": "No se ha podido aceptar la invitación. Puede que haya caducado o que ya se haya usado; pide a quien te invitó que la vuelva a enviar."
+  },
+  "staff": {
+    "title": "Personal de The Somnus",
+    "subtitle": "Invita a alguien del equipo con su rol. Recibirá un correo para entrar en la consola y aceptar.",
+    "add": "Añadir persona",
+    "formTitle": "Invitar a una persona del equipo",
+    "formHint": "La cuenta se crea cuando la persona entra con el enlace y acepta; hasta entonces no tiene acceso a nada.",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "colName": "Nombre",
+    "colRole": "Rol",
+    "colDate": "Caduca / aceptada",
+    "chooseRole": "Elige un rol",
+    "emailLanguage": "Idioma del correo",
+    "locale": {
+      "es": "Español",
+      "en": "English",
+      "ca": "Català",
+      "fr": "Français"
+    },
+    "send": "Enviar invitación",
+    "cancel": "Cancelar",
+    "sent": "Invitación enviada a {{email}}.",
+    "savedNotSent": "Invitación guardada, pero el correo a {{email}} no se ha podido enviar. Pulsa «Reenviar».",
+    "failed": "No se ha podido completar la acción. Inténtalo de nuevo.",
+    "revoked": "Invitación a {{email}} retirada.",
+    "resend": "Reenviar",
+    "revoke": "Retirar",
+    "empty": "Aún no has invitado a nadie.",
+    "status": {
+      "pending": "Pendiente",
+      "accepted": "Aceptada",
+      "revoked": "Retirada",
+      "expired": "Caducada"
+    }
   }
 }

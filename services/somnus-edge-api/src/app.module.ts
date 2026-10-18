@@ -20,6 +20,7 @@ import { OrganizationsModule } from "./modules/organizations/organizations.modul
 import { RegistrationModule } from "./modules/registration/registration.module.js";
 import { ReportsModule } from "./modules/reports/reports.module.js";
 import { SessionsModule } from "./modules/sessions/sessions.module.js";
+import { StaffInvitationModule } from "./modules/staff-invitation/staff-invitation.module.js";
 import { VersionModule } from "./modules/version/version.module.js";
 
 export const ROOT_LOGGER: Logger = createLogger({
@@ -45,6 +46,7 @@ export const ROOT_LOGGER: Logger = createLogger({
     MeModule,
     ConsentModule,
     RegistrationModule,
+    StaffInvitationModule,
     OrganizationsModule,
     MorpheoModule,
     ReportsModule,
