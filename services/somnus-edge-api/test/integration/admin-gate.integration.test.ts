@@ -428,6 +428,8 @@ describe("admin console gate (/admin/v1/*)", () => {
       { method: "GET", url: "/admin/v1/me", capability: "any_internal_role" },
       { method: "POST", url: "/admin/v1/users/search", capability: "admin_users_read" },
       { method: "GET", url: "/admin/v1/users/u1", capability: "admin_users_read" },
+      // The console dashboard's account figures: counts only.
+      { method: "GET", url: "/admin/v1/users/overview", capability: "admin_users_read" },
       {
         method: "PATCH",
         url: "/admin/v1/users/u1/status",

@@ -12,6 +12,7 @@ import type {
   AdminUserDetail,
   AdminUserSearchRequest,
   AdminUserSearchResponse,
+  AdminUsersOverview,
   AdminVerificationCase,
   AdminVerificationDecisionRequest,
   AuditQueryRequest,
@@ -82,6 +83,9 @@ export const edge = {
   // --- Users (admin_users_read / admin_account_status_write) ---
   searchUsers: (body: AdminUserSearchRequest): Promise<AdminUserSearchResponse> =>
     api.post<AdminUserSearchResponse>("/admin/v1/users/search", body),
+  /** Dashboard figures about accounts: counts only. */
+  usersOverview: (): Promise<AdminUsersOverview> =>
+    api.get<AdminUsersOverview>("/admin/v1/users/overview"),
   userDetail: (userId: string): Promise<AdminUserDetail> =>
     api.get<AdminUserDetail>(`/admin/v1/users/${encodeURIComponent(userId)}`),
   setUserStatus: (userId: string, body: AdminAccountStatusRequest): Promise<void> =>

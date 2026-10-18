@@ -180,3 +180,45 @@ export const AdminRoleAssignResponseSchema = z.object({
   source: z.enum(["console", "bootstrap"]),
 });
 export type AdminRoleAssignResponse = z.infer<typeof AdminRoleAssignResponseSchema>;
+
+/** How many weeks of sign-ups the console overview charts. */
+export const ADMIN_USERS_OVERVIEW_WEEKS = 12;
+
+/**
+ * `GET /admin/v1/users/overview` -- the console's dashboard figures about
+ * accounts (capability `admin_users_read`).
+ *
+ * Counts only. No email, no id, no profile field: the overview exists to show
+ * the shape of the platform, and a number cannot be turned back into a person.
+ * Computed live from identity's own tables, so it is right even while the
+ * analytics event transport is not wired.
+ */
+export const AdminUsersOverviewSchema = z
+  .object({
+    total: z.number().int().nonnegative(),
+    byStatus: z
+      .object({
+        active: z.number().int().nonnegative(),
+        suspended: z.number().int().nonnegative(),
+        deleted: z.number().int().nonnegative(),
+      })
+      .strict(),
+    /** Registration role branch (Addendum A A1); `unknown` = never completed registration. */
+    byRegistrationRole: z
+      .object({
+        adult: z.number().int().nonnegative(),
+        parent: z.number().int().nonnegative(),
+        professional: z.number().int().nonnegative(),
+        unknown: z.number().int().nonnegative(),
+      })
+      .strict(),
+    newLast7Days: z.number().int().nonnegative(),
+    newLast30Days: z.number().int().nonnegative(),
+    /** Oldest first, zero-filled, each week starting on a Monday (UTC). */
+    weekly: z
+      .array(z.object({ weekStart: z.iso.date(), count: z.number().int().nonnegative() }).strict())
+      .length(ADMIN_USERS_OVERVIEW_WEEKS),
+    generatedAt: z.iso.datetime(),
+  })
+  .strict();
+export type AdminUsersOverview = z.infer<typeof AdminUsersOverviewSchema>;

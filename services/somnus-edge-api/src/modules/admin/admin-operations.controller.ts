@@ -23,6 +23,8 @@ import {
   AdminUserDetailSchema,
   type AdminUserSearchResponse,
   AdminUserSearchResponseSchema,
+  type AdminUsersOverview,
+  AdminUsersOverviewSchema,
   type AdminVerificationCase,
   AdminVerificationCaseSchema,
 } from "@somnus/api-contracts";
@@ -100,6 +102,27 @@ export class AdminOperationsController {
       correlationId: correlationOf(correlationId),
       schema: AdminUserSearchResponseSchema,
       body,
+    });
+  }
+
+  // A static segment, matched before `users/:userId` by the router.
+  @Get("users/overview")
+  @AdminRoute({
+    capability: "admin_users_read",
+    eventType: "admin.user_overview.viewed.v1",
+    entity: "user_overview",
+  })
+  @ApiOperation({ summary: "Dashboard figures about accounts: counts only, nothing identifying." })
+  async usersOverview(
+    @CurrentSession() session: SessionRecord | undefined,
+    @CorrelationId() correlationId?: string,
+  ): Promise<AdminUsersOverview> {
+    return this.admin.forward({
+      method: "GET",
+      path: "/internal/v1/admin/users/overview",
+      actorId: this.actor(session),
+      correlationId: correlationOf(correlationId),
+      schema: AdminUsersOverviewSchema,
     });
   }
 

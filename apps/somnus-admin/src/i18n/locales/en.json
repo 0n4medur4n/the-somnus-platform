@@ -42,7 +42,10 @@
     "rolesTitle": "Your internal roles",
     "capabilitiesTitle": "What you can do",
     "noCapabilities": "Your role has no capabilities assigned yet.",
-    "pendingNotice": "The screens for the remaining capabilities arrive in Checkpoints 15.3 to 15.5."
+    "pendingNotice": "The screens for the remaining capabilities arrive in Checkpoints 15.3 to 15.5.",
+    "openMenu": "Open the menu",
+    "pendingCount_one": "{{count}} pending",
+    "pendingCount_other": "{{count}} pending"
   },
   "role": {
     "support_agent": "Support agent",
@@ -78,7 +81,7 @@
     "notFound": "Not found."
   },
   "nav": {
-    "overview": "Overview",
+    "overview": "Dashboard",
     "users": "Users",
     "deletions": "Deletion requests",
     "organizations": "Organizations",
@@ -603,6 +606,94 @@
       "s7Body": "Whatever you move to the trash can be restored. Only an owner deletes it forever. The Drive locks itself after 15 minutes of inactivity and when you sign out; your passphrase opens it again.",
       "s8Title": "8. What not to upload",
       "s8Body": "This Drive is for internal team material. Do not upload patient data, reports about specific people or anything that identifies someone. The platform's clinical flows exist for that."
+    },
+    "new": "New",
+    "home": "My Drive",
+    "sharedFolders": "Shared folders",
+    "noFoldersYet": "No folders yet.",
+    "search": "Search this shared folder",
+    "searchPlaceholder": "Search…",
+    "noResults": "Nothing by that name.",
+    "viewList": "List view",
+    "viewGrid": "Grid view",
+    "details": "Details",
+    "security": "Security & passphrase",
+    "create": "Create",
+    "uploads": "Encrypted uploads",
+    "uploadFailed": "Could not upload.",
+    "dropToUpload": "Drop to encrypt and upload to {{folder}}",
+    "inFolder": "in {{folder}}",
+    "actionsFor": "Actions for {{name}}",
+    "e2eNote": "End-to-end encrypted: the name and content can only be read in the browsers of the people with access to this folder.",
+    "columns": {
+      "name": "Name",
+      "author": "Author",
+      "modified": "Modified",
+      "size": "Size",
+      "actions": "Actions"
+    },
+    "detailsFields": {
+      "type": "Type",
+      "created": "Created",
+      "signature": "Signature",
+      "version": "Version"
     }
+  },
+  "charts": {
+    "period": "Period",
+    "showChart": "Show chart",
+    "showTable": "Show as table"
+  },
+  "navGroup": {
+    "general": "General",
+    "people": "People",
+    "organizations": "Organizations",
+    "content": "Clinical & content",
+    "security": "Data & security",
+    "team": "Team"
+  },
+  "dashboard": {
+    "welcome": "Signed in as {{email}}",
+    "refresh": "Refresh",
+    "attention": "Needs attention",
+    "pendingDeletions": "Deletion requests",
+    "pendingVerifications": "Professional verifications",
+    "pendingReviews": "AI content reviews",
+    "review": "Waiting for review",
+    "allClear": "All clear",
+    "accounts": "Accounts",
+    "viewUsers": "View users",
+    "totalAccounts": "Total accounts",
+    "activeAccounts": "Active",
+    "suspendedAccounts": "Suspended",
+    "newAccounts30": "New (30 days)",
+    "newAccounts7_one": "{{count}} in the last 7 days",
+    "newAccounts7_other": "{{count}} in the last 7 days",
+    "signupsByWeek": "Sign-ups per week",
+    "signups": "Sign-ups",
+    "weekOf": "Week of {{date}}",
+    "accountTypes": "Accounts by type",
+    "type": {
+      "adult": "Adult",
+      "parent": "Parent or guardian",
+      "professional": "Professional",
+      "unknown": "Registration not completed"
+    },
+    "organizations": "Organizations",
+    "totalOrganizations": "Organizations",
+    "activeOrganizations": "Active",
+    "suspendedOrganizations": "Suspended",
+    "activity": "Platform activity",
+    "viewStatistics": "View statistics",
+    "noEventsYet": "No activity events recorded yet: the platform does not send its events to the audit store yet. The account figures above are real.",
+    "counts": {
+      "assessmentsStarted": "Assessments started",
+      "assessmentsCompleted": "Assessments completed",
+      "reportsGenerated": "Reports generated",
+      "notificationsRequested": "Emails sent"
+    }
+  },
+  "ui": {
+    "close": "Close"
   }
 }

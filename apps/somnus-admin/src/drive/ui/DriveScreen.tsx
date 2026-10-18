@@ -1,22 +1,13 @@
 import type { DriveAccount } from "@somnus/api-contracts";
-import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "../../components/Button.js";
-import { Field } from "../../components/Field.js";
+import { Icon } from "../../components/ui/Icon.js";
 import { ApiRequestError } from "../../lib/api.js";
 import { edge } from "../../lib/edge.js";
-import { type DriveFolderView, DriveSession, type DriveShareEntry } from "../drive-session.js";
-import {
-  ChangePassphrase,
-  DriveSetup,
-  DriveUnlock,
-  type Opened,
-  OwnFingerprint,
-  RecoveryKit,
-} from "./DriveAccess.js";
-import { DriveFolder } from "./DriveFolder.js";
-import { DriveGuide } from "./DriveGuide.js";
-import { LockIcon, Notice, useDriveTask } from "./drive-ui.js";
+import { DriveSession } from "../drive-session.js";
+import { DriveSetup, DriveUnlock, type Opened, RecoveryKit } from "./DriveAccess.js";
+import { DriveWorkspace } from "./DriveWorkspace.js";
+import { Notice } from "./drive-ui.js";
 
 /** Idle time after which the Drive forgets its keys. */
 export const DRIVE_IDLE_LOCK_MS = 15 * 60 * 1000;
@@ -37,7 +28,6 @@ type Phase =
 export function DriveScreen() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
-  const [guide, setGuide] = useState(false);
   const sessionRef = useRef<DriveSession | null>(null);
 
   const load = useCallback(async (notice: string | null = null) => {
@@ -102,209 +92,61 @@ export function DriveScreen() {
     );
   }
 
-  return (
-    <section aria-labelledby="drive-title" className="flex flex-col gap-5">
-      <header className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2
-            id="drive-title"
-            className="flex items-center gap-2 text-2xl font-semibold text-somnus-text"
-          >
-            <LockIcon />
-            {t("drive.title")}
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setGuide((g) => !g)} aria-expanded={guide}>
-              {t("drive.guide")}
-            </Button>
-            {phase.kind === "open" ? (
-              <Button variant="secondary" onClick={() => lock()}>
-                {t("drive.lock")}
-              </Button>
-            ) : null}
-          </div>
-        </div>
-        <p className="text-somnus-subtle">{t("drive.subtitle")}</p>
-        <Notice tone="info">{t("drive.notForPatients")}</Notice>
-      </header>
-
-      {guide ? <DriveGuide onClose={() => setGuide(false)} /> : null}
-
-      {phase.kind === "loading" ? <p className="text-somnus-subtle">{t("drive.loading")}</p> : null}
-      {phase.kind === "error" ? <Notice tone="danger">{t("errors.generic")}</Notice> : null}
-      {phase.kind === "setup" ? <DriveSetup onOpened={(r) => void opened(r)} /> : null}
-      {phase.kind === "locked" ? (
-        <DriveUnlock
-          account={phase.account}
-          notice={phase.notice}
-          onOpened={(r) => void opened(r)}
-        />
-      ) : null}
-      {phase.kind === "recoveryKit" ? (
-        <RecoveryKit
-          code={phase.code}
-          onDone={() => setPhase({ kind: "open", account: phase.account, session: phase.session })}
-        />
-      ) : null}
-      {phase.kind === "open" ? (
-        <DriveHome
-          session={phase.session}
-          account={phase.account}
-          onAccountChanged={(account) => setPhase({ ...phase, account })}
-        />
-      ) : null}
-    </section>
+  const gateCard = (children: ReactNode) => (
+    <div className="mx-auto w-full max-w-xl">
+      <div className="mb-6 flex flex-col items-center gap-3 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-somnus-primary/10 text-somnus-primary">
+          <Icon name="lock" className="h-7 w-7" />
+        </span>
+        <p className="max-w-md text-sm text-somnus-subtle">{t("drive.subtitle")}</p>
+      </div>
+      <div className="rounded-xl border border-white/[0.06] bg-somnus-surface/80 p-6">
+        {children}
+      </div>
+      <p className="mt-4 flex items-start gap-2 text-xs text-somnus-subtle">
+        <Icon name="info" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        {t("drive.notForPatients")}
+      </p>
+    </div>
   );
-}
 
-/** The open Drive: the list of shared folders, or one of them. */
-function DriveHome({
-  session,
-  account,
-  onAccountChanged,
-}: {
-  session: DriveSession;
-  account: DriveAccount;
-  onAccountChanged: (account: DriveAccount) => void;
-}) {
-  const { t } = useTranslation();
-  const task = useDriveTask();
-  const { run } = task;
-  const [shares, setShares] = useState<DriveShareEntry[] | null>(null);
-  const [view, setView] = useState<DriveFolderView | null>(null);
-  const [newName, setNewName] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [changing, setChanging] = useState(false);
-
-  const refresh = useCallback(async () => {
-    const list = await run(() => session.listShares());
-    if (list) setShares(list);
-  }, [session, run]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
-  async function openShare(shareId: string) {
-    const opened = await task.run(() => session.openShare(shareId));
-    if (opened) setView(opened);
-  }
-
-  async function reload() {
-    if (!view) return;
-    const opened = await task.run(() => session.openShare(view.shareId));
-    if (opened) setView(opened);
-  }
-
-  async function create(event: FormEvent) {
-    event.preventDefault();
-    const name = newName.trim();
-    if (!name) return;
-    const ok = await task.run(() => session.createShare(name));
-    if (ok !== null) {
-      setNewName("");
-      setCreating(false);
-      await refresh();
-    }
-  }
-
-  if (view) {
+  if (phase.kind === "open") {
     return (
-      <DriveFolder
-        session={session}
-        view={view}
-        onReload={reload}
-        onExit={() => {
-          setView(null);
-          void refresh();
-        }}
+      <DriveWorkspace
+        session={phase.session}
+        account={phase.account}
+        onAccountChanged={(account) => setPhase({ ...phase, account })}
+        onLock={() => lock()}
       />
     );
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3 rounded-lg border border-somnus-subtle/15 p-4">
-        <OwnFingerprint fingerprint={session.me.fingerprint} />
-        <div>
-          <Button variant="secondary" onClick={() => setChanging((c) => !c)}>
-            {t("drive.changePassphrase")}
-          </Button>
-        </div>
-        {changing ? (
-          <ChangePassphrase
-            account={account}
-            onChanged={onAccountChanged}
-            onCancel={() => setChanging(false)}
-          />
-        ) : null}
-      </div>
-
-      <section aria-labelledby="drive-shares-heading" className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 id="drive-shares-heading" className="text-lg font-medium text-somnus-text">
-            {t("drive.shares.heading")}
-          </h3>
-          <Button onClick={() => setCreating((c) => !c)}>{t("drive.shares.new")}</Button>
-        </div>
-
-        {creating ? (
-          <form
-            onSubmit={create}
-            className="flex flex-col gap-2 rounded-lg border border-somnus-subtle/20 p-4"
-          >
-            <Field
-              label={t("drive.shares.newName")}
-              value={newName}
-              maxLength={200}
-              autoFocus
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <Button type="submit" disabled={task.busy || !newName.trim()}>
-                {task.busy ? t("drive.working") : t("drive.shares.create")}
-              </Button>
-              <Button variant="secondary" onClick={() => setCreating(false)}>
-                {t("drive.cancel")}
-              </Button>
-            </div>
-          </form>
-        ) : null}
-
-        {task.error ? <Notice tone="danger">{task.error}</Notice> : null}
-        {shares === null && task.busy ? (
-          <p className="text-somnus-subtle">{t("drive.loading")}</p>
-        ) : null}
-        {shares?.length === 0 ? (
-          <p className="text-somnus-subtle">{t("drive.shares.empty")}</p>
-        ) : null}
-
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {shares?.map((share) => (
-            <li key={share.shareId}>
-              <button
-                type="button"
-                disabled={share.name === null || task.busy}
-                onClick={() => void openShare(share.shareId)}
-                className="flex w-full flex-col items-start gap-1 rounded-lg border border-somnus-subtle/15 bg-somnus-surface p-4 text-left hover:border-somnus-primary/60 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                <span className="font-medium text-somnus-text">
-                  {share.name ?? t("drive.shares.unreadable")}
-                </span>
-                {share.problem ? (
-                  <span className="text-sm text-somnus-danger">
-                    {t(`drive.problem.${share.problem}`)}
-                  </span>
-                ) : null}
-                <span className="text-sm text-somnus-subtle">
-                  {t(`drive.role.${share.role}`)} ·{" "}
-                  {t("drive.shares.members", { count: share.memberCount })}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
+    <section aria-label={t("drive.title")}>
+      {phase.kind === "loading" ? (
+        <p className="text-center text-somnus-subtle">{t("drive.loading")}</p>
+      ) : null}
+      {phase.kind === "error" ? <Notice tone="danger">{t("errors.generic")}</Notice> : null}
+      {phase.kind === "setup" ? gateCard(<DriveSetup onOpened={(r) => void opened(r)} />) : null}
+      {phase.kind === "locked"
+        ? gateCard(
+            <DriveUnlock
+              account={phase.account}
+              notice={phase.notice}
+              onOpened={(r) => void opened(r)}
+            />,
+          )
+        : null}
+      {phase.kind === "recoveryKit"
+        ? gateCard(
+            <RecoveryKit
+              code={phase.code}
+              onDone={() =>
+                setPhase({ kind: "open", account: phase.account, session: phase.session })
+              }
+            />,
+          )
+        : null}
+    </section>
   );
 }

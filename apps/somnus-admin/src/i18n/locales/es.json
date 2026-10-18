@@ -42,7 +42,10 @@
     "rolesTitle": "Tus roles internos",
     "capabilitiesTitle": "Lo que puedes hacer",
     "noCapabilities": "Tu rol no tiene ninguna capacidad asignada todavía.",
-    "pendingNotice": "Las pantallas de cada capacidad restante llegan en los checkpoints 15.3 a 15.5."
+    "pendingNotice": "Las pantallas de cada capacidad restante llegan en los checkpoints 15.3 a 15.5.",
+    "openMenu": "Abrir el menú",
+    "pendingCount_one": "{{count}} pendiente",
+    "pendingCount_other": "{{count}} pendientes"
   },
   "role": {
     "support_agent": "Agente de soporte",
@@ -78,7 +81,7 @@
     "notFound": "No se ha encontrado."
   },
   "nav": {
-    "overview": "Resumen",
+    "overview": "Panel",
     "users": "Personas usuarias",
     "deletions": "Solicitudes de borrado",
     "organizations": "Organizaciones",
@@ -603,6 +606,94 @@
       "s7Body": "Lo que mandas a la papelera se puede restaurar. Solo una propietaria lo borra para siempre. El Drive se bloquea solo tras 15 minutos sin actividad y al cerrar sesión; para volver a abrirlo basta tu frase.",
       "s8Title": "8. Qué no subir",
       "s8Body": "Este Drive es para material interno del equipo. No subas datos de pacientes, informes de personas concretas ni nada que identifique a alguien. Para eso existen los flujos clínicos de la plataforma."
+    },
+    "new": "Nuevo",
+    "home": "Mi Drive",
+    "sharedFolders": "Carpetas compartidas",
+    "noFoldersYet": "Aún no tienes carpetas.",
+    "search": "Buscar en esta carpeta compartida",
+    "searchPlaceholder": "Buscar…",
+    "noResults": "No hay nada con ese nombre.",
+    "viewList": "Vista de lista",
+    "viewGrid": "Vista de cuadrícula",
+    "details": "Detalles",
+    "security": "Seguridad y frase",
+    "create": "Crear",
+    "uploads": "Subidas cifradas",
+    "uploadFailed": "No se ha podido subir.",
+    "dropToUpload": "Suelta para cifrar y subir a {{folder}}",
+    "inFolder": "en {{folder}}",
+    "actionsFor": "Acciones de {{name}}",
+    "e2eNote": "Cifrado de extremo a extremo: el nombre y el contenido solo se pueden leer en los navegadores de quienes tienen acceso a esta carpeta.",
+    "columns": {
+      "name": "Nombre",
+      "author": "Autor",
+      "modified": "Modificado",
+      "size": "Tamaño",
+      "actions": "Acciones"
+    },
+    "detailsFields": {
+      "type": "Tipo",
+      "created": "Creado",
+      "signature": "Firma",
+      "version": "Versión"
     }
+  },
+  "charts": {
+    "period": "Periodo",
+    "showChart": "Ver gráfico",
+    "showTable": "Ver como tabla"
+  },
+  "navGroup": {
+    "general": "General",
+    "people": "Personas",
+    "organizations": "Organizaciones",
+    "content": "Clínico y contenido",
+    "security": "Datos y seguridad",
+    "team": "Equipo"
+  },
+  "dashboard": {
+    "welcome": "Sesión de {{email}}",
+    "refresh": "Actualizar",
+    "attention": "Requiere atención",
+    "pendingDeletions": "Solicitudes de borrado",
+    "pendingVerifications": "Verificaciones profesionales",
+    "pendingReviews": "Revisiones de contenido IA",
+    "review": "Pendiente de revisar",
+    "allClear": "Todo al día",
+    "accounts": "Cuentas",
+    "viewUsers": "Ver personas usuarias",
+    "totalAccounts": "Cuentas totales",
+    "activeAccounts": "Activas",
+    "suspendedAccounts": "Suspendidas",
+    "newAccounts30": "Nuevas (30 días)",
+    "newAccounts7_one": "{{count}} en los últimos 7 días",
+    "newAccounts7_other": "{{count}} en los últimos 7 días",
+    "signupsByWeek": "Altas por semana",
+    "signups": "Altas",
+    "weekOf": "Semana del {{date}}",
+    "accountTypes": "Cuentas por tipo",
+    "type": {
+      "adult": "Persona adulta",
+      "parent": "Madre, padre o tutor",
+      "professional": "Profesional",
+      "unknown": "Registro sin completar"
+    },
+    "organizations": "Organizaciones",
+    "totalOrganizations": "Organizaciones",
+    "activeOrganizations": "Activas",
+    "suspendedOrganizations": "Suspendidas",
+    "activity": "Actividad de la plataforma",
+    "viewStatistics": "Ver estadísticas",
+    "noEventsYet": "Aún no hay eventos de actividad registrados: la plataforma todavía no envía sus eventos al registro de auditoría. Las cifras de cuentas de arriba sí son reales.",
+    "counts": {
+      "assessmentsStarted": "Cuestionarios iniciados",
+      "assessmentsCompleted": "Cuestionarios completados",
+      "reportsGenerated": "Informes generados",
+      "notificationsRequested": "Correos enviados"
+    }
+  },
+  "ui": {
+    "close": "Cerrar"
   }
 }

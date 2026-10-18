@@ -1,7 +1,7 @@
 import { UUIDv7 } from "@somnus/api-contracts";
-import { and, eq, like, sql } from "drizzle-orm";
+import { and, count, eq, gte, like, ne, sql } from "drizzle-orm";
 import type { Db } from "../db.client.js";
-import { userIdentities, users } from "../schema/index.js";
+import { individualProfiles, userIdentities, users } from "../schema/index.js";
 
 export type NewUser = {
   email: string;
@@ -66,6 +66,34 @@ export class UsersRepository {
       .where(conditions.length > 0 ? and(...conditions) : sql`1 = 1`)
       .orderBy(users.createdAt)
       .limit(filter.limit + 1);
+  }
+
+  /**
+   * The console overview's raw figures: counts by status, by registration role
+   * (accounts not deleted), and sign-ups per UTC day since `since`. Aggregates
+   * only -- no row identifies anyone.
+   */
+  async overviewForAdmin(since: Date): Promise<{
+    byStatus: Array<{ status: (typeof users.status.enumValues)[number]; total: number }>;
+    byRole: Array<{ role: string | null; total: number }>;
+    daily: Array<{ day: string; total: number }>;
+  }> {
+    const day = sql<string>`DATE_FORMAT(${users.createdAt}, '%Y-%m-%d')`;
+    const [byStatus, byRole, daily] = await Promise.all([
+      this.db.select({ status: users.status, total: count() }).from(users).groupBy(users.status),
+      this.db
+        .select({ role: individualProfiles.registrationRole, total: count() })
+        .from(users)
+        .leftJoin(individualProfiles, eq(individualProfiles.userId, users.id))
+        .where(ne(users.status, "deleted"))
+        .groupBy(individualProfiles.registrationRole),
+      this.db
+        .select({ day, total: count() })
+        .from(users)
+        .where(gte(users.createdAt, since))
+        .groupBy(day),
+    ]);
+    return { byStatus, byRole, daily };
   }
 
   async findByEmail(email: string) {
