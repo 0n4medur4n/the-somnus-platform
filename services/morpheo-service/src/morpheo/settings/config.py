@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default=DEFAULT_LOCAL_DATABASE_URL, min_length=1, alias="DATABASE_URL"
     )
+    # Morpheo v2.0, the embudo v0.2 engine (ADR 0020). Off, and invisible to
+    # users, until the clinical lead approves it after testing with vignettes.
+    funnel_v2_enabled: bool = Field(default=False, alias="FUNNEL_V2_ENABLED")
 
 
 def load_settings() -> Settings:

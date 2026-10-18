@@ -14,6 +14,7 @@ def test_settings_defaults_are_valid() -> None:
     assert settings.port == 8080
     assert settings.log_level == "info"
     assert settings.log_format == "json"
+    assert settings.funnel_v2_enabled is False
 
 
 @pytest.mark.parametrize(
