@@ -32,6 +32,32 @@ def test_vignette_runs_as_expected(vignette: dict[str, Any]) -> None:
     assert run.passed, run.failures
 
 
+def _own_words(vignette: dict[str, Any]) -> list[str]:
+    words = [vignette["narrative"]]
+    for spec in vignette["answers"].values():
+        if isinstance(spec, dict) and isinstance(spec.get("text"), str):
+            words.append(spec["text"])
+    return words
+
+
+@pytest.mark.parametrize("vignette", VIGNETTES, ids=lambda v: v["id"])
+def test_the_final_text_never_quotes_the_person(vignette: dict[str, Any]) -> None:
+    run = run_vignette(vignette)
+    for _, text in run.result.texts:
+        assert "sin dato" not in text and "[" not in text
+        for words in _own_words(vignette):
+            assert words not in text
+            assert words[:25] not in text
+
+
+@pytest.mark.parametrize("vignette", VIGNETTES, ids=lambda v: v["id"])
+def test_z1_shows_a_summary_not_a_placeholder(vignette: dict[str, Any]) -> None:
+    for step in run_vignette(vignette).asked:
+        if step.key == "Z1":
+            assert "[resumen]" not in step.question
+            assert step.question.startswith("Esto es lo que he entendido: ")
+
+
 def test_a_run_is_deterministic() -> None:
     first, second = run_vignette(VIGNETTES[0]), run_vignette(VIGNETTES[0])
     assert first.result == second.result

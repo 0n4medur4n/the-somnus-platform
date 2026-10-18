@@ -222,7 +222,6 @@
           "value": 1,
           "unit": "años"
         },
-        "T_HABITOS.cambio": "proteger tiempo de descanso",
         "H2": {
           "value": {
             "sueno": "23:00",
@@ -566,7 +565,7 @@
           "Q03@aclarar"
         ],
         "pending_include": [
-          "desde cuándo le ocurre"
+          "Q03"
         ]
       }
     },

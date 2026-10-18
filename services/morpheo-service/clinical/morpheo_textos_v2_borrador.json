@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "content_version": "2.0-draft",
+    "status": "BORRADOR – Jesús lo aprueba",
+    "note": "Catálogo cerrado de frases para los huecos [..] de las plantillas de v0.2 (pp. 11-12) y del resumen de Z1. El motor elige cada frase por la respuesta o la regla indicada en «when», sin IA. Nunca se insertan las palabras de la persona; solo se usan números que ella ha dado (noches por semana, duración). Todo el catálogo es un borrador hasta que Jesús lo apruebe.",
+    "conditions": {
+      "q + has": "la respuesta (de opción múltiple) incluye esa opción",
+      "q + is": "la respuesta es esa (incluye respuestas que se deducen de otra anterior, p. ej. R1 desde Q15)",
+      "q + in": "la respuesta es una de esas",
+      "q + answered": "la persona respondió eso a esa misma pregunta (no deducido)",
+      "q + between": "número entre esos dos valores, ambos incluidos",
+      "q + duration": "hay una duración respondida",
+      "q + any": "la respuesta (de opción múltiple) tiene al menos una opción",
+      "q + unknown": "la pregunta está sin dato (no lo sé, prefiero no responder o no se preguntó)",
+      "x": "dato extraído del texto libre y confirmado por la persona en Z1",
+      "pending": "dato que falta al cerrar (R02)",
+      "list": "esa otra lista da al menos una frase",
+      "branch": "esa rama se ha abierto",
+      "all / any / not": "combinaciones"
+    },
+    "slots": {
+      "{n}": "el número que la persona dio en la pregunta de «when»",
+      "{duración}": "la duración que la persona dio en la pregunta de «when» (p. ej. «6 meses»)",
+      "{list:NOMBRE}": "las frases elegidas de otra lista, unidas con «y»"
+    }
+  },
+  "lists": {
+    "dificultad": {
+      "describes": "Qué parte de la noche le cuesta (Q08)",
+      "mode": "all",
+      "phrases": [
+        {"id": "DIF-01", "text": "le cuesta dormirse", "when": {"q": "Q08", "has": "dormirse"}},
+        {"id": "DIF-02", "text": "se despierta varias veces por la noche", "when": {"q": "Q08", "has": "despertares"}},
+        {"id": "DIF-03", "text": "se despierta antes de lo que querría", "when": {"q": "Q08", "has": "despertar_precoz"}},
+        {"id": "DIF-00", "text": "le cuesta dormir bien", "when": {"q": "I1", "is": "si"}, "fallback": true}
+      ]
+    },
+    "frecuencia": {
+      "describes": "Cuántas noches por semana (Q05; si falta, I3)",
+      "mode": "first",
+      "phrases": [
+        {"id": "FRE-01", "text": "1 noche por semana", "when": {"q": "Q05", "between": [1, 1]}},
+        {"id": "FRE-02", "text": "{n} noches por semana", "when": {"q": "Q05", "between": [2, 6]}},
+        {"id": "FRE-03", "text": "todas las noches", "when": {"q": "Q05", "between": [7, 7]}},
+        {"id": "FRE-00", "text": "al menos 3 noches por semana", "when": {"q": "I3", "is": "si"}, "fallback": true}
+      ]
+    },
+    "duracion": {
+      "describes": "Desde cuándo (Q03; si falta, I3)",
+      "mode": "first",
+      "phrases": [
+        {"id": "DUR-01", "text": "{duración}", "when": {"q": "Q03", "duration": true}},
+        {"id": "DUR-00", "text": "3 meses o más", "when": {"q": "I3", "is": "si"}, "fallback": true}
+      ]
+    },
+    "impacto": {
+      "describes": "Cómo le afecta durante el día (Q11 e I2; nunca el texto libre de Q10)",
+      "mode": "first",
+      "phrases": [
+        {"id": "IMP-01", "text": "esto afecta a su día a día: nota cansancio y a veces le vence el sueño sin querer", "when": {"q": "Q11", "is": "ambas"}},
+        {"id": "IMP-02", "text": "esto afecta a su día a día y a veces le vence el sueño sin querer", "when": {"q": "Q11", "is": "dormido_sin_querer"}},
+        {"id": "IMP-03", "text": "esto afecta a su día a día y nota cansancio", "when": {"q": "Q11", "is": "cansancio"}},
+        {"id": "IMP-00", "text": "esto afecta a su día a día", "when": {"q": "I2", "is": "si"}, "fallback": true}
+      ]
+    },
+    "senales_respiratorias": {
+      "describes": "Señales respiratorias confirmadas (Q15, R1, R2, R3)",
+      "mode": "all",
+      "phrases": [
+        {"id": "RES-01", "text": "ronquido fuerte", "when": {"q": "Q15", "has": "ronca_fuerte"}},
+        {"id": "RES-02", "text": "ronquido frecuente", "when": {"all": [{"q": "R2a", "is": "si"}, {"not": {"q": "Q15", "has": "ronca_fuerte"}}]}},
+        {"id": "RES-03", "text": "pausas al respirar que otras personas han observado", "when": {"q": "Q15", "has": "dejar_de_respirar"}},
+        {"id": "RES-04", "text": "despertares con sensación de ahogo", "when": {"q": "Q15", "has": "ahogo"}},
+        {"id": "RES-05", "text": "pausas al respirar o despertares con sensación de ahogo", "when": {"q": "R1", "answered": "si"}},
+        {"id": "RES-06", "text": "tendencia a dormirse sin querer durante el día", "when": {"q": "R2b", "is": "si"}},
+        {"id": "RES-07", "text": "tensión arterial alta", "when": {"q": "R2c", "is": "si"}},
+        {"id": "RES-08", "text": "dudas sobre si ronca o hace pausas al dormir", "when": {"q": "R3", "is": "si"}}
+      ]
+    },
+    "motivo_psg": {
+      "describes": "Por qué conviene un especialista y una polisomnografía (R4, R6, D2, N2)",
+      "mode": "all",
+      "phrases": [
+        {"id": "PSG-01", "text": "la enfermedad del corazón o de los pulmones que ha mencionado", "when": {"q": "R4", "has": "cardiopulmonar"}},
+        {"id": "PSG-02", "text": "el antecedente de ictus", "when": {"q": "R4", "has": "ictus"}},
+        {"id": "PSG-03", "text": "el tratamiento con opioides", "when": {"q": "R4", "has": "opioides"}},
+        {"id": "PSG-04", "text": "la debilidad respiratoria que ha mencionado", "when": {"q": "R4", "has": "debilidad_respiratoria"}},
+        {"id": "PSG-05", "text": "la intensidad de su insomnio", "when": {"q": "R4", "has": "insomnio_grave"}},
+        {"id": "PSG-06", "text": "no conocer todavía otros problemas de salud que puedan influir en su respiración", "when": {"all": [{"branch": "R"}, {"q": "R4", "unknown": true}]}},
+        {"id": "PSG-07", "text": "un estudio del sueño en casa que no permitió aclarar el problema", "when": {"q": "R6", "is": "si"}},
+        {"id": "PSG-08", "text": "la somnolencia que continúa aunque duerma lo suficiente", "when": {"q": "D2a", "is": "si"}},
+        {"id": "PSG-09", "text": "la pérdida de fuerza al reírse", "when": {"q": "D2b", "is": "si"}},
+        {"id": "PSG-10", "text": "los golpes o lesiones durante el sueño", "when": {"q": "N2", "has": "lesiones"}},
+        {"id": "PSG-11", "text": "los movimientos violentos durante el sueño", "when": {"q": "N2", "has": "violencia"}},
+        {"id": "PSG-12", "text": "la aparición de estos episodios en la edad adulta", "when": {"q": "N2", "has": "episodios_nuevos"}},
+        {"id": "PSG-13", "text": "las dudas sobre si podrían ser convulsiones", "when": {"q": "N2", "has": "convulsiones"}}
+      ]
+    },
+    "dato_pendiente": {
+      "describes": "Qué dato falta al cerrar (R02)",
+      "mode": "all",
+      "phrases": [
+        {"id": "DAT-01", "text": "su edad", "when": {"pending": "AGE"}},
+        {"id": "DAT-02", "text": "si ahora mismo tiene dificultad intensa para respirar, dolor fuerte en el pecho o una confusión nueva", "when": {"pending": "S1"}},
+        {"id": "DAT-03", "text": "si le vence el sueño al conducir o al hacer algo en lo que podría hacerse daño", "when": {"pending": "S2"}},
+        {"id": "DAT-04", "text": "si duerme muy poco varias noches seguidas y aun así tiene una energía fuera de lo habitual", "when": {"pending": "S3"}},
+        {"id": "DAT-05", "text": "si el malestar le hace sentir que podría hacerse daño o que no está a salvo", "when": {"pending": "S4"}},
+        {"id": "DAT-06", "text": "desde cuándo le ocurre", "when": {"pending": "Q03"}},
+        {"id": "DAT-07", "text": "cuántas noches por semana le ocurre", "when": {"pending": "Q05"}}
+      ]
+    },
+    "cambio_habitos": {
+      "describes": "El cambio que se propone empezar (guía de T_HABITOS, p. 11: «Elegir con la persona»). Si la persona elige uno, se usa ese; si no, el primero que se cumpla.",
+      "mode": "first",
+      "choice_key": "T_HABITOS.cambio",
+      "phrases": [
+        {"id": "HAB-01", "text": "proteger un tiempo fijo para descansar", "when": {"q": "H4", "is": "si"}},
+        {"id": "HAB-02", "text": "hacer más regular la hora de levantarse, si su vida lo permite"},
+        {"id": "HAB-03", "text": "reducir la cafeína, si nota que le influye"},
+        {"id": "HAB-04", "text": "mejorar la luz o el ruido del dormitorio"},
+        {"id": "HAB-00", "text": "proteger un tiempo fijo para descansar", "fallback": true}
+      ]
+    },
+    "resumen": {
+      "describes": "Lo que se ha entendido, para que la persona lo confirme en Z1",
+      "mode": "all",
+      "joiner": "; ",
+      "phrases": [
+        {"id": "Z1-01", "text": "{list:dificultad}", "when": {"q": "Q08", "any": true}},
+        {"id": "Z1-02", "text": "le ocurre {list:frecuencia}", "when": {"q": "Q05", "between": [1, 7]}},
+        {"id": "Z1-03", "text": "desde hace {duración}", "when": {"q": "Q03", "duration": true}},
+        {"id": "Z1-04", "text": "durante el día nota cansancio", "when": {"q": "Q11", "is": "cansancio"}},
+        {"id": "Z1-05", "text": "durante el día a veces le vence el sueño sin querer", "when": {"q": "Q11", "is": "dormido_sin_querer"}},
+        {"id": "Z1-06", "text": "durante el día nota cansancio y a veces le vence el sueño sin querer", "when": {"q": "Q11", "is": "ambas"}},
+        {"id": "Z1-07", "text": "ha descrito {list:senales_respiratorias}", "when": {"list": "senales_respiratorias"}},
+        {"id": "Z1-08", "text": "nota una molestia en las piernas que le obliga a moverlas al descansar", "when": {"q": "Q16", "is": "si"}},
+        {"id": "Z1-09", "text": "le han visto caminar, gritar o dar golpes mientras duerme", "when": {"q": "Q17", "is": "si"}},
+        {"id": "Z1-10", "text": "no siempre tiene tiempo o un lugar adecuados para dormir", "when": {"q": "Q13", "is": "no"}},
+        {"id": "Z1-11", "text": "duerme mejor cuando puede elegir su horario", "when": {"q": "Q18", "is": "si"}},
+        {"id": "Z1-12", "text": "tiene un trastorno bipolar", "when": {"x": "bipolaridad"}},
+        {"id": "Z1-13", "text": "tiene epilepsia", "when": {"x": "epilepsia"}},
+        {"id": "Z1-14", "text": "hay un embarazo en curso", "when": {"x": "embarazo"}},
+        {"id": "Z1-15", "text": "toma un tratamiento con opioides", "when": {"x": "opioides"}},
+        {"id": "Z1-16", "text": "consume sustancias que pueden influir en el sueño", "when": {"x": "sustancias"}},
+        {"id": "Z1-17", "text": "toma medicación que puede influir en el sueño", "when": {"x": "medicacion"}},
+        {"id": "Z1-00", "text": "por ahora no ha descrito ninguna dificultad concreta con el sueño", "fallback": true}
+      ]
+    }
+  },
+  "placeholders": {
+    "T_INSOMNIO": {
+      "dificultad": {"list": "dificultad"},
+      "frecuencia": {"list": "frecuencia"},
+      "duración": {"list": "duracion"},
+      "impacto": {"list": "impacto"}
+    },
+    "T_RESPIRACION": {
+      "Pausas/ahogos/otras señales confirmadas": {"list": "senales_respiratorias", "frame": "Algunas señales que ha contado, como {list},", "empty": "Algunas señales que ha contado"}
+    },
+    "T_COMBINADO": {
+      "señal respiratoria": {"list": "senales_respiratorias", "frame": "señales respiratorias como {list}", "empty": "algunas señales respiratorias"}
+    },
+    "T_PSG": {
+      "motivo concreto": {"list": "motivo_psg"}
+    },
+    "T_INCOMPLETO": {
+      "dato": {"list": "dato_pendiente"}
+    },
+    "T_HABITOS": {
+      "cambio elegido": {"list": "cambio_habitos"}
+    },
+    "Z1": {
+      "resumen": {"list": "resumen"}
+    }
+  }
+}

@@ -49,6 +49,8 @@ class FunnelResult:
     texts: tuple[tuple[str, str], ...]
     version_reglas: str
     trace: tuple[str, ...] = field(default=())
+    # The catalogue phrases the texts used, by id (for clinical review).
+    phrase_ids: tuple[str, ...] = field(default=())
 
 
 def _labels(iv: Interview, step_id: str, chosen: Any) -> list[str]:
@@ -85,7 +87,7 @@ def evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> FunnelR
     if stopped == "AGE_DESCONOCIDA":
         trace.append("R02: edad desconocida tras aclarar → INFORMACION_INSUFICIENTE")
         orient("INFORMACION_INSUFICIENTE", "T_INCOMPLETO", "R02", "edad desconocida")
-        return _result(artifact, stopped, [], orientations, ["edad"], [], rules, trace, iv=iv)
+        return _result(artifact, stopped, [], orientations, ["AGE"], [], rules, trace, iv=iv)
 
     # --- R01: alerts (p. 13; D-03, D-04, D-05, D-13) ---
     if s("S1") == YES:
@@ -232,9 +234,9 @@ def evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> FunnelR
     for question in SAFETY:
         if s(question) is None:
             pending.append(question)
-    for step_id, label in (("Q03", "desde cuándo le ocurre"), ("Q05", "cuántas noches por semana")):
+    for step_id in ("Q03", "Q05"):
         if v(step_id) is None and iv.branch_open("I") and v("I3") is None:
-            pending.append(label)
+            pending.append(step_id)
     if pending:
         orient("INFORMACION_INSUFICIENTE", "T_INCOMPLETO", "R02", "falta: " + ", ".join(pending))
 
@@ -268,7 +270,7 @@ def _result(
         deduped.append(o)
     from morpheo.funnel.render import render  # local: render imports this module's types
 
-    texts = render(artifact, deduped, iv, pending)
+    texts, phrase_ids = render(artifact, deduped, iv, pending)
     return FunnelResult(
         stopped_by=stopped,
         alerts=tuple(dict.fromkeys(alerts)),
@@ -282,6 +284,7 @@ def _result(
         texts=tuple(texts),
         version_reglas=artifact.rules_version,
         trace=tuple(trace),
+        phrase_ids=tuple(phrase_ids),
     )
 
 

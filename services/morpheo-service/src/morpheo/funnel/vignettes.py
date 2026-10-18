@@ -29,8 +29,9 @@ from pathlib import Path
 from typing import Any
 
 from morpheo.funnel.artifact import FunnelArtifact, StepDef, funnel_artifact
-from morpheo.funnel.interview import NO_LO_SE, PREFIERO, Answer, Interview, next_step
-from morpheo.funnel.render import _duration
+from morpheo.funnel.catalogue import duration_text
+from morpheo.funnel.interview import NO, NO_LO_SE, PREFIERO, YES, Answer, Interview, next_step
+from morpheo.funnel.render import question_text
 from morpheo.funnel.rules import FunnelResult, evaluate
 
 VIGNETTES_FILE = (
@@ -58,6 +59,7 @@ class VignetteRun:
     asked: tuple[AskedStep, ...]
     branches_opened: tuple[str, ...]
     result: FunnelResult
+    phrase_ids: tuple[str, ...]
     expected: dict[str, Any]
     failures: tuple[str, ...]
 
@@ -107,18 +109,40 @@ def _lookup(script: dict[str, Any], key: str) -> Any:
     return None
 
 
-def _show(answer: Answer) -> str:
+_ABSENCE = {NO_LO_SE: "No lo sé", PREFIERO: "Prefiero no responder"}
+_CONFIRM = {"sigue_igual": "Sigue igual", "ha_cambiado": "Ha cambiado"}
+_YES_NO = {YES: "Sí", NO: "No"}
+_NONE_OF_THESE = "Ninguna de estas"
+
+
+def _show(answer: Answer, definition: StepDef, kind: str) -> str:
+    """The answer as the person gave it on screen, in their language."""
     if answer.value is None:
-        label = {NO_LO_SE: "No lo sé", PREFIERO: "Prefiero no responder"}.get(
-            answer.absence or "", "—"
-        )
+        label = _ABSENCE.get(answer.absence or "", "—")
         return label + (f" «{answer.text}»" if answer.text else "")
-    if answer.text and answer.text != answer.value:
-        return f"{answer.value} «{answer.text}»"
     value = answer.value
+    if kind == "info":
+        return "Leído"
+    if kind == "confirm":
+        return _CONFIRM.get(value, str(value))
+    if definition.type == "free_text":
+        return f"«{answer.text or value}»"
+    if isinstance(value, str) and value in _YES_NO:
+        note = f" «{answer.text}»" if answer.text else ""
+        return _YES_NO[value] + note
+    labels = {o.key: o.label for o in (*definition.options, *definition.fields)}
+    if definition.type == "multi":
+        chosen = [labels.get(str(k), str(k)) for k in value] if isinstance(value, list) else []
+        return ", ".join(chosen) or _NONE_OF_THESE
+    if definition.type == "single":
+        return labels.get(value, _NONE_OF_THESE)
     if isinstance(value, dict) and "unit" in value:
-        return _duration(value) or ""
-    return json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
+        return duration_text(value) or ""
+    if isinstance(value, dict):
+        return " · ".join(f"{labels.get(k, k)}: {v}" for k, v in value.items())
+    if isinstance(value, int) and definition.unit:
+        return f"{value} {definition.unit}"
+    return str(value)
 
 
 def _check(run_result: FunnelResult, expected: dict[str, Any], asked: list[AskedStep]) -> list[str]:
@@ -165,6 +189,7 @@ def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = Non
         )
     answers: dict[str, Answer] = {}
     asked: list[AskedStep] = []
+    phrase_ids: list[str] = []
     for n in range(1, MAX_STEPS + 1):
         step = next_step(artifact, answers)
         if step is None:
@@ -175,17 +200,19 @@ def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = Non
             if spec is None
             else _from_script(spec, step.definition)
         )
+        if step.kind == "info":
+            question = artifact.protection_text
+        else:
+            # Z1 shows the summary built from the answers given so far.
+            question, used = question_text(step.definition, Interview(artifact, answers))
+            phrase_ids.extend(used)
         answers[step.key] = answer
-        question = artifact.protection_text if step.kind == "info" else step.definition.text
-        if step.kind == "confirm":
-            question = f"(confirmar) {question}"
-        asked.append(
-            AskedStep(n, step.key, step.kind, question, _show(answer), spec is None, step.reason)
-        )
+        shown = _show(answer, step.definition, step.kind)
+        asked.append(AskedStep(n, step.key, step.kind, question, shown, spec is None, step.reason))
     else:
         raise RuntimeError(f"{vignette['id']}: more than {MAX_STEPS} steps")
     if "T_HABITOS.cambio" in script:
-        answers["T_HABITOS.cambio"] = Answer(text=script["T_HABITOS.cambio"])
+        answers["T_HABITOS.cambio"] = Answer(value=script["T_HABITOS.cambio"])
     result = evaluate(artifact, answers)
     iv = Interview(artifact, answers)
     branches = tuple(
@@ -199,6 +226,7 @@ def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = Non
         asked=tuple(asked),
         branches_opened=branches,
         result=result,
+        phrase_ids=tuple(dict.fromkeys([*phrase_ids, *result.phrase_ids])),
         expected=expected,
         failures=tuple(_check(result, expected, asked)),
     )
@@ -216,6 +244,8 @@ def format_run(run: VignetteRun) -> str:
     lines.append(f"Pasos ({len(run.asked)}):")
     for a in run.asked:
         mark = " (por defecto)" if a.defaulted else ""
+        if a.kind == "confirm":
+            mark += " (confirmación)"
         why = f"   ← {a.reason}" if a.reason else ""
         lines.append(f"  {a.n:>2}. {a.key:<22} {a.question[:90]} → {a.answer}{mark}{why}")
     lines.append(f"Ramas abiertas: {', '.join(run.branches_opened) or '—'}")
@@ -230,6 +260,7 @@ def format_run(run: VignetteRun) -> str:
     pending = ", ".join(r.datos_pendientes) or "—"
     lines.append(f"Indicadores: {', '.join(r.flags) or '—'} · Datos pendientes: {pending}")
     lines.append(f"Plantillas: {', '.join(t for t, _ in r.texts) or '—'}")
+    lines.append(f"Frases del catálogo: {', '.join(run.phrase_ids) or '—'}")
     lines.append("Texto final:")
     for template, text in r.texts:
         lines.append(f"  [{template}] {text}")
