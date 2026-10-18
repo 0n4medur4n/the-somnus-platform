@@ -127,6 +127,8 @@ const PHASE_15_EVENT_TYPES: ReadonlyArray<string> = [
   // what an audit of an internal console needs to be able to answer.
   "admin.user.searched.v1",
   "admin.user.viewed.v1",
+  // The console dashboard's account figures (counts only).
+  "admin.user_overview.viewed.v1",
   "admin.account_status.changed.v1",
   "admin.deletion_request.listed.v1",
   "admin.deletion_request.decided.v1",

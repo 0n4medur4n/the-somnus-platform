@@ -19,11 +19,14 @@ export function DriveMembers({
   view,
   onChanged,
   onLeft,
+  onRename,
 }: {
   session: DriveSession;
   view: DriveFolderView;
   onChanged: () => void;
   onLeft: () => void;
+  /** Owners rename the shared folder in a dialog the workspace owns. */
+  onRename: () => void;
 }) {
   const { t } = useTranslation();
   const task = useDriveTask();
@@ -32,7 +35,6 @@ export function DriveMembers({
   const candidates = session.colleagues().filter((c) => !memberIds.has(c.userId));
   const [chosen, setChosen] = useState("");
   const [role, setRole] = useState<DriveRole>("viewer");
-  const [newName, setNewName] = useState(view.name);
   const [deleteName, setDeleteName] = useState("");
   const candidate = candidates.find((c) => c.userId === chosen);
 
@@ -52,13 +54,7 @@ export function DriveMembers({
   }
 
   return (
-    <section
-      aria-labelledby="drive-members-heading"
-      className="flex flex-col gap-4 rounded-lg border border-somnus-subtle/20 bg-somnus-surface p-4"
-    >
-      <h3 id="drive-members-heading" className="text-lg font-medium text-somnus-text">
-        {t("drive.members.heading")}
-      </h3>
+    <section aria-label={t("drive.members.heading")} className="flex flex-col gap-4">
       {task.error ? <Notice tone="danger">{task.error}</Notice> : null}
 
       <ul className="flex flex-col gap-3">
@@ -74,7 +70,7 @@ export function DriveMembers({
                 <span className="font-medium text-somnus-text">
                   {self ? t("drive.members.you") : member.email}
                 </span>
-                <TrustBadge trust={member.trust} />
+                {self ? null : <TrustBadge trust={member.trust} />}
                 {isOwner && !self ? (
                   <select
                     aria-label={t("drive.members.roleLabel")}
@@ -110,6 +106,7 @@ export function DriveMembers({
                     <div className="flex flex-wrap gap-2">
                       {member.trust === "known" ? (
                         <Button
+                          className="px-3 py-1.5 text-sm"
                           variant="secondary"
                           disabled={task.busy}
                           onClick={() => void act(() => session.markVerified(member.userId))}
@@ -119,6 +116,7 @@ export function DriveMembers({
                       ) : null}
                       {member.trust === "changed" ? (
                         <Button
+                          className="px-3 py-1.5 text-sm"
                           variant="secondary"
                           disabled={task.busy}
                           onClick={() => void act(() => session.acceptNewKey(member.userId))}
@@ -133,6 +131,7 @@ export function DriveMembers({
               {(isOwner && !self) || (self && view.members.length > 1) ? (
                 <div>
                   <Button
+                    className="px-3 py-1.5 text-sm"
                     variant="secondary"
                     disabled={task.busy}
                     onClick={() => {
@@ -205,6 +204,7 @@ export function DriveMembers({
                 </div>
               ) : null}
               <Button
+                className="px-3 py-1.5 text-sm"
                 type="submit"
                 disabled={task.busy || !candidate || candidate.trust === "changed"}
               >
@@ -217,25 +217,11 @@ export function DriveMembers({
 
       {isOwner ? (
         <div className="flex flex-col gap-4 border-t border-somnus-subtle/15 pt-4">
-          <form
-            className="flex flex-col gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (newName.trim()) void act(() => session.renameShare(view, newName.trim()));
-            }}
-          >
-            <Field
-              label={t("drive.members.renameFolder")}
-              value={newName}
-              maxLength={200}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <div>
-              <Button type="submit" variant="secondary" disabled={task.busy || !newName.trim()}>
-                {t("drive.save")}
-              </Button>
-            </div>
-          </form>
+          <div>
+            <Button className="px-3 py-1.5 text-sm" variant="secondary" onClick={onRename}>
+              {t("drive.members.renameFolder")}
+            </Button>
+          </div>
           <form
             className="flex flex-col gap-2"
             onSubmit={(e) => {
@@ -258,7 +244,7 @@ export function DriveMembers({
             <div>
               <Button
                 type="submit"
-                className="bg-somnus-danger text-somnus-background"
+                className="px-3 py-1.5 text-sm bg-somnus-danger text-somnus-background"
                 disabled={task.busy || deleteName !== view.name}
               >
                 {t("drive.members.deleteSubmit")}

@@ -115,12 +115,18 @@ describe("DriveScreen", () => {
     await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
     await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
 
-    await user.click(await screen.findByRole("button", { name: i18n.t("drive.shares.new") }));
+    // "New" -> "New shared folder", named in a dialog.
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
     await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Protocolos");
     await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
-    await user.click(await screen.findByRole("button", { name: /Protocolos/ }));
+    // The folder appears in the sidebar and on the home grid; either opens it.
+    const opens = await screen.findAllByRole("button", { name: /Protocolos/ });
+    await user.click(opens[0] as HTMLElement);
 
-    await user.click(await screen.findByRole("button", { name: i18n.t("drive.folder.newNote") }));
+    // "New" -> "New note", written in a dialog.
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(await screen.findByRole("menuitem", { name: i18n.t("drive.folder.newNote") }));
     await user.type(screen.getByLabelText(i18n.t("drive.note.title")), "Cómo usar el triaje");
     await user.type(screen.getByLabelText(i18n.t("drive.note.body")), "Paso 1: revisar SAFE-004.");
     await user.click(screen.getByRole("button", { name: i18n.t("drive.note.save") }));

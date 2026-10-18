@@ -7,6 +7,7 @@ import type {
   AdminRoleAssignResponse,
   AdminUserDetail,
   AdminUserSearchResponse,
+  AdminUsersOverview,
   AdminVerificationCase,
 } from "@somnus/api-contracts";
 import { CurrentActorId } from "../../common/decorators/current-actor.decorator.js";
@@ -47,6 +48,13 @@ export class AdminUsersController {
   @ApiOperation({ summary: "Search accounts by address and status (metadata only)." })
   async search(@Body() body: AdminUserSearchDto): Promise<AdminUserSearchResponse> {
     return this.users.search(body);
+  }
+
+  // Declared before `users/:userId`; Fastify matches the static segment first anyway.
+  @Get("users/overview")
+  @ApiOperation({ summary: "Dashboard figures about accounts: counts only, nothing identifying." })
+  async overview(): Promise<AdminUsersOverview> {
+    return this.users.overview();
   }
 
   @Get("users/:userId")

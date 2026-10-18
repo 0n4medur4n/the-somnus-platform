@@ -5,6 +5,7 @@ import type {
   AdminUserDetail,
   AdminUserSearchRequest,
   AdminUserSearchResponse,
+  AdminUsersOverview,
   UUIDv7,
 } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
@@ -16,6 +17,7 @@ import { ProfessionalProfilesRepository } from "../../infrastructure/db/reposito
 import { UsersRepository } from "../../infrastructure/db/repositories/users.repository.js";
 import { AccountDeletionService } from "../account/account-deletion.service.js";
 import { InternalRolesService } from "./internal-roles.service.js";
+import { buildUsersOverview, overviewSince } from "./users-overview.js";
 
 /**
  * Users and deletion requests for the admin console (Addendum A Checkpoint
@@ -62,6 +64,12 @@ export class AdminUsersService {
       })),
       truncated,
     };
+  }
+
+  /** The console dashboard's account figures. Counts only (see AdminUsersOverviewSchema). */
+  async overview(now: Date = new Date()): Promise<AdminUsersOverview> {
+    const raw = await this.users.overviewForAdmin(overviewSince(now));
+    return buildUsersOverview({ now, ...raw });
   }
 
   async detail(userId: UUIDv7): Promise<AdminUserDetail> {

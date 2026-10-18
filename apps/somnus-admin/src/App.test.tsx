@@ -140,7 +140,8 @@ describe("the console gate", () => {
       renderWithProviders(<Gate />, { auth: auth({ status: "authorized", me: ME }) });
 
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(t("console.title"));
-      expect(screen.getByText(t("role.professional_verifier"))).toBeInTheDocument();
+      // The role shows in the sidebar's account card and in the access card.
+      expect(screen.getAllByText(t("role.professional_verifier")).length).toBeGreaterThan(0);
 
       const listed = screen.getByTestId("capability-list").querySelectorAll("li");
       expect([...listed].map((li) => li.textContent)).toEqual([
@@ -171,9 +172,17 @@ describe("the console gate", () => {
       expect(screen.queryByTestId("capability-list")).toBeNull();
     });
 
-    it("says the capability screens are not built yet rather than implying they are", () => {
+    it("the dashboard shows only the blocks the granted capabilities feed", () => {
       renderWithProviders(<Gate />, { auth: auth({ status: "authorized", me: ME }) });
-      expect(screen.getByText(t("console.pendingNotice"))).toBeInTheDocument();
+      // A verifier holds the verification queue and user search ...
+      expect(screen.getByText(t("dashboard.pendingVerifications"))).toBeInTheDocument();
+      expect(screen.getByText(t("dashboard.totalAccounts"))).toBeInTheDocument();
+      // ... and nothing that would need deletion processing, AI review,
+      // organization management or statistics.
+      expect(screen.queryByText(t("dashboard.pendingDeletions"))).toBeNull();
+      expect(screen.queryByText(t("dashboard.pendingReviews"))).toBeNull();
+      expect(screen.queryByText(t("dashboard.totalOrganizations"))).toBeNull();
+      expect(screen.queryByText(t("dashboard.activity"))).toBeNull();
     });
   });
 
