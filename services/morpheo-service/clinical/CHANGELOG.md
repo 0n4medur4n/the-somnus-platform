@@ -4,6 +4,18 @@ Content-version bumps to the versioned artifacts (build plan §14a). The rule/
 spec `workflow_version` changes only when rules, levels, or priorities change;
 content-only additions bump `content_version` (reviewed by the Safety Committee).
 
+## Standing rule — 2026-10-18 (ADR 0020)
+
+- `Morpheo_algoritmo_embudo_v02.pdf` (17/10/2026, SHA-256
+  `98beaab6a6d1d33bdc90cd13b23a17d18d86c08dde17d7c5ac036ccfac51caf1`) is the flow
+  that prevails. It overrides `Morpheo_Algoritmos_Clinicos_y_Claims_v1.docx`, the
+  22 safety signals, L0-L4, the CORE questions and the claims registry wherever
+  they conflict; older documents apply only where v0.2 is silent. Its artifact
+  will be content_version 2.0. Nothing in the 1.x artifacts changes with this
+  entry.
+- The written confirmation of the v1.2 safety texts (content 1.4) is no longer
+  needed: those texts are superseded.
+
 ## content_version 1.4 — 2026-10-16 (workflow_version 1.0, unchanged)
 
 - `morpheo_safety_prompts_v1_es.json` 1.1 → 1.2: the 22 safety questions keep

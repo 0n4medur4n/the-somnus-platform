@@ -25,6 +25,7 @@ the consequences.
 | 0017 | One GCP project per environment; the API same-origin with each SPA | Accepted | §2, §5.1, §5.2, §10 |
 | 0018 | Profile photos: a private bucket behind edge-api | Accepted | §9, §13, §21 |
 | 0019 | The staff Drive: end-to-end encrypted, in the worker | Accepted | §2, §3.9, §5.7, Addendum A §A2.2 |
+| 0020 | The embudo v0.2 is the Morpheo flow that prevails | Accepted | §14, §14a, §15 |
 
 ## Convention
 
