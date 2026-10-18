@@ -1924,10 +1924,6 @@
       "EMERGENCIA": "112",
       "S4_extra": "024 (línea de atención a la conducta suicida)"
     },
-    "pending_texts": {
-      "S2_driver_warning": "PENDIENTE – texto de Jesús",
-      "recent_high_impact": "PENDIENTE – texto de Jesús"
-    },
     "template_overrides": [
       {
         "template": "T_INSOMNIO.sin_otras_senales",

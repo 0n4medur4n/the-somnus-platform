@@ -2,9 +2,10 @@
 
 No model writes here. Each [placeholder] takes phrases from the closed
 catalogue (`morpheo.funnel.catalogue`), chosen by the confirmed answers; the
-person's own words never enter a template. Where v0.2 has no text for a case,
-the output carries the artifact's `pending_texts` marker ("PENDIENTE", for the
-clinical lead to write) instead of inventing one.
+person's own words never enter a template. Where v0.2 gives only a system
+instruction or no text at all (T_SEGURIDAD's action, the drowsy-driver
+warning, recent insomnia with high impact), the text is the catalogue's draft
+for the clinical lead to approve.
 """
 
 from __future__ import annotations
@@ -37,18 +38,6 @@ def _capitalise(text: str) -> str:
     return text[:1].upper() + text[1:]
 
 
-def _safety_action(artifact: FunnelArtifact, why: str) -> str:
-    question = why.split(" ")[0]
-    step = artifact.step(question, "end")
-    action = step.outcomes.get("Sí", "")
-    resources = artifact.engine["resources"]
-    lines = [action.rstrip("."), f"Teléfono de emergencias: {resources['EMERGENCIA']}"]
-    if question == "S4":
-        lines.append(f"También: {resources['S4_extra']}")
-    # The template puts the period after the placeholder.
-    return ". ".join(line for line in lines if line)
-
-
 def _fill_from_catalogue(text: str, template: str, selector: Selector) -> str:
     for name in selector.c.placeholders.get(template, {}):
         text = _fill(text, name, selector.placeholder(template, name))
@@ -75,20 +64,18 @@ def render(
     """The texts, in order, and the ids of the catalogue phrases they used."""
     selector = Selector(catalogue or funnel_catalogue(), iv, pending)
     out: list[tuple[str, str]] = []
-    pending_texts = artifact.engine["pending_texts"]
     templates = {o.template for o in orientations}
     for o in orientations:
         template = o.template
         if template is None:
             continue
-        if template.startswith("PENDIENTE:"):
-            out.append((template, f"{pending_texts[template.split(':')[1]]} ({o.why})"))
+        if template in selector.c.drafts:
+            out.append((template, selector.draft(template)))
             continue
         text = _strip(artifact.templates[template])
-        if template == "T_SEGURIDAD":
-            text = _fill(text, "Acción concreta según S1-S4", _safety_action(artifact, o.why))
-        elif template == "T_SOMNOLENCIA" and iv.safety("S2") == YES:
-            out.append(("S2_aviso", pending_texts["S2_driver_warning"]))
+        if template == "T_SOMNOLENCIA" and iv.safety("S2") == YES:
+            out.append(("S2_aviso", selector.draft("S2_aviso")))
+            text = _fill_from_catalogue(text, template, selector)
         elif template == "T_INSOMNIO":
             text = _fill_from_catalogue(text, template, selector)
             others = templates - {"T_INSOMNIO", "T_HABITOS", "T_HORARIO"}

@@ -10,6 +10,7 @@ import pytest
 from morpheo.funnel.artifact import FunnelArtifactError, funnel_artifact
 from morpheo.funnel.catalogue import (
     CATALOGUE_STATUS,
+    DRAFT_STATUS,
     Selector,
     funnel_catalogue,
     parse_catalogue,
@@ -138,3 +139,34 @@ def test_the_z1_summary_joins_with_semicolons_and_has_a_fallback() -> None:
     assert _selector({}).text("resumen") == (
         "por ahora no ha descrito ninguna dificultad concreta con el sueño"
     )
+
+
+def test_drafts_are_marked_for_the_clinical_lead() -> None:
+    assert set(C.drafts) == {"S2_aviso", "T_RECIENTE"}
+    assert all(d.status == DRAFT_STATUS == "BORRADOR \N{EN DASH} Jesús" for d in C.drafts.values())
+    assert C.lists["accion_seguridad"].status == DRAFT_STATUS
+
+
+def test_a_missing_draft_is_refused() -> None:
+    raw = _raw()
+    del raw["drafts"]["T_RECIENTE"]
+    with pytest.raises(FunnelArtifactError, match="drafts missing"):
+        parse_catalogue(raw, A)
+
+
+def test_an_unknown_slot_is_refused() -> None:
+    raw = _raw()
+    raw["drafts"]["S2_aviso"]["text"] = "Llame al {TELEFONO}."
+    with pytest.raises(FunnelArtifactError, match="unknown slot"):
+        parse_catalogue(raw, A)
+
+
+def test_safety_actions_use_the_confirmed_resources() -> None:
+    s4 = _selector({"S4@start": Answer(value="si")})
+    assert s4.text("accion_seguridad") == (
+        "No tiene que pasar por esto a solas. Puede llamar ahora al 024 (línea de atención a la"
+        " conducta suicida): es gratuita, confidencial y atiende las 24 horas del día. Si siente"
+        " que el peligro es inmediato, llame al 112"
+    )
+    s1 = _selector({"S1@end": Answer(value="si"), "S3@end": Answer(value="si")})
+    assert s1.select("accion_seguridad").ids == ["SEG-S1"]

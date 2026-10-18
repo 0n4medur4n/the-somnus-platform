@@ -2,7 +2,9 @@
   "meta": {
     "content_version": "2.0-draft",
     "status": "BORRADOR – Jesús lo aprueba",
-    "note": "Catálogo cerrado de frases para los huecos [..] de las plantillas de v0.2 (pp. 11-12) y del resumen de Z1. El motor elige cada frase por la respuesta o la regla indicada en «when», sin IA. Nunca se insertan las palabras de la persona; solo se usan números que ella ha dado (noches por semana, duración). Todo el catálogo es un borrador hasta que Jesús lo apruebe.",
+    "drafts_status": "BORRADOR – Jesús",
+    "drafts_note": "Textos completos para lo que v0.2 solo da como instrucción al sistema (T_SEGURIDAD, p. 10) o deja pendiente (aviso al conductor, cuadro reciente con mucho impacto). Tono sereno, nunca alarmista: en medicina del sueño casi no hay urgencias, y el objetivo es que la persona siga en The Somnus. Los teléfonos salen de los recursos confirmados (D-07): {EMERGENCIA} = 112, {S4_extra} = 024.",
+    "note":"Catálogo cerrado de frases para los huecos [..] de las plantillas de v0.2 (pp. 11-12) y del resumen de Z1. El motor elige cada frase por la respuesta o la regla indicada en «when», sin IA. Nunca se insertan las palabras de la persona; solo se usan números que ella ha dado (noches por semana, duración). Todo el catálogo es un borrador hasta que Jesús lo apruebe.",
     "conditions": {
       "q + has": "la respuesta (de opción múltiple) incluye esa opción",
       "q + is": "la respuesta es esa (incluye respuestas que se deducen de otra anterior, p. ej. R1 desde Q15)",
@@ -12,6 +14,7 @@
       "q + duration": "hay una duración respondida",
       "q + any": "la respuesta (de opción múltiple) tiene al menos una opción",
       "q + unknown": "la pregunta está sin dato (no lo sé, prefiero no responder o no se preguntó)",
+      "safety": "la persona respondió «Sí» a esa pregunta de protección (S1-S4), en cualquier momento",
       "x": "dato extraído del texto libre y confirmado por la persona en Z1",
       "pending": "dato que falta al cerrar (R02)",
       "list": "esa otra lista da al menos una frase",
@@ -21,7 +24,9 @@
     "slots": {
       "{n}": "el número que la persona dio en la pregunta de «when»",
       "{duración}": "la duración que la persona dio en la pregunta de «when» (p. ej. «6 meses»)",
-      "{list:NOMBRE}": "las frases elegidas de otra lista, unidas con «y»"
+      "{list:NOMBRE}": "las frases elegidas de otra lista, unidas con «y»",
+      "{EMERGENCIA}": "teléfono de emergencias confirmado (D-07): 112",
+      "{S4_extra}": "recurso adicional confirmado para S4 (D-07): 024 (línea de atención a la conducta suicida)"
     }
   },
   "lists": {
@@ -121,6 +126,16 @@
         {"id": "HAB-00", "text": "proteger un tiempo fijo para descansar", "fallback": true}
       ]
     },
+    "accion_seguridad": {
+      "describes": "La acción concreta de T_SEGURIDAD según la pregunta de protección respondida «Sí» (v0.2 p. 10 solo da la instrucción al sistema)",
+      "status": "BORRADOR – Jesús",
+      "mode": "first",
+      "phrases": [
+        {"id": "SEG-S1", "text": "Lo más prudente es que le atiendan ahora mismo. Llame al {EMERGENCIA} o pida a alguien que esté con usted que llame por usted", "when": {"safety": "S1"}},
+        {"id": "SEG-S4", "text": "No tiene que pasar por esto a solas. Puede llamar ahora al {S4_extra}: es gratuita, confidencial y atiende las 24 horas del día. Si siente que el peligro es inmediato, llame al {EMERGENCIA}", "when": {"safety": "S4"}},
+        {"id": "SEG-S3", "text": "Le recomendamos que hoy mismo lo comente con su médico o en su centro de salud. Si en algún momento nota que la situación le supera, llame al {EMERGENCIA}", "when": {"safety": "S3"}}
+      ]
+    },
     "resumen": {
       "describes": "Lo que se ha entendido, para que la persona lo confirme en Z1",
       "mode": "all",
@@ -169,8 +184,23 @@
     "T_HABITOS": {
       "cambio elegido": {"list": "cambio_habitos"}
     },
+    "T_SEGURIDAD": {
+      "Acción concreta según S1-S4": {"list": "accion_seguridad"}
+    },
     "Z1": {
       "resumen": {"list": "resumen"}
+    }
+  },
+  "drafts": {
+    "S2_aviso": {
+      "describes": "Aviso a quien se duerme al conducir o al usar maquinaria (S2 = Sí); se muestra antes de T_SOMNOLENCIA. v0.2 p. 10 solo dice «No conducir ni usar maquinaria. Evaluación prioritaria».",
+      "status": "BORRADOR – Jesús",
+      "text": "Si conduce o maneja maquinaria, sobre todo por trabajo, lo más seguro es que no lo haga mientras tenga este sueño y hasta que un profesional lo valore. Si el sueño le sorprende al volante, pare en cuanto pueda en un lugar seguro y descanse. La somnolencia suele tener solución, y por eso merece la pena pedir esa valoración pronto. Si conduce por trabajo, el servicio de salud laboral de su empresa también puede ayudarle."
+    },
+    "T_RECIENTE": {
+      "describes": "Cuadro reciente con mucho impacto (I1 e I2 = Sí, menos de 3 meses). v0.2 p. 5: «Un cuadro reciente con mucho impacto también merece ayuda clínica, sin esperar tres meses», pero no da plantilla.",
+      "status": "BORRADOR – Jesús",
+      "text": "Nos ha contado que desde hace poco le cuesta dormir y que esto le está afectando mucho en su día a día. Cuando el problema es reciente, muchas veces mejora en unas semanas. Aun así, como le afecta tanto, no hace falta esperar: conviene que lo comente con un profesional, que puede ayudarle ya. Mientras tanto, puede seguir aquí y anotar cómo duerme para revisarlo juntos."
     }
   }
 }

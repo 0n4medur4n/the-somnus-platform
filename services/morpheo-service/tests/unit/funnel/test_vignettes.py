@@ -8,12 +8,12 @@ from typing import Any
 
 import pytest
 
+from morpheo.funnel.catalogue import funnel_catalogue
 from morpheo.funnel.vignettes import format_run, load_vignettes, main, run_vignette
 
 VIGNETTES = load_vignettes()
-# The clinical lead's own markers, en dash included.
+# The clinical lead's own marker, en dash included.
 DRAFT = "BORRADOR \N{EN DASH} Jesús las corrige"
-PENDING = "PENDIENTE \N{EN DASH} texto de Jesús"
 
 
 def _vignette(vignette_id: str) -> dict[str, Any]:
@@ -69,11 +69,17 @@ def test_suicidal_ideation_stops_early_with_112_and_024() -> None:
     assert run.result.stopped_by == "S4"
     text = dict(run.result.texts)["T_SEGURIDAD"]
     assert "112" in text and "024" in text
+    # The patient sees the drafted action, never v0.2's instruction to the system.
+    assert "Activar ruta de crisis" not in text
+    assert "SEG-S4" in run.phrase_ids
 
 
-def test_the_drowsy_driver_gets_the_pending_warning_not_an_invented_one() -> None:
-    texts = dict(run_vignette(_vignette("V-10")).result.texts)
-    assert texts["S2_aviso"] == PENDING
+def test_the_drowsy_driver_gets_the_drafted_warning_before_the_template() -> None:
+    run = run_vignette(_vignette("V-10"))
+    templates = [t for t, _ in run.result.texts]
+    assert templates.index("S2_aviso") == templates.index("T_SOMNOLENCIA") - 1
+    assert dict(run.result.texts)["S2_aviso"] == funnel_catalogue().drafts["S2_aviso"].text
+    assert "PENDIENTE" not in " ".join(text for _, text in run.result.texts)
 
 
 def test_a_wrong_expectation_is_reported() -> None:
