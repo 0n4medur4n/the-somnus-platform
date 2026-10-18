@@ -115,7 +115,7 @@
       ]
     },
     "cambio_habitos": {
-      "describes": "El cambio que se propone empezar (guía de T_HABITOS, p. 11: «Elegir con la persona»). Si la persona elige uno, se usa ese; si no, el primero que se cumpla.",
+      "describes": "El cambio que se propone empezar (guía de la plantilla de hábitos, p. 11: «Elegir con la persona»). Si la persona elige uno, se usa ese; si no, el primero que se cumpla.",
       "mode": "first",
       "choice_key": "T_HABITOS.cambio",
       "phrases": [
@@ -127,7 +127,7 @@
       ]
     },
     "accion_seguridad": {
-      "describes": "La acción concreta de T_SEGURIDAD según la pregunta de protección respondida «Sí» (v0.2 p. 10 solo da la instrucción al sistema)",
+      "describes": "La acción concreta de la plantilla de seguridad según la pregunta de protección respondida «Sí» (v0.2 p. 10 solo da la instrucción al sistema)",
       "status": "BORRADOR – Jesús",
       "mode": "first",
       "phrases": [
@@ -193,7 +193,7 @@
   },
   "drafts": {
     "S2_aviso": {
-      "describes": "Aviso a quien se duerme al conducir o al usar maquinaria (S2 = Sí); se muestra antes de T_SOMNOLENCIA. v0.2 p. 10 solo dice «No conducir ni usar maquinaria. Evaluación prioritaria».",
+      "describes": "Aviso a quien se duerme al conducir o al usar maquinaria (S2 = Sí); se muestra justo antes del texto de somnolencia. v0.2 p. 10 solo dice «No conducir ni usar maquinaria. Evaluación prioritaria».",
       "status": "BORRADOR – Jesús",
       "text": "Si conduce o maneja maquinaria, sobre todo por trabajo, lo más seguro es que no lo haga mientras tenga este sueño y hasta que un profesional lo valore. Si el sueño le sorprende al volante, pare en cuanto pueda en un lugar seguro y descanse. La somnolencia suele tener solución, y por eso merece la pena pedir esa valoración pronto. Si conduce por trabajo, el servicio de salud laboral de su empresa también puede ayudarle."
     },
