@@ -5,6 +5,7 @@ export * from "./individual-profiles.repository.js";
 export * from "./organization-invitations.repository.js";
 export * from "./organization-memberships.repository.js";
 export * from "./organizations.repository.js";
+export * from "./platform-invitations.repository.js";
 export * from "./professional-profiles.repository.js";
 export * from "./role-assignments.repository.js";
 export * from "./roles.repository.js";

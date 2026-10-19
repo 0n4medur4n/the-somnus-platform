@@ -1768,7 +1768,10 @@ describe("identity-service HTTP endpoints (build plan §20 Checkpoint 6.2)", () 
         "individualProfile",
         "internalRoles",
         "organizationIds",
+        "organizations",
         "professionalProfile",
+        "roleAssignments",
+        "updatedAt",
         "user",
       ]);
       expect(body["professionalProfile"]).toMatchObject({ verificationStatus: "pending" });

@@ -11,6 +11,11 @@ import type {
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import { AccountDeletionRepository } from "../../infrastructure/db/repositories/account-deletion.repository.js";
 import { AuditRepository } from "../../infrastructure/db/repositories/audit.repository.js";
+import {
+  OrganizationsRepository,
+  RoleAssignmentsRepository,
+  RolesRepository,
+} from "../../infrastructure/db/repositories/index.js";
 import { IndividualProfilesRepository } from "../../infrastructure/db/repositories/individual-profiles.repository.js";
 import { OrganizationMembershipsRepository } from "../../infrastructure/db/repositories/organization-memberships.repository.js";
 import { ProfessionalProfilesRepository } from "../../infrastructure/db/repositories/professional-profiles.repository.js";
@@ -41,6 +46,9 @@ export class AdminUsersService {
     private readonly deletion: AccountDeletionRepository,
     private readonly accountDeletion: AccountDeletionService,
     private readonly internalRoles: InternalRolesService,
+    private readonly organizations: OrganizationsRepository,
+    private readonly roles: RolesRepository,
+    private readonly assignments: RoleAssignmentsRepository,
   ) {}
 
   async search(filter: AdminUserSearchRequest): Promise<AdminUserSearchResponse> {
@@ -85,7 +93,31 @@ export class AdminUsersService {
       this.internalRoles.listInternalRoles(userId),
     ]);
 
+    const assigned = await this.assignments.listActiveForUser({ userId });
+    const roleRows = await this.roles.findManyByIds(assigned.map((a) => a.roleId));
+    const organizations = await Promise.all(
+      memberships.map(async (m) => {
+        const org = await this.organizations.findById(m.organizationId);
+        return org
+          ? { id: org.id, name: org.name, status: org.status, membershipStatus: m.status }
+          : null;
+      }),
+    );
     return {
+      updatedAt: user.updatedAt.toISOString(),
+      roleAssignments: assigned.flatMap((a) => {
+        const role = roleRows.find((r) => r.id === a.roleId);
+        return role
+          ? [
+              {
+                roleKey: role.key,
+                organizationId: a.organizationId,
+                assignedAt: a.assignedAt.toISOString(),
+              },
+            ]
+          : [];
+      }),
+      organizations: organizations.filter((o) => o !== null),
       user: {
         id: user.id,
         email: user.email,
@@ -98,10 +130,16 @@ export class AdminUsersService {
             firstName: individual.firstName,
             lastName: individual.lastName,
             registrationRole: individual.registrationRole ?? null,
+            dateOfBirth: individual.dateOfBirth,
+            phone: individual.phone,
+            gender: individual.gender,
+            country: individual.country,
+            city: individual.city,
           }
         : null,
       professionalProfile: professional
         ? {
+            licenseNumber: professional.licenseNumber,
             specialty: professional.specialty,
             verificationStatus: professional.verificationStatus,
           }
