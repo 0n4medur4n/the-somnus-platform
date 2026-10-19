@@ -12,6 +12,13 @@ vi.mock("./api.js", () => ({ api: { get, post, patch, del, url } }));
 const { edge } = await import("./edge.js");
 
 describe("edge (typed edge-api surface)", () => {
+  it("sends invitation lookup and acceptance through authenticated POSTs without identity claims", () => {
+    const invitationId = "018f0000-0000-7000-8000-000000000001";
+    void edge.platformInvitation(invitationId);
+    expect(post).toHaveBeenCalledWith("/v1/platform-invitation/lookup", { invitationId });
+    void edge.acceptPlatformInvitation({ invitationId });
+    expect(post).toHaveBeenCalledWith("/v1/platform-invitation/accept", { invitationId });
+  });
   it("createSession posts the id token", () => {
     void edge.createSession("id-token");
     expect(post).toHaveBeenCalledWith("/v1/sessions", { idToken: "id-token" });

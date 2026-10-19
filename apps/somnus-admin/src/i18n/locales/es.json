@@ -52,7 +52,13 @@
     "professional_verifier": "Verificador de profesionales",
     "clinical_governance_reviewer": "Revisor de gobernanza clínica",
     "platform_admin": "Administrador de plataforma",
-    "platform_super_admin": "Superadministrador de plataforma"
+    "platform_super_admin": "Superadministrador de plataforma",
+    "individual_user": "Particular",
+    "professional": "Profesional",
+    "organization_owner": "Propietario de organización",
+    "organization_admin": "Administrador de organización",
+    "professional_manager": "Responsable profesional",
+    "clinical_supervisor": "Supervisor clínico"
   },
   "capability": {
     "admin_users_read": "Buscar personas usuarias y ver su estado",
@@ -69,7 +75,8 @@
     "admin_system_health": "Estado del sistema",
     "admin_corpus_manage": "Gestionar el corpus de referencia",
     "admin_audit_export": "Exportar el registro de auditoría",
-    "admin_drive": "Drive cifrado del equipo (carpetas compartidas)"
+    "admin_drive": "Drive cifrado del equipo (carpetas compartidas)",
+    "admin_users_invite": "Invitar personas a Morpheo"
   },
   "errors": {
     "required": "Este campo es obligatorio.",
@@ -831,6 +838,58 @@
       "accepted": "Aceptada",
       "revoked": "Retirada",
       "expired": "Caducada"
+    }
+  },
+  "platformInvite": {
+    "title": "Invitaciones a Morpheo",
+    "add": "Invitar a Morpheo",
+    "type": "Tipo de persona usuaria",
+    "hint": "La persona invitada completa su registro y sus consentimientos. Un profesional necesita verificación antes de obtener permisos profesionales. Esta invitación no concede acceso a Nox.",
+    "queued": "Invitación guardada y correo encolado para su envío.",
+    "notQueued": "Invitación guardada. No se pudo encolar el correo; puedes reenviarlo.",
+    "revoked": "Invitación revocada.",
+    "expires": "Caduca: {{date}}",
+    "role": {
+      "adult": "Particular adulto",
+      "professional": "Profesional pendiente de verificar"
+    }
+  },
+  "metadata": {
+    "id": "Identificador",
+    "name": "Nombre y apellidos",
+    "type": "Tipo de registro",
+    "locale": "Idioma",
+    "created": "Alta",
+    "updated": "Última actualización",
+    "dateOfBirth": "Fecha de nacimiento",
+    "phone": "Teléfono",
+    "country": "País",
+    "city": "Ciudad",
+    "gender": "Género",
+    "license": "Número de colegiación",
+    "missing": "Sin informar",
+    "roles": "Roles asignados y ámbito",
+    "platform": "Plataforma",
+    "productNotice": "Los roles administrativos y la cuenta de Morpheo no conceden por sí solos acceso clínico a otros productos.",
+    "role": {
+      "adult": "Particular adulto",
+      "parent": "Madre, padre o tutor legal",
+      "professional": "Profesional"
+    },
+    "genderValue": {
+      "male": "Hombre",
+      "female": "Mujer",
+      "prefer_not_to_say": "Prefiere no indicarlo"
+    },
+    "verification": {
+      "pending": "Pendiente de verificar",
+      "verified": "Verificado",
+      "rejected": "Verificación rechazada"
+    },
+    "membership": {
+      "active": "Membresía activa",
+      "inactive": "Membresía inactiva",
+      "removed": "Membresía retirada"
     }
   }
 }

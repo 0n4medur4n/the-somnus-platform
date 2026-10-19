@@ -127,7 +127,7 @@
       "genderRequired": "Tria una opció (pots triar «Prefereixo no dir-ho»).",
       "countryRequired": "Tria el teu país."
     },
-    "lockedNotice": "T'hi uneixes per invitació d'una organització, així que el teu compte es crea com a compte professional.",
+    "lockedNotice": "La invitació indica el tipus de registre. Completes les teves dades i consentiments.",
     "readTerms": "Llegir els Termes del servei",
     "readPrivacy": "Llegir la Política de privacitat",
     "aboutTitle": "Sobre tu",
@@ -445,5 +445,11 @@
   },
   "report": {
     "download": "Baixar l'informe (PDF)"
+  },
+  "platformInvite": {
+    "title": "Invitació a Morpheo",
+    "existing": "Pots acceptar amb el teu compte actual. Es mantenen les teves dades, idioma i permisos.",
+    "accept": "Acceptar invitació",
+    "unavailable": "No es pot acceptar aquesta invitació. Pot haver caducat, haver estat utilitzada o revocada, o correspondre a un altre compte. Contacta amb qui et va convidar."
   }
 }

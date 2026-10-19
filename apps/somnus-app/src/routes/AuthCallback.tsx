@@ -39,6 +39,7 @@ import { browserCountry, countryOptions } from "../lib/countries.js";
 import { edge } from "../lib/edge.js";
 import { pendingInvitation } from "../lib/invitation.js";
 import { reportError } from "../lib/report-error.js";
+import { PlatformInvitationEntry } from "./PlatformInvitationEntry.js";
 
 type Phase = "verifying" | "needs-email" | "register" | "error";
 
@@ -49,6 +50,8 @@ export function AuthCallback() {
   const [phase, setPhase] = useState<Phase>("verifying");
   const [failure, setFailure] = useState<CallbackFailure>("generic");
   const started = useRef(false);
+  const platformId = new URL(window.location.href).searchParams.get("platformInvitation");
+  const [sessionReady, setSessionReady] = useState(false);
 
   /**
    * Redeem the emailed link, exchange it for a session, load the account.
@@ -73,6 +76,8 @@ export function AuthCallback() {
         await edge.createSession(idToken);
         stage = "account";
         await refresh();
+        setPhase("verifying");
+        setSessionReady(true);
       } catch (error) {
         // Only the Firebase codes that mean the link itself is unusable get the
         // "request a new one" copy. Anything else says something went wrong
@@ -109,6 +114,7 @@ export function AuthCallback() {
       }
       try {
         await refresh();
+        setSessionReady(true);
       } catch (error) {
         setFailure(classifyCallbackFailure(error));
         reportError("auth-callback", { stage: "account", ...describeCallbackFailure(error) });
@@ -124,6 +130,7 @@ export function AuthCallback() {
   const invitationToken = pendingInvitation();
 
   useEffect(() => {
+    if (platformId) return;
     if (state.status === "authenticated") {
       const target = invitationToken
         ? `/invitation/accept?token=${encodeURIComponent(invitationToken)}`
@@ -143,7 +150,7 @@ export function AuthCallback() {
     ) {
       setPhase("error");
     }
-  }, [state.status, navigate, phase, invitationToken]);
+  }, [state.status, navigate, phase, invitationToken, platformId]);
 
   if (phase === "error") {
     return (
@@ -158,6 +165,16 @@ export function AuthCallback() {
 
   if (phase === "needs-email") {
     return <ConfirmEmailStep onConfirm={redeem} />;
+  }
+
+  if (platformId && sessionReady) {
+    return (
+      <PlatformInvitationEntry
+        invitationId={platformId}
+        existing={state.status === "authenticated"}
+        onJoined={refresh}
+      />
+    );
   }
 
   if (phase === "register") {
@@ -374,18 +391,22 @@ function StepHeader({ step, title, intro }: { step: StepMeta; title: string; int
  * §A1 fixes the branch to `professional` -- Nox has no open signup, so there
  * is nothing to choose.
  */
-function RegistrationForm({
+export function RegistrationForm({
   locale,
   lockedRole,
   onRegistered,
+  initialName,
+  onSubmitRegistration,
 }: {
   locale: SupportedLocale;
   lockedRole?: RoleBranch;
   onRegistered: () => void;
+  initialName?: NameForm;
+  onSubmitRegistration?: (body: RegistrationRequest) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const [step, setStep] = useState<"name" | "about" | "role" | "details">("name");
-  const [name, setName] = useState<NameForm | null>(null);
+  const [name, setName] = useState<NameForm | null>(initialName ?? null);
   const [about, setAbout] = useState<AboutForm | null>(null);
   const [role, setRole] = useState<RoleBranch | null>(lockedRole ?? null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -404,7 +425,8 @@ function RegistrationForm({
       return;
     }
     try {
-      await edge.register(parsed.data);
+      if (onSubmitRegistration) await onSubmitRegistration(parsed.data);
+      else await edge.register(parsed.data);
       onRegistered();
     } catch {
       setSubmitError(t("errors.generic"));

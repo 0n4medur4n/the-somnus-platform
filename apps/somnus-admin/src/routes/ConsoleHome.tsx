@@ -86,6 +86,7 @@ export function ConsoleHome({ me }: { me: AdminMeResponse }) {
             <UsersScreen
               canChangeStatus={held.has("admin_account_status_write")}
               canInvite={held.has("admin_roles_assign")}
+              canInviteMorpheo={held.has("admin_users_invite")}
             />
           ) : null}
           {view === "deletions" ? <DeletionRequestsScreen /> : null}

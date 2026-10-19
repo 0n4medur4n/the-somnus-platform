@@ -81,3 +81,7 @@ localhost strings still fail. Generic Firebase SDK emulator support is not itsel
 an emulator configuration. Hosting source maps are disabled so development source
 defaults are not published. Regression tests are in `tests/hosting-bundle.test.ts`
 at the root and `src/config/env-schema.test.ts`.
+
+## Morpheo invitations and user management
+
+Morpheo invitations (ADR 0021): an email-link callback with `platformInvitation` first resolves the invitation through edge using the verified session address. New users see the existing registration form with suggested editable names and the invited branch; age, professional details and consent checkboxes are still completed by the person. Existing active accounts accept without changing profile, language, consents or permissions. Unusable invitations have no fallback registration within this invitation flow.

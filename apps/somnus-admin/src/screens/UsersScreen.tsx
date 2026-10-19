@@ -4,7 +4,9 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../components/Button.js";
 import { Field } from "../components/Field.js";
 import { edge } from "../lib/edge.js";
+import { PlatformInvitations } from "./PlatformInvitations.js";
 import { StaffInvitations } from "./StaffInvitations.js";
+import { UserMetadata } from "./UserMetadata.js";
 import { useAdminAction } from "./useAdminAction.js";
 
 /**
@@ -23,10 +25,12 @@ import { useAdminAction } from "./useAdminAction.js";
 export function UsersScreen({
   canChangeStatus,
   canInvite = false,
+  canInviteMorpheo = false,
 }: {
   canChangeStatus: boolean;
   /** `admin_roles_assign`: may invite staff (owner decision 2026-10-18). */
   canInvite?: boolean;
+  canInviteMorpheo?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const date = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" });
@@ -76,6 +80,9 @@ export function UsersScreen({
       <h2 id="users-heading" className="text-xl font-semibold text-somnus-text">
         {t("users.title")}
       </h2>
+
+      {canInviteMorpheo ? <PlatformInvitations /> : null}
+      {canInvite ? <StaffInvitations /> : null}
 
       <form
         className="flex items-end gap-3"
@@ -204,6 +211,8 @@ export function UsersScreen({
             </dd>
           </dl>
 
+          <UserMetadata detail={detail} />
+
           {canChangeStatus && detail.user.status !== "deleted" ? (
             <div className="flex flex-col gap-3 border-t border-somnus-subtle/15 pt-3">
               <Field
@@ -224,12 +233,6 @@ export function UsersScreen({
               </Button>
             </div>
           ) : null}
-        </div>
-      ) : null}
-
-      {canInvite ? (
-        <div className="mt-4 border-t border-white/10 pt-6">
-          <StaffInvitations />
         </div>
       ) : null}
     </section>
