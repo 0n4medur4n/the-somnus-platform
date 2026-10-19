@@ -240,8 +240,9 @@
   "roles": {
     "title": "Roles internos",
     "intro": "Solo un superadministrador de plataforma puede asignar roles internos.",
-    "targetLabel": "Id de la persona usuaria",
-    "targetHint": "Búscala en Personas usuarias y copia su id.",
+    "targetLabel": "Buscar persona por correo",
+    "targetHint": "Escribe parte del correo, busca y selecciona una cuenta activa.",
+    "directTitle": "Asignar un rol a una cuenta existente",
     "roleLabel": "Rol",
     "assign": "Asignar rol",
     "assigned": "Rol asignado.",
@@ -802,7 +803,7 @@
   },
   "invited": {
     "title": "Hola, {{name}}",
-    "body": "Te han invitado a la consola de The Somnus como {{role}}. Al aceptar se crea tu cuenta de personal con ese rol.",
+    "body": "Te han invitado a la consola de The Somnus como {{role}}. Este rol se activa en tu cuenta cuando aceptas la invitación.",
     "expires": "La invitación es válida hasta el {{date}}.",
     "privacy": "He leído y acepto la",
     "privacyLink": "política de privacidad",
@@ -810,11 +811,16 @@
     "failed": "No se ha podido aceptar la invitación. Puede que haya caducado o que ya se haya usado; pide a quien te invitó que la vuelva a enviar."
   },
   "staff": {
+    "recipient": "Persona destinataria",
+    "recipientMode": {
+      "email": "Invitar por correo",
+      "existing": "Elegir una persona ya registrada"
+    },
     "title": "Personal de The Somnus",
     "subtitle": "Invita a alguien del equipo con su rol. Recibirá un correo para entrar en la consola y aceptar.",
     "add": "Añadir persona",
     "formTitle": "Invitar a una persona del equipo",
-    "formHint": "La cuenta se crea cuando la persona entra con el enlace y acepta; hasta entonces no tiene acceso a nada.",
+    "formHint": "El rol invitado se activa cuando la persona abre el enlace, confirma la política de privacidad y acepta la invitación.",
     "firstName": "Nombre",
     "lastName": "Apellidos",
     "colName": "Nombre",
@@ -857,6 +863,12 @@
       "adult": "Particular adulto",
       "professional": "Profesional pendiente de verificar"
     }
+  },
+  "userPicker": {
+    "searchLabel": "Buscar cuenta por correo",
+    "choose": "Seleccionar {{email}}",
+    "selected": "Cuenta seleccionada: {{email}}",
+    "empty": "No hay cuentas activas con ese correo. Puedes invitar por correo a una persona nueva."
   },
   "metadata": {
     "id": "Identificador",

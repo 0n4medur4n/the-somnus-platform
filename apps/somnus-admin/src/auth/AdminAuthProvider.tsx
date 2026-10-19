@@ -23,6 +23,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const me = await edge.adminMe();
+      // Existing staff can also be invited to an additional internal role.
+      if (await pendingInvitation(setState)) return;
       setState({ status: "authorized", me });
     } catch (error) {
       // A session the gate refused (403), or one with no account yet (404),
