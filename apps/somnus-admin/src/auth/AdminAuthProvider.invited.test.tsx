@@ -40,6 +40,27 @@ describe("AdminAuthProvider and a pending staff invitation", () => {
     mocks.adminMe.mockReset();
     mocks.myStaffInvitation.mockReset();
   });
+  it("offers an additional invitation even when the person already has an internal role", async () => {
+    mocks.adminMe.mockResolvedValue({
+      user: {
+        id: "018f0000-0000-7000-8000-000000000001",
+        email: "ana@example.com",
+        locale: "es",
+        status: "active",
+      },
+      roleKeys: ["professional_verifier"],
+      capabilities: ["admin_users_read"],
+    });
+    mocks.myStaffInvitation.mockResolvedValue({ invitation: INVITATION });
+    render(
+      <AdminAuthProvider>
+        <Probe />
+      </AdminAuthProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("invited:support_agent"),
+    );
+  });
 
   it.each([403, 404])("%s with an invitation waiting -> invited", async (status) => {
     mocks.adminMe.mockRejectedValue(new ApiRequestError(status, "X", "no"));
