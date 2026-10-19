@@ -1,0 +1,28 @@
+{
+  "note": "Shared cases for the free-text identifying-data filter (v2 free text and notes). The TypeScript (packages/api-contracts) and Python (morpheo) implementations must both pass every case.",
+  "blocked": [
+    { "text": "escríbeme a ana.perez@example.com", "kinds": ["email"] },
+    { "text": "mi móvil 612 345 678", "kinds": ["phone"] },
+    { "text": "llamar al 612345678 por la tarde", "kinds": ["phone"] },
+    { "text": "+34 912 34 56 78", "kinds": ["phone"] },
+    { "text": "0034-699-111-222", "kinds": ["phone"] },
+    { "text": "teléfono +44 20 7946 0958", "kinds": ["phone"] },
+    { "text": "DNI 12345678Z", "kinds": ["national_id"] },
+    { "text": "dni: 12345678-z", "kinds": ["national_id"] },
+    { "text": "DNI 12345678 Z", "kinds": ["national_id"] },
+    { "text": "NIE X 1234567 L", "kinds": ["national_id"] },
+    { "text": "NIE X1234567L", "kinds": ["national_id"] },
+    { "text": "nie y-1234567-t", "kinds": ["national_id"] },
+    { "text": "correo a@b.es y móvil 699111222", "kinds": ["email", "phone"] }
+  ],
+  "allowed": [
+    "Me acuesto a las 23:00 y me levanto a las 07:00",
+    "Desde 2019, unas 4 noches por semana",
+    "Duermo 6 horas entre semana y 9 el fin de semana",
+    "Tomo 50 mg desde hace 3 meses",
+    "Lo noto desde el 12/03/2024",
+    "Ronquidos fuertes, mi pareja dice que paro de respirar",
+    "2019 2020 2021 2022",
+    "Peso 105 kg y mido 1,80"
+  ]
+}
