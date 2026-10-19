@@ -38,6 +38,8 @@ from morpheo.funnel.catalogue import duration_text
 from morpheo.funnel.interview import NO, NO_LO_SE, PREFIERO, YES, Answer, Interview, next_step
 from morpheo.funnel.render import question_text
 from morpheo.funnel.rules import FunnelResult, evaluate
+from morpheo.instruments.definitions import InstrumentRegistry, load_registry
+from morpheo.settings.config import Settings
 
 VIGNETTES_FILE = (
     Path(__file__).resolve().parents[3] / "clinical" / "vignettes" / "vignettes_v2_borrador.json"
@@ -189,7 +191,11 @@ def _check(run_result: FunnelResult, expected: dict[str, Any], asked: list[Asked
     return failures
 
 
-def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = None) -> VignetteRun:
+def run_vignette(
+    vignette: dict[str, Any],
+    artifact: FunnelArtifact | None = None,
+    instruments: InstrumentRegistry | None = None,
+) -> VignetteRun:
     artifact = artifact or funnel_artifact()
     script = dict(vignette.get("answers", {}))
     if "narrative" in vignette:
@@ -202,7 +208,7 @@ def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = Non
     asked: list[AskedStep] = []
     phrase_ids: list[str] = []
     for n in range(1, MAX_STEPS + 1):
-        step = next_step(artifact, answers)
+        step = next_step(artifact, answers, instruments)
         if step is None:
             break
         spec, source = _lookup(script, step.key), "case"
@@ -230,7 +236,7 @@ def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = Non
         raise RuntimeError(f"{vignette['id']}: more than {MAX_STEPS} steps")
     if "T_HABITOS.cambio" in script:
         answers["T_HABITOS.cambio"] = Answer(value=script["T_HABITOS.cambio"])
-    result = evaluate(artifact, answers)
+    result = evaluate(artifact, answers, instruments)
     iv = Interview(artifact, answers)
     branches = tuple(
         b for b in artifact.engine["branch_order"] if not result.stopped_by and iv.branch_open(b)
@@ -293,7 +299,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     vignettes = [v for v in load_vignettes(args.file) if args.case in (None, v["id"])]
-    runs = [run_vignette(v) for v in vignettes]
+    # The instruments as the service loads them (pending until their files arrive).
+    registry = load_registry(Settings())
+    runs = [run_vignette(v, instruments=registry) for v in vignettes]
     if args.json:
         print(
             json.dumps(
