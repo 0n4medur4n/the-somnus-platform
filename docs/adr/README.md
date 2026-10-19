@@ -27,6 +27,8 @@ the consequences.
 | 0019 | The staff Drive: end-to-end encrypted, in the worker | Accepted | §2, §3.9, §5.7, Addendum A §A2.2 |
 | 0020 | The embudo v0.2 is the Morpheo flow that prevails | Accepted | §14, §14a, §15 |
 
+| 0021 | Morpheo invitations and administrative user detail | Accepted | Addendum A, 15.2 |
+
 ## Convention
 
 - File name: `NNNN-kebab-case-title.md`.
