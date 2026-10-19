@@ -2,9 +2,10 @@ import { INTERNAL_ROLE_KEYS, ROLE_KEYS, type RoleKey } from "@somnus/api-contrac
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../components/Button.js";
-import { Field } from "../components/Field.js";
 import { SelectField } from "../components/SelectField.js";
 import { edge } from "../lib/edge.js";
+import { ExistingUserPicker } from "./ExistingUserPicker.js";
+import { StaffInvitations } from "./StaffInvitations.js";
 import { useAdminAction } from "./useAdminAction.js";
 
 const ASSIGNABLE: RoleKey[] = ROLE_KEYS.filter((key) => INTERNAL_ROLE_KEYS.has(key));
@@ -26,9 +27,11 @@ export function RolesScreen({ actingAdminUserId }: { actingAdminUserId: string }
   const { t } = useTranslation();
   const { run, busy, error, notice } = useAdminAction();
   const [targetUserId, setTargetUserId] = useState("");
+  const [targetEmail, setTargetEmail] = useState("");
+  const [query, setQuery] = useState("");
   const [roleKey, setRoleKey] = useState<RoleKey | "">("");
 
-  const isSelf = targetUserId.trim() === actingAdminUserId;
+  const isSelf = targetUserId.trim() === actingAdminUserId || query.trim() === actingAdminUserId;
   const ready = targetUserId.trim().length > 0 && roleKey !== "" && !isSelf;
 
   async function assign() {
@@ -40,6 +43,7 @@ export function RolesScreen({ actingAdminUserId }: { actingAdminUserId: string }
     );
     if (assigned) {
       setTargetUserId("");
+      setTargetEmail("");
       setRoleKey("");
     }
   }
@@ -50,6 +54,10 @@ export function RolesScreen({ actingAdminUserId }: { actingAdminUserId: string }
         {t("roles.title")}
       </h2>
       <p className="text-sm text-somnus-subtle">{t("roles.intro")}</p>
+      <StaffInvitations actingAdminUserId={actingAdminUserId} />
+      <h3 className="border-t border-white/10 pt-4 text-lg font-semibold">
+        {t("roles.directTitle")}
+      </h3>
 
       <form
         className="flex flex-col gap-4"
@@ -58,13 +66,24 @@ export function RolesScreen({ actingAdminUserId }: { actingAdminUserId: string }
           void assign();
         }}
       >
-        <Field
+        <ExistingUserPicker
           id="role-target"
           label={t("roles.targetLabel")}
           hint={t("roles.targetHint")}
-          value={targetUserId}
-          onChange={(event) => setTargetUserId(event.target.value)}
+          excludedUserId={actingAdminUserId}
+          onQueryChange={(value) => {
+            setQuery(value);
+            setTargetUserId("");
+            setTargetEmail("");
+          }}
+          onSelect={(user) => {
+            setTargetUserId(user.id);
+            setTargetEmail(user.email);
+          }}
         />
+        {targetEmail ? (
+          <p role="status">{t("userPicker.selected", { email: targetEmail })}</p>
+        ) : null}
         <SelectField
           id="role-key"
           label={t("roles.roleLabel")}
