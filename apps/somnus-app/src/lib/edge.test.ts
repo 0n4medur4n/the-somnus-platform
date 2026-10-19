@@ -19,6 +19,26 @@ describe("edge (typed edge-api surface)", () => {
     void edge.acceptPlatformInvitation({ invitationId });
     expect(post).toHaveBeenCalledWith("/v1/platform-invitation/accept", { invitationId });
   });
+  it("sends every step of the v2 interview to /v1/funnel, asking for the team panel only when told", () => {
+    void edge.getFunnelConfig();
+    expect(get).toHaveBeenCalledWith("/v1/funnel/config");
+    void edge.startFunnel(false);
+    expect(post).toHaveBeenCalledWith("/v1/funnel/sessions", { consentGiven: true });
+    void edge.startFunnel(true);
+    expect(post).toHaveBeenCalledWith("/v1/funnel/sessions?panel=1", { consentGiven: true });
+    void edge.getFunnel("f 1", true);
+    expect(get).toHaveBeenCalledWith("/v1/funnel/sessions/f%201?panel=1");
+    const body = { key: "Q01#confirmacion", decisions: [{ id: "Q03", decision: "confirmado" }] };
+    void edge.answerFunnel("f-1", body as never, false);
+    expect(post).toHaveBeenCalledWith("/v1/funnel/sessions/f-1/answers", body);
+    void edge.backFunnel("f-1", false);
+    expect(post).toHaveBeenCalledWith("/v1/funnel/sessions/f-1/back");
+    void edge.rewindFunnel("f-1", "Q03", true);
+    expect(post).toHaveBeenCalledWith("/v1/funnel/sessions/f-1/rewind?panel=1", { key: "Q03" });
+    expect(edge.funnelReportUrl("f-1", "es")).toBe(
+      "https://app.example/v1/funnel/sessions/f-1/report.pdf?locale=es",
+    );
+  });
   it("createSession posts the id token", () => {
     void edge.createSession("id-token");
     expect(post).toHaveBeenCalledWith("/v1/sessions", { idToken: "id-token" });

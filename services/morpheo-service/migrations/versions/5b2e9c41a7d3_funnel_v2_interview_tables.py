@@ -50,7 +50,8 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_index("ix_funnel_answers_session_id", table_name="funnel_answers")
+    # MySQL refuses to drop ix_funnel_answers_session_id while the foreign key
+    # to funnel_sessions needs it (1553); dropping the table takes its indexes
+    # and its foreign key with it, in the right order.
     op.drop_table("funnel_answers")
-    op.drop_index("ix_funnel_sessions_owner_id", table_name="funnel_sessions")
     op.drop_table("funnel_sessions")
