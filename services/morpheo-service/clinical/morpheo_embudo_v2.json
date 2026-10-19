@@ -2,9 +2,9 @@
   "meta": {
     "source_document": "Morpheo_algoritmo_embudo_v02.pdf",
     "source_sha256": "98beaab6a6d1d33bdc90cd13b23a17d18d86c08dde17d7c5ac036ccfac51caf1",
-    "content_version": "2.0-draft",
-    "active": false,
-    "status": "pending_clinical_review"
+    "content_version": "2.0",
+    "active": true,
+    "status": "active_2026-10-19"
   },
   "source": {
     "meta": {
@@ -1347,9 +1347,9 @@
     }
   },
   "engine": {
-    "content_version": "2.0-draft",
-    "rules_version": "2.0-draft",
-    "status": "pending_clinical_review",
+    "content_version": "2.0",
+    "rules_version": "2.0",
+    "status": "active_2026-10-19",
     "note": "Construido sobre la transcripción verificada de v0.2. Los DEFAULT (D-xx) son los del registro docs/clinical/morpheo_embudo_v02_resoluciones.md; Jesús puede cambiarlos.",
     "steps": [
       {

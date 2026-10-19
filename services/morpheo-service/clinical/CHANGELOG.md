@@ -4,6 +4,24 @@ Content-version bumps to the versioned artifacts (build plan §14a). The rule/
 spec `workflow_version` changes only when rules, levels, or priorities change;
 content-only additions bump `content_version` (reviewed by the Safety Committee).
 
+## content_version 2.0 — 2026-10-19 (rules 2.0): the embudo v0.2 is the active flow
+
+- Owner and clinical lead, 19/10/2026: the v2 flow (`morpheo_embudo_v2.json`,
+  the embudo v0.2) is the active flow of the app until the clinical lead says
+  otherwise. The 1.x artifacts stay as they are, for the v1 flow behind
+  `FUNNEL_V2_ENABLED=false` and for results already saved under 1.x.
+- `morpheo_textos_v2.json` (renamed from `…_borrador.json`): the closed phrase
+  catalogue for every template placeholder and the Z1 summary, and the new
+  patient texts v0.2 gives only as instructions (safety actions SEG-S1/S4/S3,
+  AVISO-S2, SEGURO-S2, PAUSA-S2, RECIENTE), approved by the clinical lead as
+  they are on 19/10/2026. The loader refuses any list or text not marked
+  approved.
+- Instruments (D-34): ISI, Epworth and STOP-Bang are switched on; each is
+  offered only once its official validated Spanish file is in
+  `clinical/instruments/` (none yet). Placement: ISI at I6 (v0.2 p. 5);
+  Epworth and STOP-Bang when branches D and R open (DEFAULT – Jesús puede
+  cambiarlo).
+
 ## Standing rule — 2026-10-18 (ADR 0020)
 
 - `Morpheo_algoritmo_embudo_v02.pdf` (17/10/2026, SHA-256

@@ -1,10 +1,10 @@
 {
   "meta": {
-    "content_version": "2.0-draft",
-    "status": "BORRADOR – Jesús lo aprueba",
-    "drafts_status": "BORRADOR – Jesús",
+    "content_version": "2.0",
+    "status": "APROBADO – Jesús, 19/10/2026",
+    "drafts_status": "APROBADO – Jesús, 19/10/2026",
     "drafts_note": "Textos completos para lo que v0.2 solo da como instrucción al sistema (T_SEGURIDAD, p. 10) o deja pendiente (aviso al conductor, cuadro reciente con mucho impacto). Tono sereno, nunca alarmista: en medicina del sueño casi no hay urgencias, y el objetivo es que la persona siga en The Somnus. Los teléfonos salen de los recursos confirmados (D-07): {EMERGENCIA} = 112, {S4_extra} = 024.",
-    "note":"Catálogo cerrado de frases para los huecos [..] de las plantillas de v0.2 (pp. 11-12) y del resumen de Z1. El motor elige cada frase por la respuesta o la regla indicada en «when», sin IA. Nunca se insertan las palabras de la persona; solo se usan números que ella ha dado (noches por semana, duración). Todo el catálogo es un borrador hasta que Jesús lo apruebe.",
+    "note":"Catálogo cerrado de frases para los huecos [..] de las plantillas de v0.2 (pp. 11-12) y del resumen de Z1. El motor elige cada frase por la respuesta o la regla indicada en «when», sin IA. Nunca se insertan las palabras de la persona; solo se usan números que ella ha dado (noches por semana, duración). Aprobado por Jesús el 19/10/2026 tal como está.",
     "conditions": {
       "q + has": "la respuesta (de opción múltiple) incluye esa opción",
       "q + is": "la respuesta es esa (incluye respuestas que se deducen de otra anterior, p. ej. R1 desde Q15)",
@@ -128,7 +128,8 @@
     },
     "accion_seguridad": {
       "describes": "La acción concreta de la plantilla de seguridad según la pregunta de protección respondida «Sí» (v0.2 p. 10 solo da la instrucción al sistema)",
-      "status": "BORRADOR – Jesús",
+      "status": "APROBADO – Jesús, 19/10/2026",
+      "full_texts": true,
       "mode": "first",
       "phrases": [
         {"id": "SEG-S1", "text": "Lo más prudente es que le atiendan ahora mismo. Llame al {EMERGENCIA} o pida a alguien que esté con usted que llame por usted", "when": {"safety": "S1"}},
@@ -194,22 +195,22 @@
   "drafts": {
     "S2_aviso": {
       "describes": "Aviso a quien se duerme al conducir o al usar maquinaria (S2 = Sí). Se muestra en ese momento de la entrevista, antes de seguir, y otra vez en el texto final, justo antes del texto de somnolencia. v0.2 p. 10 solo dice «No conducir ni usar maquinaria. Evaluación prioritaria».",
-      "status": "BORRADOR – Jesús",
+      "status": "APROBADO – Jesús, 19/10/2026",
       "text": "Si conduce o maneja maquinaria, sobre todo por trabajo, lo más seguro es que no lo haga mientras tenga este sueño y hasta que un profesional lo valore. Si el sueño le sorprende al volante, pare en cuanto pueda en un lugar seguro y descanse. La somnolencia suele tener solución, y por eso merece la pena pedir esa valoración pronto. Si conduce por trabajo, el servicio de salud laboral de su empresa también puede ayudarle."
     },
     "S2_seguro": {
       "describes": "Pregunta que sigue al aviso en cuanto S2 = Sí, antes de seguir con la entrevista. v0.2 p. 10: «S2: primero advertencia; seguir solo si está en un lugar seguro». Cualquier respuesta que no sea «Sí» pausa la entrevista.",
-      "status": "BORRADOR – Jesús",
+      "status": "APROBADO – Jesús, 19/10/2026",
       "text": "Antes de seguir: ¿está ahora en un lugar seguro, sin conducir ni manejar maquinaria?"
     },
     "S2_pausa": {
       "describes": "Lo que se muestra si, tras el aviso, la persona no está en un lugar seguro: la entrevista se pausa.",
-      "status": "BORRADOR – Jesús",
+      "status": "APROBADO – Jesús, 19/10/2026",
       "text": "Lo importante ahora es su seguridad. Si está conduciendo o manejando maquinaria, pare en cuanto pueda en un lugar seguro y descanse. Podemos seguir esta conversación cuando esté a salvo."
     },
     "T_RECIENTE": {
       "describes": "Cuadro reciente con mucho impacto (I1 e I2 = Sí, menos de 3 meses). v0.2 p. 5: «Un cuadro reciente con mucho impacto también merece ayuda clínica, sin esperar tres meses», pero no da plantilla.",
-      "status": "BORRADOR – Jesús",
+      "status": "APROBADO – Jesús, 19/10/2026",
       "text": "Nos ha contado que desde hace poco le cuesta dormir y que esto le está afectando mucho en su día a día. Cuando el problema es reciente, muchas veces mejora en unas semanas. Aun así, como le afecta tanto, no hace falta esperar: conviene que lo comente con un profesional, que puede ayudarle ya. Mientras tanto, puede seguir aquí y anotar cómo duerme para revisarlo juntos."
     }
   }

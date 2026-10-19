@@ -1,4 +1,4 @@
-"""The embudo v0.2 artifact (content 2.0-draft, ADR 0020).
+"""The embudo v0.2 artifact (content 2.0, ADR 0020).
 
 `clinical/morpheo_embudo_v2.json` holds two things:
 
