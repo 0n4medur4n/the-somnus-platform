@@ -10,6 +10,7 @@ export type SessionRecord = {
   sessionId: string;
   firebaseUid: string;
   email: string | null;
+  emailVerified?: boolean;
   createdAt: Date;
   expiresAt: Date;
   revokedAt: Date | null;
@@ -23,6 +24,7 @@ export type SessionRecord = {
 type SessionDoc = {
   firebaseUid: string;
   email: string | null;
+  emailVerified?: boolean;
   createdAt: Timestamp;
   expiresAt: Timestamp;
   revokedAt: Timestamp | null;
@@ -59,6 +61,7 @@ export class SessionService {
   async create(input: {
     firebaseUid: string;
     email: string | null;
+    emailVerified?: boolean;
     ttlSeconds: number;
     now?: Date;
   }): Promise<SessionRecord> {
@@ -68,6 +71,7 @@ export class SessionService {
     const doc: SessionDoc = {
       firebaseUid: input.firebaseUid,
       email: input.email,
+      ...(input.emailVerified === undefined ? {} : { emailVerified: input.emailVerified }),
       createdAt: Timestamp.fromDate(now),
       expiresAt: Timestamp.fromDate(expiresAt),
       revokedAt: null,
@@ -78,6 +82,7 @@ export class SessionService {
       sessionId,
       firebaseUid: input.firebaseUid,
       email: input.email,
+      ...(input.emailVerified === undefined ? {} : { emailVerified: input.emailVerified }),
       createdAt: now,
       expiresAt,
       revokedAt: null,
@@ -113,6 +118,7 @@ export class SessionService {
       sessionId,
       firebaseUid: data.firebaseUid,
       email: data.email,
+      ...(data.emailVerified === undefined ? {} : { emailVerified: data.emailVerified }),
       createdAt: data.createdAt.toDate(),
       expiresAt,
       revokedAt: null,

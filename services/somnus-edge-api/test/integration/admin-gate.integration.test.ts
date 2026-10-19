@@ -127,6 +127,7 @@ const CAPABILITIES_BY_ROLE: Record<string, string[]> = {
     "admin_drive",
   ],
   platform_super_admin: [
+    "admin_users_invite",
     "admin_users_read",
     "admin_roles_assign",
     "admin_break_glass",
@@ -456,6 +457,13 @@ describe("admin console gate (/admin/v1/*)", () => {
    */
   describe("the capability matrix is enforced per route, for every internal role", () => {
     const ROUTE_CAPABILITY: Array<{ method: string; url: string; capability: string }> = [
+      { method: "GET", url: "/admin/v1/platform-invitations", capability: "admin_users_invite" },
+      { method: "POST", url: "/admin/v1/platform-invitations", capability: "admin_users_invite" },
+      {
+        method: "POST",
+        url: "/admin/v1/platform-invitations/i1/revoke",
+        capability: "admin_users_invite",
+      },
       { method: "GET", url: "/admin/v1/me", capability: "any_internal_role" },
       { method: "POST", url: "/admin/v1/users/search", capability: "admin_users_read" },
       { method: "GET", url: "/admin/v1/users/u1", capability: "admin_users_read" },
@@ -614,6 +622,13 @@ describe("admin console gate (/admin/v1/*)", () => {
 
     /** Bodies that satisfy each route's contract, so a 4xx can only be the gate. */
     const BODIES: Record<string, unknown> = {
+      "POST /admin/v1/platform-invitations": {
+        firstName: "Ana",
+        lastName: "Garcia",
+        email: "ana@example.com",
+        role: "adult",
+        locale: "es",
+      },
       "POST /admin/v1/users/search": { limit: 5 },
       "PATCH /admin/v1/users/u1/status": { status: "suspended", reason: "because" },
       "POST /admin/v1/deletion-requests/d1/decision": { decision: "cancel", reason: "because" },
