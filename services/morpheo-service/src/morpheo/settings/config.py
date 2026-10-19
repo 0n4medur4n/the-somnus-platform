@@ -46,10 +46,11 @@ class Settings(BaseSettings):
     # Morpheo v2.0, the embudo v0.2 engine (ADR 0020). Off, and invisible to
     # users, until the clinical lead approves it after testing with vignettes.
     funnel_v2_enabled: bool = Field(default=False, alias="FUNNEL_V2_ENABLED")
-    # ISI, Epworth and STOP-Bang (D-34): their own switch, off until the
-    # licences are confirmed. The licensed item files are never in the repo
-    # or the image; they are mounted at runtime into this directory.
-    instruments_enabled: bool = Field(default=False, alias="INSTRUMENTS_ENABLED")
+    # ISI, Epworth and STOP-Bang (D-34): their own switch, on (owner decision
+    # 2026-10-19). Each official file is a clinical artifact
+    # (clinical/instruments/); an instrument whose file has not arrived is
+    # skipped. The directory can be overridden for tests.
+    instruments_enabled: bool = Field(default=True, alias="INSTRUMENTS_ENABLED")
     instruments_source_dir: str | None = Field(default=None, alias="INSTRUMENTS_SOURCE_DIR")
 
 
