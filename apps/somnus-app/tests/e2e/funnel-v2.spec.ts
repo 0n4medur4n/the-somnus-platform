@@ -11,7 +11,10 @@ import { expect, test } from "./support/console.js";
  *
  * Each screen is answered as the vignette answers it (the plan in
  * fixtures/funnel-v2-vignettes.json, generated from the engine), and the final
- * text must be exactly the vignette runner's.
+ * text must be exactly the vignette runner's. The stack runs morpheo's AI from
+ * recorded outputs (AI_FIXTURE_FILE), so the plan is the narrative mode's: after
+ * a free text, the confirmation screen («Por lo que nos ha contado,
+ * entendemos: … ¿Es correcto?») and the questions it settled are skipped.
  */
 const t = es.funnel;
 
@@ -24,6 +27,7 @@ type PlannedStep = {
   text?: string;
   labels?: string[];
   fields?: Record<string, string>;
+  decisions?: { id: string; decision: "confirmado" | "corregido" | "quitado" }[];
 };
 type Plan = { id: string; steps: PlannedStep[]; finalText: string[] };
 
@@ -52,6 +56,15 @@ async function answer(page: Page, step: PlannedStep): Promise<void> {
     return click(step.value === "si" ? t.actions.answerInstrument : t.actions.skipInstrument);
   }
   if (step.key === "Z1") return click(t.actions.correct);
+  if (step.kind === "confirm_extraction") {
+    for (const { id, decision } of step.decisions ?? []) {
+      await screen
+        .locator(`li[data-item-id="${id}"]`)
+        .getByLabel(t.extraction.decisions[decision], { exact: true })
+        .check();
+    }
+    return proceed();
+  }
 
   switch (step.type) {
     case "yes_no":
@@ -110,7 +123,28 @@ test("@v2 FT-1: persistent insomnia, through the real UI, ends with the runner's
   await startInterview(page);
   const firstScan = await new AxeBuilder({ page }).analyze();
   expect(firstScan.violations).toEqual([]);
-  for (const step of plan.steps) await answer(page, step);
+  for (const step of plan.steps) {
+    if (step.key === "Q01#confirmacion") {
+      // What the AI took from the narrative, each item with the person's words.
+      const screen = page.locator('section[data-step-key="Q01#confirmacion"]');
+      await expect(screen.getByRole("heading")).toHaveText(
+        "Por lo que nos ha contado, entendemos:",
+      );
+      await expect(screen).toContainText("«Desde hace unos seis meses»");
+      await expect(screen.getByRole("button", { name: t.actions.continue })).toBeDisabled();
+      const confirmationScan = await new AxeBuilder({ page }).analyze();
+      expect(confirmationScan.violations).toEqual([]);
+      await page.screenshot({
+        path: test.info().outputPath("confirmacion-Q01.png"),
+        fullPage: true,
+      });
+    }
+    await answer(page, step);
+  }
+  // The narrative already said it: never asked again.
+  for (const key of ["Q03", "Q08", "I2"]) {
+    expect(plan.steps.map((s) => s.key)).not.toContain(key);
+  }
   await expect(page.getByTestId("funnel-final-text").locator("p")).toHaveText(plan.finalText);
   const resultScan = await new AxeBuilder({ page }).analyze();
   expect(resultScan.violations).toEqual([]);
