@@ -10,10 +10,13 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 
 from morpheo.api.dependencies import SessionDep
 from morpheo.application.funnel_service import AnswerRejected, FunnelService
+from morpheo.infrastructure.correlation import CORRELATION_ID_HEADER
+from morpheo.infrastructure.errors import build_error_body
 from morpheo.schemas.funnel import (
     FunnelAnswerRequestDTO,
     FunnelConfigResponseDTO,
@@ -43,9 +46,24 @@ def _found(state: FunnelStateDTO | None) -> FunnelStateDTO:
     return state
 
 
-def _rejected(error: AnswerRejected) -> HTTPException:
-    # 422 with the reason as `detail` (e.g. "identifying_data"), for the app to explain.
-    return HTTPException(status_code=422, detail=error.code)
+async def _answer_rejected(request: Request, exc: Exception) -> JSONResponse:
+    """An answer that does not fit its step: the §16 envelope with the reason
+    (e.g. "identifying_data") in `details`, for the app to explain it."""
+    reason = exc.code if isinstance(exc, AnswerRejected) else "invalid_value"
+    correlation_id = getattr(request.state, "correlation_id", "unknown")
+    body = build_error_body(
+        code="VALIDATION_FAILED",
+        message="The answer does not fit the step being asked.",
+        correlation_id=correlation_id,
+        details={"reason": reason},
+    )
+    return JSONResponse(
+        status_code=422, content=body, headers={CORRELATION_ID_HEADER: correlation_id}
+    )
+
+
+def register_funnel_errors(app: FastAPI) -> None:
+    app.add_exception_handler(AnswerRejected, _answer_rejected)
 
 
 @router.get(
@@ -91,10 +109,7 @@ def answer(
     service: FunnelServiceDep,
     actor_id: OptionalActorId = None,
 ) -> FunnelStateDTO:
-    try:
-        return _found(service.answer(session_id, actor_id, body))
-    except AnswerRejected as error:
-        raise _rejected(error) from error
+    return _found(service.answer(session_id, actor_id, body))
 
 
 @router.post(
@@ -119,7 +134,4 @@ def rewind(
     service: FunnelServiceDep,
     actor_id: OptionalActorId = None,
 ) -> FunnelStateDTO:
-    try:
-        return _found(service.rewind(session_id, actor_id, body.key))
-    except AnswerRejected as error:
-        raise _rejected(error) from error
+    return _found(service.rewind(session_id, actor_id, body.key))

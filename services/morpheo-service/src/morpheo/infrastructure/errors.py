@@ -31,14 +31,20 @@ def _public_message(exc: Exception, env: str) -> str:
     return str(exc) if env != "production" else "An unexpected error occurred."
 
 
-def build_error_body(*, code: str, message: str, correlation_id: str) -> dict[str, object]:
+def build_error_body(
+    *,
+    code: str,
+    message: str,
+    correlation_id: str,
+    details: dict[str, object] | None = None,
+) -> dict[str, object]:
     """The build plan §16 error response shape."""
     return {
         "error": {
             "code": code,
             "message": message,
             "correlationId": correlation_id,
-            "details": {},
+            "details": details or {},
         }
     }
 
