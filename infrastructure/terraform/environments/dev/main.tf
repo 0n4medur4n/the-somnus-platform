@@ -271,6 +271,9 @@ module "run_morpheo" {
   # IAM is unaffected: `public` stays false, so allUsers gets nothing and only
   # edge-api's service account can invoke this.
   ingress = "INGRESS_TRAFFIC_ALL"
+  # The AI of v0.2 p. 14 loads spaCy's Spanish model (es_core_news_md) on the
+  # first free text: a few hundred MB on top of the service, so 1 GiB.
+  memory = "1Gi"
   env_vars = {
     ENV          = "production"
     LOG_LEVEL    = "info"
@@ -279,10 +282,17 @@ module "run_morpheo" {
   }
   secret_env_vars = {
     DATABASE_URL = { secret_id = "morpheo-db-url", version = "latest" }
+    # The AI's extraction and risk screen (AI_EXTRACTION_ENABLED, on by
+    # default). The same key report uses; without it the interview asks
+    # every question.
+    OPENAI_API_KEY = { secret_id = "OPENAI_API_KEY", version = "latest" }
   }
   labels = { app = "somnus", service = "morpheo", env = var.env }
 
-  depends_on = [module.project_apis_backend]
+  depends_on = [
+    module.project_apis_backend,
+    google_secret_manager_secret_iam_member.morpheo_openai_api_key,
+  ]
 }
 
 module "run_report" {
@@ -583,6 +593,15 @@ resource "google_secret_manager_secret_iam_member" "report_openai_api_key" {
   secret_id = data.google_secret_manager_secret.openai_api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = module.sa_report.member
+}
+
+# morpheo reads the same key for the AI of v0.2 p. 14 (extraction from the
+# person's narrative and the risk screen).
+resource "google_secret_manager_secret_iam_member" "morpheo_openai_api_key" {
+  project   = var.project_id
+  secret_id = data.google_secret_manager_secret.openai_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = module.sa_morpheo.member
 }
 
 # --- The reference corpus's database URL (Addendum B §B3) ---
