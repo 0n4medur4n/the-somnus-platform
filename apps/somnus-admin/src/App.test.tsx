@@ -187,7 +187,8 @@ describe("the console gate", () => {
       expect(screen.queryByText(t("dashboard.driveTitle"))).toBeNull();
     });
 
-    it("the dashboard opens the Drive in one click for anyone who holds it", async () => {
+    it("the dashboard opens the Drive in its own tab for anyone who holds it", async () => {
+      const open = vi.spyOn(window, "open").mockImplementation(() => null);
       renderWithProviders(<Gate />, {
         auth: auth({
           status: "authorized",
@@ -196,11 +197,16 @@ describe("the console gate", () => {
       });
 
       await userEvent.click(screen.getByRole("button", { name: t("dashboard.openDrive") }));
+      expect(open).toHaveBeenCalledWith("/drive", "_blank", "noopener");
 
+      // The sidebar entry does the same, and the console stays on its dashboard.
       const nav = screen.getByRole("navigation", { name: t("console.title") });
+      await userEvent.click(within(nav).getByRole("button", { name: t("nav.drive") }));
+      expect(open).toHaveBeenCalledTimes(2);
       expect(within(nav).getByRole("button", { current: "page" })).toHaveTextContent(
-        t("nav.drive"),
+        t("nav.overview"),
       );
+      open.mockRestore();
     });
   });
 

@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useAdminAuth } from "../auth/useAdminAuth.js";
 import type { IconName } from "../components/ui/Icon.js";
 import { Card } from "../components/ui/ui.js";
-import { DriveScreen } from "../drive/ui/DriveScreen.js";
 import { AppShell, type NavGroup } from "../layouts/AppShell.js";
 import { AuditViewerScreen } from "../screens/AuditViewerScreen.js";
 import { BreakGlassScreen } from "../screens/BreakGlassScreen.js";
@@ -23,7 +22,16 @@ import { GROUPS, usePendingCounts, type ViewId } from "./sections.js";
 export function ConsoleHome({ me }: { me: AdminMeResponse }) {
   const { t } = useTranslation();
   const { logout } = useAdminAuth();
-  const [view, setView] = useState<ViewId>("overview");
+  const [view, setViewState] = useState<ViewId>("overview");
+  // The Drive is its own full-window tool (owner decision 2026-10-19): it opens
+  // in a new tab, and the console stays where it was in this one.
+  const setView = (id: ViewId) => {
+    if (id === "drive") {
+      window.open("/drive", "_blank", "noopener");
+      return;
+    }
+    setViewState(id);
+  };
 
   const held = new Set(me.capabilities);
   const pending = usePendingCounts(held);
@@ -67,14 +75,11 @@ export function ConsoleHome({ me }: { me: AdminMeResponse }) {
       roles={me.roleKeys.map((role) => t(`role.${role}`))}
       onSignOut={() => void logout()}
       title={view === "overview" ? t("console.title") : t(`nav.${view}`)}
-      titleIsHeading={view === "overview" || view === "drive"}
+      titleIsHeading={view === "overview"}
       {...(sectionOf ? { section: sectionOf } : {})}
     >
       {view === "overview" ? (
         <DashboardScreen me={me} onNavigate={(id) => setView(id)} />
-      ) : view === "drive" ? (
-        // The Drive is a full-width tool, not a card. Unmounting it drops its keys.
-        <DriveScreen />
       ) : (
         <Card>
           {view === "users" ? (

@@ -1,4 +1,5 @@
 import type { DriveAccount } from "@somnus/api-contracts";
+import type { JSONContent } from "@tiptap/core";
 import {
   type DragEvent,
   type FormEvent,
@@ -9,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 import { Button } from "../../components/Button.js";
 import { Field } from "../../components/Field.js";
 import { Icon, type IconName } from "../../components/ui/Icon.js";
@@ -20,7 +22,11 @@ import {
   type MenuItem,
   Modal,
 } from "../../components/ui/ui.js";
-import { fromUtf8, utf8 } from "../crypto.js";
+import { ApiRequestError } from "../../lib/api.js";
+import { type Bytes, fromUtf8, utf8 } from "../crypto.js";
+import { DocumentEditor, type SaveOutcome } from "../documents/DocumentEditor.js";
+import { DOCUMENT_MIME, decodeDocument, encodeDocument } from "../documents/doc-format.js";
+import { docxToDocument, isDocx } from "../documents/import-docx.js";
 import type {
   DriveFolderView,
   DriveItem,
@@ -34,19 +40,20 @@ import { DriveNoteEditor } from "./DriveNote.js";
 import {
   formatBytes,
   formatDate,
-  isTextual,
   Notice,
   PREVIEWABLE_IMAGES,
   saveBytes,
   TrustBadge,
   useDriveTask,
 } from "./drive-ui.js";
+import { FileViewer } from "./FileViewer.js";
 
-type Kind = "folder" | "note" | "image" | "file";
+type Kind = "folder" | "note" | "document" | "image" | "file";
 
 function kindOf(item: DriveItem): Kind {
   if (item.node.kind === "folder") return "folder";
   if (item.meta?.note) return "note";
+  if (item.meta?.mime === DOCUMENT_MIME) return "document";
   if (item.meta?.mime && PREVIEWABLE_IMAGES.has(item.meta.mime)) return "image";
   return "file";
 }
@@ -54,6 +61,7 @@ function kindOf(item: DriveItem): Kind {
 const KIND_ICON: Record<Kind, IconName> = {
   folder: "folder",
   note: "note",
+  document: "document",
   image: "image",
   file: "file",
 };
@@ -70,7 +78,6 @@ type Dialog =
   | { kind: "newNote" }
   | { kind: "editNote"; item: DriveItem; body: string }
   | { kind: "readNote"; item: DriveItem; body: string }
-  | { kind: "preview"; item: DriveItem; text?: string; imageUrl?: string }
   | { kind: "rename"; item: DriveItem }
   | { kind: "renameShare" }
   | { kind: "move"; item: DriveItem }
@@ -94,19 +101,50 @@ export function DriveWorkspace({
   account,
   onAccountChanged,
   onLock,
+  fullScreen = false,
 }: {
   session: DriveSession;
   account: DriveAccount;
   onAccountChanged: (account: DriveAccount) => void;
   onLock: () => void;
+  /** The Drive's own tab: the workspace fills the window. */
+  fullScreen?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const task = useDriveTask();
   const { run } = task;
   const [shares, setShares] = useState<DriveShareEntry[] | null>(null);
   const [view, setView] = useState<DriveFolderView | null>(null);
-  const [folderId, setFolderId] = useState<string | null>(null);
-  const [trash, setTrash] = useState(false);
+  // Where the person is -- folder, trash, open document -- is the URL, so the
+  // browser's back and forward move through the Drive and a link reopens it.
+  const [params, setParams] = useSearchParams();
+  const shareParam = params.get("share");
+  const folderId = params.get("folder");
+  const trash = params.get("trash") === "1";
+  const docParam = params.get("doc");
+  const go = useCallback(
+    (
+      next: { share?: string | null; folder?: string | null; trash?: boolean; doc?: string | null },
+      replace = false,
+    ) => {
+      const p = new URLSearchParams();
+      if (next.share) p.set("share", next.share);
+      if (next.share && next.folder) p.set("folder", next.folder);
+      if (next.share && next.trash) p.set("trash", "1");
+      if (next.share && next.doc) p.set("doc", next.doc);
+      setParams(p, { replace });
+    },
+    [setParams],
+  );
+  const setFolderId = (id: string) => go({ share: view?.shareId ?? shareParam, folder: id });
+  const setTrash = (on: boolean) =>
+    go({ share: view?.shareId ?? shareParam, ...(on ? { trash: true } : {}) });
+  const [viewer, setViewer] = useState<{ item: DriveItem; bytes: Bytes } | null>(null);
+  const [doc, setDoc] = useState<{
+    id: string;
+    title: string;
+    content: JSONContent;
+  } | null>(null);
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState<Dialog>({ kind: "none" });
@@ -125,29 +163,40 @@ export function DriveWorkspace({
     void refreshShares();
   }, [refreshShares]);
 
-  // A preview holds a blob URL; release it when the dialog changes.
-  useEffect(() => {
-    if (dialog.kind !== "preview" || !dialog.imageUrl) return;
-    const url = dialog.imageUrl;
-    return () => URL.revokeObjectURL(url);
-  }, [dialog]);
-
-  async function openShare(shareId: string) {
-    const opened = await run(() => session.openShare(shareId));
-    if (!opened) return;
-    setView(opened);
-    setFolderId(opened.rootId);
-    setTrash(false);
-    setQuery("");
-    setSide({ kind: "none" });
+  function openShare(shareId: string) {
+    go({ share: shareId });
   }
+
+  // The share in the URL is the share on screen.
+  useEffect(() => {
+    if (!shareParam) {
+      setView(null);
+      return;
+    }
+    if (view?.shareId === shareParam) return;
+    let cancelled = false;
+    void (async () => {
+      const opened = await run(() => session.openShare(shareParam));
+      if (cancelled) return;
+      if (!opened) {
+        go({}, true);
+        return;
+      }
+      setView(opened);
+      setQuery("");
+      setSide({ kind: "none" });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [shareParam]);
 
   async function reload() {
     if (!view) return;
     const opened = await run(() => session.openShare(view.shareId));
     if (!opened) {
       // The folder was deleted, or I was removed from it.
-      setView(null);
+      go({}, true);
       void refreshShares();
       return;
     }
@@ -164,8 +213,7 @@ export function DriveWorkspace({
   }
 
   function goHome() {
-    setView(null);
-    setTrash(false);
+    go({});
     setQuery("");
     setSide({ kind: "none" });
     void refreshShares();
@@ -189,8 +237,8 @@ export function DriveWorkspace({
   useEffect(() => {
     if (!view || !current || current === view.rootId) return;
     const here = view.items.find((i) => i.node.id === current);
-    if (!here || here.node.trashedAt) setFolderId(view.rootId);
-  }, [view, current]);
+    if (!here || here.node.trashedAt) go({ share: view.shareId }, true);
+  }, [view, current, go]);
 
   const path: Array<{ id: string; name: string }> = [];
   if (view) {
@@ -252,21 +300,88 @@ export function DriveWorkspace({
       setQuery("");
       return;
     }
+    if (kind === "document") {
+      go({ share: view.shareId, folder: current, doc: item.node.id });
+      return;
+    }
     const bytes = await run(() => session.readFile(view, item));
     if (!bytes) return;
     if (kind === "note") {
       setDialog({ kind: "readNote", item, body: fromUtf8(bytes) });
-    } else if (isTextual(item.meta?.mime)) {
-      setDialog({ kind: "preview", item, text: fromUtf8(bytes) });
-    } else if (kind === "image" && item.meta?.mime) {
-      setDialog({
-        kind: "preview",
-        item,
-        imageUrl: URL.createObjectURL(new Blob([bytes], { type: item.meta.mime })),
-      });
     } else {
-      setDialog({ kind: "preview", item });
+      setViewer({ item, bytes });
     }
+  }
+
+  // --- documents (owner decision 2026-10-19) ---
+
+  async function createDocument(content: JSONContent, title: string) {
+    if (!view || !current) return;
+    const id = await run(() =>
+      session.writeFile(view, {
+        parentId: current,
+        name: title,
+        mime: DOCUMENT_MIME,
+        bytes: encodeDocument(content),
+      }),
+    );
+    if (!id) return;
+    await reload();
+    go({ share: view.shareId, folder: current, doc: id });
+  }
+
+  async function editAsDocument(item: DriveItem, bytes: Uint8Array) {
+    const content = await run(() => docxToDocument(bytes));
+    if (!content) return;
+    setViewer(null);
+    await createDocument(content, (item.meta?.name ?? "").replace(/\.docx$/i, ""));
+  }
+
+  // The document in the URL, decrypted, once its folder is open.
+  useEffect(() => {
+    if (!docParam || !view) {
+      setDoc(null);
+      return;
+    }
+    if (doc?.id === docParam) return;
+    const item = view.items.find((i) => i.node.id === docParam);
+    if (!item || item.node.trashedAt || kindOf(item) !== "document") {
+      go({ share: view.shareId, folder: current }, true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const bytes = await run(() => session.readFile(view, item));
+      if (cancelled || !bytes) return;
+      setDoc({
+        id: item.node.id,
+        title: item.meta?.name ?? "",
+        content: decodeDocument(bytes).content,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [docParam, view?.shareId]);
+
+  async function saveDocument(title: string, content: JSONContent): Promise<SaveOutcome> {
+    if (!view || !doc) return "error";
+    const fresh = await session.openShare(view.shareId).catch(() => null);
+    const item = fresh?.items.find((i) => i.node.id === doc.id);
+    if (!fresh || !item) return "error";
+    try {
+      await session.writeFile(fresh, {
+        parentId: item.node.parentId ?? fresh.rootId,
+        existing: item,
+        name: title,
+        mime: DOCUMENT_MIME,
+        bytes: encodeDocument(content),
+      });
+    } catch (error) {
+      return error instanceof ApiRequestError && error.status === 409 ? "conflict" : "error";
+    }
+    await reload();
+    return "saved";
   }
 
   async function download(item: DriveItem) {
@@ -374,6 +489,12 @@ export function DriveWorkspace({
             onSelect: () => setDialog({ kind: "newFolder" }),
           },
           {
+            label: t("drive.doc.new"),
+            icon: "document" as const,
+            onSelect: () =>
+              void createDocument({ type: "doc", content: [] }, t("drive.doc.untitled")),
+          },
+          {
             label: t("drive.folder.newNote"),
             icon: "note" as const,
             onSelect: () => setDialog({ kind: "newNote" }),
@@ -400,9 +521,45 @@ export function DriveWorkspace({
       ? t("drive.members.you")
       : (item.author.email ?? t("drive.folder.unknownAuthor"));
 
+  if (docParam) {
+    return doc && view ? (
+      <DocumentEditor
+        key={doc.id}
+        initialTitle={doc.title}
+        initialContent={doc.content}
+        readOnly={!canEdit}
+        onSave={saveDocument}
+        onClose={() => go({ share: view.shareId, folder: current })}
+      />
+    ) : (
+      <p className="p-8 text-center text-somnus-subtle">
+        {task.error ? task.error : t("drive.loading")}
+      </p>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid min-h-[70vh] overflow-hidden rounded-xl border border-white/[0.06] bg-somnus-surface/60 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className={`flex flex-col gap-3 ${fullScreen ? "h-full" : ""}`}>
+      {viewer ? (
+        <FileViewer
+          name={viewer.item.meta?.name ?? ""}
+          mime={viewer.item.meta?.mime}
+          bytes={viewer.bytes}
+          canEditAsDocument={canEdit && isDocx(viewer.item.meta?.mime, viewer.item.meta?.name)}
+          onEditAsDocument={() => void editAsDocument(viewer.item, viewer.bytes)}
+          onDownload={() =>
+            saveBytes(viewer.bytes, viewer.item.meta?.name ?? t("drive.folder.kind.file"))
+          }
+          onClose={() => setViewer(null)}
+        />
+      ) : null}
+      <div
+        className={`grid overflow-hidden border border-white/[0.06] bg-somnus-surface/60 lg:grid-cols-[240px_minmax(0,1fr)] ${
+          fullScreen
+            ? "min-h-0 flex-1 rounded-none border-x-0 border-b-0"
+            : "min-h-[70vh] rounded-xl"
+        }`}
+      >
         {/* --- left: new, folders, security --- */}
         <aside className="flex flex-col gap-4 border-b border-white/[0.06] p-3 lg:border-b-0 lg:border-r">
           <Menu
@@ -980,33 +1137,6 @@ export function DriveWorkspace({
                 {t("drive.note.edit")}
               </Button>
             ) : null}
-          </div>
-        </Modal>
-      ) : null}
-      {dialog.kind === "preview" ? (
-        <Modal
-          title={dialog.item.meta?.name ?? ""}
-          onClose={() => setDialog({ kind: "none" })}
-          wide
-        >
-          {dialog.text !== undefined ? (
-            <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-somnus-background p-4 text-sm text-somnus-text">
-              {dialog.text}
-            </pre>
-          ) : dialog.imageUrl ? (
-            <img
-              src={dialog.imageUrl}
-              alt={dialog.item.meta?.name ?? ""}
-              className="mx-auto max-h-[60vh] rounded-lg"
-            />
-          ) : (
-            <EmptyState icon="file" title={t("drive.preview.noPreview")} />
-          )}
-          <div className="mt-5 flex justify-end">
-            <Button onClick={() => void download(dialog.item)}>
-              <Icon name="download" className="mr-2 h-4 w-4" />
-              {t("drive.folder.download")}
-            </Button>
           </div>
         </Modal>
       ) : null}

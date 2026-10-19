@@ -81,3 +81,19 @@ raised later).
 - Deploy is Terraform (the bucket, its IAM, `DRIVE_BUCKET` on the worker) and
   the images; there is no secret and no migration
   (see `docs/runbooks/deploy-dev.md`).
+
+## Addendum -- documents, previews and the Drive's own tab (owner decision 2026-10-19)
+
+- **The Drive opens in its own tab** (`/drive` on the console's site), full window, without the
+  console's sidebar; folder, trash and open document live in the URL so back and forward work. Same
+  gate as the console plus `admin_drive`. Keys stay in that tab's memory only.
+- **Previews are produced in the browser from the decrypted bytes**: a PDF goes to the browser's
+  own viewer through a blob URL; a Word file is converted to HTML (mammoth) and shown in a sandboxed
+  frame with no `allow-*` tokens and a `default-src 'none'` policy, so it can run nothing.
+- **Documents**: a rich-text page written in the Drive (TipTap, composed extension by extension;
+  links only http/https/mailto). Stored as an ordinary Drive file of type
+  `application/vnd.somnus.document+json` -- same per-file key, block encryption and signatures --
+  and every save is a new revision (a stale revision is refused as a conflict, never overwritten).
+  Exports to Word, PDF, HTML, Markdown and plain text are made in the browser (docx, pdfmake loaded
+  only on export; the PDF writer may fetch nothing). A `.docx` can be turned into a document.
+- The server learns nothing new: no format conversion, preview or export ever leaves the browser.

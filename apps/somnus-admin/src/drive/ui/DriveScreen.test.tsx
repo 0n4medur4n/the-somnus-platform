@@ -146,6 +146,46 @@ describe("DriveScreen", () => {
     expect(sent).not.toContain("SAFE-004");
   }, 45_000);
 
+  it("writes a document, saves it encrypted, and reopens it from the folder", async () => {
+    const user = userEvent.setup();
+    await setUp(user);
+    await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Protocolos");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
+    await user.click(
+      (await screen.findAllByRole("button", { name: /Protocolos/ }))[0] as HTMLElement,
+    );
+
+    // "New" -> "Document" opens the editor straight away.
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(await screen.findByRole("menuitem", { name: i18n.t("drive.doc.new") }));
+    const title = await screen.findByLabelText(i18n.t("drive.doc.title"), {}, { timeout: 15_000 });
+    await user.clear(title);
+    await user.type(title, "Protocolo de guardia");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.doc.save") }));
+    expect(
+      await screen.findByText(i18n.t("drive.doc.status.saved"), {}, { timeout: 15_000 }),
+    ).toBeInTheDocument();
+
+    // Back in the folder, it is a document, and it opens again in the editor.
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.doc.back") }));
+    const listed = await screen.findByRole(
+      "button",
+      { name: `${i18n.t("drive.folder.kind.document")}: Protocolo de guardia` },
+      { timeout: 15_000 },
+    );
+    await user.click(listed);
+    expect(
+      await screen.findByDisplayValue("Protocolo de guardia", {}, { timeout: 15_000 }),
+    ).toBeInTheDocument();
+
+    // Nothing readable reached the server.
+    expect(server.received.join(" ")).not.toContain("Protocolo de guardia");
+  }, 60_000);
+
   it("never writes anything to browser storage", async () => {
     const user = userEvent.setup();
     const setItem = vi.spyOn(Storage.prototype, "setItem");

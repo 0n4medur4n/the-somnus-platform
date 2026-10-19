@@ -451,6 +451,7 @@ export class DriveSession {
   /**
    * Encrypts and uploads a file -- a new one under `parentId`, or a new revision
    * of `existing`. Every block is sealed here before the first byte is sent.
+   * Answers the file's node id.
    */
   async writeFile(
     view: DriveFolderView,
@@ -463,7 +464,7 @@ export class DriveSession {
       note?: boolean;
       onProgress?: (done: number, total: number) => void;
     },
-  ): Promise<void> {
+  ): Promise<string> {
     if (input.bytes.length > DRIVE_FILE_MAX_BYTES) throw new DriveSessionError("file_too_large");
     const shareKey = this.requireShareKey(view);
     const existing = input.existing;
@@ -533,6 +534,7 @@ export class DriveSession {
       input.onProgress?.(index + 1, blocks.length);
     }
     await this.edge.commit(view.shareId, nodeId, revision);
+    return nodeId;
   }
 
   /** Downloads, checks and decrypts a file. Refuses anything that does not match what was signed. */
