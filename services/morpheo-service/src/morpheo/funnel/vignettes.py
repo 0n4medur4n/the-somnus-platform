@@ -34,8 +34,8 @@ from pathlib import Path
 from typing import Any
 
 from morpheo.funnel.artifact import FunnelArtifact, StepDef, funnel_artifact
-from morpheo.funnel.catalogue import duration_text
-from morpheo.funnel.interview import NO, NO_LO_SE, PREFIERO, YES, Answer, Interview, next_step
+from morpheo.funnel.display import answer_label
+from morpheo.funnel.interview import NO_LO_SE, PREFIERO, Answer, Interview, Step, next_step
 from morpheo.funnel.render import question_text
 from morpheo.funnel.rules import FunnelResult, evaluate
 from morpheo.instruments.definitions import InstrumentRegistry, load_registry
@@ -121,40 +121,45 @@ def _lookup(script: dict[str, Any], key: str) -> Any:
     return None
 
 
-_ABSENCE = {NO_LO_SE: "No lo sé", PREFIERO: "Prefiero no responder"}
-_CONFIRM = {"sigue_igual": "Sigue igual", "ha_cambiado": "Ha cambiado"}
-_YES_NO = {YES: "Sí", NO: "No"}
-_NONE_OF_THESE = "Ninguna de estas"
+def _scripts(vignette: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """What defines the case (with the narrative as Q01), and what it assumes."""
+    script = dict(vignette.get("answers", {}))
+    if "narrative" in vignette:
+        script.setdefault(
+            "Q01",
+            {"text": vignette["narrative"], "extracted": vignette.get("narrative_extracted", {})},
+        )
+    return script, dict(vignette.get("assumed", {}))
 
 
-def _show(answer: Answer, definition: StepDef, kind: str) -> str:
-    """The answer as the person gave it on screen, in their language."""
-    if answer.value is None:
-        label = _ABSENCE.get(answer.absence or "", "—")
-        return label + (f" «{answer.text}»" if answer.text else "")
-    value = answer.value
-    if kind == "info":
-        return "Leído"
-    if kind == "confirm":
-        return _CONFIRM.get(value, str(value))
+def scripted_answer(vignette: dict[str, Any], step: Step) -> tuple[Answer, str]:
+    """The vignette's answer to a step, and where it came from (see `AskedStep`)."""
+    script, assumed = _scripts(vignette)
+    spec, source = _lookup(script, step.key), "case"
+    if spec is None:
+        spec, source = _lookup(assumed, step.key), "assumed"
+    if step.kind == "info":
+        source = "shown"
+    elif spec is None:
+        source = "default"
+    answer = (
+        _default(step.definition, step.kind)
+        if spec is None
+        else _from_script(spec, step.definition)
+    )
+    return answer, source
+
+
+def answer_request(key: str, answer: Answer, definition: StepDef) -> dict[str, Any]:
+    """The same answer as the v2 API takes it (FunnelAnswerRequest), for tests and E2E."""
+    if answer.absence is not None:
+        return {"key": key, "absence": answer.absence}
     if definition.type == "free_text":
-        return f"«{answer.text or value}»"
-    if isinstance(value, str) and value in _YES_NO:
-        note = f" «{answer.text}»" if answer.text else ""
-        return _YES_NO[value] + note
-    labels = {o.key: o.label for o in (*definition.options, *definition.fields)}
-    if definition.type == "multi":
-        chosen = [labels.get(str(k), str(k)) for k in value] if isinstance(value, list) else []
-        return ", ".join(chosen) or _NONE_OF_THESE
-    if definition.type == "single":
-        return labels.get(value, _NONE_OF_THESE)
-    if isinstance(value, dict) and "unit" in value:
-        return duration_text(value) or ""
-    if isinstance(value, dict):
-        return " · ".join(f"{labels.get(k, k)}: {v}" for k, v in value.items())
-    if isinstance(value, int) and definition.unit:
-        return f"{value} {definition.unit}"
-    return str(value)
+        return {"key": key, "value": answer.text if answer.text is not None else answer.value}
+    body: dict[str, Any] = {"key": key, "value": answer.value}
+    if answer.text is not None and definition.type == "yes_no_note":
+        body["text"] = answer.text
+    return body
 
 
 def _check(run_result: FunnelResult, expected: dict[str, Any], asked: list[AskedStep]) -> list[str]:
@@ -197,13 +202,7 @@ def run_vignette(
     instruments: InstrumentRegistry | None = None,
 ) -> VignetteRun:
     artifact = artifact or funnel_artifact()
-    script = dict(vignette.get("answers", {}))
-    if "narrative" in vignette:
-        script.setdefault(
-            "Q01",
-            {"text": vignette["narrative"], "extracted": vignette.get("narrative_extracted", {})},
-        )
-    assumed = dict(vignette.get("assumed", {}))
+    script, _ = _scripts(vignette)
     answers: dict[str, Answer] = {}
     asked: list[AskedStep] = []
     phrase_ids: list[str] = []
@@ -211,18 +210,7 @@ def run_vignette(
         step = next_step(artifact, answers, instruments)
         if step is None:
             break
-        spec, source = _lookup(script, step.key), "case"
-        if spec is None:
-            spec, source = _lookup(assumed, step.key), "assumed"
-        if step.kind == "info":
-            source = "shown"
-        elif spec is None:
-            source = "default"
-        answer = (
-            _default(step.definition, step.kind)
-            if spec is None
-            else _from_script(spec, step.definition)
-        )
+        answer, source = scripted_answer(vignette, step)
         if step.key == "PROT":
             question = artifact.protection_text
         else:
@@ -230,7 +218,7 @@ def run_vignette(
             question, used = question_text(step.definition, Interview(artifact, answers))
             phrase_ids.extend(used)
         answers[step.key] = answer
-        shown = _show(answer, step.definition, step.kind)
+        shown = answer_label(answer, step.definition, step.kind)
         asked.append(AskedStep(n, step.key, step.kind, question, shown, source, step.reason))
     else:
         raise RuntimeError(f"{vignette['id']}: more than {MAX_STEPS} steps")

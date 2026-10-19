@@ -147,6 +147,8 @@ export const FunnelResultPanelSchema = z
     phraseIds: z.array(z.string()),
     branchesOpened: z.array(z.string()),
     orientations: z.array(FunnelOrientationSchema),
+    /** Every instrument this interview would offer, pending ones included. */
+    instruments: z.array(FunnelInstrumentSchema),
   })
   .strict();
 export type FunnelResultPanel = z.infer<typeof FunnelResultPanelSchema>;
@@ -160,6 +162,7 @@ export const FunnelResultSchema = z
     testToConsider: z.string().nullable(),
     /** The final text, paragraph by paragraph, exactly as the person reads it. */
     texts: z.array(FunnelTextSchema),
+    /** The scores the person completed (skipped or pending ones are panel-only). */
     instruments: z.array(FunnelInstrumentSchema),
     /** v0.2 p. 14, shown with any score: "Ninguna escala confirma apnea…". */
     instrumentsNote: z.string().nullable(),

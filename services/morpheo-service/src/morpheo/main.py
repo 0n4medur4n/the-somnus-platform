@@ -17,6 +17,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import sessionmaker
 
 from morpheo.api.assessment import router as assessment_router
+from morpheo.api.funnel import router as funnel_router
 from morpheo.api.health import router as health_router
 from morpheo.api.maintenance import router as maintenance_router
 from morpheo.api.sources import router as sources_router
@@ -25,6 +26,7 @@ from morpheo.infrastructure.correlation import CorrelationIdMiddleware
 from morpheo.infrastructure.db import create_engine_from_url
 from morpheo.infrastructure.errors import register_exception_handlers
 from morpheo.infrastructure.logging import configure_logging
+from morpheo.instruments.definitions import load_registry
 from morpheo.settings.config import Settings, load_settings
 
 
@@ -51,6 +53,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     engine = create_engine_from_url(settings.database_url)
     app.state.engine = engine
     app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    # The validated instruments' official files, checked word for word now: a
+    # wrong file stops the service instead of reaching a person (D-34).
+    app.state.instruments = load_registry(settings)
 
     app.add_middleware(CorrelationIdMiddleware)
     register_exception_handlers(app)
@@ -58,6 +63,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(version_router)
     app.include_router(assessment_router)
+    app.include_router(funnel_router)
     app.include_router(sources_router)
     app.include_router(maintenance_router)
 

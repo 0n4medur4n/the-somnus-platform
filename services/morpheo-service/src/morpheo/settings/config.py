@@ -43,9 +43,10 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default=DEFAULT_LOCAL_DATABASE_URL, min_length=1, alias="DATABASE_URL"
     )
-    # Morpheo v2.0, the embudo v0.2 engine (ADR 0020). Off, and invisible to
-    # users, until the clinical lead approves it after testing with vignettes.
-    funnel_v2_enabled: bool = Field(default=False, alias="FUNNEL_V2_ENABLED")
+    # Morpheo v2.0, the embudo v0.2 engine (ADR 0020): the app's active flow
+    # (owner and clinical lead, 19/10/2026). FUNNEL_V2_ENABLED=false rolls the
+    # app back to v1 with one config change.
+    funnel_v2_enabled: bool = Field(default=True, alias="FUNNEL_V2_ENABLED")
     # ISI, Epworth and STOP-Bang (D-34): their own switch, on (owner decision
     # 2026-10-19). Each official file is a clinical artifact
     # (clinical/instruments/); an instrument whose file has not arrived is

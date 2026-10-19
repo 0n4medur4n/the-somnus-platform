@@ -49,6 +49,11 @@ _S2_WARNING_STEP = StepDef(S2_WARNING, "p. 10", "safety", "info", "", None)
 _S2_SAFE_STEP = StepDef(S2_SAFE, "p. 10", "safety", "yes_no", "", None)
 
 
+def special_step(step_id: str) -> StepDef | None:
+    """The definition of a step that is not a v0.2 question (the S2 warning steps)."""
+    return {S2_WARNING: _S2_WARNING_STEP, S2_SAFE: _S2_SAFE_STEP}.get(step_id)
+
+
 @dataclass(frozen=True)
 class Answer:
     """One answer, as the v0.2 data contract has it (p. 14).

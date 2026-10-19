@@ -1,0 +1,137 @@
+"""The v2 interview against the real MySQL schema (migration 5b2e9c41a7d3).
+
+Order of answers, back/rewind deletes, owner isolation and the retention
+deletes on real rows; the clinical behaviour is proven in the unit tests.
+"""
+
+from __future__ import annotations
+
+import uuid
+from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import Engine, func, select
+from sqlalchemy.orm import Session
+
+from morpheo.funnel.artifact import funnel_artifact
+from morpheo.funnel.interview import Answer, next_step
+from morpheo.funnel.vignettes import answer_request, load_vignettes, run_vignette, scripted_answer
+from morpheo.infrastructure.models import FunnelAnswer, FunnelSession
+from morpheo.main import create_app
+
+BASE = "/internal/v1/funnel"
+MAINTENANCE = "/internal/v1/maintenance"
+
+
+@pytest.fixture
+def client(engine: Engine) -> Iterator[TestClient]:
+    with TestClient(create_app()) as test_client:
+        yield test_client
+
+
+def _play(client: TestClient, vignette_id: str, actor: str | None = None) -> dict[str, Any]:
+    headers = {"X-Somnus-Actor-Id": actor} if actor else {}
+    vignette = next(v for v in load_vignettes() if v["id"] == vignette_id)
+    body: dict[str, Any] = client.post(
+        f"{BASE}/sessions", json={"consentGiven": True}, headers=headers
+    ).json()
+    answers: dict[str, Answer] = {}
+    while body["step"] is not None:
+        step = next_step(funnel_artifact(), answers, client.app.state.instruments)  # type: ignore[attr-defined]
+        assert step is not None and step.key == body["step"]["key"]
+        answer, _ = scripted_answer(vignette, step)
+        response = client.post(
+            f"{BASE}/sessions/{body['sessionId']}/answers",
+            json=answer_request(step.key, answer, step.definition),
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        answers[step.key] = answer
+    return body
+
+
+def test_a_full_interview_is_stored_in_order_and_ends_with_the_runners_text(
+    client: TestClient, engine: Engine
+) -> None:
+    state = _play(client, "V-10")
+    expected = run_vignette(next(v for v in load_vignettes() if v["id"] == "V-10")).result
+    assert state["result"]["texts"] == [{"template": t, "text": x} for t, x in expected.texts]
+    with Session(engine) as session:
+        keys = list(
+            session.scalars(
+                select(FunnelAnswer.step_key)
+                .where(FunnelAnswer.session_id == state["sessionId"])
+                .order_by(FunnelAnswer.id)
+            )
+        )
+        stored = session.get(FunnelSession, state["sessionId"])
+    assert keys[:5] == ["AGE", "S1@start", "S4@start", "Q01", "S2@exception:Q01"]
+    assert keys[5:7] == ["S2_aviso", "S2_seguro"]
+    assert stored is not None and stored.status == "finished" and stored.finished_at is not None
+
+
+def test_back_and_rewind_delete_on_the_real_schema(client: TestClient, engine: Engine) -> None:
+    state = _play(client, "FT-1")
+    session_id = state["sessionId"]
+    rewound = client.post(f"{BASE}/sessions/{session_id}/rewind", json={"key": "Q02"}).json()
+    assert rewound["step"]["key"] == "Q02" and rewound["status"] == "open"
+    back = client.post(f"{BASE}/sessions/{session_id}/back").json()
+    assert back["step"]["key"] == "Q01"
+    with Session(engine) as session:
+        count = session.scalar(
+            select(func.count())
+            .select_from(FunnelAnswer)
+            .where(FunnelAnswer.session_id == session_id)
+        )
+        stored = session.get(FunnelSession, session_id)
+    assert count == 3  # AGE, S1@start, S4@start
+    assert stored is not None and stored.status == "open" and stored.finished_at is None
+
+
+def test_an_owned_interview_is_erased_with_the_account(client: TestClient, engine: Engine) -> None:
+    owner = str(uuid.uuid4())
+    state = _play(client, "FT-3", actor=owner)
+    assert state["owned"] is True
+    deleted = client.post(f"{MAINTENANCE}/user-assessments/delete", json={"userId": owner}).json()
+    assert deleted["deleted"] >= 1
+    with Session(engine) as session:
+        assert session.get(FunnelSession, state["sessionId"]) is None
+        assert not session.scalar(
+            select(func.count())
+            .select_from(FunnelAnswer)
+            .where(FunnelAnswer.session_id == state["sessionId"])
+        )
+
+
+def test_anonymous_interviews_past_the_ttl_are_deleted_owned_ones_are_not(
+    client: TestClient, engine: Engine
+) -> None:
+    long_ago = datetime(2020, 1, 1, tzinfo=UTC).replace(tzinfo=None)
+    anonymous, owned = str(uuid.uuid4()), str(uuid.uuid4())
+    with Session(engine) as session:
+        for session_id, owner in ((anonymous, None), (owned, str(uuid.uuid4()))):
+            session.add(
+                FunnelSession(
+                    id=session_id,
+                    owner_id=owner,
+                    consent_given=True,
+                    status="open",
+                    content_version="2.0",
+                    rules_version="2.0",
+                    created_at=long_ago,
+                )
+            )
+        session.commit()
+        session.add(FunnelAnswer(session_id=anonymous, step_key="AGE", value_json="40"))
+        session.commit()
+    cutoff = (long_ago + timedelta(days=1)).isoformat()
+    client.post(f"{MAINTENANCE}/unclaimed-assessments/delete", json={"before": cutoff})
+    with Session(engine) as session:
+        assert session.get(FunnelSession, anonymous) is None
+        assert session.get(FunnelSession, owned) is not None
+        session.delete(session.get(FunnelSession, owned))
+        session.commit()

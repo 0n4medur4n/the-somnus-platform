@@ -73,6 +73,11 @@ def test_all_schema_artifacts_are_present() -> None:
         "UserAssessmentsResponse",
         "OwnAssessment",
         "OwnAssessmentsResponse",
+        "FunnelState",
+        "FunnelCreateRequest",
+        "FunnelAnswerRequest",
+        "FunnelRewindRequest",
+        "FunnelConfigResponse",
     }
     present = {path.stem for path in SCHEMA_DIR.glob("*.json")}
     assert expected <= present
@@ -356,3 +361,56 @@ def test_level_enum_parity() -> None:
     branches = schema["properties"]["level"]["anyOf"]
     enum_branch = next(branch for branch in branches if "enum" in branch)
     assert enum_branch["enum"] == [level.value for level in SafetyLevelId]
+
+
+# --- the v2 interview (embudo v0.2) ---
+
+
+def test_every_v2_state_of_an_interview_conforms() -> None:
+    """Plays two vignettes through the real routes (SQLite) and validates every
+    state the provider returns, and every request it accepted, against the
+    schemas generated from the Zod contract."""
+    from fastapi.testclient import TestClient
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from morpheo.funnel.artifact import funnel_artifact
+    from morpheo.funnel.interview import Answer, next_step
+    from morpheo.funnel.vignettes import answer_request, load_vignettes, scripted_answer
+    from morpheo.infrastructure.models import Base, FunnelAnswer, FunnelSession
+    from morpheo.main import create_app
+    from morpheo.schemas.funnel import FunnelConfigResponseDTO
+    from morpheo.settings.config import Settings
+
+    app = create_app(Settings(_env_file=None))
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    Base.metadata.create_all(engine, tables=[FunnelSession.__table__, FunnelAnswer.__table__])
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    artifact = funnel_artifact()
+    state_schema, answer_schema = _schema("FunnelState"), _schema("FunnelAnswerRequest")
+    jsonschema.validate({"consentGiven": True}, _schema("FunnelCreateRequest"))
+    jsonschema.validate({"key": "Q05"}, _schema("FunnelRewindRequest"))
+    jsonschema.validate(
+        _dump(FunnelConfigResponseDTO(active_flow="v2")), _schema("FunnelConfigResponse")
+    )
+    with TestClient(app) as client:
+        for vignette in [v for v in load_vignettes() if v["id"] in ("FT-4", "V-12")]:
+            state = client.post("/internal/v1/funnel/sessions", json={"consentGiven": True})
+            body = state.json()
+            answers: dict[str, Answer] = {}
+            while body["step"] is not None:
+                jsonschema.validate(body, state_schema)
+                step = next_step(artifact, answers, app.state.instruments)
+                assert step is not None
+                answer, _ = scripted_answer(vignette, step)
+                request = answer_request(step.key, answer, step.definition)
+                jsonschema.validate(request, answer_schema)
+                body = client.post(
+                    f"/internal/v1/funnel/sessions/{body['sessionId']}/answers", json=request
+                ).json()
+                answers[step.key] = answer
+            jsonschema.validate(body, state_schema)
+            assert body["result"]["texts"]

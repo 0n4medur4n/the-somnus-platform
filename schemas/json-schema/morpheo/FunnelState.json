@@ -560,6 +560,72 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "instruments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "completed",
+                              "declined",
+                              "incomplete",
+                              "pending_file"
+                            ]
+                          },
+                          "total": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "band": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "placement": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "name",
+                          "status",
+                          "total",
+                          "band",
+                          "placement"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -569,7 +635,8 @@
                     "pendingData",
                     "phraseIds",
                     "branchesOpened",
-                    "orientations"
+                    "orientations",
+                    "instruments"
                   ],
                   "additionalProperties": false
                 },
