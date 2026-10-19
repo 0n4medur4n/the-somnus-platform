@@ -145,3 +145,7 @@ prohíbe texto libre en el payload de un evento y la fila de export se construye
 con una lista fija de campos que no incluye `justification`, así que el texto no
 puede llegar a BigQuery por ninguna vía. El visor de auditoría sí lo muestra, a
 través de su propio allowlist y junto a la categoría.
+
+## Morpheo invitations and user management
+
+User management (ADR 0021): the Users screen begins with Morpheo invitations (`admin_users_invite`, superadmin only) and the existing staff invitation section (`admin_roles_assign`). Morpheo branches are adult/professional awaiting verification; all four email languages are selectable. The detail includes available operational profile/contact data, roles with scope, organization memberships and dates. Clinical answers/reports still require the existing break-glass path.

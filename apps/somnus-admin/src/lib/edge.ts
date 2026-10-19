@@ -56,6 +56,9 @@ import type {
   DriveStateRequest,
   DriveUploadStartRequest,
   DriveUploadStartResponse,
+  PlatformInvitationCreateRequest,
+  PlatformInvitationCreateResponse,
+  PlatformInvitationListResponse,
   SessionResponse,
   SignInLinkRequest,
   SrcEnrichmentPage,
@@ -79,6 +82,14 @@ import { RawUpload } from "./raw-upload.js";
  * that would have made it.
  */
 export const edge = {
+  platformInvitations: (): Promise<PlatformInvitationListResponse> =>
+    api.get<PlatformInvitationListResponse>("/admin/v1/platform-invitations"),
+  invitePlatformUser: (
+    body: PlatformInvitationCreateRequest,
+  ): Promise<PlatformInvitationCreateResponse> =>
+    api.post<PlatformInvitationCreateResponse>("/admin/v1/platform-invitations", body),
+  revokePlatformInvitation: (id: string): Promise<void> =>
+    api.post<void>(`/admin/v1/platform-invitations/${encodeURIComponent(id)}/revoke`, {}),
   createSession: (idToken: string): Promise<SessionResponse> =>
     api.post<SessionResponse>("/v1/sessions", { idToken }),
   adminMe: (): Promise<AdminMeResponse> => api.get<AdminMeResponse>("/admin/v1/me"),
