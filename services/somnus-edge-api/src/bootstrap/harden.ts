@@ -34,18 +34,27 @@ const CSRF_EXEMPT = new Set(["/v1/sessions"]);
  * claim (`/v1/assessments/claim`) DOES ride the session cookie and stays
  * protected.
  *
+ * The v2 interview (`/v1/funnel`) is anonymous in the same way (the person
+ * may be signed in or not, and nothing in it rides a session to act on the
+ * person's behalf): start it, answer a step, go back, rewind to correct. Every
+ * route is a POST on the interview's own id, which is unguessable; the owner's
+ * PDF is a GET and mutates nothing.
+ *
  * `/v1/invitations/preview` is exempt for the same reason: it is the pre-login
  * lookup behind the invitation accept screen (Addendum A Checkpoint 14.2), so
  * by definition there is no session cookie yet to forge against. It reads; it
  * creates nothing. `/v1/invitations/accept` rides the session and stays
  * protected.
  */
-function isCsrfExempt(path: string): boolean {
+const FUNNEL_ANONYMOUS_POST = /^\/v1\/funnel\/sessions(?:\/[^/]+\/(?:answers|back|rewind))?$/;
+
+export function isCsrfExempt(path: string): boolean {
   if (CSRF_EXEMPT.has(path)) return true;
   if (path === "/v1/invitations/preview") return true;
   // Asking for a sign-in link happens before any session exists -- nothing to
   // forge against. It is rate-limited per IP and per address instead.
   if (path === "/v1/auth/email-link") return true;
+  if (FUNNEL_ANONYMOUS_POST.test(path)) return true;
   if (path === "/v1/assessments") return true;
   return path.startsWith("/v1/assessments/") && path !== "/v1/assessments/claim";
 }
