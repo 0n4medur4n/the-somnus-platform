@@ -17,6 +17,7 @@ import { HealthModule } from "./modules/health/health.module.js";
 import { MeModule } from "./modules/me/me.module.js";
 import { MorpheoModule } from "./modules/morpheo/morpheo.module.js";
 import { OrganizationsModule } from "./modules/organizations/organizations.module.js";
+import { PlatformInvitationModule } from "./modules/platform-invitation/platform-invitation.module.js";
 import { RegistrationModule } from "./modules/registration/registration.module.js";
 import { ReportsModule } from "./modules/reports/reports.module.js";
 import { SessionsModule } from "./modules/sessions/sessions.module.js";
@@ -47,6 +48,7 @@ export const ROOT_LOGGER: Logger = createLogger({
     ConsentModule,
     RegistrationModule,
     StaffInvitationModule,
+    PlatformInvitationModule,
     OrganizationsModule,
     MorpheoModule,
     ReportsModule,
