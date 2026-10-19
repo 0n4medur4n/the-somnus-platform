@@ -13,6 +13,7 @@ import { InternalClientsModule } from "./infrastructure/internal-clients/interna
 import { AdminModule } from "./modules/admin/admin.module.js";
 import { AuthEmailLinkModule } from "./modules/auth-email-link/auth-email-link.module.js";
 import { ConsentModule } from "./modules/consent/consent.module.js";
+import { FunnelModule } from "./modules/funnel/funnel.module.js";
 import { HealthModule } from "./modules/health/health.module.js";
 import { MeModule } from "./modules/me/me.module.js";
 import { MorpheoModule } from "./modules/morpheo/morpheo.module.js";
@@ -46,6 +47,7 @@ export const ROOT_LOGGER: Logger = createLogger({
     SessionsModule,
     MeModule,
     ConsentModule,
+    FunnelModule,
     RegistrationModule,
     StaffInvitationModule,
     PlatformInvitationModule,
