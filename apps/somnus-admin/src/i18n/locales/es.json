@@ -816,7 +816,7 @@
     "subtitle": "Invita a alguien del equipo con su rol. Recibirá un correo para entrar en la consola y aceptar.",
     "add": "Añadir persona",
     "formTitle": "Invitar a una persona del equipo",
-    "formHint": "La cuenta se crea cuando la persona entra con el enlace y acepta; hasta entonces no tiene acceso a nada.",
+    "formHint": "El rol invitado se activa cuando la persona abre el enlace, confirma la política de privacidad y acepta la invitación.",
     "firstName": "Nombre",
     "lastName": "Apellidos",
     "colName": "Nombre",
