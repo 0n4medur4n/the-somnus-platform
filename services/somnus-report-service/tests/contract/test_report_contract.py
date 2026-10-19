@@ -101,3 +101,16 @@ def test_the_person_report_response_conforms() -> None:
         jsonschema.validate(
             dto.model_dump(by_alias=True, mode="json"), _schema("PersonReportResponse")
         )
+
+
+def test_the_person_reports_erasure_conforms() -> None:
+    from report.schemas.render import PersonReportsDeleteRequestDTO, PersonReportsDeleteResultDTO
+
+    request = PersonReportsDeleteRequestDTO(assessment_ids=["s1", "s2"])
+    jsonschema.validate(
+        request.model_dump(by_alias=True, mode="json"), _schema("PersonReportsDeleteRequest")
+    )
+    jsonschema.validate(
+        PersonReportsDeleteResultDTO(deleted=3).model_dump(by_alias=True, mode="json"),
+        _schema("PersonReportsDeleteResult"),
+    )

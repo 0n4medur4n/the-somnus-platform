@@ -1,5 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { type MeResponse, MeResponseSchema, type ProfilePatchRequest } from "@somnus/api-contracts";
+import {
+  type MeResponse,
+  MeResponseSchema,
+  OwnAssessmentsResponseSchema,
+  type ProfilePatchRequest,
+} from "@somnus/api-contracts";
 import type { CloudRunClient } from "@somnus/cloud-run-client";
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import { correlationOf, requireSession } from "../../common/composition.util.js";
@@ -7,6 +12,7 @@ import { ACTOR_ID_HEADER } from "../../infrastructure/internal-clients/headers.j
 import {
   IDENTITY_CLIENT,
   MORPHEO_CLIENT,
+  REPORT_CLIENT,
   WORKER_CLIENT,
 } from "../../infrastructure/internal-clients/internal-clients.module.js";
 import {
@@ -33,6 +39,7 @@ export class MeService {
     private readonly sessions: SessionService,
     @Inject(PROFILE_PHOTO_STORE) private readonly photos: ProfilePhotoStore,
     @Inject(WORKER_CLIENT) private readonly worker: CloudRunClient,
+    @Inject(REPORT_CLIENT) private readonly report: CloudRunClient,
   ) {}
 
   private actorOf(session: SessionRecord | undefined, correlationId: string): Promise<string> {
@@ -135,7 +142,9 @@ export class MeService {
 
   /**
    * Account deletion (build plan §21 / Checkpoint 13.2, right to erasure). The
-   * edge orchestrates: erase the user's assessments in Morpheo, erase their staff
+   * edge orchestrates: erase the stored reports of the user's saved assessments
+   * (the report service knows them only by assessment id, so the edge names
+   * them first), erase the user's assessments in Morpheo, erase their staff
    * Drive identity in the worker (ADR 0019 -- a no-op for anyone who never set it
    * up), erase the profile photo from edge-api's own bucket, erase the identity
    * account (and its isolated consent), then revoke the session so the cookie
@@ -150,6 +159,21 @@ export class MeService {
     const record = requireSession(session, correlationId);
     const actorId = await this.actorResolver.resolve(record, correlationId);
 
+    const own = await this.morpheo.get("/internal/v1/assessments/mine", {
+      correlationId,
+      headers: { [ACTOR_ID_HEADER]: actorId },
+    });
+    const parsed = OwnAssessmentsResponseSchema.safeParse(own.body);
+    if (!parsed.success) {
+      throw new SomnusError(ErrorCode.INTERNAL, "Unexpected morpheo response.", { correlationId });
+    }
+    const assessmentIds = parsed.data.assessments.map((assessment) => assessment.sessionId);
+    if (assessmentIds.length > 0) {
+      await this.report.post("/internal/v1/reports/person/delete", {
+        correlationId,
+        body: { assessmentIds },
+      });
+    }
     await this.morpheo.post("/internal/v1/maintenance/user-assessments/delete", {
       correlationId,
       body: { userId: actorId },

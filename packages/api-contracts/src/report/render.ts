@@ -107,10 +107,32 @@ export const PersonReportResponseSchema = z
   .strict();
 export type PersonReportResponse = z.infer<typeof PersonReportResponseSchema>;
 
+/**
+ * edge -> report: erase the stored person's reports of these assessments (the
+ * right to erasure, build plan §21). The report service keys them by assessment
+ * id only, so the edge -- which knows whose assessments they are -- names them.
+ */
+export const PersonReportsDeleteRequestSchema = z
+  .object({
+    assessmentIds: z.array(z.string().min(1).max(64)).max(1000),
+  })
+  .strict();
+export type PersonReportsDeleteRequest = z.infer<typeof PersonReportsDeleteRequestSchema>;
+
+/** report -> edge: how many stored reports (all languages) were erased. */
+export const PersonReportsDeleteResultSchema = z
+  .object({
+    deleted: z.number().int().min(0),
+  })
+  .strict();
+export type PersonReportsDeleteResult = z.infer<typeof PersonReportsDeleteResultSchema>;
+
 /** The named set exported as JSON Schema artifacts (schemas/json-schema/report). */
 export const REPORT_CONTRACT_SCHEMAS = {
   ReportRenderRequest: ReportRenderRequestSchema,
   ReportRef: ReportRefSchema,
   ReportPdf: ReportPdfSchema,
   PersonReportResponse: PersonReportResponseSchema,
+  PersonReportsDeleteRequest: PersonReportsDeleteRequestSchema,
+  PersonReportsDeleteResult: PersonReportsDeleteResultSchema,
 } as const;

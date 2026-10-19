@@ -24,6 +24,8 @@ const { client: unusedMorpheo } = makeFakeIdentityClient(() => ({ status: 204 })
 const noopSessions = { revoke: async () => undefined } as unknown as SessionService;
 /** The worker is reached only by deleteAccount (the staff Drive's erasure). */
 const { client: unusedWorker } = makeFakeIdentityClient(() => ({ status: 200, body: {} }));
+const NOW = "2026-10-19T10:00:00+00:00";
+const { client: unusedReport } = makeFakeIdentityClient(() => ({ status: 200, body: {} }));
 
 const FAST_RETRY = {
   maxAttempts: 3,
@@ -58,6 +60,7 @@ describe("MeService (composition)", () => {
       noopSessions,
       new InMemoryProfilePhotoStore(),
       unusedWorker,
+      unusedReport,
     );
 
     const result = await service.getMe(SESSION, "corr-1");
@@ -81,6 +84,7 @@ describe("MeService (composition)", () => {
       noopSessions,
       new InMemoryProfilePhotoStore(),
       unusedWorker,
+      unusedReport,
     );
 
     await expect(
@@ -98,6 +102,7 @@ describe("MeService (composition)", () => {
       noopSessions,
       new InMemoryProfilePhotoStore(),
       unusedWorker,
+      unusedReport,
     );
 
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({ code: "INTERNAL" });
@@ -115,19 +120,43 @@ describe("MeService (composition)", () => {
       noopSessions,
       new InMemoryProfilePhotoStore(),
       unusedWorker,
+      unusedReport,
     );
 
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("erases morpheo assessments, deletes the identity account, then revokes the session", async () => {
+  it("erases the stored reports, then morpheo assessments, the account, then the session", async () => {
+    const order: string[] = [];
     const morpheo = makeFakeIdentityClient((req) => {
+      order.push(`morpheo ${req.method} ${req.path}`);
+      if (req.method === "GET") {
+        expect(req.path).toBe("/internal/v1/assessments/mine");
+        expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
+        return {
+          status: 200,
+          body: {
+            assessments: [
+              { sessionId: "sess-1", role: "adult", level: "L3", stop: false, createdAt: NOW },
+              { sessionId: "sess-2", role: "adult", level: null, stop: false, createdAt: NOW },
+            ],
+          },
+        };
+      }
       expect(req.path).toBe("/internal/v1/maintenance/user-assessments/delete");
       expect(req.method).toBe("POST");
       expect(JSON.parse(req.body ?? "{}")).toEqual({ userId: ACTOR });
-      return { status: 200, body: { deleted: 1 } };
+      return { status: 200, body: { deleted: 2 } };
+    });
+    const report = makeFakeIdentityClient((req) => {
+      order.push(`report ${req.method} ${req.path}`);
+      expect(req.path).toBe("/internal/v1/reports/person/delete");
+      expect(req.method).toBe("POST");
+      expect(JSON.parse(req.body ?? "{}")).toEqual({ assessmentIds: ["sess-1", "sess-2"] });
+      return { status: 200, body: { deleted: 3 } };
     });
     const identity = makeFakeIdentityClient((req) => {
+      order.push(`identity ${req.method} ${req.path}`);
       expect(req.path).toBe("/v1/me");
       expect(req.method).toBe("DELETE");
       expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
@@ -142,6 +171,7 @@ describe("MeService (composition)", () => {
     const photos = new InMemoryProfilePhotoStore();
     await photos.put(ACTOR, { bytes: Buffer.from("photo"), type: "image/webp" });
     const worker = makeFakeIdentityClient((req) => {
+      order.push(`worker ${req.method} ${req.path}`);
       expect(req.path).toBe("/internal/v1/drive/account/erase");
       expect(req.method).toBe("POST");
       expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
@@ -154,17 +184,49 @@ describe("MeService (composition)", () => {
       sessions,
       photos,
       worker.client,
+      report.client,
     );
 
     await expect(service.deleteAccount(SESSION, "corr-1")).resolves.toBeUndefined();
 
+    // The reports are named before morpheo forgets whose assessments they were.
+    expect(order).toEqual([
+      "morpheo GET /internal/v1/assessments/mine",
+      "report POST /internal/v1/reports/person/delete",
+      "morpheo POST /internal/v1/maintenance/user-assessments/delete",
+      "worker POST /internal/v1/drive/account/erase",
+      "identity DELETE /v1/me",
+    ]);
     // The profile photo goes with the account (right to erasure).
     expect(await photos.get(ACTOR)).toBeNull();
-    expect(morpheo.requests).toHaveLength(1);
-    expect(identity.requests).toHaveLength(1);
-    // The staff Drive identity goes too (ADR 0019): email label and keys.
-    expect(worker.requests).toHaveLength(1);
     expect(revoked).toEqual(["s1"]);
+  });
+
+  it("does not call the report service for someone with no saved assessment", async () => {
+    const morpheo = makeFakeIdentityClient((req) =>
+      req.method === "GET"
+        ? { status: 200, body: { assessments: [] } }
+        : { status: 200, body: { deleted: 0 } },
+    );
+    const report = makeFakeIdentityClient(() => ({ status: 200, body: { deleted: 0 } }));
+    const identity = makeFakeIdentityClient(() => ({ status: 204 }));
+    const worker = makeFakeIdentityClient(() => ({
+      status: 200,
+      body: { erased: false, removedShares: 0 },
+    }));
+    const service = new MeService(
+      identity.client,
+      morpheo.client,
+      fakeResolver,
+      noopSessions,
+      new InMemoryProfilePhotoStore(),
+      worker.client,
+      report.client,
+    );
+
+    await expect(service.deleteAccount(SESSION, "corr-1")).resolves.toBeUndefined();
+    expect(report.requests).toHaveLength(0);
+    expect(identity.requests).toHaveLength(1);
   });
 });
 
@@ -186,6 +248,7 @@ describe("MeService timeout/retry behavior", () => {
       noopSessions,
       new InMemoryProfilePhotoStore(),
       unusedWorker,
+      unusedReport,
     );
 
     const result = await service.getMe(SESSION, "corr-1");
@@ -216,6 +279,7 @@ describe("MeService timeout/retry behavior", () => {
       noopSessions,
       new InMemoryProfilePhotoStore(),
       unusedWorker,
+      unusedReport,
     );
 
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({
