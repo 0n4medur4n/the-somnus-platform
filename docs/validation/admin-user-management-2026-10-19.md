@@ -13,7 +13,7 @@ verificación y no reciben roles profesionales automáticamente.
 | `pnpm.cmd run check` | Exit 0; 779 archivos; 11 warnings y 1 info existentes. |
 | `pnpm.cmd run typecheck` y `pnpm.cmd run build` | Exit 0 en ambos. |
 | `pnpm.cmd run test:run --maxWorkers=1` con Git Bash en PATH | 37 archivos, 485 pruebas, exit 0. |
-| `pnpm.cmd --filter @somnus/admin test:coverage --maxWorkers=1` | 24 archivos, 190 pruebas; líneas 90,86 %, funciones 86,34 %, ramas 76,34 %; exit 0. |
+| `pnpm.cmd --filter @somnus/admin test:coverage --maxWorkers=1` | 24 archivos, 191 pruebas; líneas 90,86 %, funciones 86,34 %, ramas 76,34 %; exit 0. |
 | `pnpm.cmd --filter @somnus/app test:coverage --maxWorkers=1` | 22 archivos, 158 pruebas; líneas 85,38 %, funciones 81,60 %, ramas 77,77 %; exit 0. |
 | API: `firebase emulators:exec ... 'pnpm --filter @somnus/edge-api test:coverage'` | 34 archivos, 611 pruebas; líneas 90,80 %, funciones 88,55 %, ramas 79,63 %; exit 0. |
 | Identity: `pnpm --filter @somnus/identity-service test:coverage`, Cloud Build `509b2ba8-d73a-44cc-9ace-57b5cd5760e6` | SUCCESS; 36 archivos, 606 pruebas; líneas 96,33 %, ramas 87,42 % globales; repositorios Identity 77,41 % ramas. MySQL 8.4 efímero en loopback; ningún acceso a TiDB. |
@@ -64,11 +64,20 @@ manifiesto conserva hashes del último contenido enviado. No se usan bases reale
 
 ## Publicación pendiente
 
-Faltan CI completo (todos los jobs), los cuatro E2E nuevos, las dos imágenes,
+El primer CI del PR ejecutó correctamente sus 15 jobs de validación, incluidos
+los cinco Dockerfiles y 26 E2E (los cuatro nuevos es/ca incluidos). Su paso de
+Hosting se canceló al publicar el ajuste del runner Cloud Build. La compilación
+de publicación inicial requería activar BuildKit; el runner ya lo fija en ambos
+pasos. Se revisaron visualmente Usuarios y el formulario en Chrome local con
+respuestas ficticias interceptadas, sin tráfico hacia cuentas reales.
+
+Faltan confirmar el CI del último commit, las dos imágenes de publicación,
 la migración como Job con referencia al secreto y la verificación live. El
 manifiesto separado `docs/proposals/cloudbuild-release-manifest.json` describe
 el contexto mínimo de las imágenes; excluye frontends, documentos clínicos,
 credenciales y estado Terraform. Hosting espera todos los jobs del CI.
+Esta sección registra el estado anterior a publicar; la evidencia final de
+publicación se incorporará a la descripción del PR #1.
 
 No se han enviado invitaciones reales como prueba ni se ha verificado entrega
 en una bandeja de entrada. `emailQueued` significa aceptado por la cola.
