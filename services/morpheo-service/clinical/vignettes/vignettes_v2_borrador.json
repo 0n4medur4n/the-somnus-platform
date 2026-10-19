@@ -979,7 +979,10 @@
           "T_RESPIRACION"
         ]
       },
-      "note": "«me despierto ahogándome» no es un término de riesgo de S1 (habla de la noche, no de ahora)."
+      "note": "«me despierto ahogándome» no es un término de riesgo de S1 (habla de la noche, no de ahora). Modo relato: «ronco» no es «ronca fuerte», así que la persona corrige Q15 en la pantalla de confirmación.",
+      "narrative_decisions": {
+        "Q15": { "decision": "corregido", "value": ["ronca_fuerte", "ahogo"] }
+      }
     }
   ]
 }

@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 from typing import Literal
 
-from pydantic import Field, ValidationError
+from pydantic import Field, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["development", "test", "staging", "production"]
@@ -53,6 +53,40 @@ class Settings(BaseSettings):
     # skipped. The directory can be overridden for tests.
     instruments_enabled: bool = Field(default=True, alias="INSTRUMENTS_ENABLED")
     instruments_source_dir: str | None = Field(default=None, alias="INSTRUMENTS_SOURCE_DIR")
+    # The AI of v0.2 p. 14 (extraction from the narrative, and the risk screen):
+    # on (owner decision 19/10/2026). It only runs with an OPENAI_API_KEY; with
+    # the flag off or no key the interview asks every question, as before.
+    ai_extraction_enabled: bool = Field(default=True, alias="AI_EXTRACTION_ENABLED")
+    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
+    ai_model: str = Field(default="gpt-6-luna", min_length=1, alias="AI_EXTRACTION_MODEL")
+    # Effort "none" so the low temperature applies (a reasoning model takes no
+    # sampling parameters otherwise).
+    ai_reasoning_effort: Literal["none", "low", "medium", "high"] = Field(
+        default="none", alias="AI_EXTRACTION_REASONING_EFFORT"
+    )
+    ai_temperature: float = Field(default=0.0, ge=0.0, le=1.0, alias="AI_EXTRACTION_TEMPERATURE")
+    # Short: a slow model never holds the person up (the edge waits longer).
+    ai_timeout_seconds: float = Field(default=8.0, gt=0, le=20, alias="AI_TIMEOUT_SECONDS")
+    # Recorded model outputs instead of OpenAI (local runs and E2E only).
+    ai_fixture_file: str | None = Field(default=None, alias="AI_FIXTURE_FILE")
+    # Real patients' text may reach the model only through the EU endpoint
+    # (proposal 2026-10-18 §c): with this on and a key, any other base URL
+    # stops the service at startup. Set only where real patients are served.
+    patient_data_allowed: bool = Field(default=False, alias="PATIENT_DATA_ALLOWED")
+
+    @model_validator(mode="after")
+    def _eu_only_for_patient_data(self) -> Settings:
+        eu = "https://eu.api.openai.com/v1"
+        if (
+            self.patient_data_allowed
+            and self.openai_api_key
+            and self.openai_base_url.rstrip("/") != eu
+        ):
+            raise ValueError(f"PATIENT_DATA_ALLOWED=true needs OPENAI_BASE_URL={eu}")
+        if self.ai_fixture_file and self.env not in ("development", "test"):
+            raise ValueError("AI_FIXTURE_FILE is for local runs and tests only")
+        return self
 
 
 def load_settings() -> Settings:
