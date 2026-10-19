@@ -105,7 +105,11 @@ def test_only_the_step_being_served_can_be_answered(client: TestClient) -> None:
     state = _start(client)
     response = _answer(client, state, {"key": "Q05", "value": 4})
     assert response.status_code == 422
-    assert response.json() == {"detail": "not_the_current_step"}
+    error = response.json()["error"]
+    assert (error["code"], error["details"]) == (
+        "VALIDATION_FAILED",
+        {"reason": "not_the_current_step"},
+    )
 
 
 def test_an_answer_must_fit_the_step(client: TestClient) -> None:
@@ -128,7 +132,7 @@ def test_free_text_with_identifying_data_is_refused(client: TestClient) -> None:
         client, state, {"key": "Q01", "value": "Duermo mal, llamadme al 612 345 678"}
     )
     assert response.status_code == 422
-    assert response.json() == {"detail": "identifying_data"}
+    assert response.json()["error"]["details"] == {"reason": "identifying_data"}
 
 
 def test_s1_yes_at_the_start_stops_with_the_safety_text(client: TestClient) -> None:

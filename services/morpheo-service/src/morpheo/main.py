@@ -17,6 +17,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import sessionmaker
 
 from morpheo.api.assessment import router as assessment_router
+from morpheo.api.funnel import register_funnel_errors
 from morpheo.api.funnel import router as funnel_router
 from morpheo.api.health import router as health_router
 from morpheo.api.maintenance import router as maintenance_router
@@ -59,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.add_middleware(CorrelationIdMiddleware)
     register_exception_handlers(app)
+    register_funnel_errors(app)
 
     app.include_router(health_router)
     app.include_router(version_router)
