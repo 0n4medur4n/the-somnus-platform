@@ -1,0 +1,6707 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/admin/v1/me": {
+      "get": {
+        "operationId": "AdminMeController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Who the console is talking to, and what they may do.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/users/search": {
+      "post": {
+        "operationId": "AdminOperationsController_searchUsers",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserSearchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Search accounts (metadata only).",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/users/overview": {
+      "get": {
+        "operationId": "AdminOperationsController_usersOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Dashboard figures about accounts: counts only, nothing identifying.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/users/{userId}": {
+      "get": {
+        "operationId": "AdminOperationsController_userDetail",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "One account: metadata, profiles, internal roles, memberships.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/users/{userId}/status": {
+      "patch": {
+        "operationId": "AdminOperationsController_setUserStatus",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminAccountStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Suspend or reactivate an account. Reason required.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/deletion-requests": {
+      "get": {
+        "operationId": "AdminOperationsController_deletionRequests",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Pending right-to-erasure requests.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/deletion-requests/{requestId}/decision": {
+      "post": {
+        "operationId": "AdminOperationsController_decideDeletion",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminDeletionDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Complete (erase) or cancel a deletion request.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/organizations": {
+      "get": {
+        "operationId": "AdminOperationsController_organizations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Every organization.",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminOperationsController_createOrganization",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminOrganizationCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create an organization. The creating admin does not join it.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/organizations/{organizationId}/status": {
+      "patch": {
+        "operationId": "AdminOperationsController_setOrganizationStatus",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminOrganizationStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Approve (activate) or suspend an organization.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/organizations/{organizationId}/members": {
+      "get": {
+        "operationId": "AdminOperationsController_organizationMembers",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The organization roster, by opaque user id.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/verification-cases": {
+      "get": {
+        "operationId": "AdminOperationsController_verificationQueue",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The professional verification queue.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/verification-cases/{caseId}/decision": {
+      "post": {
+        "operationId": "AdminOperationsController_decideVerification",
+        "parameters": [
+          {
+            "name": "caseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminVerificationDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Approve or reject a case. Reason required for both outcomes.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/roles/assign": {
+      "post": {
+        "operationId": "AdminOperationsController_assignRole",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRoleAssignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Assign an internal role. Never to oneself.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/content-review/items": {
+      "get": {
+        "operationId": "AdminContentReviewController_queue",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The AI content review queue (pending items only).",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/content-review/items/{itemId}/decision": {
+      "post": {
+        "operationId": "AdminContentReviewController_decide",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentReviewDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Approve or reject a candidate. Reason required for both outcomes.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/statistics": {
+      "post": {
+        "operationId": "AdminInsightsController_statistics",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminDashboardWindowDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Aggregate platform statistics (§A2.4). Never per-person.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/audit/query": {
+      "post": {
+        "operationId": "AdminInsightsController_auditQuery",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminAuditQueryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The audit log: actor, entity, action and date-range filters.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/audit/export": {
+      "post": {
+        "operationId": "AdminInsightsController_auditExport",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminAuditQueryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The same rows as CSV. platform_super_admin only.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/break-glass/reveal": {
+      "post": {
+        "operationId": "AdminBreakGlassController_reveal",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BreakGlassRevealDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Reveal an individual's clinical results. Justification required (§A2.3).",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/corpus/documents/search": {
+      "post": {
+        "operationId": "AdminCorpusController_search",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorpusSearchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List and search reference documents, retired ones included.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/corpus/documents/{documentId}": {
+      "get": {
+        "operationId": "AdminCorpusController_detail",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "One reference document, with the text it currently holds.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/corpus/documents": {
+      "post": {
+        "operationId": "AdminCorpusController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorpusDocumentCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a draft. A draft is part of no corpus version yet.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/corpus/documents/{documentId}/edit": {
+      "post": {
+        "operationId": "AdminCorpusController_edit",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorpusDocumentEditDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Edit a draft. A published document is retired and replaced, never rewritten.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/corpus/documents/{documentId}/publish": {
+      "post": {
+        "operationId": "AdminCorpusController_publish",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorpusPublishDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Publish a draft through §B4's rights gate, bumping the corpus version.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/corpus/documents/{documentId}/retire": {
+      "post": {
+        "operationId": "AdminCorpusController_retire",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorpusRetireDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Retire a published document. The only terminal action (§B3).",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/corpus/sources": {
+      "get": {
+        "operationId": "AdminCorpusController_sources",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The fifteen clinical sources, artifact fields read-only, with enrichments.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/corpus/documents/{documentId}/file": {
+      "post": {
+        "operationId": "AdminCorpusController_uploadFile",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Upload a PDF or Word original (raw body); its text becomes the draft's text.",
+        "tags": [
+          "admin"
+        ]
+      },
+      "get": {
+        "operationId": "AdminCorpusController_downloadFile",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Download the uploaded original, exactly as it was uploaded.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/corpus/documents/{documentId}/web-page": {
+      "post": {
+        "operationId": "AdminCorpusController_fetchWebPage",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorpusWebPageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Fetch one web page into a draft (never a crawl).",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/account": {
+      "get": {
+        "operationId": "AdminDriveController_account",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The caller's Drive identity (sealed; only its owner can open it).",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminDriveController_enroll",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveEnrollDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Set up the Drive: public keys and sealed private keys only.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/account/rewrap": {
+      "post": {
+        "operationId": "AdminDriveController_rewrap",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveRewrapDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "A new Drive passphrase (and, after a recovery, a new code).",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/account/state": {
+      "post": {
+        "operationId": "AdminDriveController_saveState",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveStateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Save the sealed list of verified colleague keys.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/account/reset": {
+      "post": {
+        "operationId": "AdminDriveController_reset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveEnrollDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Replace lost Drive keys. What only the old keys opened is gone.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/directory": {
+      "get": {
+        "operationId": "AdminDriveController_directory",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Colleagues who set up the Drive, with their public keys.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares": {
+      "get": {
+        "operationId": "AdminDriveController_shares",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The shared folders the caller belongs to.",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminDriveController_createShare",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveShareCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a shared folder, owned by the caller.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}": {
+      "get": {
+        "operationId": "AdminDriveController_share",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "One shared folder: its (sealed) nodes and its members.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/purge": {
+      "post": {
+        "operationId": "AdminDriveController_purgeShare",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete a shared folder and everything in it. Owners only.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/access": {
+      "post": {
+        "operationId": "AdminDriveController_addMember",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveMemberAddDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Share a folder with a colleague.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/accept": {
+      "post": {
+        "operationId": "AdminDriveController_acceptKey",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveMemberKeyAcceptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Replace the caller's own copy of the folder key, re-signed by them.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/access/{userId}/role": {
+      "post": {
+        "operationId": "AdminDriveController_setRole",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveMemberRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Change a member's role in a folder.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/access/{userId}/remove": {
+      "post": {
+        "operationId": "AdminDriveController_removeMember",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveMemberRemoveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Remove a member (or leave), rotating the folder key.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/folders": {
+      "post": {
+        "operationId": "AdminDriveController_createFolder",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveFolderCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a folder.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/uploads": {
+      "post": {
+        "operationId": "AdminDriveController_startUpload",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveUploadStartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Start a file revision.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/nodes/{nodeId}/revisions/{revision}/blocks/{index}": {
+      "put": {
+        "operationId": "AdminDriveController_putBlock",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "index",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Upload one encrypted block (application/octet-stream).",
+        "tags": [
+          "admin"
+        ]
+      },
+      "get": {
+        "operationId": "AdminDriveController_readBlock",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "index",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Download one encrypted block of the current revision.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/nodes/{nodeId}/revisions/{revision}/commit": {
+      "post": {
+        "operationId": "AdminDriveController_commit",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Make a fully uploaded revision the current one.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/nodes/{nodeId}/rename": {
+      "post": {
+        "operationId": "AdminDriveController_rename",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveRenameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Replace a node's sealed name.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/nodes/{nodeId}/move": {
+      "post": {
+        "operationId": "AdminDriveController_move",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveMoveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Move a node within its shared folder.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/nodes/{nodeId}/trash": {
+      "post": {
+        "operationId": "AdminDriveController_trash",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Move a node to the trash.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/nodes/{nodeId}/restore": {
+      "post": {
+        "operationId": "AdminDriveController_restore",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Restore a node from the trash.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/shares/{shareId}/nodes/{nodeId}/purge": {
+      "post": {
+        "operationId": "AdminDriveController_purgeNode",
+        "parameters": [
+          {
+            "name": "shareId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete a trashed node permanently. Owners only.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/staff-invitations": {
+      "get": {
+        "operationId": "AdminStaffInvitationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Recent staff invitations, newest first.",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminStaffInvitationsController_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Invite a member of staff (name, address, internal role) and email them.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/staff-invitations/{invitationId}/revoke": {
+      "post": {
+        "operationId": "AdminStaffInvitationsController_revoke",
+        "parameters": [
+          {
+            "name": "invitationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Withdraw a pending staff invitation.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/platform-invitations": {
+      "get": {
+        "operationId": "AdminPlatformInvitationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminPlatformInvitationsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/platform-invitations/{invitationId}/revoke": {
+      "post": {
+        "operationId": "AdminPlatformInvitationsController_revoke",
+        "parameters": [
+          {
+            "name": "invitationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/sessions": {
+      "post": {
+        "operationId": "SessionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Exchange a Firebase ID token for a session cookie.",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/v1/sessions/csrf": {
+      "get": {
+        "operationId": "SessionsController_csrf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Issue a CSRF token for the current session.",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/v1/sessions/current": {
+      "delete": {
+        "operationId": "SessionsController_destroy",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Revoke the current session and clear its cookies.",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/v1/staff-invitation": {
+      "get": {
+        "operationId": "StaffInvitationController_pending",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "What the signed-in address was invited as, if anything.",
+        "tags": [
+          "staff-invitation"
+        ]
+      }
+    },
+    "/v1/staff-invitation/accept": {
+      "post": {
+        "operationId": "StaffInvitationController_accept",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Accept the invitation: acknowledge the privacy policy and join.",
+        "tags": [
+          "staff-invitation"
+        ]
+      }
+    },
+    "/v1/platform-invitation/lookup": {
+      "post": {
+        "operationId": "PlatformInvitationController_lookup",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "platform-invitation"
+        ]
+      }
+    },
+    "/v1/platform-invitation/accept": {
+      "post": {
+        "operationId": "PlatformInvitationController_accept",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "platform-invitation"
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "HealthController_live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Liveness probe. Always 200 if the process is up.",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "HealthController_ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Readiness probe. Returns 200 when the service can serve traffic.",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/version": {
+      "get": {
+        "operationId": "VersionController_version",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Service build info (service, version, commit, env, node).",
+        "tags": [
+          "version"
+        ]
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "MeController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The current actor's user record and profile(s), composed from identity.",
+        "tags": [
+          "me"
+        ]
+      },
+      "delete": {
+        "operationId": "MeController_deleteAccount",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Delete the current actor's account (right to erasure); CSRF-protected.",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/profile": {
+      "patch": {
+        "operationId": "MeController_patchProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfilePatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Patch the current actor's individual profile via identity.",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/photo": {
+      "put": {
+        "operationId": "MeController_setPhoto",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Upload or replace the current actor's profile photo.",
+        "tags": [
+          "me"
+        ]
+      },
+      "get": {
+        "operationId": "MeController_getPhoto",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The current actor's own profile photo.",
+        "tags": [
+          "me"
+        ]
+      },
+      "delete": {
+        "operationId": "MeController_removePhoto",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Remove the current actor's profile photo.",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/legal-documents/current": {
+      "get": {
+        "operationId": "LegalDocumentsController_current",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The current published version of every purpose's legal document.",
+        "tags": [
+          "consent"
+        ]
+      }
+    },
+    "/v1/consents": {
+      "post": {
+        "operationId": "ConsentsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Record consent for one purpose against its current document version.",
+        "tags": [
+          "consent"
+        ]
+      }
+    },
+    "/v1/consents/current": {
+      "get": {
+        "operationId": "ConsentsController_current",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The actor's current consent standing for every purpose.",
+        "tags": [
+          "consent"
+        ]
+      }
+    },
+    "/v1/consents/receipts": {
+      "get": {
+        "operationId": "ConsentsController_receipts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Every consent the actor gave, newest first, with the exact document text signed.",
+        "tags": [
+          "consent"
+        ]
+      }
+    },
+    "/v1/consents/{receiptId}/withdraw": {
+      "post": {
+        "operationId": "ConsentsController_withdraw",
+        "parameters": [
+          {
+            "name": "receiptId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentWithdrawDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Withdraw a previously granted consent. Immediately effective.",
+        "tags": [
+          "consent"
+        ]
+      }
+    },
+    "/v1/registration": {
+      "post": {
+        "operationId": "RegistrationController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Provision the Somnus user for the current Firebase session.",
+        "tags": [
+          "registration"
+        ]
+      }
+    },
+    "/v1/organizations": {
+      "post": {
+        "operationId": "OrganizationsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create an organization (the actor becomes its owner).",
+        "tags": [
+          "organizations"
+        ]
+      }
+    },
+    "/v1/organizations/{organizationId}": {
+      "get": {
+        "operationId": "OrganizationsController_getById",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get an organization the actor may see.",
+        "tags": [
+          "organizations"
+        ]
+      }
+    },
+    "/v1/organizations/{organizationId}/members": {
+      "get": {
+        "operationId": "OrganizationsController_listMembers",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List the members of an organization.",
+        "tags": [
+          "organizations"
+        ]
+      }
+    },
+    "/v1/organizations/{organizationId}/invitations": {
+      "post": {
+        "operationId": "OrganizationsController_invite",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Invite someone to an organization.",
+        "tags": [
+          "organizations"
+        ]
+      }
+    },
+    "/v1/invitations/accept": {
+      "post": {
+        "operationId": "InvitationsController_accept",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationAcceptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Accept an organization invitation by token.",
+        "tags": [
+          "organizations"
+        ]
+      }
+    },
+    "/v1/invitations/preview": {
+      "post": {
+        "operationId": "InvitationPreviewController_preview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationPreviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Look up an invitation by token, before signing in.",
+        "tags": [
+          "organizations"
+        ]
+      }
+    },
+    "/v1/assessments/mine": {
+      "get": {
+        "operationId": "AssessmentsController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The signed-in person's own saved assessments, newest first.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/v1/assessments/content": {
+      "get": {
+        "operationId": "AssessmentsController_content",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Localized assessment display content (approved wording).",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/v1/assessments": {
+      "post": {
+        "operationId": "AssessmentsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Open an anonymous assessment session.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/v1/assessments/{sessionId}/answers": {
+      "post": {
+        "operationId": "AssessmentsController_submitAnswer",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerSubmitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Submit one validated answer and re-evaluate.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/v1/assessments/{sessionId}/summary": {
+      "get": {
+        "operationId": "AssessmentsController_summary",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The current deterministic result.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/v1/assessments/{sessionId}/claim-token": {
+      "post": {
+        "operationId": "AssessmentsController_claimToken",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Mint a single-use claim token for the auth handoff.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/v1/assessments/claim": {
+      "post": {
+        "operationId": "AssessmentsController_claim",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentClaimDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Claim an assessment (authenticated, exactly once).",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/v1/assessments/{sessionId}/snapshot": {
+      "get": {
+        "operationId": "AssessmentsController_snapshot",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The immutable snapshot frozen at claim (authenticated).",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/v1/reports": {
+      "post": {
+        "operationId": "ReportsController_render",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRenderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Render a report from an approved assessment result.",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/v1/reports/assessments/{sessionId}/pdf": {
+      "get": {
+        "operationId": "ReportsController_assessmentPdf",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The signed-in person's report for one of their saved assessments.",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/v1/assessments/{sessionId}/report": {
+      "get": {
+        "operationId": "PersonReportController_personReport",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The person's AI-written report for this assessment.",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/v1/auth/email-link": {
+      "post": {
+        "operationId": "AuthEmailLinkController_request",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInLinkRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Email a passwordless sign-in link, sent from The Somnus's domain.",
+        "tags": [
+          "auth"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "The Somnus — Edge API",
+    "description": "Public BFF: Firebase token verification, sessions, CSRF, CORS, composition.",
+    "version": "0.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "AdminUserSearchDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 320
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended",
+              "deleted"
+            ]
+          },
+          "limit": {
+            "default": 25,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminAccountStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "status",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AdminDeletionDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "cancel"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AdminOrganizationCreateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "AdminOrganizationStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "status",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AdminVerificationDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AdminRoleAssignDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "roleKey": {
+            "type": "string",
+            "enum": [
+              "individual_user",
+              "professional",
+              "organization_owner",
+              "organization_admin",
+              "professional_manager",
+              "clinical_supervisor",
+              "support_agent",
+              "professional_verifier",
+              "clinical_governance_reviewer",
+              "platform_admin",
+              "platform_super_admin"
+            ]
+          }
+        },
+        "required": [
+          "targetUserId",
+          "roleKey"
+        ],
+        "additionalProperties": false
+      },
+      "ContentReviewDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AdminDashboardWindowDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminAuditQueryDto": {
+        "type": "object",
+        "properties": {
+          "actorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "subjectType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "eventType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "BreakGlassRevealDto": {
+        "type": "object",
+        "properties": {
+          "subjectUserId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "support",
+              "safety",
+              "legal",
+              "other"
+            ]
+          },
+          "justification": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "subjectUserId",
+          "category",
+          "justification"
+        ],
+        "additionalProperties": false
+      },
+      "CorpusSearchDto": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "retired",
+              null
+            ],
+            "nullable": true
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 5,
+            "nullable": true
+          },
+          "scopeType": {
+            "type": "string",
+            "enum": [
+              "module",
+              "safety_rule",
+              "clinical_source",
+              "general",
+              null
+            ],
+            "nullable": true
+          },
+          "scopeKey": {
+            "type": "string",
+            "maxLength": 64,
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CorpusDocumentCreateDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "citation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "sourceType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 5
+          },
+          "rightsStatus": {
+            "type": "string",
+            "enum": [
+              "own_document",
+              "open_access",
+              "licensed",
+              "citation_only",
+              null
+            ],
+            "nullable": true
+          },
+          "rightsEvidence": {
+            "type": "object",
+            "properties": {
+              "licence": {
+                "type": "string",
+                "maxLength": 200,
+                "nullable": true
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 500,
+                "nullable": true
+              },
+              "holder": {
+                "type": "string",
+                "maxLength": 200,
+                "nullable": true
+              }
+            },
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "scopes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "scopeType": {
+                  "type": "string",
+                  "enum": [
+                    "module",
+                    "safety_rule",
+                    "clinical_source",
+                    "general"
+                  ]
+                },
+                "scopeKey": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "scopeType",
+                "scopeKey"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 200000,
+            "nullable": true
+          }
+        },
+        "required": [
+          "title",
+          "citation",
+          "sourceType",
+          "locale",
+          "scopes"
+        ],
+        "additionalProperties": false
+      },
+      "CorpusDocumentEditDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "nullable": true
+          },
+          "citation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "sourceType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "nullable": true
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 5,
+            "nullable": true
+          },
+          "rightsStatus": {
+            "type": "string",
+            "enum": [
+              "own_document",
+              "open_access",
+              "licensed",
+              "citation_only",
+              null
+            ],
+            "nullable": true
+          },
+          "rightsEvidence": {
+            "type": "object",
+            "properties": {
+              "licence": {
+                "type": "string",
+                "maxLength": 200,
+                "nullable": true
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 500,
+                "nullable": true
+              },
+              "holder": {
+                "type": "string",
+                "maxLength": 200,
+                "nullable": true
+              }
+            },
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "scopes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "scopeType": {
+                  "type": "string",
+                  "enum": [
+                    "module",
+                    "safety_rule",
+                    "clinical_source",
+                    "general"
+                  ]
+                },
+                "scopeKey": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "scopeType",
+                "scopeKey"
+              ],
+              "additionalProperties": false
+            },
+            "nullable": true
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 200000,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CorpusPublishDto": {
+        "type": "object",
+        "properties": {
+          "changelog": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "changelog"
+        ],
+        "additionalProperties": false
+      },
+      "CorpusRetireDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          },
+          "changelog": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason",
+          "changelog"
+        ],
+        "additionalProperties": false
+      },
+      "CorpusWebPageDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "DriveEnrollDto": {
+        "type": "object",
+        "properties": {
+          "encPublicKey": {
+            "type": "string",
+            "maxLength": 216,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+          },
+          "signPublicKey": {
+            "type": "string",
+            "maxLength": 216,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+          },
+          "privateKeys": {
+            "type": "object",
+            "properties": {
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 2732,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          },
+          "passphraseWrap": {
+            "type": "object",
+            "properties": {
+              "kdf": {
+                "type": "string",
+                "enum": [
+                  "PBKDF2-SHA256"
+                ]
+              },
+              "iterations": {
+                "type": "integer",
+                "minimum": 600000,
+                "maximum": 10000000
+              },
+              "salt": {
+                "type": "string",
+                "maxLength": 44,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "kdf",
+              "iterations",
+              "salt",
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          },
+          "recoveryWrap": {
+            "type": "object",
+            "properties": {
+              "kdf": {
+                "type": "string",
+                "enum": [
+                  "HKDF-SHA256"
+                ]
+              },
+              "salt": {
+                "type": "string",
+                "maxLength": 44,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "kdf",
+              "salt",
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "encPublicKey",
+          "signPublicKey",
+          "privateKeys",
+          "passphraseWrap",
+          "recoveryWrap"
+        ],
+        "additionalProperties": false
+      },
+      "DriveRewrapDto": {
+        "type": "object",
+        "properties": {
+          "passphraseWrap": {
+            "type": "object",
+            "properties": {
+              "kdf": {
+                "type": "string",
+                "enum": [
+                  "PBKDF2-SHA256"
+                ]
+              },
+              "iterations": {
+                "type": "integer",
+                "minimum": 600000,
+                "maximum": 10000000
+              },
+              "salt": {
+                "type": "string",
+                "maxLength": 44,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "kdf",
+              "iterations",
+              "salt",
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          },
+          "recoveryWrap": {
+            "type": "object",
+            "properties": {
+              "kdf": {
+                "type": "string",
+                "enum": [
+                  "HKDF-SHA256"
+                ]
+              },
+              "salt": {
+                "type": "string",
+                "maxLength": 44,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "kdf",
+              "salt",
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "passphraseWrap"
+        ],
+        "additionalProperties": false
+      },
+      "DriveStateDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "object",
+            "properties": {
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 87384,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "DriveShareCreateDto": {
+        "type": "object",
+        "properties": {
+          "shareId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "root": {
+            "type": "object",
+            "properties": {
+              "nodeId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nodeKey": {
+                "type": "object",
+                "properties": {
+                  "iv": {
+                    "type": "string",
+                    "maxLength": 16,
+                    "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                  },
+                  "ct": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                  }
+                },
+                "required": [
+                  "iv",
+                  "ct"
+                ],
+                "additionalProperties": false
+              },
+              "meta": {
+                "type": "object",
+                "properties": {
+                  "iv": {
+                    "type": "string",
+                    "maxLength": 16,
+                    "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                  },
+                  "ct": {
+                    "type": "string",
+                    "maxLength": 5464,
+                    "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                  }
+                },
+                "required": [
+                  "iv",
+                  "ct"
+                ],
+                "additionalProperties": false
+              },
+              "signature": {
+                "type": "string",
+                "maxLength": 88,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "nodeId",
+              "nodeKey",
+              "meta",
+              "signature"
+            ],
+            "additionalProperties": false
+          },
+          "ownerKey": {
+            "type": "object",
+            "properties": {
+              "ephemeralPublicKey": {
+                "type": "string",
+                "maxLength": 216,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "signature": {
+                "type": "string",
+                "maxLength": 88,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "ephemeralPublicKey",
+              "iv",
+              "ct",
+              "signature"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "shareId",
+          "root",
+          "ownerKey"
+        ],
+        "additionalProperties": false
+      },
+      "DriveMemberAddDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "editor",
+              "viewer"
+            ]
+          },
+          "keyGeneration": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "memberKey": {
+            "type": "object",
+            "properties": {
+              "ephemeralPublicKey": {
+                "type": "string",
+                "maxLength": 216,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "signature": {
+                "type": "string",
+                "maxLength": 88,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "ephemeralPublicKey",
+              "iv",
+              "ct",
+              "signature"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "userId",
+          "role",
+          "keyGeneration",
+          "memberKey"
+        ],
+        "additionalProperties": false
+      },
+      "DriveMemberKeyAcceptDto": {
+        "type": "object",
+        "properties": {
+          "keyGeneration": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "memberKey": {
+            "type": "object",
+            "properties": {
+              "ephemeralPublicKey": {
+                "type": "string",
+                "maxLength": 216,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "signature": {
+                "type": "string",
+                "maxLength": 88,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "ephemeralPublicKey",
+              "iv",
+              "ct",
+              "signature"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "keyGeneration",
+          "memberKey"
+        ],
+        "additionalProperties": false
+      },
+      "DriveMemberRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "editor",
+              "viewer"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "additionalProperties": false
+      },
+      "DriveMemberRemoveDto": {
+        "type": "object",
+        "properties": {
+          "keyGeneration": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 9007199254740991
+          },
+          "memberKeys": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "memberKey": {
+                  "type": "object",
+                  "properties": {
+                    "ephemeralPublicKey": {
+                      "type": "string",
+                      "maxLength": 216,
+                      "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                    },
+                    "iv": {
+                      "type": "string",
+                      "maxLength": 16,
+                      "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                    },
+                    "ct": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                    },
+                    "signature": {
+                      "type": "string",
+                      "maxLength": 88,
+                      "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                    }
+                  },
+                  "required": [
+                    "ephemeralPublicKey",
+                    "iv",
+                    "ct",
+                    "signature"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "userId",
+                "memberKey"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nodeKeys": {
+            "maxItems": 5000,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nodeId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "nodeKey": {
+                  "type": "object",
+                  "properties": {
+                    "iv": {
+                      "type": "string",
+                      "maxLength": 16,
+                      "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                    },
+                    "ct": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                    }
+                  },
+                  "required": [
+                    "iv",
+                    "ct"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "nodeId",
+                "nodeKey"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "keyGeneration",
+          "memberKeys",
+          "nodeKeys"
+        ],
+        "additionalProperties": false
+      },
+      "DriveFolderCreateDto": {
+        "type": "object",
+        "properties": {
+          "nodeId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nodeKey": {
+            "type": "object",
+            "properties": {
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 5464,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          },
+          "signature": {
+            "type": "string",
+            "maxLength": 88,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "keyGeneration": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "nodeId",
+          "nodeKey",
+          "meta",
+          "signature",
+          "parentId",
+          "keyGeneration"
+        ],
+        "additionalProperties": false
+      },
+      "DriveUploadStartDto": {
+        "type": "object",
+        "properties": {
+          "nodeId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "newFile": {
+            "type": "object",
+            "properties": {
+              "parentId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nodeKey": {
+                "type": "object",
+                "properties": {
+                  "iv": {
+                    "type": "string",
+                    "maxLength": 16,
+                    "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                  },
+                  "ct": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+                  }
+                },
+                "required": [
+                  "iv",
+                  "ct"
+                ],
+                "additionalProperties": false
+              },
+              "keyGeneration": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "parentId",
+              "nodeKey",
+              "keyGeneration"
+            ],
+            "additionalProperties": false
+          },
+          "blockCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 40
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20972640
+          },
+          "contentHash": {
+            "type": "string",
+            "maxLength": 44,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 5464,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          },
+          "signature": {
+            "type": "string",
+            "maxLength": 88,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+          }
+        },
+        "required": [
+          "nodeId",
+          "revision",
+          "blockCount",
+          "sizeBytes",
+          "contentHash",
+          "meta",
+          "signature"
+        ],
+        "additionalProperties": false
+      },
+      "DriveRenameDto": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "iv": {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              },
+              "ct": {
+                "type": "string",
+                "maxLength": 5464,
+                "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+              }
+            },
+            "required": [
+              "iv",
+              "ct"
+            ],
+            "additionalProperties": false
+          },
+          "signature": {
+            "type": "string",
+            "maxLength": 88,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+          }
+        },
+        "required": [
+          "meta",
+          "signature"
+        ],
+        "additionalProperties": false
+      },
+      "DriveMoveDto": {
+        "type": "object",
+        "properties": {
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "parentId"
+        ],
+        "additionalProperties": false
+      },
+      "CreateDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "adult",
+              "professional"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName",
+          "email",
+          "role",
+          "locale"
+        ],
+        "additionalProperties": false
+      },
+      "SessionCreateDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "idToken"
+        ],
+        "additionalProperties": false
+      },
+      "LookupDto": {
+        "type": "object",
+        "properties": {
+          "invitationId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "invitationId"
+        ],
+        "additionalProperties": false
+      },
+      "AcceptDto": {
+        "type": "object",
+        "properties": {
+          "invitationId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "registration": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "male",
+                      "female",
+                      "prefer_not_to_say"
+                    ]
+                  },
+                  "country": {
+                    "type": "string",
+                    "enum": [
+                      "AD",
+                      "AE",
+                      "AF",
+                      "AG",
+                      "AI",
+                      "AL",
+                      "AM",
+                      "AO",
+                      "AQ",
+                      "AR",
+                      "AS",
+                      "AT",
+                      "AU",
+                      "AW",
+                      "AX",
+                      "AZ",
+                      "BA",
+                      "BB",
+                      "BD",
+                      "BE",
+                      "BF",
+                      "BG",
+                      "BH",
+                      "BI",
+                      "BJ",
+                      "BL",
+                      "BM",
+                      "BN",
+                      "BO",
+                      "BQ",
+                      "BR",
+                      "BS",
+                      "BT",
+                      "BV",
+                      "BW",
+                      "BY",
+                      "BZ",
+                      "CA",
+                      "CC",
+                      "CD",
+                      "CF",
+                      "CG",
+                      "CH",
+                      "CI",
+                      "CK",
+                      "CL",
+                      "CM",
+                      "CN",
+                      "CO",
+                      "CR",
+                      "CU",
+                      "CV",
+                      "CW",
+                      "CX",
+                      "CY",
+                      "CZ",
+                      "DE",
+                      "DJ",
+                      "DK",
+                      "DM",
+                      "DO",
+                      "DZ",
+                      "EC",
+                      "EE",
+                      "EG",
+                      "EH",
+                      "ER",
+                      "ES",
+                      "ET",
+                      "FI",
+                      "FJ",
+                      "FK",
+                      "FM",
+                      "FO",
+                      "FR",
+                      "GA",
+                      "GB",
+                      "GD",
+                      "GE",
+                      "GF",
+                      "GG",
+                      "GH",
+                      "GI",
+                      "GL",
+                      "GM",
+                      "GN",
+                      "GP",
+                      "GQ",
+                      "GR",
+                      "GS",
+                      "GT",
+                      "GU",
+                      "GW",
+                      "GY",
+                      "HK",
+                      "HM",
+                      "HN",
+                      "HR",
+                      "HT",
+                      "HU",
+                      "ID",
+                      "IE",
+                      "IL",
+                      "IM",
+                      "IN",
+                      "IO",
+                      "IQ",
+                      "IR",
+                      "IS",
+                      "IT",
+                      "JE",
+                      "JM",
+                      "JO",
+                      "JP",
+                      "KE",
+                      "KG",
+                      "KH",
+                      "KI",
+                      "KM",
+                      "KN",
+                      "KP",
+                      "KR",
+                      "KW",
+                      "KY",
+                      "KZ",
+                      "LA",
+                      "LB",
+                      "LC",
+                      "LI",
+                      "LK",
+                      "LR",
+                      "LS",
+                      "LT",
+                      "LU",
+                      "LV",
+                      "LY",
+                      "MA",
+                      "MC",
+                      "MD",
+                      "ME",
+                      "MF",
+                      "MG",
+                      "MH",
+                      "MK",
+                      "ML",
+                      "MM",
+                      "MN",
+                      "MO",
+                      "MP",
+                      "MQ",
+                      "MR",
+                      "MS",
+                      "MT",
+                      "MU",
+                      "MV",
+                      "MW",
+                      "MX",
+                      "MY",
+                      "MZ",
+                      "NA",
+                      "NC",
+                      "NE",
+                      "NF",
+                      "NG",
+                      "NI",
+                      "NL",
+                      "NO",
+                      "NP",
+                      "NR",
+                      "NU",
+                      "NZ",
+                      "OM",
+                      "PA",
+                      "PE",
+                      "PF",
+                      "PG",
+                      "PH",
+                      "PK",
+                      "PL",
+                      "PM",
+                      "PN",
+                      "PR",
+                      "PS",
+                      "PT",
+                      "PW",
+                      "PY",
+                      "QA",
+                      "RE",
+                      "RO",
+                      "RS",
+                      "RU",
+                      "RW",
+                      "SA",
+                      "SB",
+                      "SC",
+                      "SD",
+                      "SE",
+                      "SG",
+                      "SH",
+                      "SI",
+                      "SJ",
+                      "SK",
+                      "SL",
+                      "SM",
+                      "SN",
+                      "SO",
+                      "SR",
+                      "SS",
+                      "ST",
+                      "SV",
+                      "SX",
+                      "SY",
+                      "SZ",
+                      "TC",
+                      "TD",
+                      "TF",
+                      "TG",
+                      "TH",
+                      "TJ",
+                      "TK",
+                      "TL",
+                      "TM",
+                      "TN",
+                      "TO",
+                      "TR",
+                      "TT",
+                      "TV",
+                      "TW",
+                      "TZ",
+                      "UA",
+                      "UG",
+                      "UM",
+                      "US",
+                      "UY",
+                      "UZ",
+                      "VA",
+                      "VC",
+                      "VE",
+                      "VG",
+                      "VI",
+                      "VN",
+                      "VU",
+                      "WF",
+                      "WS",
+                      "YE",
+                      "YT",
+                      "ZA",
+                      "ZM",
+                      "ZW"
+                    ]
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "dateOfBirth": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 32,
+                    "pattern": "^\\+?[0-9 ()-]+$"
+                  },
+                  "locale": {
+                    "type": "string",
+                    "enum": [
+                      "es",
+                      "en",
+                      "ca",
+                      "fr"
+                    ]
+                  },
+                  "consents": {
+                    "type": "object",
+                    "properties": {
+                      "termsAcceptance": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "privacyPolicyAcknowledgement": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "marketing": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "termsAcceptance",
+                      "privacyPolicyAcknowledgement"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "adult"
+                    ]
+                  },
+                  "ageYears": {
+                    "type": "integer",
+                    "minimum": 18,
+                    "maximum": 120
+                  }
+                },
+                "required": [
+                  "firstName",
+                  "lastName",
+                  "gender",
+                  "country",
+                  "dateOfBirth",
+                  "consents",
+                  "role",
+                  "ageYears"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "male",
+                      "female",
+                      "prefer_not_to_say"
+                    ]
+                  },
+                  "country": {
+                    "type": "string",
+                    "enum": [
+                      "AD",
+                      "AE",
+                      "AF",
+                      "AG",
+                      "AI",
+                      "AL",
+                      "AM",
+                      "AO",
+                      "AQ",
+                      "AR",
+                      "AS",
+                      "AT",
+                      "AU",
+                      "AW",
+                      "AX",
+                      "AZ",
+                      "BA",
+                      "BB",
+                      "BD",
+                      "BE",
+                      "BF",
+                      "BG",
+                      "BH",
+                      "BI",
+                      "BJ",
+                      "BL",
+                      "BM",
+                      "BN",
+                      "BO",
+                      "BQ",
+                      "BR",
+                      "BS",
+                      "BT",
+                      "BV",
+                      "BW",
+                      "BY",
+                      "BZ",
+                      "CA",
+                      "CC",
+                      "CD",
+                      "CF",
+                      "CG",
+                      "CH",
+                      "CI",
+                      "CK",
+                      "CL",
+                      "CM",
+                      "CN",
+                      "CO",
+                      "CR",
+                      "CU",
+                      "CV",
+                      "CW",
+                      "CX",
+                      "CY",
+                      "CZ",
+                      "DE",
+                      "DJ",
+                      "DK",
+                      "DM",
+                      "DO",
+                      "DZ",
+                      "EC",
+                      "EE",
+                      "EG",
+                      "EH",
+                      "ER",
+                      "ES",
+                      "ET",
+                      "FI",
+                      "FJ",
+                      "FK",
+                      "FM",
+                      "FO",
+                      "FR",
+                      "GA",
+                      "GB",
+                      "GD",
+                      "GE",
+                      "GF",
+                      "GG",
+                      "GH",
+                      "GI",
+                      "GL",
+                      "GM",
+                      "GN",
+                      "GP",
+                      "GQ",
+                      "GR",
+                      "GS",
+                      "GT",
+                      "GU",
+                      "GW",
+                      "GY",
+                      "HK",
+                      "HM",
+                      "HN",
+                      "HR",
+                      "HT",
+                      "HU",
+                      "ID",
+                      "IE",
+                      "IL",
+                      "IM",
+                      "IN",
+                      "IO",
+                      "IQ",
+                      "IR",
+                      "IS",
+                      "IT",
+                      "JE",
+                      "JM",
+                      "JO",
+                      "JP",
+                      "KE",
+                      "KG",
+                      "KH",
+                      "KI",
+                      "KM",
+                      "KN",
+                      "KP",
+                      "KR",
+                      "KW",
+                      "KY",
+                      "KZ",
+                      "LA",
+                      "LB",
+                      "LC",
+                      "LI",
+                      "LK",
+                      "LR",
+                      "LS",
+                      "LT",
+                      "LU",
+                      "LV",
+                      "LY",
+                      "MA",
+                      "MC",
+                      "MD",
+                      "ME",
+                      "MF",
+                      "MG",
+                      "MH",
+                      "MK",
+                      "ML",
+                      "MM",
+                      "MN",
+                      "MO",
+                      "MP",
+                      "MQ",
+                      "MR",
+                      "MS",
+                      "MT",
+                      "MU",
+                      "MV",
+                      "MW",
+                      "MX",
+                      "MY",
+                      "MZ",
+                      "NA",
+                      "NC",
+                      "NE",
+                      "NF",
+                      "NG",
+                      "NI",
+                      "NL",
+                      "NO",
+                      "NP",
+                      "NR",
+                      "NU",
+                      "NZ",
+                      "OM",
+                      "PA",
+                      "PE",
+                      "PF",
+                      "PG",
+                      "PH",
+                      "PK",
+                      "PL",
+                      "PM",
+                      "PN",
+                      "PR",
+                      "PS",
+                      "PT",
+                      "PW",
+                      "PY",
+                      "QA",
+                      "RE",
+                      "RO",
+                      "RS",
+                      "RU",
+                      "RW",
+                      "SA",
+                      "SB",
+                      "SC",
+                      "SD",
+                      "SE",
+                      "SG",
+                      "SH",
+                      "SI",
+                      "SJ",
+                      "SK",
+                      "SL",
+                      "SM",
+                      "SN",
+                      "SO",
+                      "SR",
+                      "SS",
+                      "ST",
+                      "SV",
+                      "SX",
+                      "SY",
+                      "SZ",
+                      "TC",
+                      "TD",
+                      "TF",
+                      "TG",
+                      "TH",
+                      "TJ",
+                      "TK",
+                      "TL",
+                      "TM",
+                      "TN",
+                      "TO",
+                      "TR",
+                      "TT",
+                      "TV",
+                      "TW",
+                      "TZ",
+                      "UA",
+                      "UG",
+                      "UM",
+                      "US",
+                      "UY",
+                      "UZ",
+                      "VA",
+                      "VC",
+                      "VE",
+                      "VG",
+                      "VI",
+                      "VN",
+                      "VU",
+                      "WF",
+                      "WS",
+                      "YE",
+                      "YT",
+                      "ZA",
+                      "ZM",
+                      "ZW"
+                    ]
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "dateOfBirth": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 32,
+                    "pattern": "^\\+?[0-9 ()-]+$"
+                  },
+                  "locale": {
+                    "type": "string",
+                    "enum": [
+                      "es",
+                      "en",
+                      "ca",
+                      "fr"
+                    ]
+                  },
+                  "consents": {
+                    "type": "object",
+                    "properties": {
+                      "termsAcceptance": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "privacyPolicyAcknowledgement": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "marketing": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "termsAcceptance",
+                      "privacyPolicyAcknowledgement"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "parent"
+                    ]
+                  },
+                  "guardianshipConfirmed": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  },
+                  "minorAgeBand": {
+                    "type": "string",
+                    "enum": [
+                      "0-3m",
+                      "4-11m",
+                      "1-2y",
+                      "3-5y",
+                      "6-12y",
+                      "13-17y"
+                    ]
+                  }
+                },
+                "required": [
+                  "firstName",
+                  "lastName",
+                  "gender",
+                  "country",
+                  "dateOfBirth",
+                  "consents",
+                  "role",
+                  "guardianshipConfirmed",
+                  "minorAgeBand"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "male",
+                      "female",
+                      "prefer_not_to_say"
+                    ]
+                  },
+                  "country": {
+                    "type": "string",
+                    "enum": [
+                      "AD",
+                      "AE",
+                      "AF",
+                      "AG",
+                      "AI",
+                      "AL",
+                      "AM",
+                      "AO",
+                      "AQ",
+                      "AR",
+                      "AS",
+                      "AT",
+                      "AU",
+                      "AW",
+                      "AX",
+                      "AZ",
+                      "BA",
+                      "BB",
+                      "BD",
+                      "BE",
+                      "BF",
+                      "BG",
+                      "BH",
+                      "BI",
+                      "BJ",
+                      "BL",
+                      "BM",
+                      "BN",
+                      "BO",
+                      "BQ",
+                      "BR",
+                      "BS",
+                      "BT",
+                      "BV",
+                      "BW",
+                      "BY",
+                      "BZ",
+                      "CA",
+                      "CC",
+                      "CD",
+                      "CF",
+                      "CG",
+                      "CH",
+                      "CI",
+                      "CK",
+                      "CL",
+                      "CM",
+                      "CN",
+                      "CO",
+                      "CR",
+                      "CU",
+                      "CV",
+                      "CW",
+                      "CX",
+                      "CY",
+                      "CZ",
+                      "DE",
+                      "DJ",
+                      "DK",
+                      "DM",
+                      "DO",
+                      "DZ",
+                      "EC",
+                      "EE",
+                      "EG",
+                      "EH",
+                      "ER",
+                      "ES",
+                      "ET",
+                      "FI",
+                      "FJ",
+                      "FK",
+                      "FM",
+                      "FO",
+                      "FR",
+                      "GA",
+                      "GB",
+                      "GD",
+                      "GE",
+                      "GF",
+                      "GG",
+                      "GH",
+                      "GI",
+                      "GL",
+                      "GM",
+                      "GN",
+                      "GP",
+                      "GQ",
+                      "GR",
+                      "GS",
+                      "GT",
+                      "GU",
+                      "GW",
+                      "GY",
+                      "HK",
+                      "HM",
+                      "HN",
+                      "HR",
+                      "HT",
+                      "HU",
+                      "ID",
+                      "IE",
+                      "IL",
+                      "IM",
+                      "IN",
+                      "IO",
+                      "IQ",
+                      "IR",
+                      "IS",
+                      "IT",
+                      "JE",
+                      "JM",
+                      "JO",
+                      "JP",
+                      "KE",
+                      "KG",
+                      "KH",
+                      "KI",
+                      "KM",
+                      "KN",
+                      "KP",
+                      "KR",
+                      "KW",
+                      "KY",
+                      "KZ",
+                      "LA",
+                      "LB",
+                      "LC",
+                      "LI",
+                      "LK",
+                      "LR",
+                      "LS",
+                      "LT",
+                      "LU",
+                      "LV",
+                      "LY",
+                      "MA",
+                      "MC",
+                      "MD",
+                      "ME",
+                      "MF",
+                      "MG",
+                      "MH",
+                      "MK",
+                      "ML",
+                      "MM",
+                      "MN",
+                      "MO",
+                      "MP",
+                      "MQ",
+                      "MR",
+                      "MS",
+                      "MT",
+                      "MU",
+                      "MV",
+                      "MW",
+                      "MX",
+                      "MY",
+                      "MZ",
+                      "NA",
+                      "NC",
+                      "NE",
+                      "NF",
+                      "NG",
+                      "NI",
+                      "NL",
+                      "NO",
+                      "NP",
+                      "NR",
+                      "NU",
+                      "NZ",
+                      "OM",
+                      "PA",
+                      "PE",
+                      "PF",
+                      "PG",
+                      "PH",
+                      "PK",
+                      "PL",
+                      "PM",
+                      "PN",
+                      "PR",
+                      "PS",
+                      "PT",
+                      "PW",
+                      "PY",
+                      "QA",
+                      "RE",
+                      "RO",
+                      "RS",
+                      "RU",
+                      "RW",
+                      "SA",
+                      "SB",
+                      "SC",
+                      "SD",
+                      "SE",
+                      "SG",
+                      "SH",
+                      "SI",
+                      "SJ",
+                      "SK",
+                      "SL",
+                      "SM",
+                      "SN",
+                      "SO",
+                      "SR",
+                      "SS",
+                      "ST",
+                      "SV",
+                      "SX",
+                      "SY",
+                      "SZ",
+                      "TC",
+                      "TD",
+                      "TF",
+                      "TG",
+                      "TH",
+                      "TJ",
+                      "TK",
+                      "TL",
+                      "TM",
+                      "TN",
+                      "TO",
+                      "TR",
+                      "TT",
+                      "TV",
+                      "TW",
+                      "TZ",
+                      "UA",
+                      "UG",
+                      "UM",
+                      "US",
+                      "UY",
+                      "UZ",
+                      "VA",
+                      "VC",
+                      "VE",
+                      "VG",
+                      "VI",
+                      "VN",
+                      "VU",
+                      "WF",
+                      "WS",
+                      "YE",
+                      "YT",
+                      "ZA",
+                      "ZM",
+                      "ZW"
+                    ]
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "dateOfBirth": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 32,
+                    "pattern": "^\\+?[0-9 ()-]+$"
+                  },
+                  "locale": {
+                    "type": "string",
+                    "enum": [
+                      "es",
+                      "en",
+                      "ca",
+                      "fr"
+                    ]
+                  },
+                  "consents": {
+                    "type": "object",
+                    "properties": {
+                      "termsAcceptance": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "privacyPolicyAcknowledgement": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "marketing": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "termsAcceptance",
+                      "privacyPolicyAcknowledgement"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "professional"
+                    ]
+                  },
+                  "specialty": {
+                    "type": "string",
+                    "enum": [
+                      "family_physician",
+                      "pediatrician",
+                      "sleep_physician",
+                      "psychologist",
+                      "nurse",
+                      "pharmacist",
+                      "therapist"
+                    ]
+                  },
+                  "licenseNumber": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "firstName",
+                  "lastName",
+                  "gender",
+                  "country",
+                  "dateOfBirth",
+                  "consents",
+                  "role",
+                  "specialty",
+                  "licenseNumber"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "invitationId"
+        ],
+        "additionalProperties": false
+      },
+      "ProfilePatchDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 32,
+            "pattern": "^\\+?[0-9 ()-]+$",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female",
+              "prefer_not_to_say"
+            ]
+          },
+          "country": {
+            "type": "string",
+            "enum": [
+              "AD",
+              "AE",
+              "AF",
+              "AG",
+              "AI",
+              "AL",
+              "AM",
+              "AO",
+              "AQ",
+              "AR",
+              "AS",
+              "AT",
+              "AU",
+              "AW",
+              "AX",
+              "AZ",
+              "BA",
+              "BB",
+              "BD",
+              "BE",
+              "BF",
+              "BG",
+              "BH",
+              "BI",
+              "BJ",
+              "BL",
+              "BM",
+              "BN",
+              "BO",
+              "BQ",
+              "BR",
+              "BS",
+              "BT",
+              "BV",
+              "BW",
+              "BY",
+              "BZ",
+              "CA",
+              "CC",
+              "CD",
+              "CF",
+              "CG",
+              "CH",
+              "CI",
+              "CK",
+              "CL",
+              "CM",
+              "CN",
+              "CO",
+              "CR",
+              "CU",
+              "CV",
+              "CW",
+              "CX",
+              "CY",
+              "CZ",
+              "DE",
+              "DJ",
+              "DK",
+              "DM",
+              "DO",
+              "DZ",
+              "EC",
+              "EE",
+              "EG",
+              "EH",
+              "ER",
+              "ES",
+              "ET",
+              "FI",
+              "FJ",
+              "FK",
+              "FM",
+              "FO",
+              "FR",
+              "GA",
+              "GB",
+              "GD",
+              "GE",
+              "GF",
+              "GG",
+              "GH",
+              "GI",
+              "GL",
+              "GM",
+              "GN",
+              "GP",
+              "GQ",
+              "GR",
+              "GS",
+              "GT",
+              "GU",
+              "GW",
+              "GY",
+              "HK",
+              "HM",
+              "HN",
+              "HR",
+              "HT",
+              "HU",
+              "ID",
+              "IE",
+              "IL",
+              "IM",
+              "IN",
+              "IO",
+              "IQ",
+              "IR",
+              "IS",
+              "IT",
+              "JE",
+              "JM",
+              "JO",
+              "JP",
+              "KE",
+              "KG",
+              "KH",
+              "KI",
+              "KM",
+              "KN",
+              "KP",
+              "KR",
+              "KW",
+              "KY",
+              "KZ",
+              "LA",
+              "LB",
+              "LC",
+              "LI",
+              "LK",
+              "LR",
+              "LS",
+              "LT",
+              "LU",
+              "LV",
+              "LY",
+              "MA",
+              "MC",
+              "MD",
+              "ME",
+              "MF",
+              "MG",
+              "MH",
+              "MK",
+              "ML",
+              "MM",
+              "MN",
+              "MO",
+              "MP",
+              "MQ",
+              "MR",
+              "MS",
+              "MT",
+              "MU",
+              "MV",
+              "MW",
+              "MX",
+              "MY",
+              "MZ",
+              "NA",
+              "NC",
+              "NE",
+              "NF",
+              "NG",
+              "NI",
+              "NL",
+              "NO",
+              "NP",
+              "NR",
+              "NU",
+              "NZ",
+              "OM",
+              "PA",
+              "PE",
+              "PF",
+              "PG",
+              "PH",
+              "PK",
+              "PL",
+              "PM",
+              "PN",
+              "PR",
+              "PS",
+              "PT",
+              "PW",
+              "PY",
+              "QA",
+              "RE",
+              "RO",
+              "RS",
+              "RU",
+              "RW",
+              "SA",
+              "SB",
+              "SC",
+              "SD",
+              "SE",
+              "SG",
+              "SH",
+              "SI",
+              "SJ",
+              "SK",
+              "SL",
+              "SM",
+              "SN",
+              "SO",
+              "SR",
+              "SS",
+              "ST",
+              "SV",
+              "SX",
+              "SY",
+              "SZ",
+              "TC",
+              "TD",
+              "TF",
+              "TG",
+              "TH",
+              "TJ",
+              "TK",
+              "TL",
+              "TM",
+              "TN",
+              "TO",
+              "TR",
+              "TT",
+              "TV",
+              "TW",
+              "TZ",
+              "UA",
+              "UG",
+              "UM",
+              "US",
+              "UY",
+              "UZ",
+              "VA",
+              "VC",
+              "VE",
+              "VG",
+              "VI",
+              "VN",
+              "VU",
+              "WF",
+              "WS",
+              "YE",
+              "YT",
+              "ZA",
+              "ZM",
+              "ZW"
+            ]
+          },
+          "city": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "nullable": true
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConsentCreateDto": {
+        "type": "object",
+        "properties": {
+          "purposeKey": {
+            "type": "string",
+            "enum": [
+              "terms_acceptance",
+              "privacy_policy_acknowledgement",
+              "health_data_processing",
+              "professional_sharing",
+              "marketing",
+              "research_participation"
+            ]
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "source": {
+            "default": "app",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          }
+        },
+        "required": [
+          "purposeKey"
+        ],
+        "additionalProperties": false
+      },
+      "ConsentWithdrawDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegistrationDto": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "firstName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "lastName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "gender": {
+                "type": "string",
+                "enum": [
+                  "male",
+                  "female",
+                  "prefer_not_to_say"
+                ]
+              },
+              "country": {
+                "type": "string",
+                "enum": [
+                  "AD",
+                  "AE",
+                  "AF",
+                  "AG",
+                  "AI",
+                  "AL",
+                  "AM",
+                  "AO",
+                  "AQ",
+                  "AR",
+                  "AS",
+                  "AT",
+                  "AU",
+                  "AW",
+                  "AX",
+                  "AZ",
+                  "BA",
+                  "BB",
+                  "BD",
+                  "BE",
+                  "BF",
+                  "BG",
+                  "BH",
+                  "BI",
+                  "BJ",
+                  "BL",
+                  "BM",
+                  "BN",
+                  "BO",
+                  "BQ",
+                  "BR",
+                  "BS",
+                  "BT",
+                  "BV",
+                  "BW",
+                  "BY",
+                  "BZ",
+                  "CA",
+                  "CC",
+                  "CD",
+                  "CF",
+                  "CG",
+                  "CH",
+                  "CI",
+                  "CK",
+                  "CL",
+                  "CM",
+                  "CN",
+                  "CO",
+                  "CR",
+                  "CU",
+                  "CV",
+                  "CW",
+                  "CX",
+                  "CY",
+                  "CZ",
+                  "DE",
+                  "DJ",
+                  "DK",
+                  "DM",
+                  "DO",
+                  "DZ",
+                  "EC",
+                  "EE",
+                  "EG",
+                  "EH",
+                  "ER",
+                  "ES",
+                  "ET",
+                  "FI",
+                  "FJ",
+                  "FK",
+                  "FM",
+                  "FO",
+                  "FR",
+                  "GA",
+                  "GB",
+                  "GD",
+                  "GE",
+                  "GF",
+                  "GG",
+                  "GH",
+                  "GI",
+                  "GL",
+                  "GM",
+                  "GN",
+                  "GP",
+                  "GQ",
+                  "GR",
+                  "GS",
+                  "GT",
+                  "GU",
+                  "GW",
+                  "GY",
+                  "HK",
+                  "HM",
+                  "HN",
+                  "HR",
+                  "HT",
+                  "HU",
+                  "ID",
+                  "IE",
+                  "IL",
+                  "IM",
+                  "IN",
+                  "IO",
+                  "IQ",
+                  "IR",
+                  "IS",
+                  "IT",
+                  "JE",
+                  "JM",
+                  "JO",
+                  "JP",
+                  "KE",
+                  "KG",
+                  "KH",
+                  "KI",
+                  "KM",
+                  "KN",
+                  "KP",
+                  "KR",
+                  "KW",
+                  "KY",
+                  "KZ",
+                  "LA",
+                  "LB",
+                  "LC",
+                  "LI",
+                  "LK",
+                  "LR",
+                  "LS",
+                  "LT",
+                  "LU",
+                  "LV",
+                  "LY",
+                  "MA",
+                  "MC",
+                  "MD",
+                  "ME",
+                  "MF",
+                  "MG",
+                  "MH",
+                  "MK",
+                  "ML",
+                  "MM",
+                  "MN",
+                  "MO",
+                  "MP",
+                  "MQ",
+                  "MR",
+                  "MS",
+                  "MT",
+                  "MU",
+                  "MV",
+                  "MW",
+                  "MX",
+                  "MY",
+                  "MZ",
+                  "NA",
+                  "NC",
+                  "NE",
+                  "NF",
+                  "NG",
+                  "NI",
+                  "NL",
+                  "NO",
+                  "NP",
+                  "NR",
+                  "NU",
+                  "NZ",
+                  "OM",
+                  "PA",
+                  "PE",
+                  "PF",
+                  "PG",
+                  "PH",
+                  "PK",
+                  "PL",
+                  "PM",
+                  "PN",
+                  "PR",
+                  "PS",
+                  "PT",
+                  "PW",
+                  "PY",
+                  "QA",
+                  "RE",
+                  "RO",
+                  "RS",
+                  "RU",
+                  "RW",
+                  "SA",
+                  "SB",
+                  "SC",
+                  "SD",
+                  "SE",
+                  "SG",
+                  "SH",
+                  "SI",
+                  "SJ",
+                  "SK",
+                  "SL",
+                  "SM",
+                  "SN",
+                  "SO",
+                  "SR",
+                  "SS",
+                  "ST",
+                  "SV",
+                  "SX",
+                  "SY",
+                  "SZ",
+                  "TC",
+                  "TD",
+                  "TF",
+                  "TG",
+                  "TH",
+                  "TJ",
+                  "TK",
+                  "TL",
+                  "TM",
+                  "TN",
+                  "TO",
+                  "TR",
+                  "TT",
+                  "TV",
+                  "TW",
+                  "TZ",
+                  "UA",
+                  "UG",
+                  "UM",
+                  "US",
+                  "UY",
+                  "UZ",
+                  "VA",
+                  "VC",
+                  "VE",
+                  "VG",
+                  "VI",
+                  "VN",
+                  "VU",
+                  "WF",
+                  "WS",
+                  "YE",
+                  "YT",
+                  "ZA",
+                  "ZM",
+                  "ZW"
+                ]
+              },
+              "city": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "dateOfBirth": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              "phone": {
+                "type": "string",
+                "minLength": 6,
+                "maxLength": 32,
+                "pattern": "^\\+?[0-9 ()-]+$"
+              },
+              "locale": {
+                "type": "string",
+                "enum": [
+                  "es",
+                  "en",
+                  "ca",
+                  "fr"
+                ]
+              },
+              "consents": {
+                "type": "object",
+                "properties": {
+                  "termsAcceptance": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  },
+                  "privacyPolicyAcknowledgement": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  },
+                  "marketing": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "termsAcceptance",
+                  "privacyPolicyAcknowledgement"
+                ],
+                "additionalProperties": false
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "adult"
+                ]
+              },
+              "ageYears": {
+                "type": "integer",
+                "minimum": 18,
+                "maximum": 120
+              }
+            },
+            "required": [
+              "firstName",
+              "lastName",
+              "gender",
+              "country",
+              "dateOfBirth",
+              "consents",
+              "role",
+              "ageYears"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "firstName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "lastName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "gender": {
+                "type": "string",
+                "enum": [
+                  "male",
+                  "female",
+                  "prefer_not_to_say"
+                ]
+              },
+              "country": {
+                "type": "string",
+                "enum": [
+                  "AD",
+                  "AE",
+                  "AF",
+                  "AG",
+                  "AI",
+                  "AL",
+                  "AM",
+                  "AO",
+                  "AQ",
+                  "AR",
+                  "AS",
+                  "AT",
+                  "AU",
+                  "AW",
+                  "AX",
+                  "AZ",
+                  "BA",
+                  "BB",
+                  "BD",
+                  "BE",
+                  "BF",
+                  "BG",
+                  "BH",
+                  "BI",
+                  "BJ",
+                  "BL",
+                  "BM",
+                  "BN",
+                  "BO",
+                  "BQ",
+                  "BR",
+                  "BS",
+                  "BT",
+                  "BV",
+                  "BW",
+                  "BY",
+                  "BZ",
+                  "CA",
+                  "CC",
+                  "CD",
+                  "CF",
+                  "CG",
+                  "CH",
+                  "CI",
+                  "CK",
+                  "CL",
+                  "CM",
+                  "CN",
+                  "CO",
+                  "CR",
+                  "CU",
+                  "CV",
+                  "CW",
+                  "CX",
+                  "CY",
+                  "CZ",
+                  "DE",
+                  "DJ",
+                  "DK",
+                  "DM",
+                  "DO",
+                  "DZ",
+                  "EC",
+                  "EE",
+                  "EG",
+                  "EH",
+                  "ER",
+                  "ES",
+                  "ET",
+                  "FI",
+                  "FJ",
+                  "FK",
+                  "FM",
+                  "FO",
+                  "FR",
+                  "GA",
+                  "GB",
+                  "GD",
+                  "GE",
+                  "GF",
+                  "GG",
+                  "GH",
+                  "GI",
+                  "GL",
+                  "GM",
+                  "GN",
+                  "GP",
+                  "GQ",
+                  "GR",
+                  "GS",
+                  "GT",
+                  "GU",
+                  "GW",
+                  "GY",
+                  "HK",
+                  "HM",
+                  "HN",
+                  "HR",
+                  "HT",
+                  "HU",
+                  "ID",
+                  "IE",
+                  "IL",
+                  "IM",
+                  "IN",
+                  "IO",
+                  "IQ",
+                  "IR",
+                  "IS",
+                  "IT",
+                  "JE",
+                  "JM",
+                  "JO",
+                  "JP",
+                  "KE",
+                  "KG",
+                  "KH",
+                  "KI",
+                  "KM",
+                  "KN",
+                  "KP",
+                  "KR",
+                  "KW",
+                  "KY",
+                  "KZ",
+                  "LA",
+                  "LB",
+                  "LC",
+                  "LI",
+                  "LK",
+                  "LR",
+                  "LS",
+                  "LT",
+                  "LU",
+                  "LV",
+                  "LY",
+                  "MA",
+                  "MC",
+                  "MD",
+                  "ME",
+                  "MF",
+                  "MG",
+                  "MH",
+                  "MK",
+                  "ML",
+                  "MM",
+                  "MN",
+                  "MO",
+                  "MP",
+                  "MQ",
+                  "MR",
+                  "MS",
+                  "MT",
+                  "MU",
+                  "MV",
+                  "MW",
+                  "MX",
+                  "MY",
+                  "MZ",
+                  "NA",
+                  "NC",
+                  "NE",
+                  "NF",
+                  "NG",
+                  "NI",
+                  "NL",
+                  "NO",
+                  "NP",
+                  "NR",
+                  "NU",
+                  "NZ",
+                  "OM",
+                  "PA",
+                  "PE",
+                  "PF",
+                  "PG",
+                  "PH",
+                  "PK",
+                  "PL",
+                  "PM",
+                  "PN",
+                  "PR",
+                  "PS",
+                  "PT",
+                  "PW",
+                  "PY",
+                  "QA",
+                  "RE",
+                  "RO",
+                  "RS",
+                  "RU",
+                  "RW",
+                  "SA",
+                  "SB",
+                  "SC",
+                  "SD",
+                  "SE",
+                  "SG",
+                  "SH",
+                  "SI",
+                  "SJ",
+                  "SK",
+                  "SL",
+                  "SM",
+                  "SN",
+                  "SO",
+                  "SR",
+                  "SS",
+                  "ST",
+                  "SV",
+                  "SX",
+                  "SY",
+                  "SZ",
+                  "TC",
+                  "TD",
+                  "TF",
+                  "TG",
+                  "TH",
+                  "TJ",
+                  "TK",
+                  "TL",
+                  "TM",
+                  "TN",
+                  "TO",
+                  "TR",
+                  "TT",
+                  "TV",
+                  "TW",
+                  "TZ",
+                  "UA",
+                  "UG",
+                  "UM",
+                  "US",
+                  "UY",
+                  "UZ",
+                  "VA",
+                  "VC",
+                  "VE",
+                  "VG",
+                  "VI",
+                  "VN",
+                  "VU",
+                  "WF",
+                  "WS",
+                  "YE",
+                  "YT",
+                  "ZA",
+                  "ZM",
+                  "ZW"
+                ]
+              },
+              "city": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "dateOfBirth": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              "phone": {
+                "type": "string",
+                "minLength": 6,
+                "maxLength": 32,
+                "pattern": "^\\+?[0-9 ()-]+$"
+              },
+              "locale": {
+                "type": "string",
+                "enum": [
+                  "es",
+                  "en",
+                  "ca",
+                  "fr"
+                ]
+              },
+              "consents": {
+                "type": "object",
+                "properties": {
+                  "termsAcceptance": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  },
+                  "privacyPolicyAcknowledgement": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  },
+                  "marketing": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "termsAcceptance",
+                  "privacyPolicyAcknowledgement"
+                ],
+                "additionalProperties": false
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "parent"
+                ]
+              },
+              "guardianshipConfirmed": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "minorAgeBand": {
+                "type": "string",
+                "enum": [
+                  "0-3m",
+                  "4-11m",
+                  "1-2y",
+                  "3-5y",
+                  "6-12y",
+                  "13-17y"
+                ]
+              }
+            },
+            "required": [
+              "firstName",
+              "lastName",
+              "gender",
+              "country",
+              "dateOfBirth",
+              "consents",
+              "role",
+              "guardianshipConfirmed",
+              "minorAgeBand"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "firstName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "lastName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "gender": {
+                "type": "string",
+                "enum": [
+                  "male",
+                  "female",
+                  "prefer_not_to_say"
+                ]
+              },
+              "country": {
+                "type": "string",
+                "enum": [
+                  "AD",
+                  "AE",
+                  "AF",
+                  "AG",
+                  "AI",
+                  "AL",
+                  "AM",
+                  "AO",
+                  "AQ",
+                  "AR",
+                  "AS",
+                  "AT",
+                  "AU",
+                  "AW",
+                  "AX",
+                  "AZ",
+                  "BA",
+                  "BB",
+                  "BD",
+                  "BE",
+                  "BF",
+                  "BG",
+                  "BH",
+                  "BI",
+                  "BJ",
+                  "BL",
+                  "BM",
+                  "BN",
+                  "BO",
+                  "BQ",
+                  "BR",
+                  "BS",
+                  "BT",
+                  "BV",
+                  "BW",
+                  "BY",
+                  "BZ",
+                  "CA",
+                  "CC",
+                  "CD",
+                  "CF",
+                  "CG",
+                  "CH",
+                  "CI",
+                  "CK",
+                  "CL",
+                  "CM",
+                  "CN",
+                  "CO",
+                  "CR",
+                  "CU",
+                  "CV",
+                  "CW",
+                  "CX",
+                  "CY",
+                  "CZ",
+                  "DE",
+                  "DJ",
+                  "DK",
+                  "DM",
+                  "DO",
+                  "DZ",
+                  "EC",
+                  "EE",
+                  "EG",
+                  "EH",
+                  "ER",
+                  "ES",
+                  "ET",
+                  "FI",
+                  "FJ",
+                  "FK",
+                  "FM",
+                  "FO",
+                  "FR",
+                  "GA",
+                  "GB",
+                  "GD",
+                  "GE",
+                  "GF",
+                  "GG",
+                  "GH",
+                  "GI",
+                  "GL",
+                  "GM",
+                  "GN",
+                  "GP",
+                  "GQ",
+                  "GR",
+                  "GS",
+                  "GT",
+                  "GU",
+                  "GW",
+                  "GY",
+                  "HK",
+                  "HM",
+                  "HN",
+                  "HR",
+                  "HT",
+                  "HU",
+                  "ID",
+                  "IE",
+                  "IL",
+                  "IM",
+                  "IN",
+                  "IO",
+                  "IQ",
+                  "IR",
+                  "IS",
+                  "IT",
+                  "JE",
+                  "JM",
+                  "JO",
+                  "JP",
+                  "KE",
+                  "KG",
+                  "KH",
+                  "KI",
+                  "KM",
+                  "KN",
+                  "KP",
+                  "KR",
+                  "KW",
+                  "KY",
+                  "KZ",
+                  "LA",
+                  "LB",
+                  "LC",
+                  "LI",
+                  "LK",
+                  "LR",
+                  "LS",
+                  "LT",
+                  "LU",
+                  "LV",
+                  "LY",
+                  "MA",
+                  "MC",
+                  "MD",
+                  "ME",
+                  "MF",
+                  "MG",
+                  "MH",
+                  "MK",
+                  "ML",
+                  "MM",
+                  "MN",
+                  "MO",
+                  "MP",
+                  "MQ",
+                  "MR",
+                  "MS",
+                  "MT",
+                  "MU",
+                  "MV",
+                  "MW",
+                  "MX",
+                  "MY",
+                  "MZ",
+                  "NA",
+                  "NC",
+                  "NE",
+                  "NF",
+                  "NG",
+                  "NI",
+                  "NL",
+                  "NO",
+                  "NP",
+                  "NR",
+                  "NU",
+                  "NZ",
+                  "OM",
+                  "PA",
+                  "PE",
+                  "PF",
+                  "PG",
+                  "PH",
+                  "PK",
+                  "PL",
+                  "PM",
+                  "PN",
+                  "PR",
+                  "PS",
+                  "PT",
+                  "PW",
+                  "PY",
+                  "QA",
+                  "RE",
+                  "RO",
+                  "RS",
+                  "RU",
+                  "RW",
+                  "SA",
+                  "SB",
+                  "SC",
+                  "SD",
+                  "SE",
+                  "SG",
+                  "SH",
+                  "SI",
+                  "SJ",
+                  "SK",
+                  "SL",
+                  "SM",
+                  "SN",
+                  "SO",
+                  "SR",
+                  "SS",
+                  "ST",
+                  "SV",
+                  "SX",
+                  "SY",
+                  "SZ",
+                  "TC",
+                  "TD",
+                  "TF",
+                  "TG",
+                  "TH",
+                  "TJ",
+                  "TK",
+                  "TL",
+                  "TM",
+                  "TN",
+                  "TO",
+                  "TR",
+                  "TT",
+                  "TV",
+                  "TW",
+                  "TZ",
+                  "UA",
+                  "UG",
+                  "UM",
+                  "US",
+                  "UY",
+                  "UZ",
+                  "VA",
+                  "VC",
+                  "VE",
+                  "VG",
+                  "VI",
+                  "VN",
+                  "VU",
+                  "WF",
+                  "WS",
+                  "YE",
+                  "YT",
+                  "ZA",
+                  "ZM",
+                  "ZW"
+                ]
+              },
+              "city": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "dateOfBirth": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              "phone": {
+                "type": "string",
+                "minLength": 6,
+                "maxLength": 32,
+                "pattern": "^\\+?[0-9 ()-]+$"
+              },
+              "locale": {
+                "type": "string",
+                "enum": [
+                  "es",
+                  "en",
+                  "ca",
+                  "fr"
+                ]
+              },
+              "consents": {
+                "type": "object",
+                "properties": {
+                  "termsAcceptance": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  },
+                  "privacyPolicyAcknowledgement": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  },
+                  "marketing": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "termsAcceptance",
+                  "privacyPolicyAcknowledgement"
+                ],
+                "additionalProperties": false
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "professional"
+                ]
+              },
+              "specialty": {
+                "type": "string",
+                "enum": [
+                  "family_physician",
+                  "pediatrician",
+                  "sleep_physician",
+                  "psychologist",
+                  "nurse",
+                  "pharmacist",
+                  "therapist"
+                ]
+              },
+              "licenseNumber": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "firstName",
+              "lastName",
+              "gender",
+              "country",
+              "dateOfBirth",
+              "consents",
+              "role",
+              "specialty",
+              "licenseNumber"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "OrganizationCreateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "InvitationCreateDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "roleKey": {
+            "type": "string",
+            "enum": [
+              "individual_user",
+              "professional",
+              "organization_owner",
+              "organization_admin",
+              "professional_manager",
+              "clinical_supervisor",
+              "support_agent",
+              "professional_verifier",
+              "clinical_governance_reviewer",
+              "platform_admin",
+              "platform_super_admin"
+            ]
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false
+      },
+      "InvitationAcceptDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "additionalProperties": false
+      },
+      "InvitationPreviewDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "additionalProperties": false
+      },
+      "AssessmentCreateDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "adult",
+              "parent",
+              "professional"
+            ]
+          },
+          "consentGiven": {
+            "type": "boolean"
+          },
+          "ageYears": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120,
+            "nullable": true
+          },
+          "guardianshipConfirmed": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "professionalConfirmed": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "containsIdentifiableData": {
+            "type": "boolean"
+          },
+          "baseOrientation": {
+            "type": "string",
+            "enum": [
+              "L2",
+              "L3",
+              "L4"
+            ]
+          }
+        },
+        "required": [
+          "role",
+          "consentGiven"
+        ],
+        "additionalProperties": false
+      },
+      "AnswerSubmitDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "complaint",
+              "signal"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "value": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false",
+              "unknown",
+              null
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "kind",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "AssessmentClaimDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "additionalProperties": false
+      },
+      "ReportRenderDto": {
+        "type": "object",
+        "properties": {
+          "assessmentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "definitionVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contentVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "adult",
+              "parent",
+              "professional"
+            ]
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "L0",
+              "L1",
+              "L2",
+              "L3",
+              "L4",
+              null
+            ],
+            "nullable": true
+          },
+          "stop": {
+            "type": "boolean"
+          },
+          "triggeredRules": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "INS",
+                "BRE",
+                "SLP",
+                "CIR",
+                "RLS",
+                "PAR"
+              ]
+            }
+          },
+          "completedAt": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "assessmentId",
+          "definitionVersion",
+          "contentVersion",
+          "locale",
+          "role",
+          "level",
+          "stop",
+          "triggeredRules",
+          "routes",
+          "completedAt"
+        ],
+        "additionalProperties": false
+      },
+      "SignInLinkRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          },
+          "client": {
+            "default": "app",
+            "type": "string",
+            "enum": [
+              "app",
+              "console"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "locale"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

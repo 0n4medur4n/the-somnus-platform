@@ -1,0 +1,12 @@
+# Only the two changed images. Runtime configuration remains Terraform-owned.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: [build, -f, services/somnus-identity-service/Dockerfile, -t, 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/somnus-identity-service:${_REVISION}', .]
+  - name: gcr.io/cloud-builders/docker
+    args: [build, -f, services/somnus-edge-api/Dockerfile, -t, 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/somnus-edge-api:${_REVISION}', .]
+images:
+  - 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/somnus-identity-service:${_REVISION}'
+  - 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/somnus-edge-api:${_REVISION}'
+timeout: 1200s
+options:
+  logging: CLOUD_LOGGING_ONLY

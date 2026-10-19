@@ -1,6 +1,6 @@
 # Usuarios e invitaciones de la consola
 
-Fecha: 19/10/2026. Estado: propuesta pendiente de aprobación arquitectónica.
+Fecha: 19/10/2026. Estado: aprobada por el propietario el 19/10/2026; implementación en curso.
 Base revisada: `origin/main`, commit `d2250f5`.
 
 ## Objetivo

@@ -1,0 +1,1892 @@
+﻿{
+  "destination": "Google Cloud Build, project the-somnus, Artifact Registry europe-west3",
+  "purpose": "Build Identity and edge images from a clean pushed commit; no live configuration changes",
+  "exclusions": "No credentials, .env, Terraform state, clinical documents, frontend sources or user data",
+  "files": [
+    {
+      "path": ".dockerignore",
+      "bytes": 796,
+      "sha256": "f1f3e2ae51511e97d561b1216fe6609a6f922c13f7ef46861afbf82d312f1c84"
+    },
+    {
+      "path": "package.json",
+      "bytes": 986,
+      "sha256": "894c29dba24790dc9a41155630e41bf46d8db97f288c92a608b4c99ef48b3c11"
+    },
+    {
+      "path": "packages/api-contracts/.gitignore",
+      "bytes": 41,
+      "sha256": "cd06a4bb58fa0ada37855220ba510c263e7443ea82828290394cff520da69e69"
+    },
+    {
+      "path": "packages/api-contracts/package.json",
+      "bytes": 637,
+      "sha256": "de729181329b70c97a920712e0ccb75ee0f0b5fcfde42532ce943ed624c82d69"
+    },
+    {
+      "path": "packages/api-contracts/scripts/generate-json-schema.ts",
+      "bytes": 1646,
+      "sha256": "a0bfb9562f26a0f00aed710299d3ed54e47b5130edfb9fb51c9fc802bf5f4055"
+    },
+    {
+      "path": "packages/api-contracts/src/analytics/dashboards.ts",
+      "bytes": 5949,
+      "sha256": "9f00a59dec9021565e6585a3c0ebf200090d00422a21d4ca5005f23b893a430f"
+    },
+    {
+      "path": "packages/api-contracts/src/analytics/funnel-events.ts",
+      "bytes": 6020,
+      "sha256": "b17481f125088c8b7e63e22dcf95db2f60fea701670dfed63466ab5498564468"
+    },
+    {
+      "path": "packages/api-contracts/src/analytics/index.ts",
+      "bytes": 997,
+      "sha256": "e59cb97667548d09c0611e1f4d0cee56a3902439e8a3ce24ca475aaf8df21504"
+    },
+    {
+      "path": "packages/api-contracts/src/consent/consent-check.ts",
+      "bytes": 859,
+      "sha256": "dc6ac2287c8f97691830f4c2507f61e76841211d77d814d479b802444c252174"
+    },
+    {
+      "path": "packages/api-contracts/src/consent/consent-purpose.ts",
+      "bytes": 793,
+      "sha256": "7f7fae6ada7f2f2e5f561f4d84b563b20704373a36838eb4e5c2cb392c112011"
+    },
+    {
+      "path": "packages/api-contracts/src/consent/consent-receipt.ts",
+      "bytes": 3614,
+      "sha256": "d37ce3ce8ea20b4a5e47b0398e8def6410fb61ab8e03f97f8c3e551e814616d9"
+    },
+    {
+      "path": "packages/api-contracts/src/consent/index.ts",
+      "bytes": 910,
+      "sha256": "ee5910708cb0e94f91998f6218bef8e3eca6cca325504884eecf366fd7432cc1"
+    },
+    {
+      "path": "packages/api-contracts/src/consent/legal-document.ts",
+      "bytes": 1729,
+      "sha256": "6170c4e1602b3a940f5e1a3316ac348440f19abbaf6b07171f27b6e4ad52de85"
+    },
+    {
+      "path": "packages/api-contracts/src/drive/drive.ts",
+      "bytes": 15678,
+      "sha256": "b80ea33e4c1f7ad9b9282ee6450166070640ebf9f3dacb10156980e231ed027f"
+    },
+    {
+      "path": "packages/api-contracts/src/drive/index.ts",
+      "bytes": 2258,
+      "sha256": "18eb05267b89f04da32388889817779e669c1684bc551c99e79ed98e3d2d38f7"
+    },
+    {
+      "path": "packages/api-contracts/src/error.ts",
+      "bytes": 1214,
+      "sha256": "d65457e2a0fc176133f0657cfea9ae6d1eb7ce8829b88065ff5ace0c59d8380b"
+    },
+    {
+      "path": "packages/api-contracts/src/events.ts",
+      "bytes": 8736,
+      "sha256": "4054368b71cdaa61d4df9737d58c5f8b5788d6df410f9dd94249d0fdbd4bf26c"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/access-grant.ts",
+      "bytes": 850,
+      "sha256": "de3d78ee43083f0689e8ede750835a019835f86689af81ff778f0a943e937226"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/admin.ts",
+      "bytes": 6315,
+      "sha256": "73e44cfef31366d0e56d33a328cb2f339e96473e93c377f55e1f656bfa9cfb33"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/admin-console.ts",
+      "bytes": 9228,
+      "sha256": "1bf2f3b73a4061d0a2d98c757a58dd50a16db81750c6bcfc3e4f3ee7154d7e63"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/authorization.ts",
+      "bytes": 2817,
+      "sha256": "5560ab1322a6c318035ce88f77c27060ecc5f46b1f32ff55629d161fd4152818"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/break-glass.ts",
+      "bytes": 5423,
+      "sha256": "e0dcad19c05f102c7221b63c0affe20a1be66c5c4bb7c6827e71aac6f5edc7db"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/demographics.ts",
+      "bytes": 3085,
+      "sha256": "ded99024e98ae51557d1375abc149effd5cbcccf6b069418626bfec6cbef775b"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/index.ts",
+      "bytes": 6033,
+      "sha256": "109fa779537b097d93e668b6365f79bda4b1a57a538866e033bc3224980138b1"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/invitation.ts",
+      "bytes": 2553,
+      "sha256": "8c2a6e873a14c66782ebf1b5b68b4f548853dc4ecaae69e2f1d136a0665bb0ec"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/membership.ts",
+      "bytes": 571,
+      "sha256": "42409392a7df6508d676d1068582c4e61adc01ee5d799cbec8b1868a3406bf09"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/organization.ts",
+      "bytes": 1124,
+      "sha256": "6e08209b733158b610834afdffd3d1f1af48e983908a2ce98bbd0d05a57c1bf5"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/platform-invitation.ts",
+      "bytes": 2594,
+      "sha256": "5f7d56eb8783ca3b17eaa42fe97b9334885193c8330d0ec03ad94ff9947a3281"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/roles.ts",
+      "bytes": 729,
+      "sha256": "bab70540f08e569321992c8804ee0d0d256d30da26455919479595c0cee39666"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/staff-invitation.ts",
+      "bytes": 5317,
+      "sha256": "898847a38ac525f366e5bf169dbbd24d3b5f8ff62f83214e4615e10606f74c6f"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/user.ts",
+      "bytes": 10943,
+      "sha256": "b26b0b96173398d33b90369f1a3738aed2f99418a838c93fb25540f8910e78b9"
+    },
+    {
+      "path": "packages/api-contracts/src/identity/verification-case.ts",
+      "bytes": 643,
+      "sha256": "6e8483c139ad7eceed1a4094e75d9a77216ec5c7e008fa820675c2b486fea5b5"
+    },
+    {
+      "path": "packages/api-contracts/src/index.ts",
+      "bytes": 958,
+      "sha256": "838988c3896610e5ccaa22945ee3ad0d153ffc8e4d509b37f65c91fe5c2b3d74"
+    },
+    {
+      "path": "packages/api-contracts/src/locale.ts",
+      "bytes": 451,
+      "sha256": "bbb9b8c294a663aac0efa9f1afa136c28042a334cf591adbdd10ef3b403223de"
+    },
+    {
+      "path": "packages/api-contracts/src/morpheo/assessment.ts",
+      "bytes": 8687,
+      "sha256": "8517b980d273b1e629525695b4d87164aa063176514fbbeb0748e57d4170876a"
+    },
+    {
+      "path": "packages/api-contracts/src/morpheo/content.ts",
+      "bytes": 6600,
+      "sha256": "df7badaa8ccbcf760caf4aba6339d9ed405679631ae7a4413be6ec3d76f059d3"
+    },
+    {
+      "path": "packages/api-contracts/src/morpheo/enums.ts",
+      "bytes": 2544,
+      "sha256": "4d1bdf188923d501200c2eedcd4336718f67aa1e29c9d66031125a520a9243ab"
+    },
+    {
+      "path": "packages/api-contracts/src/morpheo/index.ts",
+      "bytes": 2240,
+      "sha256": "2a271344c054587a4917f3051351983d5d90f8e339a0dd7bcc00c1fb4fb472aa"
+    },
+    {
+      "path": "packages/api-contracts/src/morpheo/maintenance.ts",
+      "bytes": 1359,
+      "sha256": "5e94a05a47df49142030f9d7438654074cced37b716043fbb71eba0c45a71431"
+    },
+    {
+      "path": "packages/api-contracts/src/notification/index.ts",
+      "bytes": 206,
+      "sha256": "d622842f19652c7ef53a923a7fd29cbb6e3cc223ba5e80974d972b533c377625"
+    },
+    {
+      "path": "packages/api-contracts/src/notification/task.ts",
+      "bytes": 2307,
+      "sha256": "34a245fbb28e2e0a7c71dc2f6fb639f3b1b1b92c5e9a5f27344c871905372f5a"
+    },
+    {
+      "path": "packages/api-contracts/src/pagination.ts",
+      "bytes": 1118,
+      "sha256": "886e27eb910b97b41327a883be76d758d2d3c113cae22e86f23063b66e44a050"
+    },
+    {
+      "path": "packages/api-contracts/src/report/index.ts",
+      "bytes": 291,
+      "sha256": "ff2ae90a57d7f37d10acc234db83db787085af94b941625af1a867ed6e4b6c3a"
+    },
+    {
+      "path": "packages/api-contracts/src/report/render.ts",
+      "bytes": 4219,
+      "sha256": "b044159914d2cd7b4171be4b8db6a2a11338d9c8172a849da86a3ba7279975f7"
+    },
+    {
+      "path": "packages/api-contracts/src/reporting/content-review.ts",
+      "bytes": 5047,
+      "sha256": "fbcf5c29ace2e0637411920ea9fe577786a3d400edc893a4c47feb0314bfc5ce"
+    },
+    {
+      "path": "packages/api-contracts/src/reporting/corpus.ts",
+      "bytes": 13339,
+      "sha256": "0d31ec455d5436a43bd4ca9700b9bb545261a23319fecdf6f48488bf972422ab"
+    },
+    {
+      "path": "packages/api-contracts/src/reporting/index.ts",
+      "bytes": 1915,
+      "sha256": "7fbf2b1b727f5c2e7ce28ba9d3e72bee84ea67f033079d8c1ac0bdf33904fa34"
+    },
+    {
+      "path": "packages/api-contracts/src/session/index.ts",
+      "bytes": 193,
+      "sha256": "605d94c0066a72ca45fbd22a2db98f0c236c89dab2ce5c1a4b2d6cc6888e33da"
+    },
+    {
+      "path": "packages/api-contracts/src/session/session.ts",
+      "bytes": 2747,
+      "sha256": "2d8aff3cefd2d79219561bac0559ad3c1f2ca1172d3aefe510223a8632b45a14"
+    },
+    {
+      "path": "packages/api-contracts/src/uuid.ts",
+      "bytes": 1281,
+      "sha256": "f63811d45f3241191c7b5f8c3a45fb3f9fd1e34705ce938134783deaaaf515bf"
+    },
+    {
+      "path": "packages/api-contracts/tsconfig.json",
+      "bytes": 205,
+      "sha256": "36a5afc91d9992012d8aba793a152e4375491ad90c69179435f0706b3c52cebf"
+    },
+    {
+      "path": "packages/cloud-run-client/.gitignore",
+      "bytes": 41,
+      "sha256": "cd06a4bb58fa0ada37855220ba510c263e7443ea82828290394cff520da69e69"
+    },
+    {
+      "path": "packages/cloud-run-client/package.json",
+      "bytes": 635,
+      "sha256": "4441112f7b289430758bacb53b5fe9a7e19a2f76322f3030dfe2840eb3d1baed"
+    },
+    {
+      "path": "packages/cloud-run-client/src/client.ts",
+      "bytes": 8566,
+      "sha256": "091795a43a611895e7a789ddefceac08742cc60af135bc17b698cb9058bdf5fe"
+    },
+    {
+      "path": "packages/cloud-run-client/src/error-mapping.ts",
+      "bytes": 1573,
+      "sha256": "a0b3febbf2d5c86eb88c67af3cd45e670ce01d271f073826ec8b7561d6be536a"
+    },
+    {
+      "path": "packages/cloud-run-client/src/error-mapping-types.ts",
+      "bytes": 107,
+      "sha256": "f65f371390504f0a3c982efdd9b62a8ee223ce919d5f8689f17fd666453d19cb"
+    },
+    {
+      "path": "packages/cloud-run-client/src/google-token-provider.ts",
+      "bytes": 1961,
+      "sha256": "baa3704352c62ab5a8383046c4bf39ae7d6da88931f66e6cf232c741e80fcd2e"
+    },
+    {
+      "path": "packages/cloud-run-client/src/index.ts",
+      "bytes": 579,
+      "sha256": "63d193cb893c8faf2aa1b56bf6df8b752ce1febd808517ffa8b08071213feb3c"
+    },
+    {
+      "path": "packages/cloud-run-client/src/retry.ts",
+      "bytes": 1623,
+      "sha256": "149c4125f2e7061c7586d2b13f94a4938dc6910d3b52865964b4eb76b5ef5d37"
+    },
+    {
+      "path": "packages/cloud-run-client/src/types.ts",
+      "bytes": 754,
+      "sha256": "af969ed7d9acc347ef7a51df23064c63bccfab32cb4f926e5b48d5e1862dcaf7"
+    },
+    {
+      "path": "packages/cloud-run-client/tsconfig.json",
+      "bytes": 205,
+      "sha256": "36a5afc91d9992012d8aba793a152e4375491ad90c69179435f0706b3c52cebf"
+    },
+    {
+      "path": "packages/config/.gitignore",
+      "bytes": 41,
+      "sha256": "cd06a4bb58fa0ada37855220ba510c263e7443ea82828290394cff520da69e69"
+    },
+    {
+      "path": "packages/config/package.json",
+      "bytes": 534,
+      "sha256": "3d70bf57d0e96ba193415a36cdf1f6d8254e5de8a01d7838301ad5ddd0707953"
+    },
+    {
+      "path": "packages/config/src/config.ts",
+      "bytes": 4093,
+      "sha256": "f09fbe73a84b85bb965fd34b6235cf26b5088da0c4d6297fa54c11093e4cb319"
+    },
+    {
+      "path": "packages/config/src/define.ts",
+      "bytes": 793,
+      "sha256": "1cb3ddf248809dab7bd94f687814c261830be42a8987d17c9b25cc332682b0c7"
+    },
+    {
+      "path": "packages/config/src/index.ts",
+      "bytes": 313,
+      "sha256": "a866644853b88934411b814424e53bc4deb1784342d48771d1802a865bfc327d"
+    },
+    {
+      "path": "packages/config/tsconfig.json",
+      "bytes": 205,
+      "sha256": "36a5afc91d9992012d8aba793a152e4375491ad90c69179435f0706b3c52cebf"
+    },
+    {
+      "path": "packages/design-system/.gitignore",
+      "bytes": 41,
+      "sha256": "cd06a4bb58fa0ada37855220ba510c263e7443ea82828290394cff520da69e69"
+    },
+    {
+      "path": "packages/design-system/package.json",
+      "bytes": 419,
+      "sha256": "46af44f7b133ef13564949cd4423fda045afb582586b2c89d11a4bd47a055bc1"
+    },
+    {
+      "path": "packages/design-system/src/index.ts",
+      "bytes": 146,
+      "sha256": "3867df9c168041f637c760bbc0df8202c93cb01b9c833b0f81093cf7f905baf3"
+    },
+    {
+      "path": "packages/design-system/src/tokens.css",
+      "bytes": 1649,
+      "sha256": "e6a8188e011e83504e2f1362e5af9e44d15a6863f1db9b7ac9aae375cc448844"
+    },
+    {
+      "path": "packages/design-system/src/tokens.json",
+      "bytes": 534,
+      "sha256": "affbbb60e19fd3facad829cc11879cff35521eee48381c4da284eef120b2976c"
+    },
+    {
+      "path": "packages/design-system/src/tokens.ts",
+      "bytes": 2974,
+      "sha256": "ddea71e3a82f8c68199da434ed84a67ba1ed5972656757986292d54658c157a6"
+    },
+    {
+      "path": "packages/design-system/tsconfig.json",
+      "bytes": 118,
+      "sha256": "c1483901e2c1ff0f9b07e2bf45cbef8fb4f923e16ca5eba348cd686421461777"
+    },
+    {
+      "path": "packages/errors/.gitignore",
+      "bytes": 41,
+      "sha256": "cd06a4bb58fa0ada37855220ba510c263e7443ea82828290394cff520da69e69"
+    },
+    {
+      "path": "packages/errors/package.json",
+      "bytes": 460,
+      "sha256": "5f5c698a69416eecfaa9e0776ef70caf269d080b32d7fd9d9bf6faddd4ad0760"
+    },
+    {
+      "path": "packages/errors/src/codes.ts",
+      "bytes": 4647,
+      "sha256": "1a2949e5df6355901c1a3b839d4c8dd567dfff639fd736496ae088c692fa7f0a"
+    },
+    {
+      "path": "packages/errors/src/error.ts",
+      "bytes": 1314,
+      "sha256": "1c3167cdb5891a2fdd75fd23d692ad7bc13a95028568c48d66a4cf5d316d7a53"
+    },
+    {
+      "path": "packages/errors/src/index.ts",
+      "bytes": 242,
+      "sha256": "3e253495b4597a70ab7907842a91d7ba08e94a6dba2938f34a12bbb700fbe4e6"
+    },
+    {
+      "path": "packages/errors/tsconfig.json",
+      "bytes": 205,
+      "sha256": "36a5afc91d9992012d8aba793a152e4375491ad90c69179435f0706b3c52cebf"
+    },
+    {
+      "path": "packages/i18n/.gitignore",
+      "bytes": 68,
+      "sha256": "fc25d1d8f3a6856cce9e5de2132e1c1a8962ce7a3700f8262069d4c22eb50cb5"
+    },
+    {
+      "path": "packages/i18n/package.json",
+      "bytes": 396,
+      "sha256": "476d160b9e34a45318308dd8b6d1c91d1616d159012e78bc4d10781e77502ce4"
+    },
+    {
+      "path": "packages/i18n/src/completeness.ts",
+      "bytes": 2504,
+      "sha256": "6f6340b74b502ee8632f9f35e3f4b5dd73ca8837357854d1c51a3f1592e01be4"
+    },
+    {
+      "path": "packages/i18n/src/index.ts",
+      "bytes": 382,
+      "sha256": "756b363fd94a64b1955193cfff49840f604a280f6ca0b0701d338fbba8bf345f"
+    },
+    {
+      "path": "packages/i18n/src/loader.ts",
+      "bytes": 3557,
+      "sha256": "40eb44193ab0a5a02715efe24ef2a698254c84f312046b6a2114ba1b6c1ffc48"
+    },
+    {
+      "path": "packages/i18n/src/types.ts",
+      "bytes": 304,
+      "sha256": "d99884824fd995c90713896a8c0f3698578bddac2fa327476909b2c554980592"
+    },
+    {
+      "path": "packages/i18n/tsconfig.json",
+      "bytes": 137,
+      "sha256": "7fc4ef69f3b7e2facbe8377521697d40bb5e7432bdede3541bbd80e7317f3858"
+    },
+    {
+      "path": "packages/observability/.gitignore",
+      "bytes": 41,
+      "sha256": "cd06a4bb58fa0ada37855220ba510c263e7443ea82828290394cff520da69e69"
+    },
+    {
+      "path": "packages/observability/package.json",
+      "bytes": 579,
+      "sha256": "61e79a9aaa9be7b7f863c38a6ca5fd305fe43b152b186f928cafd05cb6ae9d2f"
+    },
+    {
+      "path": "packages/observability/src/correlation.ts",
+      "bytes": 1749,
+      "sha256": "bba901b77721dc6650b7a30942bb37d6e5ca60913900e937b4564f2fbdd38207"
+    },
+    {
+      "path": "packages/observability/src/index.ts",
+      "bytes": 496,
+      "sha256": "ba82988521c214300bfef2d1ce0e29c72292804a1d90f0863f331f10e8f7e125"
+    },
+    {
+      "path": "packages/observability/src/logger.ts",
+      "bytes": 5374,
+      "sha256": "02fdb9c1125fffc6c9fc9d27784bafa6786c6f892eabb6cac604f70861fba5bd"
+    },
+    {
+      "path": "packages/observability/src/patterns.ts",
+      "bytes": 1744,
+      "sha256": "afef9fa8878a048032a5c828658a61dc3260fd8ebfdd7d24293cf52d93a0063c"
+    },
+    {
+      "path": "packages/observability/src/redact.ts",
+      "bytes": 1913,
+      "sha256": "af963f53b8b2e7c63664e735377eb22ab29ffee7d98ce745cb99216b321b6618"
+    },
+    {
+      "path": "packages/observability/src/tracing.ts",
+      "bytes": 1519,
+      "sha256": "c40b06cb5cc66a9697772e0fba0246be3470e7d5b724ff39c8096830e04e1452"
+    },
+    {
+      "path": "packages/observability/tsconfig.json",
+      "bytes": 205,
+      "sha256": "36a5afc91d9992012d8aba793a152e4375491ad90c69179435f0706b3c52cebf"
+    },
+    {
+      "path": "packages/test-utils/.gitignore",
+      "bytes": 41,
+      "sha256": "cd06a4bb58fa0ada37855220ba510c263e7443ea82828290394cff520da69e69"
+    },
+    {
+      "path": "packages/test-utils/package.json",
+      "bytes": 494,
+      "sha256": "3983121217b555ec838d91b5339ce014993f239ba5dc3c9d0ccf3cdf7c6799c3"
+    },
+    {
+      "path": "packages/test-utils/src/capture-logger.ts",
+      "bytes": 725,
+      "sha256": "7f48381ceeec65657e0215adaad585dfae456350e7eb5042ced52978d6a627e3"
+    },
+    {
+      "path": "packages/test-utils/src/fake-timers.ts",
+      "bytes": 620,
+      "sha256": "3113f18a05453b4d63501b72315602d18aa47222ac8315a1fb5cd423e82e65da"
+    },
+    {
+      "path": "packages/test-utils/src/index.ts",
+      "bytes": 144,
+      "sha256": "c0021127c82ba28b7f4cd2c03ffd0a2873bce2de56e244b516170ce79865a2a4"
+    },
+    {
+      "path": "packages/test-utils/tsconfig.json",
+      "bytes": 205,
+      "sha256": "36a5afc91d9992012d8aba793a152e4375491ad90c69179435f0706b3c52cebf"
+    },
+    {
+      "path": "packages/tsconfig/base.json",
+      "bytes": 753,
+      "sha256": "7226970a4b7de30e46cf30f0149ad1a315223b72afbc35dfe36966941e8cecd8"
+    },
+    {
+      "path": "packages/tsconfig/library.json",
+      "bytes": 188,
+      "sha256": "348a4860e0371427496ecaeca76bb5d379125641e3ac43c5ad088c836a69bbd6"
+    },
+    {
+      "path": "packages/tsconfig/package.json",
+      "bytes": 206,
+      "sha256": "992c80aa752efd810826a846742ae2689d4df20decdb58920d79749372402ad2"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 546020,
+      "sha256": "c83fbd59f884add6e286e7381951b499523eaaa95680669eabce47d7d54f967d"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 1107,
+      "sha256": "a248a436d91c1d589f004d2a127ed87b1baa0b1bb55bd470bf2b2993d909ab15"
+    },
+    {
+      "path": "scripts/cloudbuild-admin-user-images.yaml",
+      "bytes": 703,
+      "sha256": "ffa1d618d3ec2285cb9829e175de2855f2f8f82b3a4963e9a1b53be8c948f94b"
+    },
+    {
+      "path": "services/somnus-edge-api/.gitignore",
+      "bytes": 41,
+      "sha256": "cd06a4bb58fa0ada37855220ba510c263e7443ea82828290394cff520da69e69"
+    },
+    {
+      "path": "services/somnus-edge-api/Dockerfile",
+      "bytes": 2334,
+      "sha256": "2b74dc14a7bfa4b5954cb745dd53b36e1a29e0136d49ca4173b79a1289ba60d3"
+    },
+    {
+      "path": "services/somnus-edge-api/nest-cli.json",
+      "bytes": 214,
+      "sha256": "571f7760f530b8c09f5384fdb7c83799b49221ea595504c5cab4a4b0effab2c2"
+    },
+    {
+      "path": "services/somnus-edge-api/package.json",
+      "bytes": 1804,
+      "sha256": "675b6c0da64dcbb8f82c71c88ff6655ef6211af2221b1e7aacb7fd0d7903cb86"
+    },
+    {
+      "path": "services/somnus-edge-api/scripts/generate-openapi.ts",
+      "bytes": 1782,
+      "sha256": "443f6ffbc9aa24032bace9dcc4d4fc731459a6a9d51a2a138862003464f40a47"
+    },
+    {
+      "path": "services/somnus-edge-api/src/app.module.ts",
+      "bytes": 3033,
+      "sha256": "d8b60fe7dd3efd1df834ce75d1cfdccef9ad4c91c7757a837f0dc08fd7c27ed1"
+    },
+    {
+      "path": "services/somnus-edge-api/src/bootstrap/csrf-state.ts",
+      "bytes": 1374,
+      "sha256": "60dd903f3bd5068c93fc7856ecb271d367633ef78002cdfb78035b06ec7278e3"
+    },
+    {
+      "path": "services/somnus-edge-api/src/bootstrap/csrf-token.ts",
+      "bytes": 2861,
+      "sha256": "57f07475224b4a8f05f314b5fcc30bf273e15f9681a8693ec826243c5b2fd973"
+    },
+    {
+      "path": "services/somnus-edge-api/src/bootstrap/harden.ts",
+      "bytes": 7804,
+      "sha256": "b6021c5775f71047d6490a7cd2240581a1204cca769fd907e7c5112dc908ac17"
+    },
+    {
+      "path": "services/somnus-edge-api/src/common/composition.util.ts",
+      "bytes": 948,
+      "sha256": "02aafc1b7da8820c5dae7b6f1478476954cc799198d4fe75f8041f9c04ebb131"
+    },
+    {
+      "path": "services/somnus-edge-api/src/common/filters/somnus-exception.filter.ts",
+      "bytes": 5102,
+      "sha256": "2605a637e641207597db07a5191873363c872b1bdc3b2b4d0afc52a57f23834e"
+    },
+    {
+      "path": "services/somnus-edge-api/src/common/interceptors/correlation.interceptor.ts",
+      "bytes": 2279,
+      "sha256": "a21b79a7ada79ad080e133ad196477a17fc30c217ad6e40db4d43bc7c9c88442"
+    },
+    {
+      "path": "services/somnus-edge-api/src/common/interceptors/correlation-id.decorator.ts",
+      "bytes": 624,
+      "sha256": "f6ca3c1bec95c84ed2e42ae3c32318a6b926ec3350f790968e89a10e7d5c991d"
+    },
+    {
+      "path": "services/somnus-edge-api/src/common/pipes/zod-validation.pipe.ts",
+      "bytes": 1400,
+      "sha256": "ecc230b1f04194c38d26ac5f439f11b4c0ec74c5298ce29d38740bddd06225d5"
+    },
+    {
+      "path": "services/somnus-edge-api/src/config/edge-config.ts",
+      "bytes": 7578,
+      "sha256": "6253816b35b03e571fcf3dba55011d0055662c12d2cd727d7c5c79abaea9cf5e"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/events/event-publisher.ts",
+      "bytes": 1028,
+      "sha256": "b054ff79c5e81d6f24e50ba57140041598197ce903d8f762b2db571bcab7bb30"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/events/events.module.ts",
+      "bytes": 434,
+      "sha256": "c75461bb747812ea8a7aa2352b24ea16b198773c0327bb311d62299f9067a19c"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/events/logging-event-publisher.ts",
+      "bytes": 1168,
+      "sha256": "2c793b314622ca043ad489eafc2cb010817801e74d8640a9f884ab08665a9ad3"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/firebase/firebase.module.ts",
+      "bytes": 625,
+      "sha256": "7563aec0b4a2ba05c7abe9696167db4d8bef5a55d4b6a8b82094158737982607"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/firebase/firebase.service.ts",
+      "bytes": 6471,
+      "sha256": "51399bccf0b4f5a95410f64d02cd3346305423c2c22d62d61eb7fa4a846aaac2"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/internal-clients/headers.ts",
+      "bytes": 391,
+      "sha256": "4c5b6f3ad6caf9ba46b374eaa2c4198f5e2a7eebf2ea757a79719b472e299f73"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/internal-clients/internal-clients.module.ts",
+      "bytes": 5378,
+      "sha256": "f9308b0a57401db093c3e785efae18029d86e8ffb66cba2acb7a9c6c249d8666"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/internal-clients/token-provider.ts",
+      "bytes": 1178,
+      "sha256": "abccf13ac02fa181cdf5f962399edb90def0762dfaaed2b29101a0fbab3a7faa"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/logger/somnus.logger.ts",
+      "bytes": 1786,
+      "sha256": "a3669b66556d144b16c9d068ce523b2f9c750c5f3e89d6fcede1ced7fb26a707"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/notification-queue/notification-queue.ts",
+      "bytes": 3346,
+      "sha256": "562c2d3b44147df02c6da47bdc81af802670189f930fd55e9a081e2af97933fb"
+    },
+    {
+      "path": "services/somnus-edge-api/src/infrastructure/storage/profile-photo-store.ts",
+      "bytes": 3733,
+      "sha256": "f979ec3ca7c0aca4d32000db88742b60e020b6053c54a05293ffddf69f3ad425"
+    },
+    {
+      "path": "services/somnus-edge-api/src/main.ts",
+      "bytes": 1956,
+      "sha256": "32f0494c25a5ad57ca367da471c6fa5d6dcd4b8f013396ae8cd306af7cafe30a"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin.dto.ts",
+      "bytes": 3550,
+      "sha256": "60cb1192ce96218b9ffbf7d16d8f2fff064f66294217f85879a41d36cd88c25b"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin.module.ts",
+      "bytes": 3299,
+      "sha256": "bc4ba74e029b24ef5a528659c8fda6a4850fc8fbefd8f456a68e5a3a858390f0"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin.service.ts",
+      "bytes": 4451,
+      "sha256": "9152be48e18dc1be89209082da3de86463985ce463d02086be36d63078c7300d"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-audit.interceptor.ts",
+      "bytes": 4582,
+      "sha256": "8650b7f72b84b453b1958523ccb8da09f96f7555a0d4f7fb9709bd40e5848dc2"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-break-glass.controller.ts",
+      "bytes": 4574,
+      "sha256": "805362705b2b4860a829700a2f6ee817bbfd8d0cbf5fe4ec280c7c8da5ba8676"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-break-glass.service.ts",
+      "bytes": 2202,
+      "sha256": "c127c49165fa625dc0ad0fc6eb906683bde3c1ebff8436ab0c7721642192cb87"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-capability.guard.ts",
+      "bytes": 2683,
+      "sha256": "ca9b6b0f75fcacd8b25b396f350a8250d56c5675397240ae18af9c49566c5ddd"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-content-review.controller.ts",
+      "bytes": 3763,
+      "sha256": "15705b0739399cc57c70b8c720879202b432784d6fa0a0941aa4f4e40a94a795"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-content-review.service.ts",
+      "bytes": 2187,
+      "sha256": "ef75ec5e1f6e1fad98b04c53466750abfd98ffec01098ff14c979524d133ceca"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-corpus.controller.ts",
+      "bytes": 12717,
+      "sha256": "61b2d212c4fcf06a248140bb17d9b7386c48d74aab4603a991c3df52e28e765f"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-corpus.service.ts",
+      "bytes": 3408,
+      "sha256": "c15b287fac8a272f681056e7326168b7840bd13ab484843e07484aeb2079c82e"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-drive.controller.ts",
+      "bytes": 24649,
+      "sha256": "39074d553b506622f8cbbc0e419e5b36dc4eb6770daf2e57e48a2558c0cde73a"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-drive.dto.ts",
+      "bytes": 1688,
+      "sha256": "e3e4b8ed15021cc6357734150da00f6d9dbd9b428c1b951d555ee536b550ee5f"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-drive.service.ts",
+      "bytes": 2467,
+      "sha256": "969d70374c6b839bedd9afbc499fe084113fe7d2c44883de28b61290a7e0996f"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-insights.controller.ts",
+      "bytes": 4612,
+      "sha256": "9e0ebff472366d670dffc15c594f0922953206bee0da5a642a26d3acac6a83c2"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-insights.service.ts",
+      "bytes": 1899,
+      "sha256": "997f60a627545cd071663b165f1785705e3d0c4806222bf6a0f30128571615dd"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-me.controller.ts",
+      "bytes": 2045,
+      "sha256": "10f228ebf7a8b6d80f3ee83fe1cea942836d855ed814b68242c9ad1b18b6d9af"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-operations.controller.ts",
+      "bytes": 12956,
+      "sha256": "ca8c9daa17e3c0e08eb3eaa7ad50d333b3bc45c28cd1ee87c8c8f324ffce2bc2"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-platform-invitations.controller.ts",
+      "bytes": 3744,
+      "sha256": "5b290bed17a5eabb9888e9a8ba96593b75fbd19859d5cc4a6b0b5c4f2c7264b7"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-route.decorator.ts",
+      "bytes": 1172,
+      "sha256": "f40de00a349f24fc00ad2dbdd58be296ff8802393e085cdbaf36a265c26dc109"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/admin/admin-staff-invitations.controller.ts",
+      "bytes": 4366,
+      "sha256": "d4c8597200b9a22fc6235ab4c27398d57fae429ecd4c6cb5cce5403bddf72b74"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/auth-email-link/auth-email-link.controller.ts",
+      "bytes": 1381,
+      "sha256": "42e4d1538a3e808a6d1836b94dff989aed97f439af79c83f5b00eb0420b92152"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/auth-email-link/auth-email-link.module.ts",
+      "bytes": 404,
+      "sha256": "fbd4c292a70ead681b94022a8d7d8b3bd3dc36b5c3e631829bf4583d163c5130"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/auth-email-link/auth-email-link.service.ts",
+      "bytes": 3891,
+      "sha256": "51b2b015e69311665fbd8876396cbd713afa2f5899caf1293a422f91465b252f"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/auth-email-link/sign-in-link.ts",
+      "bytes": 1366,
+      "sha256": "991abca09bcd8d83b83526787962bfc884173109faf706cabaf39aaaaa9d190c"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/consent/consent.dto.ts",
+      "bytes": 397,
+      "sha256": "0d7322df338b960bfc964b61997e48e321c61f7602516793f62df6ac2387e965"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/consent/consent.module.ts",
+      "bytes": 670,
+      "sha256": "bd769b5b0d5acbb4b4c8f3caa8f5fbfd019d440a30789381e6e5de78feeaa08c"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/consent/consent.service.ts",
+      "bytes": 4466,
+      "sha256": "f7f67eadc8502807c0807d4ec4dc7c03a425209e8d5b891a25d53a2fd29caf70"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/consent/consents.controller.ts",
+      "bytes": 2657,
+      "sha256": "93f1898b35514a15fa17e91d8fcf58d2037e39bd8119b37d74b5fa97e4d028d9"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/consent/legal-documents.controller.ts",
+      "bytes": 1042,
+      "sha256": "3782620baf3ba95ecb11583f5d9aad2b03e3bc11e94501ecbfc41c060e50ea09"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/health/health.controller.ts",
+      "bytes": 705,
+      "sha256": "6997f092150f8ccba114523a159c91355053c1d7e215c69dffee877a1d2dedd7"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/health/health.module.ts",
+      "bytes": 175,
+      "sha256": "a5b08849d3130eec9c601b9dd5bf0ee16be814031f2ea0d31bedaa75f299eafc"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/me/me.controller.ts",
+      "bytes": 4108,
+      "sha256": "d37897df53c16fab9ae3dfc62f88fcbfa992af37d683b3faf335569ccc931339"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/me/me.dto.ts",
+      "bytes": 403,
+      "sha256": "08d98233791355083d22d53617f038a803cd7433fa43b7eb5bf8cbfc201c5c4f"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/me/me.module.ts",
+      "bytes": 874,
+      "sha256": "710a684411a055616f541aace627b6fd0585160965ca31a9a5f7fa2ce4a96c21"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/me/me.service.ts",
+      "bytes": 6306,
+      "sha256": "3cbaeee5ec7ef071970e0a15aa5e724149d333af168bfcbd868bc20202d26637"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/me/profile-photo.ts",
+      "bytes": 3532,
+      "sha256": "8329cabb3a6e24c122a350e6e26500ca580683517aee2d894017b7f84de21690"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/morpheo/assessments.controller.ts",
+      "bytes": 3956,
+      "sha256": "01a4471f8afcc7303f41355f68fd760224e0a19da4cd32a0260a1e9b0f5f9090"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/morpheo/morpheo.dto.ts",
+      "bytes": 519,
+      "sha256": "3c8e845e1439b22511faac9e8be4ca29943815d9de9b18b897cdd7059cd6ba4f"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/morpheo/morpheo.module.ts",
+      "bytes": 700,
+      "sha256": "4b381e248cf7330757c1f840b29eee8b441da243e6111ab0a8ed708f54442c2c"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/morpheo/morpheo.service.ts",
+      "bytes": 6049,
+      "sha256": "4185f30b99f78ae5e9541c37a5a3eee6fcf19a69de3539ed0936384a11fab74f"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/organizations/invitations.controller.ts",
+      "bytes": 2741,
+      "sha256": "351b631ae0ec405253dd3db1dd0cf758060b83347ca37e8d6d14e35f263481fd"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/organizations/organizations.controller.ts",
+      "bytes": 2723,
+      "sha256": "2f9441d8a13155b495b90732c17b816a4665e52548a8feddd9913616655966df"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/organizations/organizations.dto.ts",
+      "bytes": 665,
+      "sha256": "9670ee1124381882c03d36d60d45049d4ca8f60230cac572b80a3b83841cc942"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/organizations/organizations.module.ts",
+      "bytes": 808,
+      "sha256": "28189cecb812081c9b684e0374e4ad4c7f55bb2432dbb37d3b14c3bda0ca35d0"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/organizations/organizations.service.ts",
+      "bytes": 5619,
+      "sha256": "689b880b16ec8fa8aa98b41d713007348bc6cc0fc743fbbe5c0c925af465c565"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/platform-invitation/platform-invitation.controller.ts",
+      "bytes": 1288,
+      "sha256": "8ffbe88c535e202b1e705c36ab1f4321c8f933da6b6b305d0db32aab4443503c"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/platform-invitation/platform-invitation.dto.ts",
+      "bytes": 338,
+      "sha256": "8cc362bc70c82bb654960a150fa7da1190836458b9dd8e74200f74febd05b600"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/platform-invitation/platform-invitation.module.ts",
+      "bytes": 606,
+      "sha256": "d3ce148dc1a0d112bd181af2755bcb5cdc82178b1b6d9d869aecbb9807c384ae"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/platform-invitation/platform-invitation.service.ts",
+      "bytes": 1710,
+      "sha256": "03cfad23c23202b4f711057ce9404d2f5e1738500420278c3aae69c39947d531"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/platform-invitation/platform-invitation-email.service.ts",
+      "bytes": 1556,
+      "sha256": "d2d13916fcfe3f7dbd19616feec3c730549e7137acd3e34176d4e876846c6f33"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/registration/registration.controller.ts",
+      "bytes": 1701,
+      "sha256": "f51dfad52553bf6376535740fda9c0ba45a43c4ed21277e82295511aa3aa88d0"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/registration/registration.dto.ts",
+      "bytes": 1056,
+      "sha256": "6d9434fe3179858013c779e12cbe1c781b1b96f5fb7719e72bc4b10e20164060"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/registration/registration.module.ts",
+      "bytes": 397,
+      "sha256": "4d798c676172d4b71972669627e2bdbcc26a1996bd0d2bfdcc25c3f98148d6c3"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/registration/registration.service.ts",
+      "bytes": 2984,
+      "sha256": "94ed5f0f81420fd627a83c64877a56d53f1b783dba1139e7efe25b8247fa7745"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/reports/person-report.controller.ts",
+      "bytes": 1381,
+      "sha256": "e2cccc98ac064bb1bb8837aba2f93e1f447789fb320773a7c07b2beb87950944"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/reports/reports.controller.ts",
+      "bytes": 2399,
+      "sha256": "27010fd69f3d47a20572a795f07c8d97f6bf6bf37f14f1245874432da5633794"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/reports/reports.dto.ts",
+      "bytes": 288,
+      "sha256": "8001f5d4eedd7f4ca59bfa4dfbf258aae048c372c3a1e14e490b2a7f6d99cc1e"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/reports/reports.module.ts",
+      "bytes": 711,
+      "sha256": "3fcaf84377508989a7be47b0ac66862019ab7c6aef5f093eaefef1e95f19902e"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/reports/reports.service.ts",
+      "bytes": 4869,
+      "sha256": "e86845be257bb0a8d09f6d4217e29ac54f9ac974124624660cdde52631226d0a"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/sessions/actor-resolver.service.ts",
+      "bytes": 2219,
+      "sha256": "62ef7f672da8bc3689655a69b64833cd6435437527525c802fe05b7f7f1f6cb9"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/sessions/current-session.decorator.ts",
+      "bytes": 856,
+      "sha256": "fad798c66c09cf04423294b726c2951d5303cb9ac7790fb4429086be7950aef2"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/sessions/session.dto.ts",
+      "bytes": 194,
+      "sha256": "54dd03882c3b8e37036fa78c3dc0760c11ef9366f28e70b6d4a1eb3f22498b33"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/sessions/session.guard.ts",
+      "bytes": 1981,
+      "sha256": "9b632a1ad5086472e19ddb740dbf99af08d00cb5f9acaf66cbd0c0f0396b43dc"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/sessions/session.service.ts",
+      "bytes": 5216,
+      "sha256": "3f0fe17b77b9084c17a90500bb562e945c4e4ee6a24207e3e79b97a5a65e9a02"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/sessions/sessions.controller.ts",
+      "bytes": 6309,
+      "sha256": "2ae24a84fdca912b4b67cdcadc90ac643c15aa3fec7747b20c90ff8e3f2cd8d2"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/sessions/sessions.module.ts",
+      "bytes": 471,
+      "sha256": "eea98b9a32f42f25b179b0328c3f2292fffe1cbaf644f26f36ef9ae3c4659dee"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/staff-invitation/staff-invitation.controller.ts",
+      "bytes": 2023,
+      "sha256": "7f1470402cb85662e7f5dee7dda87b4c2be46e297818ec4dc2f136598b826f86"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/staff-invitation/staff-invitation.module.ts",
+      "bytes": 739,
+      "sha256": "7259aa2d5ed3f45d54834ac559d91b8e8545b7a79b8c309ccce87b6c4a36e48e"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/staff-invitation/staff-invitation.service.ts",
+      "bytes": 2700,
+      "sha256": "dda8698a035330405aaa92083084c928a79ec267ad548768cf40303c81a539d7"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/staff-invitation/staff-invitation-email.service.ts",
+      "bytes": 2469,
+      "sha256": "39ebda9efb9bc0ec3ae768c613b977b45102a78786c5c7045927c80ee1065c7d"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/version/version.controller.ts",
+      "bytes": 756,
+      "sha256": "0cf321e3e2c0dba5aa5738a6c5cf30838dda9fc5369fb8f7ba78e441c6f533da"
+    },
+    {
+      "path": "services/somnus-edge-api/src/modules/version/version.module.ts",
+      "bytes": 179,
+      "sha256": "ee9e97614d342652412eca157698137f48ec4b4e2a495c30f989cb764dc3b285"
+    },
+    {
+      "path": "services/somnus-edge-api/tsconfig.build.json",
+      "bytes": 114,
+      "sha256": "4c47f0b7827c8516a045bce3c6892887a99186f05b39879d4f5ae8796816a299"
+    },
+    {
+      "path": "services/somnus-edge-api/tsconfig.json",
+      "bytes": 555,
+      "sha256": "796f0d822039eccd5f553fbe7ae8e86c540adc9608209d4df87fe281210605be"
+    },
+    {
+      "path": "services/somnus-identity-service/.dependency-cruiser.cjs",
+      "bytes": 1552,
+      "sha256": "ad9ef365d90c9baba91519a613503eed3d8346362fe3ec6640cd37febb1498a0"
+    },
+    {
+      "path": "services/somnus-identity-service/.gitignore",
+      "bytes": 41,
+      "sha256": "cd06a4bb58fa0ada37855220ba510c263e7443ea82828290394cff520da69e69"
+    },
+    {
+      "path": "services/somnus-identity-service/Dockerfile",
+      "bytes": 2556,
+      "sha256": "f822023ab42875b985b59b8139414c491764ef18e0358a9fdd125127bf2c3e95"
+    },
+    {
+      "path": "services/somnus-identity-service/drizzle.config.ts",
+      "bytes": 293,
+      "sha256": "14d63cc18e50851d0670a680b97b25e912b2288cd6ef24857485156375dfe24f"
+    },
+    {
+      "path": "services/somnus-identity-service/drizzle.consent.config.ts",
+      "bytes": 575,
+      "sha256": "845909d7c2befad4308e9175d4af3489dc5a9a1f25a13fabbfa0d0b56b2a5b8c"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0000_initial_identity_schema.down.sql",
+      "bytes": 1273,
+      "sha256": "5a390c8b2cd7bfc36a0882b1c260a4727fcc47d1a12b442b123721c3ec78dbc8"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0000_initial_identity_schema.sql",
+      "bytes": 8159,
+      "sha256": "9bea28bd9f76cba343a30952e42b2416d60b8bcae1122d12dcdb692429df1267"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0001_seed_platform_roles.down.sql",
+      "bytes": 351,
+      "sha256": "424c325ae69e235f719b6533df19b3bb2509e1f4a2744e786bf70be109756e9d"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0001_seed_platform_roles.sql",
+      "bytes": 1635,
+      "sha256": "3cca3f1991ce4791efeea50728243f38e141c25fc2a0a007231d611bc1018711"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0002_registration_role_branch.down.sql",
+      "bytes": 444,
+      "sha256": "a7ef3d9a9c6898d253136399c766e500556bed87d2e9275df5b28f95766808c8"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0002_registration_role_branch.sql",
+      "bytes": 324,
+      "sha256": "3c5ebf8ab1f357a973ac176e4607b534c1e812dc76055eb653f2e70cde8ab0ad"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0003_nullable_assigned_by.down.sql",
+      "bytes": 639,
+      "sha256": "f8c68cd4eab5ff7b84ac942fd20f49faa9ac5a910937c5dc8e2cda5d707427f3"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0003_nullable_assigned_by.sql",
+      "bytes": 71,
+      "sha256": "e3cbf66da399991256b29b5d5e29fa8ea30f77596a1fbaf04e801af743c7c941"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0004_profile_photo.down.sql",
+      "bytes": 290,
+      "sha256": "de4c3f7ad6e295f1e0d8d09235d509c69a24eb7fb75cc32d8ea777ef2994d265"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0004_profile_photo.sql",
+      "bytes": 67,
+      "sha256": "7a28d3fa9923c24a39cdae49240eb8c431cb8f61fee17efe2088395f0c24a6bf"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0005_profile_about.down.sql",
+      "bytes": 341,
+      "sha256": "5235910a55ba9d829bb5765570fa1e1b280811f80458af6c6cee1e5e76e9ff83"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0005_profile_about.sql",
+      "bytes": 256,
+      "sha256": "dade4d0f17a032389289eaa575635a34bd3c4de39ceace73f0ff2f9a3f036601"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0006_staff_invitations.down.sql",
+      "bytes": 227,
+      "sha256": "f3ca850e6d514b235c54055ffc49694f77057729dc9232f741abdf1dd5e955bd"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0006_staff_invitations.sql",
+      "bytes": 676,
+      "sha256": "fe0f432ccf69cd14710cb62cc5d62892d09a526be6b402d7fdffcfa2959257e5"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0007_mean_jackal.down.sql",
+      "bytes": 46,
+      "sha256": "e19b12e2a57beabd9463e235762f6a364586ac5a961ce4bf6bbecfc5c2fd494c"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/0007_mean_jackal.sql",
+      "bytes": 689,
+      "sha256": "5bfdf22a51bb2c03066077955b35b2ef1ed0ebc383db0715248077822217132f"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/meta/_journal.json",
+      "bytes": 1226,
+      "sha256": "224372d958d09273f506efccce91f7cb8043cc049381f0d5187d355a9c9d5178"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/meta/0000_snapshot.json",
+      "bytes": 33945,
+      "sha256": "833df2cc9a4e3341a8684de787dfcf875acdef808da6d6529a3c6b4c7309ef7e"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/meta/0001_snapshot.json",
+      "bytes": 33945,
+      "sha256": "4e6460789b4b9d212f4c5c3686d1b9103079a78efc66f23c54e335d8d25efda4"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/meta/0002_snapshot.json",
+      "bytes": 34629,
+      "sha256": "745000678bbc39468cd7ea355aa940795c2149d0cbab36d3cb6d32655eb4fa27"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/meta/0003_snapshot.json",
+      "bytes": 34630,
+      "sha256": "52a2dec90242456774a49cdb7d9b56794d66e2e5e598aa1e46204c7d040e7183"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/meta/0004_snapshot.json",
+      "bytes": 34832,
+      "sha256": "98e631907752b91b44bdfad51aa82c2a9cca493c6f772f8e8c5579109cd3eb37"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/meta/0005_snapshot.json",
+      "bytes": 35412,
+      "sha256": "fff5f021639249356cd2ffd4af2244168ae943b5e8885ceae76293d5d94bc7fe"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/meta/0006_snapshot.json",
+      "bytes": 38264,
+      "sha256": "eaec016681e513e32012ed6544f79ddd9df71b8b7f25fc3740f1525b78931ff4"
+    },
+    {
+      "path": "services/somnus-identity-service/migrations/meta/0007_snapshot.json",
+      "bytes": 41376,
+      "sha256": "e93b398a70eb6617dae8cb9c9707de865d47d0bd9cbae3b2e8ca9eb6c2ce2b97"
+    },
+    {
+      "path": "services/somnus-identity-service/nest-cli.json",
+      "bytes": 214,
+      "sha256": "571f7760f530b8c09f5384fdb7c83799b49221ea595504c5cab4a4b0effab2c2"
+    },
+    {
+      "path": "services/somnus-identity-service/package.json",
+      "bytes": 2164,
+      "sha256": "c5c4f0596a1ba62305a1b79f001a25bcfbace32cbe54fc8735b9aa22abeee840"
+    },
+    {
+      "path": "services/somnus-identity-service/scripts/bootstrap-super-admin.ts",
+      "bytes": 5839,
+      "sha256": "043db0053a5c9eb18612d4443057b448c3a8340fbf8c047947723c7964daad59"
+    },
+    {
+      "path": "services/somnus-identity-service/scripts/generate-openapi.ts",
+      "bytes": 1878,
+      "sha256": "d273881b0a015f397bd691fb1fb8176ce4100b16ad56c442adeb4cb6b5990006"
+    },
+    {
+      "path": "services/somnus-identity-service/scripts/migrate-dev.ts",
+      "bytes": 1408,
+      "sha256": "01279ff92230206bd21cafb798d2a65491e99f03d5d028c97118b4d1ed69e1c7"
+    },
+    {
+      "path": "services/somnus-identity-service/scripts/warmup-db.mjs",
+      "bytes": 2456,
+      "sha256": "afd909f2739b37f11a4014b5a467c2958935ac5df84e2cf0523957d2ae4f6b12"
+    },
+    {
+      "path": "services/somnus-identity-service/src/app.module.ts",
+      "bytes": 3204,
+      "sha256": "cc796792b976e1268fc9c06656258b9c7468703700384098fff9b1ce84b498a1"
+    },
+    {
+      "path": "services/somnus-identity-service/src/common/decorators/current-actor.decorator.ts",
+      "bytes": 1409,
+      "sha256": "220b155b685e08c814cfac42198b2d8614702ea9b9eb811c6b27bbac919b7ff4"
+    },
+    {
+      "path": "services/somnus-identity-service/src/common/dto/identity.dto.ts",
+      "bytes": 2399,
+      "sha256": "32df9ffa58d7c903bd85b2c44de1b43fa123e45b2efb21b343682d6fe4810601"
+    },
+    {
+      "path": "services/somnus-identity-service/src/common/filters/describe-unhandled-error.ts",
+      "bytes": 8030,
+      "sha256": "fb22fad14938e6f6ccc6bade1dfbf930187f30fb3442ca63b7ccd173e1fe085d"
+    },
+    {
+      "path": "services/somnus-identity-service/src/common/filters/somnus-exception.filter.ts",
+      "bytes": 3370,
+      "sha256": "a32ee0a45321991f20ec30bbfb4975633054117810424868f2250e224e787195"
+    },
+    {
+      "path": "services/somnus-identity-service/src/common/interceptors/correlation.interceptor.ts",
+      "bytes": 2279,
+      "sha256": "a21b79a7ada79ad080e133ad196477a17fc30c217ad6e40db4d43bc7c9c88442"
+    },
+    {
+      "path": "services/somnus-identity-service/src/common/interceptors/correlation-id.decorator.ts",
+      "bytes": 624,
+      "sha256": "f6ca3c1bec95c84ed2e42ae3c32318a6b926ec3350f790968e89a10e7d5c991d"
+    },
+    {
+      "path": "services/somnus-identity-service/src/common/pipes/zod-validation.pipe.ts",
+      "bytes": 1400,
+      "sha256": "ecc230b1f04194c38d26ac5f439f11b4c0ec74c5298ce29d38740bddd06225d5"
+    },
+    {
+      "path": "services/somnus-identity-service/src/domain/authorization/admin-capability-policy.ts",
+      "bytes": 6312,
+      "sha256": "59defaa3ce19aef5e38494e348a9770a50ad5857943cd76f29565264d005cfed"
+    },
+    {
+      "path": "services/somnus-identity-service/src/domain/authorization/authorization.service.ts",
+      "bytes": 7258,
+      "sha256": "c62c828bfbaf36fe12c18cddc3fb1e7a2d90fb5526c35921919948fad301f4d5"
+    },
+    {
+      "path": "services/somnus-identity-service/src/domain/authorization/authorization-policy.ts",
+      "bytes": 6832,
+      "sha256": "082397854fb930bc254fd796322b5841737ec80d4146b918fbf6ecbaf66a9a4b"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/db.client.ts",
+      "bytes": 1053,
+      "sha256": "23fb5d10bb8e8c561af9c76bd978af863ee5f1475a07713fa25357c47b787421"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/db.config.ts",
+      "bytes": 1107,
+      "sha256": "c2dedcc744e911f940654e06271737fb5a219fa26a2280cb11d414b377732213"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/db.module.ts",
+      "bytes": 3309,
+      "sha256": "1eabc8cb8be3388c794193936afd160ea7772d99fcfe6bc7f6097ac88ddad8f7"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/migrate.ts",
+      "bytes": 2215,
+      "sha256": "c76e89ce96624d2a889a4c70cc7d24df7db2435186fe024ec56284a24ebdd418"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/access-grants.repository.ts",
+      "bytes": 2836,
+      "sha256": "0dcbfbff128776537829079126d26ac6c92ebf7f397b66097fc986aeaa650f18"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/account-deletion.repository.ts",
+      "bytes": 5021,
+      "sha256": "258f75ff6f90f956e00dbc67629dc988fb5debc9da810a4238200928de543a6b"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/audit.repository.ts",
+      "bytes": 2803,
+      "sha256": "a52b9300a082d75b76ea91615b545f1c46187796f490eeef7e6742110fb1b083"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/index.ts",
+      "bytes": 640,
+      "sha256": "2cdee13efb6b70c510b14cd161edd77b981f4916e6e28602e6fc4602d5320861"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/individual-profiles.repository.ts",
+      "bytes": 3067,
+      "sha256": "93d67b17fd0354509c8a48ee9a6f8cd958bd0a4057a5f81804e1b102da828f15"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/organization-invitations.repository.ts",
+      "bytes": 2657,
+      "sha256": "469ef201ccf72d064991044314e9f2b7d02b2fd2dead162d8129603c670313b3"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/organization-memberships.repository.ts",
+      "bytes": 2848,
+      "sha256": "a78edc58fe01973b580def751ec3736aa884c94320912e713dac1b2518897649"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/organizations.repository.ts",
+      "bytes": 2287,
+      "sha256": "1f82f8459093f903cf4e8106df755b70c1160f9d7c63e81af6b3770467e93a28"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/platform-invitations.repository.ts",
+      "bytes": 7700,
+      "sha256": "6204909ffcf3b49aed77a66e209384181de9be3502c4f91f90859a220e4d9c2e"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/professional-profiles.repository.ts",
+      "bytes": 6126,
+      "sha256": "dbeb7bd69ec9447b9563e374fab25afcae90b2aabb3b0ab26520f955f9c0e02f"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/role-assignments.repository.ts",
+      "bytes": 2963,
+      "sha256": "21c416502492179d9e12397b10d8f4018570710d24ae7b8a3d6e821bd679d388"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/roles.repository.ts",
+      "bytes": 2495,
+      "sha256": "30cf6c133251a471892091cf0bde5fb1da7abb4ea1f1cc3314fb1e1c1fcd382b"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/staff-invitations.repository.ts",
+      "bytes": 3495,
+      "sha256": "a30f3c51521457d55244a106efe6a7ebe90db260deb49949a0aba30098b10a07"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/repositories/users.repository.ts",
+      "bytes": 5063,
+      "sha256": "882883d10c1888113ecaf8f164323771141fc63c1ce899e5a4f1e0d42ead99a4"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/schema/access.schema.ts",
+      "bytes": 2158,
+      "sha256": "2f6eb450c449c1274c7775906eaa8cc05ac1799a6fffeb11d9a143020015eb25"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/schema/audit.schema.ts",
+      "bytes": 770,
+      "sha256": "232b492f37ac901ec9191148a51277a2107e90bdf5e0e2c62282e32c649efa2e"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/schema/index.ts",
+      "bytes": 702,
+      "sha256": "232366a53f6db6e7a80825356323289f01f3d69f6042e632c1224f42896933cf"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/schema/organizations.schema.ts",
+      "bytes": 2261,
+      "sha256": "8a7e5dfd6cfa3956323a9e2444063d3d4b11a5183def91f081a1758aca5855d3"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/schema/platform-invitations.schema.ts",
+      "bytes": 1043,
+      "sha256": "a155ffa1f4c7087091c12ae2781677743d9a55a714a1fd156e3859b7c2845b88"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/schema/roles.schema.ts",
+      "bytes": 3975,
+      "sha256": "46e57f3823c7389be54c562e510bba79ce782d8e26b734bf183202fc077a9556"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/schema/users.schema.ts",
+      "bytes": 5090,
+      "sha256": "0ee4ecf13675d276c57669f2b961bb41b6ada67e344496e9b02e23292e848a3b"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/db/tenant-scope.ts",
+      "bytes": 696,
+      "sha256": "9e6669f5dca86eebe77a28122fc9db578b8c8edf4587587b5e8cf946596bc6ec"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/events/event-publisher.ts",
+      "bytes": 1042,
+      "sha256": "260918ff4dd243da9554677a7685d524505e641fe7de855df0eb7c9e9680dd52"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/events/events.module.ts",
+      "bytes": 598,
+      "sha256": "2c3e0fdd2d2a08ab1ba80f0228ab71e991241c443d0c5cfd0ca95bdf141af430"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/events/logging-event-publisher.ts",
+      "bytes": 1260,
+      "sha256": "1351ab99d93c6c202cce055afd752799d1535f360de74ffcd17a3cac276bbcf3"
+    },
+    {
+      "path": "services/somnus-identity-service/src/infrastructure/logger/somnus.logger.ts",
+      "bytes": 1786,
+      "sha256": "a3669b66556d144b16c9d068ce523b2f9c750c5f3e89d6fcede1ced7fb26a707"
+    },
+    {
+      "path": "services/somnus-identity-service/src/main.ts",
+      "bytes": 1965,
+      "sha256": "56129c3503660403c52ad46b41da68adf26e728e24809bc620e4b145ae36600d"
+    },
+    {
+      "path": "services/somnus-identity-service/src/migrate.ts",
+      "bytes": 910,
+      "sha256": "cc61c9db3501306916e5ef92450736f25afcf5a597db52f0894787a2e2bda95e"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/access-grants/access-grants.controller.ts",
+      "bytes": 1452,
+      "sha256": "a05f7828595db5e510ffee3de0db33c51d644c68ff725340f17c849d2ff209d6"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/access-grants/access-grants.module.ts",
+      "bytes": 305,
+      "sha256": "749ba208c8a128257fa0ebba14865f35d9a6eeaab89306cdd2f9f4c31dd585b6"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/access-grants/access-grants.service.ts",
+      "bytes": 1877,
+      "sha256": "a5b30c85fb45300042dd0504112c23e7ee3dfd03447748955998951d6b191cdd"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/account/account.module.ts",
+      "bytes": 769,
+      "sha256": "3550b6a10d3c2434a7f73e14e091180ddcb9006fbb40d67eed9c954ca1fd7ead"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/account/account-deletion.controller.ts",
+      "bytes": 843,
+      "sha256": "bdcca9322381f6855a29faa88666edba75a5f915d29c9dd48fc736a96abd8642"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/account/account-deletion.service.ts",
+      "bytes": 1406,
+      "sha256": "b9174f79572d5ce4bd40ab507e1b0db3b717eeb49aa8d215228b4d5aa77593a6"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/admin/admin.controller.ts",
+      "bytes": 6884,
+      "sha256": "c88d4d121589acd23e581dc70168479536dfdb670ace60217880c40fa7dc34d6"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/admin/admin.dto.ts",
+      "bytes": 1113,
+      "sha256": "738177163bf05633af4b6beea4814b82cbc2c24aec09a7cf983ca91e4fe4077f"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/admin/admin.module.ts",
+      "bytes": 1663,
+      "sha256": "57926dcb755fe78a1411ef2ef798d47d01f399593e61fa51cf32a986f2ef80f1"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/admin/admin-organizations.service.ts",
+      "bytes": 4084,
+      "sha256": "5d8d77a5f60ef2d605ac3dda3811c664ccf9f9d558ed53d30506478c520924a8"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/admin/admin-users.service.ts",
+      "bytes": 9539,
+      "sha256": "792f7ffbb8506f86ee62b2d3bddf5e5e31114b735d3dbc4f2442bcbc38e2a71c"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/admin/admin-verification.service.ts",
+      "bytes": 5569,
+      "sha256": "00219c558c6a05364b1cadebaef293940197db263562e65cdd40d75f6eef9cd8"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/admin/internal-roles.service.ts",
+      "bytes": 7395,
+      "sha256": "6ece7b2796d675d2b170199d758e53d98d02859b63398be963734e5939dec262"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/admin/users-overview.ts",
+      "bytes": 2790,
+      "sha256": "523465822a175c4d3c7f7bb301c8059ab36100d3a3e2b9e134b8e2d0d6465221"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/authorization/authorization.controller.ts",
+      "bytes": 2245,
+      "sha256": "09770f3a55f39bd46772253cf2e1da0db7f567b1e34d6245252dfab3d6b12ecb"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/authorization/authorization.module.ts",
+      "bytes": 525,
+      "sha256": "fe138d1fbf28d7765e2d26caa8037a498e20dad56bea594e1a028f361c433a62"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/consent.dto.ts",
+      "bytes": 424,
+      "sha256": "9f1a1183115ed4243069958a09a3828636d25dbfcfa0d469409746bd10a1b866"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/consent.module.ts",
+      "bytes": 1217,
+      "sha256": "0f4d1550c8291d6233c65fa456a0cfb3103553152559eda8c70afc3dd4795737"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/consent.service.ts",
+      "bytes": 10400,
+      "sha256": "8ea40ccfd2ce312527e31e3432baed0aa2d9212460aafb64e83d9a5afc835e10"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/consent-check.controller.ts",
+      "bytes": 1060,
+      "sha256": "07742983fe17b6591aabe6ab2682d1cb0ee797f68c1cca560ff09f487d4b5c22"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/consents.controller.ts",
+      "bytes": 2250,
+      "sha256": "27c4577c61d6888a0addb65dcd3fb891c4506848465db359762a7b5bc2fed8c8"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/consent-db.client.ts",
+      "bytes": 766,
+      "sha256": "9b3a523216253dade50c9589032a22d767be5b4636418bdf94f98fc66580956a"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/consent-db.config.ts",
+      "bytes": 1598,
+      "sha256": "552235268da5491315953a283309d36fa78f34fc258d66652f6586be68a268b4"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/consent-db.module.ts",
+      "bytes": 2168,
+      "sha256": "1d14c3aed92482f038e5b67828ceb46755430f61c42f2b4534beb00880849c25"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/migrate.ts",
+      "bytes": 1723,
+      "sha256": "ff6487536de11824494a3a8b562f3bf7556e62a33200826fc1ff515544dce899"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/repositories/consent-audit.repository.ts",
+      "bytes": 1033,
+      "sha256": "d205e4a601f36aa425ffd15acf98812b9949c0879ff6d90a46fff93edade3a34"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/repositories/consent-purposes.repository.ts",
+      "bytes": 938,
+      "sha256": "ac4905b5d312b9ad58b29c8a96386d05828137b1c85c4b17447a144e52cfb17e"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/repositories/consent-receipts.repository.ts",
+      "bytes": 2475,
+      "sha256": "0174550efb9e7b4b178114b03b34d1119b7834154c8d8f0cb39cf981944bc55e"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/repositories/consent-withdrawals.repository.ts",
+      "bytes": 1106,
+      "sha256": "1b49ceb5fba49e7a03da3feeaf37995aa25c4287788f449cf550da80d960f061"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/repositories/index.ts",
+      "bytes": 249,
+      "sha256": "35ab41446600ae1c0c61729458f15197d4dd70bc43d6e23898ff33ae3b95ec1e"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/repositories/legal-documents.repository.ts",
+      "bytes": 3268,
+      "sha256": "fff1daf21acd9c8f0ec50af7291cfb80fe1e959c4e3ac46804dde13dc9bf0f60"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/schema/audit.schema.ts",
+      "bytes": 784,
+      "sha256": "5270dae869435a07e04e9612a93e874ad68de30bd37d2c1ae4903e688d31bd37"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/schema/consent-purposes.schema.ts",
+      "bytes": 912,
+      "sha256": "5919883d57f824f6e15f87f3496e7211c5f2e82a6d2338768150fd0bd840c8a9"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/schema/consent-receipts.schema.ts",
+      "bytes": 1460,
+      "sha256": "07ac4a94e9b4aab8c51e01f82f900b08af38df2eec3fc6d74bfacf4ec847beaa"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/schema/index.ts",
+      "bytes": 431,
+      "sha256": "976e76711de7639d2c21883ce9ac648305fddc525c11a950f249c8ac5545c939"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/db/schema/legal-documents.schema.ts",
+      "bytes": 1602,
+      "sha256": "5a73f31a53439ccba95fa9d4d8c3f079b864d01fa8705d5021dcb5d5d4924c61"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/events/event-publisher.ts",
+      "bytes": 801,
+      "sha256": "7d21747cb0333603b3556a9ff61de19a398f3f8f5ade1a4f5294ad8b65399029"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/events/logging-event-publisher.ts",
+      "bytes": 1083,
+      "sha256": "ca688566219425b95d378b0d11bdf8ab3dd7fbfd191f106598cec1ac02006985"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/legal-documents.controller.ts",
+      "bytes": 1129,
+      "sha256": "72d44316c2dc80eb5a74c271b450b62b2bc1dd63ca5c706b4f93f4c1305574c6"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0000_initial_consent_schema.down.sql",
+      "bytes": 259,
+      "sha256": "c82dce0a47ed6d4ecbb75d4132114cc9d7bb943b4f65e5ce76f7c870cae6e755"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0000_initial_consent_schema.sql",
+      "bytes": 2743,
+      "sha256": "04dd951d108f87a4ea17ac50166a7b3a11a6fb3ade1c031926c8cd2f1f756aeb"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0001_seed_consent_purposes.down.sql",
+      "bytes": 813,
+      "sha256": "cccff966e3a103a55240f602a27f47473bf6079035c694544addb6b0e3e4aea4"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0001_seed_consent_purposes.sql",
+      "bytes": 3047,
+      "sha256": "aa25aa72b13d5b3a325b1ee4074752a26186684639d58cc558b093c5c5ea4a8e"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0002_legal_drafts_v2.down.sql",
+      "bytes": 334,
+      "sha256": "07f7840bd02301674b7d18f418c5ffcd25ee9b5f2d3fda8f91f89f9a133db96c"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0002_legal_drafts_v2.sql",
+      "bytes": 5636,
+      "sha256": "370e1ad8cbeaa6833586f6ae3940b8880cad5927aac1248f873059a94c84bf49"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0003_legal_drafts_v2_translations.down.sql",
+      "bytes": 583,
+      "sha256": "7771062a82429d55f791444fee62a0054e6d0370cf41a4d53eaf96f707d3d081"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0003_legal_drafts_v2_translations.sql",
+      "bytes": 16953,
+      "sha256": "024055c6115ff2cb219b095af115886f5d951d9f0c0e41db37c1bde5315d766e"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0004_legal_v3_profile_and_marketing.down.sql",
+      "bytes": 551,
+      "sha256": "492741fcf0ba841cb0e1b2a0991b44bfdc9094bc7626a8cc80f3d17a4137ac35"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/0004_legal_v3_profile_and_marketing.sql",
+      "bytes": 14794,
+      "sha256": "f14c383dd8f07ee7308837715184f0813961b14237bd61685978702d2b48aa38"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/meta/_journal.json",
+      "bytes": 818,
+      "sha256": "3403bc6cdd5a2096b879246e492e20330eb8e746c2f2984262ea0b66d7c57dde"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/meta/0000_snapshot.json",
+      "bytes": 10294,
+      "sha256": "7274f695c8d318029544eb9a8ea8849ff3ef8d8afb47287e3420730d07096639"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/meta/0001_snapshot.json",
+      "bytes": 10294,
+      "sha256": "c5728deaee23764f991f095528d086c9fded8e19e024d808842e7299f941e2c3"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/meta/0002_snapshot.json",
+      "bytes": 10294,
+      "sha256": "5da827ac8ab2cf31d791a2261f652a83817801e834dcc947dd5e603bad7b0837"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/meta/0003_snapshot.json",
+      "bytes": 10294,
+      "sha256": "27af9a9fbceb920eea1f941ebf8c9041af3080d8c167f31f7a0a1c28877f4fd5"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/consent/migrations/meta/0004_snapshot.json",
+      "bytes": 10294,
+      "sha256": "d5b9113a40e6f5e1f17b93b03bbb222238a8c78aa9cb7dbb0e4dd88357c32790"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/health/health.controller.ts",
+      "bytes": 705,
+      "sha256": "6997f092150f8ccba114523a159c91355053c1d7e215c69dffee877a1d2dedd7"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/health/health.module.ts",
+      "bytes": 175,
+      "sha256": "a5b08849d3130eec9c601b9dd5bf0ee16be814031f2ea0d31bedaa75f299eafc"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/invitations/invitations.controller.ts",
+      "bytes": 2437,
+      "sha256": "82becc58c120492eab67d99e4bf1ac51ccd5e9c1e5a516734d7777a6ebe164c5"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/invitations/invitations.module.ts",
+      "bytes": 562,
+      "sha256": "5e55e44d24ef598faa063356c7919e37c21586590b8e4358dcfba486b9715e7c"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/invitations/invitations.service.ts",
+      "bytes": 11010,
+      "sha256": "0d7a6350b6f4abf786f0e736a2d3c46981c6fa0f12b3d2f0277b049757372d1d"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/me/me.controller.ts",
+      "bytes": 1396,
+      "sha256": "e32ed1cea741a4345ba91b3f40f314d6b8f52edd209b0ed643e6fa387e08d625"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/me/me.module.ts",
+      "bytes": 233,
+      "sha256": "ae5079c74700af431de52191b70b49c099dcb47ef07c5ab65bd1c019648141f7"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/me/me.service.ts",
+      "bytes": 6963,
+      "sha256": "f909970712a456dacda1d4b582b63ddf18578873e0f1ea9421dfb49ecdcaff0e"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/memberships/memberships.controller.ts",
+      "bytes": 1353,
+      "sha256": "19a65febc8cac57d0b6ae6808b598bcf4b019ecb70e64a7788c53b017f6987d7"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/memberships/memberships.module.ts",
+      "bytes": 410,
+      "sha256": "c9b0eeb6f86491fd3490786ea9ed612b59c09f9d09918949d8d6d6ea1f49aec9"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/memberships/memberships.service.ts",
+      "bytes": 2258,
+      "sha256": "346db24991f7598cf7592e62d9bb49f3ae9fcfcf9a6f1bfcee0c6ac4df98579c"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/organizations/organizations.controller.ts",
+      "bytes": 1857,
+      "sha256": "e6b1b2af23b552d14084b8987463f8619906c2d0e0b66ca693ab4ae9c7a7a521"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/organizations/organizations.module.ts",
+      "bytes": 424,
+      "sha256": "a3f401b379105bdb438d9eb07f39bfb5653a626ac106460ad27a3b7f223838d9"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/organizations/organizations.service.ts",
+      "bytes": 2996,
+      "sha256": "28463dbaa04e18127100f3c7bef815bf63a1afefb75fcb4b1418eca909c9ed75"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/platform-invitations/platform-invitations.module.ts",
+      "bytes": 2229,
+      "sha256": "2099cc0d9b45f496fcc57e78843831ea5425f6d87d027fa0ea97a281562ba3f3"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/platform-invitations/platform-invitations.service.ts",
+      "bytes": 6013,
+      "sha256": "69afe7302f7f496de524d14a92f6aa9c779a2a3d0fae22f41e32d6b0d91cb65c"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/staff-invitations/staff-invitations.controller.ts",
+      "bytes": 2783,
+      "sha256": "da38dcdb1b459dbae6ef61df664873b0a01346193bb07641e5aa0d7a46c6f44f"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/staff-invitations/staff-invitations.dto.ts",
+      "bytes": 514,
+      "sha256": "0b8034e79eafd6d2dccad508532324fc59753bccb701c879d26f07361b3310be"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/staff-invitations/staff-invitations.module.ts",
+      "bytes": 859,
+      "sha256": "76a58267b148f2830c6666a81ac9657a0bb0466978ba89487c0ce450e15de024"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/staff-invitations/staff-invitations.service.ts",
+      "bytes": 8448,
+      "sha256": "178ecff4c07ef7d2370682044a555d82d20b1ad0fbf46f89a92f6ff25e14368b"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/users/users.dto.ts",
+      "bytes": 1300,
+      "sha256": "b50b80b8fca1a3e27894286686e9cdc42e285e00b18131de2403295146b4c9f8"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/users/users.module.ts",
+      "bytes": 1059,
+      "sha256": "b3860e9ae5852fff414af5bb0e864291a0164216ebc7b12f15e5b15af55c6fba"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/users/users-provision.controller.ts",
+      "bytes": 1465,
+      "sha256": "3cf8e5f8b9d57e3756cb26d3681a59366d105b7292e6db757692e323bd3c1806"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/users/users-provision.service.ts",
+      "bytes": 7035,
+      "sha256": "d4456d2ae040c7eb90d49e590807c2cbe7aa306cf4a780ceb490e0898e04adf0"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/users/users-resolve.controller.ts",
+      "bytes": 1110,
+      "sha256": "03cdd33a3d4e860e126c9eb8da1a482f354c9011b72676b6ba958b05332a8230"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/users/users-resolve.service.ts",
+      "bytes": 1726,
+      "sha256": "1c5021147a6caa36b3ec0fbac71a593f1ca28252d951f696f83499687c88f98c"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/verification-cases/verification-cases.controller.ts",
+      "bytes": 1048,
+      "sha256": "76be73d404eee7427049ae75aa9881450160356190eb8f734666528f8166c363"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/verification-cases/verification-cases.module.ts",
+      "bytes": 340,
+      "sha256": "94496e8e02d4a1b8e3c23f97be6e659fe30ed109e7bb66d439c666bb3742ab9f"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/verification-cases/verification-cases.service.ts",
+      "bytes": 1528,
+      "sha256": "13e87ed4f935c1718c4a1190787706e150ce308cdb906e8727849ad17e199408"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/version/version.controller.ts",
+      "bytes": 764,
+      "sha256": "356691d1cda79438c37f2882ff1c3d84cadf97afa86a4ec11299b8539bcd5bbf"
+    },
+    {
+      "path": "services/somnus-identity-service/src/modules/version/version.module.ts",
+      "bytes": 179,
+      "sha256": "ee9e97614d342652412eca157698137f48ec4b4e2a495c30f989cb764dc3b285"
+    },
+    {
+      "path": "services/somnus-identity-service/tsconfig.build.json",
+      "bytes": 114,
+      "sha256": "4c47f0b7827c8516a045bce3c6892887a99186f05b39879d4f5ae8796816a299"
+    },
+    {
+      "path": "services/somnus-identity-service/tsconfig.json",
+      "bytes": 555,
+      "sha256": "796f0d822039eccd5f553fbe7ae8e86c540adc9608209d4df87fe281210605be"
+    }
+  ]
+}
