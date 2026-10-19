@@ -121,6 +121,8 @@ test("@v2 FT-1: persistent insomnia, through the real UI, ends with the runner's
   const plan = PLANS["FT-1"];
   if (!plan) throw new Error("FT-1 missing from the fixture");
   await startInterview(page);
+  // Scan the first question, not the consent screen it replaces.
+  await expect(page.locator('section[data-step-key="AGE"]')).toBeVisible();
   const firstScan = await new AxeBuilder({ page }).analyze();
   expect(firstScan.violations).toEqual([]);
   for (const step of plan.steps) {
