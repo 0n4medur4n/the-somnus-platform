@@ -85,9 +85,7 @@
       "compositePrimaryKeys": {
         "access_grants_id": {
           "name": "access_grants_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -152,9 +150,7 @@
       "compositePrimaryKeys": {
         "account_status_history_id": {
           "name": "account_status_history_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -206,9 +202,7 @@
       "compositePrimaryKeys": {
         "deletion_requests_id": {
           "name": "deletion_requests_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -252,9 +246,7 @@
       "compositePrimaryKeys": {
         "session_revocations_id": {
           "name": "session_revocations_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -319,9 +311,7 @@
       "compositePrimaryKeys": {
         "identity_audit_events_id": {
           "name": "identity_audit_events_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -408,17 +398,13 @@
       "compositePrimaryKeys": {
         "organization_invitations_id": {
           "name": "organization_invitations_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "organization_invitations_token_unique": {
           "name": "organization_invitations_token_unique",
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "checkConstraint": {}
@@ -468,9 +454,7 @@
       "compositePrimaryKeys": {
         "organization_locations_id": {
           "name": "organization_locations_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -543,10 +527,7 @@
       "indexes": {
         "organization_memberships_org_user_idx": {
           "name": "organization_memberships_org_user_idx",
-          "columns": [
-            "organization_id",
-            "user_id"
-          ],
+          "columns": ["organization_id", "user_id"],
           "isUnique": true
         }
       },
@@ -554,9 +535,7 @@
       "compositePrimaryKeys": {
         "organization_memberships_id": {
           "name": "organization_memberships_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -610,9 +589,7 @@
       "compositePrimaryKeys": {
         "organizations_id": {
           "name": "organizations_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -656,17 +633,13 @@
       "compositePrimaryKeys": {
         "permissions_id": {
           "name": "permissions_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "permissions_key_unique": {
           "name": "permissions_key_unique",
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "checkConstraint": {}
@@ -738,9 +711,7 @@
       "compositePrimaryKeys": {
         "role_assignments_id": {
           "name": "role_assignments_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -782,10 +753,7 @@
       "indexes": {
         "role_permissions_role_permission_idx": {
           "name": "role_permissions_role_permission_idx",
-          "columns": [
-            "role_id",
-            "permission_id"
-          ],
+          "columns": ["role_id", "permission_id"],
           "isUnique": true
         }
       },
@@ -793,9 +761,7 @@
       "compositePrimaryKeys": {
         "role_permissions_id": {
           "name": "role_permissions_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -854,17 +820,13 @@
       "compositePrimaryKeys": {
         "roles_id": {
           "name": "roles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "roles_key_unique": {
           "name": "roles_key_unique",
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "checkConstraint": {}
@@ -965,9 +927,7 @@
       "compositePrimaryKeys": {
         "staff_invitations_id": {
           "name": "staff_invitations_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1090,17 +1050,13 @@
       "compositePrimaryKeys": {
         "individual_profiles_id": {
           "name": "individual_profiles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "individual_profiles_user_id_unique": {
           "name": "individual_profiles_user_id_unique",
-          "columns": [
-            "user_id"
-          ]
+          "columns": ["user_id"]
         }
       },
       "checkConstraint": {}
@@ -1171,9 +1127,7 @@
       "compositePrimaryKeys": {
         "professional_credentials_id": {
           "name": "professional_credentials_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1241,17 +1195,13 @@
       "compositePrimaryKeys": {
         "professional_profiles_id": {
           "name": "professional_profiles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "professional_profiles_user_id_unique": {
           "name": "professional_profiles_user_id_unique",
-          "columns": [
-            "user_id"
-          ]
+          "columns": ["user_id"]
         }
       },
       "checkConstraint": {}
@@ -1325,9 +1275,7 @@
       "compositePrimaryKeys": {
         "professional_verification_cases_id": {
           "name": "professional_verification_cases_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1377,10 +1325,7 @@
       "indexes": {
         "user_identities_provider_uid_idx": {
           "name": "user_identities_provider_uid_idx",
-          "columns": [
-            "provider",
-            "provider_user_id"
-          ],
+          "columns": ["provider", "provider_user_id"],
           "isUnique": true
         }
       },
@@ -1388,9 +1333,7 @@
       "compositePrimaryKeys": {
         "user_identities_id": {
           "name": "user_identities_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1452,17 +1395,13 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "checkConstraint": {}

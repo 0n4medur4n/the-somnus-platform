@@ -186,7 +186,9 @@ describe("staff invitations", () => {
     expect(row?.status).toBe("accepted");
     expect(row?.acceptedUserId).toBe(userId);
 
-    const accepted = published.filter((e) => e.eventType === "identity.staff_invitation.accepted.v1");
+    const accepted = published.filter(
+      (e) => e.eventType === "identity.staff_invitation.accepted.v1",
+    );
     expect(accepted).toHaveLength(1);
     // The event carries ids only: no name and no address.
     expect(JSON.stringify(accepted[0])).not.toContain("ana.garcia");
@@ -221,11 +223,9 @@ describe("staff invitations", () => {
     expect((await accept("firebase-x", "nobody@example.com")).statusCode).toBe(404);
 
     const revoked = (await invite()).body as StaffInvitation;
-    const res = await inject(
-      "POST",
-      `/internal/v1/admin/staff-invitations/${revoked.id}/revoke`,
-      { actorId: adminId },
-    );
+    const res = await inject("POST", `/internal/v1/admin/staff-invitations/${revoked.id}/revoke`, {
+      actorId: adminId,
+    });
     expect((res.body as StaffInvitation).status).toBe("revoked");
     expect((await accept("firebase-ana", "ana.garcia@example.com")).statusCode).toBe(404);
 
