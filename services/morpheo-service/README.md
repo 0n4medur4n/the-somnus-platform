@@ -53,6 +53,14 @@ fleets:
 | `FUNNEL_V2_ENABLED` | `false` -- Morpheo v2.0, the embudo v0.2 engine (ADR 0020)   |
 | `INSTRUMENTS_ENABLED` | `true` -- ISI, Epworth, STOP-Bang (D-34), see below        |
 | `INSTRUMENTS_SOURCE_DIR` | unset -- `clinical/instruments/`; overridable for tests  |
+| `AI_EXTRACTION_ENABLED` | `true` -- the AI of v0.2 p. 14, see below; needs a key      |
+| `OPENAI_API_KEY` | empty -- no key, no model calls (every question is asked)     |
+| `OPENAI_BASE_URL` | `https://api.openai.com/v1` (US); EU: `https://eu.api.openai.com/v1` |
+| `AI_EXTRACTION_MODEL` | `gpt-6-luna`                                             |
+| `AI_EXTRACTION_REASONING_EFFORT` / `AI_EXTRACTION_TEMPERATURE` | `none` / `0.0` |
+| `AI_TIMEOUT_SECONDS` | `8` -- then the interview goes on without the model      |
+| `PATIENT_DATA_ALLOWED` | `false` -- `true` refuses to start unless the EU endpoint |
+| `AI_FIXTURE_FILE` | unset -- recorded outputs instead of OpenAI (dev/test only) |
 
 ### Validated instruments (ISI, Epworth, STOP-Bang)
 
@@ -66,6 +74,48 @@ word in the official text; a file that fails stops the service. An instrument
 whose file has not arrived is pending: the interview skips it and the team
 panel says so. A score is a fact for the clinician; it never feeds the v0.2
 rules. Format and placement: `clinical/instruments/README.md`.
+
+### The AI (v0.2 p. 14: extraction and risk screen)
+
+After the narrative (Q01) and every other free text (Q02, Q04's note, Q06,
+Q10, Q14; Z2 is only screened), `src/morpheo/ai/` sends the text to the model
+and the engine (`src/morpheo/funnel/extraction.py`, `ai_steps.py`) decides what
+happens with the answer:
+
+- **Extraction.** Candidate answers for Q01-Q18 and the branch questions, each
+  with the person's exact words; Q14 broken down as p. 4 says (molestias,
+  enfermedades, tratamientos, sustancias, ayudas probadas, and the flags the
+  catalogue reads: bipolaridad, epilepsia, embarazo, opioides, sustancias,
+  medicación). Strict JSON schema; anything out of schema, not among the
+  question's options, or whose words are not literally in the text is
+  discarded. Nothing inferred; a missing item is never "No", and the AI never
+  proposes "ninguna" or an empty list.
+- **Confirmation.** «Por lo que nos ha contado, entendemos: … ¿Es correcto?»
+  right after the text: each item kept, corrected (with the question's own
+  form) or removed. Only kept or corrected items reach the engine
+  (`extraction.expand`); a removed one is asked in its turn. Z1 still shows
+  everything.
+- **Risk.** The classifier's "si" asks that safety question at that moment
+  (the same key as the term list, so never twice); a failed call or a
+  "dudoso" asks S1, S4 and S2 (if not yet asked) once per interview (DEFAULT).
+  The AI adds questions, never alerts: only the person's answer raises one.
+- **Final text.** Still templates and the catalogue only;
+  `funnel/verify.py` refuses any paragraph with words from anywhere else.
+- **Privacy and audit.** Names, places, centres, dates, phones, emails and
+  DNI/NIE are pseudonymised locally (rules + spaCy `es_core_news_md`) and
+  restored afterwards; `store=False`; one `ai.call` log event per call with
+  hashes and counts only.
+- **Resilience.** No key, flag off, timeout or any provider error: the
+  interview never blocks and asks every question.
+
+Tests never call a model: they replay `tests/fixtures/ai/recordings_v2.json`.
+
+```bash
+uv run python -m morpheo.ai.record --stand-in   # recordings from the gold labels (no model)
+uv run python -m morpheo.ai.record              # real outputs: needs OPENAI_API_KEY (synthetic texts only)
+uv run python -m morpheo.ai.quality             # precision/recall per field against the gold labels
+uv run python -m morpheo.ai.narrative           # the 12 vignettes in narrative mode vs the full run
+```
 
 ## Local development
 

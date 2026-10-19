@@ -135,3 +135,57 @@ def test_anonymous_interviews_past_the_ttl_are_deleted_owned_ones_are_not(
         assert session.get(FunnelSession, owned) is not None
         session.delete(session.get(FunnelSession, owned))
         session.commit()
+
+
+def test_narrative_mode_stores_the_ai_record_and_the_decisions_on_the_real_schema(
+    engine: Engine,
+) -> None:
+    """FT-1 with the AI on (recorded outputs): the same final text as the full run,
+    the confirmed questions not asked, and both AI rows stored in order."""
+    from morpheo.ai.narrative import recorded_provider
+    from morpheo.ai.pipeline import AiExtractor
+    from morpheo.funnel.interview import Step, special_step
+
+    vignette = next(v for v in load_vignettes() if v["id"] == "FT-1")
+    artifact = funnel_artifact()
+    with TestClient(create_app()) as client:
+        client.app.state.ai = AiExtractor(recorded_provider()[0])  # type: ignore[attr-defined]
+        body: dict[str, Any] = client.post(f"{BASE}/sessions", json={"consentGiven": True}).json()
+        asked: list[str] = []
+        while body["step"] is not None:
+            served = body["step"]
+            asked.append(served["key"])
+            if served["kind"] == "confirm_extraction":
+                request: dict[str, Any] = {
+                    "key": served["key"],
+                    "decisions": [
+                        {"id": i["id"], "decision": "confirmado"}
+                        for i in served["extraction"]["items"]
+                    ],
+                }
+            else:
+                safety = served["questionId"] in ("S1", "S2", "S3", "S4")
+                definition = special_step(served["key"]) or artifact.step(
+                    served["questionId"], "end" if safety else None
+                )
+                step = Step(served["key"], definition, served["kind"])
+                answer, _ = scripted_answer(vignette, step, narrative=True)
+                request = answer_request(step.key, answer, definition)
+                if served["type"] == "times":
+                    fields = {f["key"] for f in served["fields"]}
+                    request["value"] = {k: v for k, v in request["value"].items() if k in fields}
+            response = client.post(f"{BASE}/sessions/{body['sessionId']}/answers", json=request)
+            assert response.status_code == 200, response.text
+            body = response.json()
+    expected = run_vignette(vignette).result
+    assert body["result"]["texts"] == [{"template": t, "text": x} for t, x in expected.texts]
+    assert not {"Q03", "Q08", "I2"} & set(asked)
+    with Session(engine) as session:
+        keys = list(
+            session.scalars(
+                select(FunnelAnswer.step_key)
+                .where(FunnelAnswer.session_id == body["sessionId"])
+                .order_by(FunnelAnswer.id)
+            )
+        )
+    assert keys[3:6] == ["Q01", "Q01#ia", "Q01#confirmacion"]

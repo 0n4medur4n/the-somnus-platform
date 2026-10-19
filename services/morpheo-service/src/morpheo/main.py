@@ -16,6 +16,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from sqlalchemy.orm import sessionmaker
 
+from morpheo.ai.factory import build_extractor
 from morpheo.api.assessment import router as assessment_router
 from morpheo.api.funnel import register_funnel_errors
 from morpheo.api.funnel import router as funnel_router
@@ -57,6 +58,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # The validated instruments' official files, checked word for word now: a
     # wrong file stops the service instead of reaching a person (D-34).
     app.state.instruments = load_registry(settings)
+    # The AI of v0.2 p. 14, or None (flag off / no key): the interview then asks
+    # every question.
+    app.state.ai = build_extractor(settings)
 
     app.add_middleware(CorrelationIdMiddleware)
     register_exception_handlers(app)

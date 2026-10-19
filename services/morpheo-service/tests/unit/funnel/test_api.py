@@ -190,6 +190,7 @@ def test_each_step_carries_the_team_panel(client: TestClient) -> None:
         "mainAction",
         "phraseIds",
         "instruments",
+        "ai",
     }
 
 

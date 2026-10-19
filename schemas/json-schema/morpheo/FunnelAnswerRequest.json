@@ -92,6 +92,101 @@
           "type": "null"
         }
       ]
+    },
+    "decisions": {
+      "anyOf": [
+        {
+          "maxItems": 60,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "decision": {
+                "type": "string",
+                "enum": [
+                  "confirmado",
+                  "corregido",
+                  "quitado"
+                ]
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 200
+                      },
+                      {
+                        "maxItems": 20,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 1000
+                          },
+                          "unit": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 16
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "unit"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 32
+                        },
+                        "additionalProperties": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "decision"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [
