@@ -15,6 +15,8 @@ const failingResolver = {
   },
 } as unknown as ActorResolver;
 
+const { client: unusedReport } = makeFakeIdentityClient(() => ({ status: 500 }));
+
 function state(): FunnelState {
   return {
     sessionId: "f-1",
@@ -70,7 +72,7 @@ function setup(roles: string[], actorResolver: ActorResolver = resolver) {
   return {
     morpheo,
     identity,
-    service: new FunnelProxyService(morpheo.client, identity.client, actorResolver),
+    service: new FunnelProxyService(morpheo.client, identity.client, actorResolver, unusedReport),
   };
 }
 
@@ -119,7 +121,7 @@ describe("FunnelProxyService", () => {
   it("refuses an unexpected morpheo response", async () => {
     const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: { nope: true } }));
     const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
-    const service = new FunnelProxyService(morpheo.client, identity.client, resolver);
+    const service = new FunnelProxyService(morpheo.client, identity.client, resolver, unusedReport);
     await expect(service.get(undefined, "f-1", false, "c1")).rejects.toMatchObject({
       code: "INTERNAL",
     });
@@ -155,5 +157,74 @@ describe("FunnelProxyService", () => {
     };
     expect(withoutPanel(withResult).result?.panel).toBeNull();
     expect(withoutPanel(withResult).result?.texts).toEqual(withResult.result?.texts);
+  });
+
+  it("renders the owner's finished interview as a PDF, from morpheo's result only", async () => {
+    const finished: FunnelState = {
+      ...state(),
+      status: "finished",
+      step: null,
+      owned: true,
+      result: {
+        stoppedBy: null,
+        alerts: [],
+        mainAction: "TERAPIA",
+        associatedActions: [],
+        testToConsider: null,
+        texts: [{ template: "T_INSOMNIO", text: "Nos ha contado que…" }],
+        instruments: [],
+        instrumentsNote: null,
+        contentVersion: "2.0",
+        rulesVersion: "2.0",
+        panel: null,
+      },
+    };
+    const morpheo = makeFakeIdentityClient((req) => {
+      expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
+      return { status: 200, body: finished };
+    });
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const report = makeFakeIdentityClient((req) => {
+      expect(req.path).toBe("/internal/v1/reports/funnel/pdf");
+      const body = JSON.parse(req.body ?? "{}");
+      expect(body.texts).toEqual(finished.result?.texts);
+      expect(body.sessionId).toBe("f-1");
+      return {
+        status: 200,
+        body: {
+          assessmentId: "f-1",
+          templateVersion: "report_v2",
+          definitionVersion: "2.0",
+          contentVersion: "2.0",
+          locale: "es",
+          createdAt: "2026-10-19T10:00:00+00:00",
+          pdfBase64: Buffer.from("%PDF-1.7").toString("base64"),
+        },
+      };
+    });
+    const service = new FunnelProxyService(
+      morpheo.client,
+      identity.client,
+      resolver,
+      report.client,
+    );
+    const pdf = await service.reportPdf(SESSION, "f-1", "es", "c1");
+    expect(pdf.templateVersion).toBe("report_v2");
+  });
+
+  it("gives no PDF for an interview that is not the person's own", async () => {
+    const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: state() }));
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const report = makeFakeIdentityClient(() => ({ status: 500 }));
+    const service = new FunnelProxyService(
+      morpheo.client,
+      identity.client,
+      resolver,
+      report.client,
+    );
+    await expect(service.reportPdf(SESSION, "f-1", "es", "c1")).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    expect(report.requests).toHaveLength(0);
   });
 });
