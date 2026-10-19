@@ -124,3 +124,38 @@ def test_the_driver_sees_the_warning_in_the_interview_before_continuing() -> Non
     assert run.asked[at + 1].question == drafts["S2_aviso"].text
     assert run.asked[at + 2].question == drafts["S2_seguro"].text
     assert run.asked[at + 2].answer == "Sí"
+
+
+# --- assumed answers: realistic per case, always marked ---
+
+
+@pytest.mark.parametrize("vignette", VIGNETTES, ids=lambda v: v["id"])
+def test_every_answer_is_given_by_the_case_or_explicitly_assumed(vignette: dict[str, Any]) -> None:
+    run = run_vignette(vignette)
+    assert not set(vignette["answers"]) & set(vignette["assumed"])
+    assert [a.key for a in run.asked if a.source == "default"] == []
+    for step in run.asked:
+        if step.source == "assumed":
+            assert step.assumed
+    assert any(step.source == "assumed" for step in run.asked)
+
+
+def test_assumed_answers_are_marked_in_the_text_output() -> None:
+    run = run_vignette(_vignette("FT-1"))
+    text = format_run(run)
+    age = next(a for a in run.asked if a.key == "AGE")
+    assert age.source == "assumed"
+    assert f"{age.answer} (supuesta)" in text
+
+
+def test_assumed_answers_differ_between_cases() -> None:
+    ages = {v["assumed"].get("AGE") for v in VIGNETTES}
+    schedules = {json.dumps(v["assumed"].get("Q07")) for v in VIGNETTES if "Q07" in v["assumed"]}
+    impacts = {v["assumed"].get("Q10", {}).get("text") for v in VIGNETTES if "Q10" in v["assumed"]}
+    assert len(ages) == len(VIGNETTES)
+    assert len(schedules) >= 9 and len(impacts) >= 9
+
+
+def test_the_night_driver_sleeps_by_day() -> None:
+    q07 = _vignette("V-10")["answers"]["Q07"]["value"]
+    assert q07["acostarse"] < "12:00" < q07["despertarse"] < "18:00"

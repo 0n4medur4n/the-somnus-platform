@@ -4,8 +4,13 @@ A vignette is a simulated patient: their narrative and their answers. The
 runner plays the interview exactly as the app would -- asking `next_step`,
 answering from the script -- and returns the full path: every question asked
 and why, the branches opened, the rules fired, the category, the templates and
-the final text. Answers the script does not give get a fixed default, shown as
-such, so nothing is hidden.
+the final text.
+
+Each answer says where it came from (`AskedStep.source`): "case" for what
+defines the case (`answers`), "assumed" for the realistic answers the case
+adds to reach the end (`assumed`), "default" when neither gives one and a
+fixed default is used, and "shown" for texts the person only reads. Anything
+not from the case is marked as supposed in the output, so nothing is hidden.
 
 Usage:
     uv run python -m morpheo.funnel.vignettes            # all, text
@@ -47,8 +52,13 @@ class AskedStep:
     kind: str
     question: str
     answer: str
-    defaulted: bool
+    source: str  # "case" | "assumed" | "default" | "shown"
     reason: str | None
+
+    @property
+    def assumed(self) -> bool:
+        """Not given by the case: an assumed answer or a fixed default."""
+        return self.source in ("assumed", "default")
 
 
 @dataclass(frozen=True)
@@ -187,6 +197,7 @@ def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = Non
             "Q01",
             {"text": vignette["narrative"], "extracted": vignette.get("narrative_extracted", {})},
         )
+    assumed = dict(vignette.get("assumed", {}))
     answers: dict[str, Answer] = {}
     asked: list[AskedStep] = []
     phrase_ids: list[str] = []
@@ -194,7 +205,13 @@ def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = Non
         step = next_step(artifact, answers)
         if step is None:
             break
-        spec = _lookup(script, step.key)
+        spec, source = _lookup(script, step.key), "case"
+        if spec is None:
+            spec, source = _lookup(assumed, step.key), "assumed"
+        if step.kind == "info":
+            source = "shown"
+        elif spec is None:
+            source = "default"
         answer = (
             _default(step.definition, step.kind)
             if spec is None
@@ -208,7 +225,7 @@ def run_vignette(vignette: dict[str, Any], artifact: FunnelArtifact | None = Non
             phrase_ids.extend(used)
         answers[step.key] = answer
         shown = _show(answer, step.definition, step.kind)
-        asked.append(AskedStep(n, step.key, step.kind, question, shown, spec is None, step.reason))
+        asked.append(AskedStep(n, step.key, step.kind, question, shown, source, step.reason))
     else:
         raise RuntimeError(f"{vignette['id']}: more than {MAX_STEPS} steps")
     if "T_HABITOS.cambio" in script:
@@ -243,7 +260,7 @@ def format_run(run: VignetteRun) -> str:
     lines = [f"=== {run.id} · {run.title} ({run.status}) ==="]
     lines.append(f"Pasos ({len(run.asked)}):")
     for a in run.asked:
-        mark = " (por defecto)" if a.defaulted else ""
+        mark = {"assumed": " (supuesta)", "default": " (supuesta, por defecto)"}.get(a.source, "")
         if a.kind == "confirm":
             mark += " (confirmación)"
         why = f"   ← {a.reason}" if a.reason else ""
