@@ -8,15 +8,19 @@ import {
   type FunnelState,
   FunnelStateSchema,
   MeResponseSchema,
+  type ReportPdf,
+  ReportPdfSchema,
+  type SupportedLocale,
 } from "@somnus/api-contracts";
 import type { CloudRunClient } from "@somnus/cloud-run-client";
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import type { ZodType } from "zod";
-import { correlationOf } from "../../common/composition.util.js";
+import { correlationOf, requireSession } from "../../common/composition.util.js";
 import { ACTOR_ID_HEADER } from "../../infrastructure/internal-clients/headers.js";
 import {
   IDENTITY_CLIENT,
   MORPHEO_CLIENT,
+  REPORT_CLIENT,
 } from "../../infrastructure/internal-clients/internal-clients.module.js";
 import { ActorResolver } from "../sessions/actor-resolver.service.js";
 import type { SessionRecord } from "../sessions/session.service.js";
@@ -42,6 +46,7 @@ export class FunnelProxyService {
     @Inject(MORPHEO_CLIENT) private readonly morpheo: CloudRunClient,
     @Inject(IDENTITY_CLIENT) private readonly identity: CloudRunClient,
     private readonly actorResolver: ActorResolver,
+    @Inject(REPORT_CLIENT) private readonly report: CloudRunClient,
   ) {}
 
   async config(rawCorrelationId?: string): Promise<FunnelConfigResponse> {
@@ -97,6 +102,48 @@ export class FunnelProxyService {
   ): Promise<FunnelState> {
     const path = `${this.path(sessionId)}/rewind`;
     return this.forward("POST", path, session, panel, rawCorrelationId, body);
+  }
+
+  /**
+   * The person's own v2 report as a PDF: their finished interview's final text,
+   * laid out by the report service. Signed-in owners only; anything else reads
+   * as not found. Deterministic -- no model is involved.
+   */
+  async reportPdf(
+    session: SessionRecord | undefined,
+    sessionId: string,
+    locale: SupportedLocale,
+    rawCorrelationId?: string,
+  ): Promise<ReportPdf> {
+    const correlationId = correlationOf(rawCorrelationId);
+    const actorId = await this.actorResolver.resolve(
+      requireSession(session, correlationId),
+      correlationId,
+    );
+    const response = await this.morpheo.get(this.path(sessionId), {
+      correlationId,
+      headers: { [ACTOR_ID_HEADER]: actorId },
+    });
+    const state = this.parse(FunnelStateSchema, response.body, correlationId);
+    if (!state.owned || !state.result || state.result.texts.length === 0) {
+      throw new SomnusError(ErrorCode.NOT_FOUND, "No finished interview of yours.", {
+        correlationId,
+      });
+    }
+    const rendered = await this.report.post("/internal/v1/reports/funnel/pdf", {
+      correlationId,
+      body: {
+        sessionId,
+        locale,
+        completedAt: new Date().toISOString(),
+        contentVersion: state.result.contentVersion,
+        rulesVersion: state.result.rulesVersion,
+        texts: state.result.texts,
+        instruments: state.result.instruments,
+        instrumentsNote: state.result.instrumentsNote,
+      },
+    });
+    return this.parse(ReportPdfSchema, rendered.body, correlationId);
   }
 
   private path(sessionId: string): string {
