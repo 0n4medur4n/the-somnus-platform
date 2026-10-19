@@ -28,10 +28,27 @@ def test_every_step_text_is_a_fragment_of_its_v02_source() -> None:
     texts.update({item["id"]: item["text"] for item in source["safety_and_close"]["items"]})
     checked = 0
     for step in artifact.steps:
-        if step.source in texts:
+        if step.source in texts and step.draft is None:
             assert step.text in texts[step.source], step.id
             checked += 1
     assert checked > 40
+
+
+def test_only_the_splits_v02_asks_for_but_does_not_write_are_drafts() -> None:
+    """Q07 «separar cada pregunta» (p. 3) and Q14's breakdown (p. 4), owner
+    decision 19/10/2026: these nine screens, and no other, carry a draft text;
+    Q07's use only Q07's own words."""
+    artifact = funnel_artifact()
+    drafts = {s.id: s for s in artifact.steps if s.draft is not None}
+    assert set(drafts) == {"Q07a", "Q07b", "Q07c", "Q07d", "Q14a", "Q14b", "Q14c", "Q14d", "Q14e"}
+    for step in drafts.values():
+        assert "Jesús lo revisa" in (step.draft or ""), step.id
+    q07 = artifact.raw["source"]["questions"][6]
+    assert q07["id"] == "Q07"
+    words = set(q07["text"].replace("¿", " ").replace("?", " ").replace(",", " ").split())
+    for suffix in "abcd":
+        text = drafts[f"Q07{suffix}"].text
+        assert set(text.replace("¿", " ").replace("?", " ").split()) <= words, text
 
 
 def test_a_reworded_split_screen_is_refused() -> None:

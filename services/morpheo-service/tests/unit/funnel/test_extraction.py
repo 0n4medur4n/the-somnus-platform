@@ -129,21 +129,25 @@ def test_a_confirmed_q14_flag_reaches_r07_and_a_removed_one_does_not() -> None:
     assert Interview(A, pending).extracted("bipolaridad") is None
 
 
-def test_partial_times_ask_only_the_missing_ones() -> None:
-    times = Item("Q07", {"acostarse": "01:00", "despertarse": "06:00"}, "Me acuesto a la una")
-    answers = _with_record([times], **{"Q01#confirmacion": _decide(Q07="confirmado")})
+def test_q07_is_asked_one_time_at_a_time_and_only_the_missing_ones() -> None:
+    """v0.2 p. 3: «Completar solo horarios que falten; separar cada pregunta»."""
+    bed = Item("Q07a", {"acostarse": "01:00"}, "Me acuesto a la una")
+    wake = Item("Q07c", {"despertarse": "06:00"}, "a las seis suena el despertador")
+    answers = _with_record(
+        [bed, wake], **{"Q01#confirmacion": _decide(Q07a="confirmado", Q07c="confirmado")}
+    )
     for key in ("Q02", "Q03", "Q04", "Q05", "Q06"):
         answers[key] = Answer(absence="prefiero_no_responder")
-    step = next_step(A, answers)
-    assert step is not None and step.key == "Q07"
-    assert [f.key for f in step.definition.fields] == ["intentar_dormir", "levantarse"]
-    answers["Q07"] = Answer(value={"intentar_dormir": "01:00", "levantarse": "06:15"})
-    assert Interview(A, answers).value("Q07") == {
-        "acostarse": "01:00",
-        "despertarse": "06:00",
-        "intentar_dormir": "01:00",
-        "levantarse": "06:15",
-    }
+    asked = []
+    for _ in range(2):
+        step = next_step(A, answers)
+        assert step is not None
+        asked.append((step.key, step.definition.text, [f.key for f in step.definition.fields]))
+        answers[step.key] = Answer(value={step.definition.fields[0].key: "06:15"})
+    assert asked == [
+        ("Q07b", "¿A qué hora intenta dormir?", ["intentar_dormir"]),
+        ("Q07d", "¿A qué hora se levanta?", ["levantarse"]),
+    ]
 
 
 def test_answers_in_the_persons_own_words_are_never_taken_from_the_narrative() -> None:
@@ -152,8 +156,9 @@ def test_answers_in_the_persons_own_words_are_never_taken_from_the_narrative() -
     by_id = {t.id: t for t in all_targets(A)}
     for item_id in ("Q02", "Q04", "Q10", "Q14.molestias", "Q14.tratamientos", "Q14.consumo"):
         assert item_id not in by_id, item_id
-    assert is_editable(by_id["Q03"]) and is_editable(by_id["Q08"]) and is_editable(by_id["Q07"])
+    assert is_editable(by_id["Q03"]) and is_editable(by_id["Q08"]) and is_editable(by_id["Q07a"])
     assert not is_editable(by_id["Q14.bipolaridad"])
+    assert "Q14a" not in by_id  # a Q14 screen is answered in the person's words
 
 
 def test_a_confirmed_q11_still_asks_s2_at_once() -> None:

@@ -461,7 +461,13 @@ class FunnelService:
     # --- the AI's proposals, as the person and the team see them ---
 
     def _item_question(self, item_id: str) -> str:
-        return self._a.step("Q14" if item_id.startswith("Q14.") else item_id).text
+        if item_id.startswith("Q14."):
+            # v0.2's whole Q14 (the screens break it down, p. 4).
+            q14: str = next(
+                q["text"] for q in self._a.raw["source"]["questions"] if q["id"] == "Q14"
+            )
+            return q14
+        return self._a.step(item_id).text
 
     def _item_label(self, item_id: str, value: Any) -> str:
         if item_id.startswith("Q14."):

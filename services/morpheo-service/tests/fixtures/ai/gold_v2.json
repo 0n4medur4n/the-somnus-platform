@@ -1,212 +1,1442 @@
 {
-  "note": "Gold labels for the AI extraction (v0.2 p. 14), hand-annotated test data: for each synthetic text, only what it states explicitly, in the model's output encoding, each item with its exact words. Nothing inferred: «Vivo solo» is not «duerme solo», «tramadol» is not «opioides», «casi todas las noches» is not a number. Q02, Q04, Q10 and Q14's text parts are never extracted (owner decision 2026-10-19). Texts: every free text the 12 vignettes send in narrative mode, and the 28 synthetic narratives of the 2026-10-18 pseudonymisation proposal. Risk labels: «si» where the text points at S1/S4/S2, «dudoso» where an idiom could (V-11 Q10), else «no». Used by the quality harness (precision/recall per field) and, until `python -m morpheo.ai.record` is run with a key, as the stand-in recordings.",
-  "texts": [
-    {"set": "FT-1", "source": "Q01", "text": "Desde hace unos seis meses me despierto casi todas las noches y me cuesta volver a dormirme.", "items": [
-      {"id": "Q03", "value": {"amount": 6, "unit": "meses"}, "evidence": "Desde hace unos seis meses"},
-      {"id": "Q08", "value": ["despertares"], "evidence": "me despierto casi todas las noches y me cuesta volver a dormirme"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-1", "source": "Q02", "text": "Volver a dormir del tirón y no desvelarme a las tres de la mañana", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-1", "source": "Q04", "text": "Empecé en un puesto nuevo con más responsabilidad", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-1", "source": "Q06", "text": "Me duermo bien, pero hacia las tres me despierto y tardo más de una hora en volver a dormirme", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-1", "source": "Q10", "text": "Voy cansado al trabajo y por la tarde me cuesta concentrarme", "items": [
-      {"id": "I2", "value": "si", "evidence": "Voy cansado al trabajo y por la tarde me cuesta concentrarme"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-1", "source": "Q14", "text": "Nada en especial; no tomo medicación", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-1", "source": "Z2", "text": "Unas pautas que pueda seguir entre semana", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "FT-2", "source": "Q01", "text": "Desde hace seis meses me despierto muchas noches y mi mujer dice que a veces dejo de respirar.", "items": [
-      {"id": "Q03", "value": {"amount": 6, "unit": "meses"}, "evidence": "Desde hace seis meses"},
-      {"id": "Q08", "value": ["despertares"], "evidence": "me despierto muchas noches"},
-      {"id": "Q15", "value": ["dejar_de_respirar"], "evidence": "mi mujer dice que a veces dejo de respirar"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-2", "source": "Q02", "text": "Dormir de un tirón y que mi mujer deje de preocuparse", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-2", "source": "Q06", "text": "Me despierto dos o tres veces cada noche y a veces con la boca muy seca", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-2", "source": "Q10", "text": "Por la tarde me cuesta mantener la atención en las reuniones", "items": [
-      {"id": "I2", "value": "si", "evidence": "Por la tarde me cuesta mantener la atención en las reuniones"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-2", "source": "Q14", "text": "Nada en especial", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-2", "source": "Z2", "text": "Saber qué prueba me tocaría y cuándo", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "FT-3", "source": "Q01", "text": "Trabajo muchas horas y solo puedo dormir unas cinco. Cuando duermo, duermo bien.", "items": [
-      {"id": "Q09", "value": {"amount": 5, "unit": "horas"}, "evidence": "solo puedo dormir unas cinco"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-3", "source": "Q02", "text": "Rendir mejor y no depender tanto del café", "items": [
-      {"id": "Q14.sustancias", "value": "si", "evidence": "no depender tanto del café"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-3", "source": "Q04", "text": "Me ascendieron y desde entonces salgo muy tarde", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-3", "source": "Q06", "text": "Me acuesto a la una, me duermo enseguida y a las seis suena el despertador", "items": [
-      {"id": "Q07", "value": [{"field": "acostarse", "time": "01:00"}, {"field": "despertarse", "time": "06:00"}], "evidence": "Me acuesto a la una, me duermo enseguida y a las seis suena el despertador"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-3", "source": "Q10", "text": "A media tarde me noto lento y con la cabeza pesada", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-3", "source": "Q14", "text": "Nada en especial", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-3", "source": "Z2", "text": "Poder organizar mejor las horas de trabajo", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "FT-4", "source": "Q01", "text": "Vivo solo y me noto con mucho sueño durante el día.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-4", "source": "Q02", "text": "Estar despierto durante el día y quedarme tranquilo", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-4", "source": "Q06", "text": "Duermo de un tirón, pero me levanto cansado", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-4", "source": "Q10", "text": "Me entra mucho sueño después de comer y a media tarde", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-4", "source": "Q14", "text": "Nada en especial", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-4", "source": "Z2", "text": "Saber si necesito alguna prueba", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "FT-5", "source": "Q01", "text": "Ronco muy fuerte y tengo la tensión alta. Ya me hicieron un estudio en casa y salió bien.", "items": [
-      {"id": "Q15", "value": ["ronca_fuerte"], "evidence": "Ronco muy fuerte"},
-      {"id": "R2c", "value": "si", "evidence": "tengo la tensión alta"},
-      {"id": "R6", "value": "si", "evidence": "Ya me hicieron un estudio en casa y salió bien"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-5", "source": "Q02", "text": "Despertarme descansado", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-5", "source": "Q06", "text": "Me duermo enseguida, ronco mucho y me levanto como si no hubiera dormido", "items": [
-      {"id": "R2a", "value": "si", "evidence": "ronco mucho"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-5", "source": "Q10", "text": "Me cuesta arrancar por la mañana", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-5", "source": "Q14", "text": "Tomo un medicamento para la tensión", "items": [
-      {"id": "Q14.medicacion", "value": "si", "evidence": "Tomo un medicamento para la tensión"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-5", "source": "Z2", "text": "Que me digan si hace falta repetir la prueba", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "FT-6", "source": "Q01", "text": "Me despierto casi todas las noches desde hace meses.", "items": [
-      {"id": "Q08", "value": ["despertares"], "evidence": "Me despierto casi todas las noches"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-6", "source": "Q02", "text": "Dormir más horas seguidas sin desvelarme", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-6", "source": "Q06", "text": "Me duermo a la primera, pero me despierto varias veces y me cuesta volver a dormir", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-6", "source": "Q10", "text": "Estoy más irritable y me cuesta concentrarme", "items": [
-      {"id": "I2", "value": "si", "evidence": "Estoy más irritable y me cuesta concentrarme"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-6", "source": "Q14", "text": "Tengo trastorno bipolar y tomo litio", "items": [
-      {"id": "Q14.bipolaridad", "value": "si", "evidence": "Tengo trastorno bipolar"},
-      {"id": "Q14.medicacion", "value": "si", "evidence": "tomo litio"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-6", "source": "Z2", "text": "Que tengan en cuenta mi tratamiento", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "FT-7", "source": "Q01", "text": "Me cuesta mucho dormirme, no sabría decir desde cuándo.", "items": [
-      {"id": "Q08", "value": ["dormirse"], "evidence": "Me cuesta mucho dormirme"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-7", "source": "Q02", "text": "Dormirme antes y no dar tantas vueltas en la cama", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-7", "source": "Q06", "text": "Me acuesto y tardo más de una hora en dormirme; luego ya duermo seguido", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-7", "source": "Q10", "text": "Me noto cansado y de peor humor", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-7", "source": "Q14", "text": "Nada en especial", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-7", "source": "Z2", "text": "Que me ayuden a relajarme antes de dormir", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "FT-8", "source": "Q01", "text": "Por la noche noto una molestia en las piernas que me obliga a moverlas y no me deja dormir.", "items": [
-      {"id": "Q16", "value": "si", "evidence": "noto una molestia en las piernas que me obliga a moverlas"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-8", "source": "Q02", "text": "Poder estar tranquila en la cama y dormirme", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-8", "source": "Q06", "text": "Al acostarme noto las piernas inquietas y tengo que levantarme a caminar", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-8", "source": "Q10", "text": "Por la mañana me noto cansada", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-8", "source": "Q14", "text": "Nada en especial", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "FT-8", "source": "Z2", "text": "Saber qué me pasa en las piernas", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "V-09", "source": "Q01", "text": "Llevo meses sin dormir bien y estoy muy cansada. A veces pienso que lo mejor sería quitarme la vida.", "items": [], "risk": {"S1": "no", "S4": "si", "S2": "no"}},
-
-    {"set": "V-10", "source": "Q01", "text": "Soy camionero y hago rutas largas de noche. Últimamente me cuesta mantenerme despierto.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "si"}},
-    {"set": "V-10", "source": "Q02", "text": "Llegar despejado al final de la ruta", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "si"}},
-    {"set": "V-10", "source": "Q04", "text": "Desde que hago solo rutas de noche", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-10", "source": "Q06", "text": "Llego a casa sobre las ocho, me acuesto y de día duermo a ratos por el ruido de la calle", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-10", "source": "Q10", "text": "En la segunda mitad de la ruta me cuesta mucho mantenerme despierto", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "si"}},
-    {"set": "V-10", "source": "Q14", "text": "Tomo pastillas para la tensión", "items": [
-      {"id": "Q14.medicacion", "value": "si", "evidence": "Tomo pastillas para la tensión"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-10", "source": "Z2", "text": "Poder hacer la consulta sin perder días de trabajo", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "V-11", "source": "Q01", "text": "No duermo bien y lo noto muchísimo en el trabajo.", "items": [
-      {"id": "I2", "value": "si", "evidence": "lo noto muchísimo en el trabajo"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-11", "source": "Q02", "text": "Rendir en el trabajo como antes", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-11", "source": "Q06", "text": "Me despierto muchas veces y miro el reloj cada hora", "items": [
-      {"id": "Q08", "value": ["despertares"], "evidence": "Me despierto muchas veces"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-11", "source": "Q10", "text": "No puedo con mi vida, lo noto mucho en el trabajo", "items": [], "risk": {"S1": "no", "S4": "dudoso", "S2": "no"}},
-    {"set": "V-11", "source": "Q14", "text": "Nada en especial", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-11", "source": "Z2", "text": "Que alguien me ayude pronto", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "V-12", "source": "Q01", "text": "Desde hace un año duermo fatal, ronco y me despierto ahogándome. Tomo tramadol por la espalda.", "items": [
-      {"id": "Q03", "value": {"amount": 1, "unit": "años"}, "evidence": "Desde hace un año"},
-      {"id": "Q08", "value": ["despertares"], "evidence": "me despierto ahogándome"},
-      {"id": "Q15", "value": ["ahogo"], "evidence": "me despierto ahogándome"},
-      {"id": "Q14.medicacion", "value": "si", "evidence": "Tomo tramadol"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-12", "source": "Q02", "text": "Dormir sin sobresaltos", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-12", "source": "Q04", "text": "Empezó cuando me operaron de la espalda", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-12", "source": "Q06", "text": "Me cuesta coger postura por el dolor y me despierto varias veces", "items": [
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-12", "source": "Q10", "text": "Estoy agotado y de peor humor", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-12", "source": "Q14", "text": "Dolor de espalda, tomo tramadol", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "V-12", "source": "Z2", "text": "Que me revisen también la medicación", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-
-    {"set": "relato-01", "source": "Q01", "text": "Me llamo Marta Gil y desde marzo duermo fatal. Mi marido, Jorge, dice que ronco muchísimo y que a veces dejo de respirar.", "items": [
-      {"id": "Q15", "value": ["dejar_de_respirar"], "evidence": "a veces dejo de respirar"},
-      {"id": "R2a", "value": "si", "evidence": "ronco muchísimo"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-02", "source": "Q01", "text": "Trabajo de noche en el Hospital Arnau de Vilanova de Lleida y cuando llego a casa no consigo dormir más de tres horas.", "items": [
-      {"id": "Q09", "value": {"amount": 3, "unit": "horas"}, "evidence": "no consigo dormir más de tres horas"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-03", "source": "Q01", "text": "Mi médica del CAP Balaguer, la doctora Pujol, me dio lorazepam pero no me hace nada. Llámame al 654 321 987 si necesitáis algo.", "items": [
-      {"id": "Q14.medicacion", "value": "si", "evidence": "me dio lorazepam"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-04", "source": "Q01", "text": "Desde el 14 de febrero de 2025, cuando murió mi madre, me despierto a las cuatro y ya no me duermo.", "items": [
-      {"id": "Q08", "value": ["despertar_precoz"], "evidence": "me despierto a las cuatro y ya no me duermo"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-05", "source": "Q01", "text": "Vivo en la calle Mayor 23 de Tàrrega con mi hija Lucía, que tiene 8 años, y me despierta varias veces.", "items": [
-      {"id": "Q08", "value": ["despertares"], "evidence": "me despierta varias veces"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-06", "source": "Q01", "text": "Mi correo es antonio.ruiz.71@gmail.com por si me queréis mandar el informe. Me cuesta mucho conciliar el sueño.", "items": [
-      {"id": "Q08", "value": ["dormirse"], "evidence": "Me cuesta mucho conciliar el sueño"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-07", "source": "Q01", "text": "Soy camionero, hago la ruta Zaragoza-Valencia y la semana pasada casi me duermo al volante a la altura de Teruel.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "si"}},
-    {"set": "relato-08", "source": "Q01", "text": "Me hicieron un estudio en la Unidad del Sueño del Hospital Clínic y salió normal, pero sigo igual.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-09", "source": "Q01", "text": "mi pareja pepe dice que doy patadas por la noche y una vez le hice un moratón", "items": [
-      {"id": "Q17", "value": "si", "evidence": "doy patadas por la noche"},
-      {"id": "N2", "value": ["lesiones"], "evidence": "una vez le hice un moratón"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-10", "source": "Q01", "text": "Nací el 03/05/1968 y desde la menopausia tengo sofocos que me despiertan todas las noches.", "items": [
-      {"id": "Q05", "value": 7, "evidence": "todas las noches"},
-      {"id": "Q08", "value": ["despertares"], "evidence": "tengo sofocos que me despiertan todas las noches"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-11", "source": "Q01", "text": "Mi DNI es 45678912K, lo pongo por si hace falta. Tomo café por la tarde y alcohol los fines de semana.", "items": [
-      {"id": "Q14.sustancias", "value": "si", "evidence": "Tomo café por la tarde y alcohol los fines de semana"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-12", "source": "Q01", "text": "Rosa, mi vecina, me recomendó melatonina. Yo trabajo en Mercadona de cajera con turnos rotativos.", "items": [
-      {"id": "H3b", "value": "si", "evidence": "con turnos rotativos"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-13", "source": "Q01", "text": "Desde que nos mudamos a Madrid, al barrio de Vallecas, hay mucho ruido y no descanso.", "items": [
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-14", "source": "Q01", "text": "El doctor Fernández López del Centro de Salud de Mollerussa me dijo que podía ser apnea.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-15", "source": "Q01", "text": "Tengo piernas inquietas, sobre todo cuando veo la tele por la noche. Mi hermano Iñaki tiene lo mismo.", "items": [
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-16", "source": "Q01", "text": "Me despierto ahogándome. Mi mujer Dolores se asusta mucho. Vivimos en Cervera desde 2010.", "items": [
-      {"id": "Q08", "value": ["despertares"], "evidence": "Me despierto ahogándome"},
-      {"id": "Q15", "value": ["ahogo"], "evidence": "Me despierto ahogándome"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-17", "source": "Q01", "text": "Llevo dos años así. Trabajo en la Seat de Martorell y hago turno de noche una semana de cada tres.", "items": [
-      {"id": "Q03", "value": {"amount": 2, "unit": "años"}, "evidence": "Llevo dos años así"},
-      {"id": "H3b", "value": "si", "evidence": "hago turno de noche una semana de cada tres"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-18", "source": "Q01", "text": "Mi psiquiatra en la Clínica Corachan me ajustó la sertralina en septiembre y desde entonces duermo peor.", "items": [
-      {"id": "Q14.medicacion", "value": "si", "evidence": "me ajustó la sertralina"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-19", "source": "Q01", "text": "Escribidme a maria_lopez@hotmail.es o al +34 612 98 76 54. Mi hijo Álex dice que hablo en sueños.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-20", "source": "Q01", "text": "Desde el accidente de moto en la carretera de Alcarràs tengo pesadillas y me despierto sudando.", "items": [
-      {"id": "Q08", "value": ["despertares"], "evidence": "me despierto sudando"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-21", "source": "Q01", "text": "Mi NIE es X1234567L. Soy de Rumanía y vivo en Fraga. Duermo cinco horas porque tengo dos trabajos.", "items": [
-      {"id": "Q09", "value": {"amount": 5, "unit": "horas"}, "evidence": "Duermo cinco horas"},
-      {"id": "H4", "value": "si", "evidence": "Duermo cinco horas porque tengo dos trabajos"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-22", "source": "Q01", "text": "La enfermera Pilar del ambulatorio de Balaguer me dijo que apuntara las horas en un diario.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-23", "source": "Q01", "text": "Me acuesto a las 23:00 y me levanto a las 7, pero me despierto tres o cuatro veces. Esto me pasa desde Navidad.", "items": [
-      {"id": "Q07", "value": [{"field": "acostarse", "time": "23:00"}, {"field": "levantarse", "time": "07:00"}], "evidence": "Me acuesto a las 23:00 y me levanto a las 7"},
-      {"id": "Q08", "value": ["despertares"], "evidence": "me despierto tres o cuatro veces"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-24", "source": "Q01", "text": "Mi compañera de piso, Sara Martín Vidal, dice que me levanto y camino dormida por el pasillo.", "items": [
-      {"id": "Q17", "value": "si", "evidence": "me levanto y camino dormida por el pasillo"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-25", "source": "Q01", "text": "Me operaron de la nariz en el Hospital Universitario de Bellvitge el 2 de junio y sigo roncando.", "items": [
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-26", "source": "Q01", "text": "Tomo Orfidal cuando no puedo más, y a veces Dormidina. Por el día estoy agotado y me duermo en el sofá.", "items": [
-      {"id": "Q12", "value": "si", "evidence": "Por el día estoy agotado y me duermo en el sofá"},
-      {"id": "Q14.medicacion", "value": "si", "evidence": "Tomo Orfidal"}
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-27", "source": "Q01", "text": "Soy Joan Puig i Serra, tengo 54 años y trabajo de vigilante en el polígono El Segre.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
-    {"set": "relato-28", "source": "Q01", "text": "Mi teléfono es 973 44 55 66. Desde que nació mi segundo hijo, Marc, no he vuelto a dormir bien.", "items": [
-    ], "risk": {"S1": "no", "S4": "no", "S2": "no"}}
-  ]
+ "note": "Gold labels for the AI extraction (v0.2 p. 14), hand-annotated test data: for each synthetic text, only what it states explicitly, in the model's output encoding, each item with its exact words. Nothing inferred: «Vivo solo» is not «duerme solo», «tramadol» is not «opioides», «casi todas las noches» is not a number. Q02, Q04, Q10 and Q14's text parts are never extracted; Q07 and Q14 are split screens (Q07a-d, Q14a-e) (owner decision 2026-10-19). Texts: every free text the 12 vignettes send in narrative mode, and the 28 synthetic narratives of the 2026-10-18 pseudonymisation proposal. Risk labels: «si» where the text points at S1/S4/S2, «dudoso» where an idiom could (V-11 Q10), else «no». Used by the quality harness (precision/recall per field) and, until `python -m morpheo.ai.record` is run with a key, as the stand-in recordings.",
+ "texts": [
+  {
+   "set": "FT-1",
+   "source": "Q01",
+   "text": "Desde hace unos seis meses me despierto casi todas las noches y me cuesta volver a dormirme.",
+   "items": [
+    {
+     "id": "Q03",
+     "value": {
+      "amount": 6,
+      "unit": "meses"
+     },
+     "evidence": "Desde hace unos seis meses"
+    },
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "me despierto casi todas las noches y me cuesta volver a dormirme"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-1",
+   "source": "Q02",
+   "text": "Volver a dormir del tirón y no desvelarme a las tres de la mañana",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-1",
+   "source": "Q04",
+   "text": "Empecé en un puesto nuevo con más responsabilidad",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-1",
+   "source": "Q06",
+   "text": "Me duermo bien, pero hacia las tres me despierto y tardo más de una hora en volver a dormirme",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-1",
+   "source": "Q10",
+   "text": "Voy cansado al trabajo y por la tarde me cuesta concentrarme",
+   "items": [
+    {
+     "id": "I2",
+     "value": "si",
+     "evidence": "Voy cansado al trabajo y por la tarde me cuesta concentrarme"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-1",
+   "source": "Z2",
+   "text": "Unas pautas que pueda seguir entre semana",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-2",
+   "source": "Q01",
+   "text": "Desde hace seis meses me despierto muchas noches y mi mujer dice que a veces dejo de respirar.",
+   "items": [
+    {
+     "id": "Q03",
+     "value": {
+      "amount": 6,
+      "unit": "meses"
+     },
+     "evidence": "Desde hace seis meses"
+    },
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "me despierto muchas noches"
+    },
+    {
+     "id": "Q15",
+     "value": [
+      "dejar_de_respirar"
+     ],
+     "evidence": "mi mujer dice que a veces dejo de respirar"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-2",
+   "source": "Q02",
+   "text": "Dormir de un tirón y que mi mujer deje de preocuparse",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-2",
+   "source": "Q06",
+   "text": "Me despierto dos o tres veces cada noche y a veces con la boca muy seca",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-2",
+   "source": "Q10",
+   "text": "Por la tarde me cuesta mantener la atención en las reuniones",
+   "items": [
+    {
+     "id": "I2",
+     "value": "si",
+     "evidence": "Por la tarde me cuesta mantener la atención en las reuniones"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-2",
+   "source": "Z2",
+   "text": "Saber qué prueba me tocaría y cuándo",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-3",
+   "source": "Q01",
+   "text": "Trabajo muchas horas y solo puedo dormir unas cinco. Cuando duermo, duermo bien.",
+   "items": [
+    {
+     "id": "Q09",
+     "value": {
+      "amount": 5,
+      "unit": "horas"
+     },
+     "evidence": "solo puedo dormir unas cinco"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-3",
+   "source": "Q02",
+   "text": "Rendir mejor y no depender tanto del café",
+   "items": [
+    {
+     "id": "Q14.sustancias",
+     "value": "si",
+     "evidence": "no depender tanto del café"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-3",
+   "source": "Q04",
+   "text": "Me ascendieron y desde entonces salgo muy tarde",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-3",
+   "source": "Q06",
+   "text": "Me acuesto a la una, me duermo enseguida y a las seis suena el despertador",
+   "items": [
+    {
+     "id": "Q07a",
+     "value": [
+      {
+       "field": "acostarse",
+       "time": "01:00"
+      }
+     ],
+     "evidence": "Me acuesto a la una, me duermo enseguida y a las seis suena el despertador"
+    },
+    {
+     "id": "Q07c",
+     "value": [
+      {
+       "field": "despertarse",
+       "time": "06:00"
+      }
+     ],
+     "evidence": "Me acuesto a la una, me duermo enseguida y a las seis suena el despertador"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-3",
+   "source": "Q10",
+   "text": "A media tarde me noto lento y con la cabeza pesada",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-3",
+   "source": "Z2",
+   "text": "Poder organizar mejor las horas de trabajo",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-4",
+   "source": "Q01",
+   "text": "Vivo solo y me noto con mucho sueño durante el día.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-4",
+   "source": "Q02",
+   "text": "Estar despierto durante el día y quedarme tranquilo",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-4",
+   "source": "Q06",
+   "text": "Duermo de un tirón, pero me levanto cansado",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-4",
+   "source": "Q10",
+   "text": "Me entra mucho sueño después de comer y a media tarde",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-4",
+   "source": "Z2",
+   "text": "Saber si necesito alguna prueba",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-5",
+   "source": "Q01",
+   "text": "Ronco muy fuerte y tengo la tensión alta. Ya me hicieron un estudio en casa y salió bien.",
+   "items": [
+    {
+     "id": "Q15",
+     "value": [
+      "ronca_fuerte"
+     ],
+     "evidence": "Ronco muy fuerte"
+    },
+    {
+     "id": "R2c",
+     "value": "si",
+     "evidence": "tengo la tensión alta"
+    },
+    {
+     "id": "R6",
+     "value": "si",
+     "evidence": "Ya me hicieron un estudio en casa y salió bien"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-5",
+   "source": "Q02",
+   "text": "Despertarme descansado",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-5",
+   "source": "Q06",
+   "text": "Me duermo enseguida, ronco mucho y me levanto como si no hubiera dormido",
+   "items": [
+    {
+     "id": "R2a",
+     "value": "si",
+     "evidence": "ronco mucho"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-5",
+   "source": "Q10",
+   "text": "Me cuesta arrancar por la mañana",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-5",
+   "source": "Q14c",
+   "text": "Tomo un medicamento para la tensión",
+   "items": [
+    {
+     "id": "Q14.medicacion",
+     "value": "si",
+     "evidence": "Tomo un medicamento para la tensión"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-5",
+   "source": "Z2",
+   "text": "Que me digan si hace falta repetir la prueba",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-6",
+   "source": "Q01",
+   "text": "Me despierto casi todas las noches desde hace meses.",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "Me despierto casi todas las noches"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-6",
+   "source": "Q02",
+   "text": "Dormir más horas seguidas sin desvelarme",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-6",
+   "source": "Q06",
+   "text": "Me duermo a la primera, pero me despierto varias veces y me cuesta volver a dormir",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-6",
+   "source": "Q10",
+   "text": "Estoy más irritable y me cuesta concentrarme",
+   "items": [
+    {
+     "id": "I2",
+     "value": "si",
+     "evidence": "Estoy más irritable y me cuesta concentrarme"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-6",
+   "source": "Q14b",
+   "text": "Tengo trastorno bipolar",
+   "items": [
+    {
+     "id": "Q14.bipolaridad",
+     "value": "si",
+     "evidence": "Tengo trastorno bipolar"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-6",
+   "source": "Q14c",
+   "text": "Tomo litio",
+   "items": [
+    {
+     "id": "Q14.medicacion",
+     "value": "si",
+     "evidence": "Tomo litio"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-6",
+   "source": "Z2",
+   "text": "Que tengan en cuenta mi tratamiento",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-7",
+   "source": "Q01",
+   "text": "Me cuesta mucho dormirme, no sabría decir desde cuándo.",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "dormirse"
+     ],
+     "evidence": "Me cuesta mucho dormirme"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-7",
+   "source": "Q02",
+   "text": "Dormirme antes y no dar tantas vueltas en la cama",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-7",
+   "source": "Q06",
+   "text": "Me acuesto y tardo más de una hora en dormirme; luego ya duermo seguido",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-7",
+   "source": "Q10",
+   "text": "Me noto cansado y de peor humor",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-7",
+   "source": "Z2",
+   "text": "Que me ayuden a relajarme antes de dormir",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-8",
+   "source": "Q01",
+   "text": "Por la noche noto una molestia en las piernas que me obliga a moverlas y no me deja dormir.",
+   "items": [
+    {
+     "id": "Q16",
+     "value": "si",
+     "evidence": "noto una molestia en las piernas que me obliga a moverlas"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-8",
+   "source": "Q02",
+   "text": "Poder estar tranquila en la cama y dormirme",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-8",
+   "source": "Q06",
+   "text": "Al acostarme noto las piernas inquietas y tengo que levantarme a caminar",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-8",
+   "source": "Q10",
+   "text": "Por la mañana me noto cansada",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "FT-8",
+   "source": "Z2",
+   "text": "Saber qué me pasa en las piernas",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-09",
+   "source": "Q01",
+   "text": "Llevo meses sin dormir bien y estoy muy cansada. A veces pienso que lo mejor sería quitarme la vida.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "si",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-10",
+   "source": "Q01",
+   "text": "Soy camionero y hago rutas largas de noche. Últimamente me cuesta mantenerme despierto.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "si"
+   }
+  },
+  {
+   "set": "V-10",
+   "source": "Q02",
+   "text": "Llegar despejado al final de la ruta",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "si"
+   }
+  },
+  {
+   "set": "V-10",
+   "source": "Q04",
+   "text": "Desde que hago solo rutas de noche",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-10",
+   "source": "Q06",
+   "text": "Llego a casa sobre las ocho, me acuesto y de día duermo a ratos por el ruido de la calle",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-10",
+   "source": "Q10",
+   "text": "En la segunda mitad de la ruta me cuesta mucho mantenerme despierto",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "si"
+   }
+  },
+  {
+   "set": "V-10",
+   "source": "Q14c",
+   "text": "Tomo pastillas para la tensión",
+   "items": [
+    {
+     "id": "Q14.medicacion",
+     "value": "si",
+     "evidence": "Tomo pastillas para la tensión"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-10",
+   "source": "Z2",
+   "text": "Poder hacer la consulta sin perder días de trabajo",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-11",
+   "source": "Q01",
+   "text": "No duermo bien y lo noto muchísimo en el trabajo.",
+   "items": [
+    {
+     "id": "I2",
+     "value": "si",
+     "evidence": "lo noto muchísimo en el trabajo"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-11",
+   "source": "Q02",
+   "text": "Rendir en el trabajo como antes",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-11",
+   "source": "Q06",
+   "text": "Me despierto muchas veces y miro el reloj cada hora",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "Me despierto muchas veces"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-11",
+   "source": "Q10",
+   "text": "No puedo con mi vida, lo noto mucho en el trabajo",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "dudoso",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-11",
+   "source": "Z2",
+   "text": "Que alguien me ayude pronto",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-12",
+   "source": "Q01",
+   "text": "Desde hace un año duermo fatal, ronco y me despierto ahogándome. Tomo tramadol por la espalda.",
+   "items": [
+    {
+     "id": "Q03",
+     "value": {
+      "amount": 1,
+      "unit": "años"
+     },
+     "evidence": "Desde hace un año"
+    },
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "me despierto ahogándome"
+    },
+    {
+     "id": "Q15",
+     "value": [
+      "ahogo"
+     ],
+     "evidence": "me despierto ahogándome"
+    },
+    {
+     "id": "Q14.medicacion",
+     "value": "si",
+     "evidence": "Tomo tramadol"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-12",
+   "source": "Q02",
+   "text": "Dormir sin sobresaltos",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-12",
+   "source": "Q04",
+   "text": "Empezó cuando me operaron de la espalda",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-12",
+   "source": "Q06",
+   "text": "Me cuesta coger postura por el dolor y me despierto varias veces",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-12",
+   "source": "Q10",
+   "text": "Estoy agotado y de peor humor",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-12",
+   "source": "Q14a",
+   "text": "Dolor de espalda",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-12",
+   "source": "Q14c",
+   "text": "Tomo tramadol",
+   "items": [
+    {
+     "id": "Q14.medicacion",
+     "value": "si",
+     "evidence": "Tomo tramadol"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "V-12",
+   "source": "Z2",
+   "text": "Que me revisen también la medicación",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-01",
+   "source": "Q01",
+   "text": "Me llamo Marta Gil y desde marzo duermo fatal. Mi marido, Jorge, dice que ronco muchísimo y que a veces dejo de respirar.",
+   "items": [
+    {
+     "id": "Q15",
+     "value": [
+      "dejar_de_respirar"
+     ],
+     "evidence": "a veces dejo de respirar"
+    },
+    {
+     "id": "R2a",
+     "value": "si",
+     "evidence": "ronco muchísimo"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-02",
+   "source": "Q01",
+   "text": "Trabajo de noche en el Hospital Arnau de Vilanova de Lleida y cuando llego a casa no consigo dormir más de tres horas.",
+   "items": [
+    {
+     "id": "Q09",
+     "value": {
+      "amount": 3,
+      "unit": "horas"
+     },
+     "evidence": "no consigo dormir más de tres horas"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-03",
+   "source": "Q01",
+   "text": "Mi médica del CAP Balaguer, la doctora Pujol, me dio lorazepam pero no me hace nada. Llámame al 654 321 987 si necesitáis algo.",
+   "items": [
+    {
+     "id": "Q14.medicacion",
+     "value": "si",
+     "evidence": "me dio lorazepam"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-04",
+   "source": "Q01",
+   "text": "Desde el 14 de febrero de 2025, cuando murió mi madre, me despierto a las cuatro y ya no me duermo.",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "despertar_precoz"
+     ],
+     "evidence": "me despierto a las cuatro y ya no me duermo"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-05",
+   "source": "Q01",
+   "text": "Vivo en la calle Mayor 23 de Tàrrega con mi hija Lucía, que tiene 8 años, y me despierta varias veces.",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "me despierta varias veces"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-06",
+   "source": "Q01",
+   "text": "Mi correo es antonio.ruiz.71@gmail.com por si me queréis mandar el informe. Me cuesta mucho conciliar el sueño.",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "dormirse"
+     ],
+     "evidence": "Me cuesta mucho conciliar el sueño"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-07",
+   "source": "Q01",
+   "text": "Soy camionero, hago la ruta Zaragoza-Valencia y la semana pasada casi me duermo al volante a la altura de Teruel.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "si"
+   }
+  },
+  {
+   "set": "relato-08",
+   "source": "Q01",
+   "text": "Me hicieron un estudio en la Unidad del Sueño del Hospital Clínic y salió normal, pero sigo igual.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-09",
+   "source": "Q01",
+   "text": "mi pareja pepe dice que doy patadas por la noche y una vez le hice un moratón",
+   "items": [
+    {
+     "id": "Q17",
+     "value": "si",
+     "evidence": "doy patadas por la noche"
+    },
+    {
+     "id": "N2",
+     "value": [
+      "lesiones"
+     ],
+     "evidence": "una vez le hice un moratón"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-10",
+   "source": "Q01",
+   "text": "Nací el 03/05/1968 y desde la menopausia tengo sofocos que me despiertan todas las noches.",
+   "items": [
+    {
+     "id": "Q05",
+     "value": 7,
+     "evidence": "todas las noches"
+    },
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "tengo sofocos que me despiertan todas las noches"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-11",
+   "source": "Q01",
+   "text": "Mi DNI es 45678912K, lo pongo por si hace falta. Tomo café por la tarde y alcohol los fines de semana.",
+   "items": [
+    {
+     "id": "Q14.sustancias",
+     "value": "si",
+     "evidence": "Tomo café por la tarde y alcohol los fines de semana"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-12",
+   "source": "Q01",
+   "text": "Rosa, mi vecina, me recomendó melatonina. Yo trabajo en Mercadona de cajera con turnos rotativos.",
+   "items": [
+    {
+     "id": "H3b",
+     "value": "si",
+     "evidence": "con turnos rotativos"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-13",
+   "source": "Q01",
+   "text": "Desde que nos mudamos a Madrid, al barrio de Vallecas, hay mucho ruido y no descanso.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-14",
+   "source": "Q01",
+   "text": "El doctor Fernández López del Centro de Salud de Mollerussa me dijo que podía ser apnea.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-15",
+   "source": "Q01",
+   "text": "Tengo piernas inquietas, sobre todo cuando veo la tele por la noche. Mi hermano Iñaki tiene lo mismo.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-16",
+   "source": "Q01",
+   "text": "Me despierto ahogándome. Mi mujer Dolores se asusta mucho. Vivimos en Cervera desde 2010.",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "Me despierto ahogándome"
+    },
+    {
+     "id": "Q15",
+     "value": [
+      "ahogo"
+     ],
+     "evidence": "Me despierto ahogándome"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-17",
+   "source": "Q01",
+   "text": "Llevo dos años así. Trabajo en la Seat de Martorell y hago turno de noche una semana de cada tres.",
+   "items": [
+    {
+     "id": "Q03",
+     "value": {
+      "amount": 2,
+      "unit": "años"
+     },
+     "evidence": "Llevo dos años así"
+    },
+    {
+     "id": "H3b",
+     "value": "si",
+     "evidence": "hago turno de noche una semana de cada tres"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-18",
+   "source": "Q01",
+   "text": "Mi psiquiatra en la Clínica Corachan me ajustó la sertralina en septiembre y desde entonces duermo peor.",
+   "items": [
+    {
+     "id": "Q14.medicacion",
+     "value": "si",
+     "evidence": "me ajustó la sertralina"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-19",
+   "source": "Q01",
+   "text": "Escribidme a maria_lopez@hotmail.es o al +34 612 98 76 54. Mi hijo Álex dice que hablo en sueños.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-20",
+   "source": "Q01",
+   "text": "Desde el accidente de moto en la carretera de Alcarràs tengo pesadillas y me despierto sudando.",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "me despierto sudando"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-21",
+   "source": "Q01",
+   "text": "Mi NIE es X1234567L. Soy de Rumanía y vivo en Fraga. Duermo cinco horas porque tengo dos trabajos.",
+   "items": [
+    {
+     "id": "Q09",
+     "value": {
+      "amount": 5,
+      "unit": "horas"
+     },
+     "evidence": "Duermo cinco horas"
+    },
+    {
+     "id": "H4",
+     "value": "si",
+     "evidence": "Duermo cinco horas porque tengo dos trabajos"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-22",
+   "source": "Q01",
+   "text": "La enfermera Pilar del ambulatorio de Balaguer me dijo que apuntara las horas en un diario.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-23",
+   "source": "Q01",
+   "text": "Me acuesto a las 23:00 y me levanto a las 7, pero me despierto tres o cuatro veces. Esto me pasa desde Navidad.",
+   "items": [
+    {
+     "id": "Q07a",
+     "value": [
+      {
+       "field": "acostarse",
+       "time": "23:00"
+      }
+     ],
+     "evidence": "Me acuesto a las 23:00 y me levanto a las 7"
+    },
+    {
+     "id": "Q07d",
+     "value": [
+      {
+       "field": "levantarse",
+       "time": "07:00"
+      }
+     ],
+     "evidence": "Me acuesto a las 23:00 y me levanto a las 7"
+    },
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "me despierto tres o cuatro veces"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-24",
+   "source": "Q01",
+   "text": "Mi compañera de piso, Sara Martín Vidal, dice que me levanto y camino dormida por el pasillo.",
+   "items": [
+    {
+     "id": "Q17",
+     "value": "si",
+     "evidence": "me levanto y camino dormida por el pasillo"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-25",
+   "source": "Q01",
+   "text": "Me operaron de la nariz en el Hospital Universitario de Bellvitge el 2 de junio y sigo roncando.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-26",
+   "source": "Q01",
+   "text": "Tomo Orfidal cuando no puedo más, y a veces Dormidina. Por el día estoy agotado y me duermo en el sofá.",
+   "items": [
+    {
+     "id": "Q12",
+     "value": "si",
+     "evidence": "Por el día estoy agotado y me duermo en el sofá"
+    },
+    {
+     "id": "Q14.medicacion",
+     "value": "si",
+     "evidence": "Tomo Orfidal"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-27",
+   "source": "Q01",
+   "text": "Soy Joan Puig i Serra, tengo 54 años y trabajo de vigilante en el polígono El Segre.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "relato-28",
+   "source": "Q01",
+   "text": "Mi teléfono es 973 44 55 66. Desde que nació mi segundo hijo, Marc, no he vuelto a dormir bien.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  }
+ ]
 }

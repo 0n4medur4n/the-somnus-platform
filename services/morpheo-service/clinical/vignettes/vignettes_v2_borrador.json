@@ -1,6 +1,6 @@
 {
   "status": "BORRADOR – Jesús las corrige",
-  "note": "Casos simulados para probar el motor v2.0 antes de publicarlo. Ocho salen de las pruebas funcionales de v0.2 (p. 14) y cuatro son casos límite. En cada caso, «answers» es lo que define el caso y «assumed» son respuestas supuestas, realistas para esa persona, para poder llegar al final; la salida las marca como «(supuesta)». Jesús puede corregirlos o sustituirlos por los suyos.",
+  "note": "Casos simulados para probar el motor v2.0 antes de publicarlo. Ocho salen de las pruebas funcionales de v0.2 (p. 14) y cuatro son casos límite. En cada caso, «answers» es lo que define el caso y «assumed» son respuestas supuestas, realistas para esa persona, para poder llegar al final; la salida las marca como «(supuesta)». Jesús puede corregirlos o sustituirlos por los suyos. Q07 y Q14 van en pantallas separadas como pide v0.2 (pp. 3-4): Q07a-d (una hora cada una) y Q14a-e (molestias, enfermedades, tratamientos y cambios, sustancias, ayudas probadas).",
   "vignettes": [
     {
       "id": "FT-1",
@@ -38,11 +38,23 @@
         "Q06": {
           "text": "Me duermo bien, pero hacia las tres me despierto y tardo más de una hora en volver a dormirme"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "23:15",
-            "intentar_dormir": "23:30",
-            "despertarse": "06:45",
+            "acostarse": "23:15"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "23:30"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "06:45"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "07:00"
           }
         },
@@ -54,8 +66,20 @@
           "text": "Voy cansado al trabajo y por la tarde me cuesta concentrarme"
         },
         "Q12": "no",
-        "Q14": {
-          "text": "Nada en especial; no tomo medicación"
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "no"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "S1@end": "no",
         "S2@confirm": "sigue_igual",
@@ -111,11 +135,23 @@
         "Q06": {
           "text": "Me despierto dos o tres veces cada noche y a veces con la boca muy seca"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "23:00",
-            "intentar_dormir": "23:15",
-            "despertarse": "06:30",
+            "acostarse": "23:00"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "23:15"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "06:30"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "06:45"
           }
         },
@@ -128,8 +164,20 @@
         },
         "Q12": "no",
         "Q13": "si",
-        "Q14": {
-          "text": "Nada en especial"
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "no"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "Q16": "no",
         "Q17": "no",
@@ -198,11 +246,23 @@
         "Q06": {
           "text": "Me acuesto a la una, me duermo enseguida y a las seis suena el despertador"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "01:00",
-            "intentar_dormir": "01:00",
-            "despertarse": "06:00",
+            "acostarse": "01:00"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "01:00"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "06:00"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "06:00"
           }
         },
@@ -211,8 +271,20 @@
         },
         "Q11": "cansancio",
         "Q12": "si",
-        "Q14": {
-          "text": "Nada en especial"
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "no"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "Q15": [],
         "Q16": "no",
@@ -283,11 +355,23 @@
         "Q06": {
           "text": "Duermo de un tirón, pero me levanto cansado"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "23:00",
-            "intentar_dormir": "23:15",
-            "despertarse": "07:00",
+            "acostarse": "23:00"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "23:15"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "07:00"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "07:30"
           }
         },
@@ -301,8 +385,20 @@
         },
         "Q12": "si",
         "Q13": "si",
-        "Q14": {
-          "text": "Nada en especial"
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "no"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "Q16": "no",
         "Q17": "no",
@@ -365,11 +461,23 @@
         "Q06": {
           "text": "Me duermo enseguida, ronco mucho y me levanto como si no hubiera dormido"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "23:30",
-            "intentar_dormir": "23:30",
-            "despertarse": "07:00",
+            "acostarse": "23:30"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "23:30"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "07:00"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "07:15"
           }
         },
@@ -383,8 +491,21 @@
         "Q11": "cansancio",
         "Q12": "no",
         "Q13": "si",
-        "Q14": {
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "si",
           "text": "Tomo un medicamento para la tensión"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "Q16": "no",
         "Q17": "no",
@@ -430,11 +551,25 @@
         },
         "I1": "si",
         "I2": "si",
-        "Q14": {
-          "text": "Tengo trastorno bipolar y tomo litio",
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "si",
+          "text": "Tengo trastorno bipolar",
           "extracted": {
             "bipolaridad": true
           }
+        },
+        "Q14c": {
+          "value": "si",
+          "text": "Tomo litio"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         }
       },
       "assumed": {
@@ -446,11 +581,23 @@
         "Q06": {
           "text": "Me duermo a la primera, pero me despierto varias veces y me cuesta volver a dormir"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "00:00",
-            "intentar_dormir": "00:15",
-            "despertarse": "07:00",
+            "acostarse": "00:00"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "00:15"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "07:00"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "07:30"
           }
         },
@@ -520,11 +667,23 @@
         "Q06": {
           "text": "Me acuesto y tardo más de una hora en dormirme; luego ya duermo seguido"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "23:00",
-            "intentar_dormir": "23:00",
-            "despertarse": "07:00",
+            "acostarse": "23:00"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "23:00"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "07:00"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "07:10"
           }
         },
@@ -542,8 +701,20 @@
         "Q17": "no",
         "Q18": "no",
         "Q13": "si",
-        "Q14": {
-          "text": "Nada en especial"
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "no"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "S1@end": "no",
         "S2@confirm": "sigue_igual",
@@ -600,11 +771,23 @@
         "Q06": {
           "text": "Al acostarme noto las piernas inquietas y tengo que levantarme a caminar"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "22:30",
-            "intentar_dormir": "23:00",
-            "despertarse": "07:30",
+            "acostarse": "22:30"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "23:00"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "07:30"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "08:00"
           }
         },
@@ -618,8 +801,20 @@
         "Q11": "cansancio",
         "Q12": "si",
         "Q13": "si",
-        "Q14": {
-          "text": "Nada en especial"
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "no"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "Q15": [],
         "Q17": "no",
@@ -682,11 +877,23 @@
         "S2@exception": "si",
         "S2_seguro": "si",
         "Q11": "dormido_sin_querer",
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "08:30",
-            "intentar_dormir": "09:00",
-            "despertarse": "14:30",
+            "acostarse": "08:30"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "09:00"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "14:30"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "15:00"
           }
         },
@@ -724,8 +931,21 @@
         },
         "Q12": "si",
         "Q13": "no",
-        "Q14": {
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "si",
           "text": "Tomo pastillas para la tensión"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "Q16": "no",
         "Q17": "no",
@@ -815,11 +1035,23 @@
         "Q06": {
           "text": "Me despierto muchas veces y miro el reloj cada hora"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "23:45",
-            "intentar_dormir": "00:00",
-            "despertarse": "06:30",
+            "acostarse": "23:45"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "00:00"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "06:30"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "06:45"
           }
         },
@@ -834,8 +1066,20 @@
         "Q17": "no",
         "Q18": "no",
         "Q13": "si",
-        "Q14": {
-          "text": "Nada en especial"
+        "Q14a": {
+          "value": "no"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "no"
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "S1@end": "no",
         "S2@confirm": "sigue_igual",
@@ -886,11 +1130,25 @@
           "ronca_fuerte",
           "ahogo"
         ],
-        "Q14": {
-          "text": "Dolor de espalda, tomo tramadol",
+        "Q14a": {
+          "value": "si",
+          "text": "Dolor de espalda"
+        },
+        "Q14b": {
+          "value": "no"
+        },
+        "Q14c": {
+          "value": "si",
+          "text": "Tomo tramadol",
           "extracted": {
             "opioides": true
           }
+        },
+        "Q14d": {
+          "value": "no"
+        },
+        "Q14e": {
+          "value": "no"
         },
         "R2a": "si",
         "R4": [
@@ -909,11 +1167,23 @@
         "Q06": {
           "text": "Me cuesta coger postura por el dolor y me despierto varias veces"
         },
-        "Q07": {
+        "Q07a": {
           "value": {
-            "acostarse": "22:45",
-            "intentar_dormir": "23:00",
-            "despertarse": "06:30",
+            "acostarse": "22:45"
+          }
+        },
+        "Q07b": {
+          "value": {
+            "intentar_dormir": "23:00"
+          }
+        },
+        "Q07c": {
+          "value": {
+            "despertarse": "06:30"
+          }
+        },
+        "Q07d": {
+          "value": {
             "levantarse": "07:00"
           }
         },
@@ -957,7 +1227,13 @@
       },
       "note": "«me despierto ahogándome» no es un término de riesgo de S1 (habla de la noche, no de ahora). Modo relato: «ronco» no es «ronca fuerte», así que la persona corrige Q15 en la pantalla de confirmación.",
       "narrative_decisions": {
-        "Q15": { "decision": "corregido", "value": ["ronca_fuerte", "ahogo"] }
+        "Q15": {
+          "decision": "corregido",
+          "value": [
+            "ronca_fuerte",
+            "ahogo"
+          ]
+        }
       }
     }
   ]

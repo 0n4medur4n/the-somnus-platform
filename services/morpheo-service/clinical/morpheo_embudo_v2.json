@@ -1407,23 +1407,55 @@
         "risk_scan": true
       },
       {
-        "id": "Q07",
+        "id": "Q07a",
         "source": "Q07",
         "stage": "core",
         "type": "times",
+        "draft_text": "¿A qué hora se acuesta?",
+        "draft": "D-41 (19/10/2026): v0.2 p. 3 «separar cada pregunta»; texto compuesto solo con palabras de Q07 (Jesús lo revisa)",
         "fields": [
           {
             "key": "acostarse",
             "label": "se acuesta"
-          },
+          }
+        ]
+      },
+      {
+        "id": "Q07b",
+        "source": "Q07",
+        "stage": "core",
+        "type": "times",
+        "draft_text": "¿A qué hora intenta dormir?",
+        "draft": "D-41 (19/10/2026): v0.2 p. 3 «separar cada pregunta»; texto compuesto solo con palabras de Q07 (Jesús lo revisa)",
+        "fields": [
           {
             "key": "intentar_dormir",
             "label": "intenta dormir"
-          },
+          }
+        ]
+      },
+      {
+        "id": "Q07c",
+        "source": "Q07",
+        "stage": "core",
+        "type": "times",
+        "draft_text": "¿A qué hora se despierta?",
+        "draft": "D-41 (19/10/2026): v0.2 p. 3 «separar cada pregunta»; texto compuesto solo con palabras de Q07 (Jesús lo revisa)",
+        "fields": [
           {
             "key": "despertarse",
             "label": "se despierta"
-          },
+          }
+        ]
+      },
+      {
+        "id": "Q07d",
+        "source": "Q07",
+        "stage": "core",
+        "type": "times",
+        "draft_text": "¿A qué hora se levanta?",
+        "draft": "D-41 (19/10/2026): v0.2 p. 3 «separar cada pregunta»; texto compuesto solo con palabras de Q07 (Jesús lo revisa)",
+        "fields": [
           {
             "key": "levantarse",
             "label": "se levanta"
@@ -1509,11 +1541,13 @@
         "type": "yes_no"
       },
       {
-        "id": "Q14",
+        "id": "Q14a",
         "source": "Q14",
         "stage": "core",
-        "type": "free_text",
+        "type": "yes_no_note",
         "risk_scan": true,
+        "draft_text": "¿Hay alguna molestia que influya en su descanso?",
+        "draft": "D-42 (19/10/2026): v0.2 p. 4 «Q14 se desglosa: molestias → enfermedades → tratamientos y cambios → sustancias/cantidad/hora → ayudas ya probadas»; borrador con palabras de Q14 y su nota (Jesús lo revisa)",
         "extracts": [
           "bipolaridad",
           "epilepsia",
@@ -1522,6 +1556,42 @@
           "sustancias",
           "medicacion"
         ]
+      },
+      {
+        "id": "Q14b",
+        "source": "Q14",
+        "stage": "core",
+        "type": "yes_no_note",
+        "risk_scan": true,
+        "draft_text": "¿Hay alguna enfermedad que influya en su descanso?",
+        "draft": "D-42 (19/10/2026): v0.2 p. 4 «Q14 se desglosa: molestias → enfermedades → tratamientos y cambios → sustancias/cantidad/hora → ayudas ya probadas»; borrador con palabras de Q14 y su nota (Jesús lo revisa)"
+      },
+      {
+        "id": "Q14c",
+        "source": "Q14",
+        "stage": "core",
+        "type": "yes_no_note",
+        "risk_scan": true,
+        "draft_text": "¿Hay algún tratamiento o cambio que influya en su descanso?",
+        "draft": "D-42 (19/10/2026): v0.2 p. 4 «Q14 se desglosa: molestias → enfermedades → tratamientos y cambios → sustancias/cantidad/hora → ayudas ya probadas»; borrador con palabras de Q14 y su nota (Jesús lo revisa)"
+      },
+      {
+        "id": "Q14d",
+        "source": "Q14",
+        "stage": "core",
+        "type": "yes_no_note",
+        "risk_scan": true,
+        "draft_text": "¿Toma medicinas, café, alcohol u otras sustancias? Si es así, ¿cuánto y a qué hora?",
+        "draft": "D-42 (19/10/2026): v0.2 p. 4 «Q14 se desglosa: molestias → enfermedades → tratamientos y cambios → sustancias/cantidad/hora → ayudas ya probadas»; borrador con palabras de Q14 y su nota (Jesús lo revisa)"
+      },
+      {
+        "id": "Q14e",
+        "source": "Q14",
+        "stage": "core",
+        "type": "yes_no_note",
+        "risk_scan": true,
+        "draft_text": "¿Ha probado ya algo para dormir mejor?",
+        "draft": "D-42 (19/10/2026): v0.2 p. 4 «Q14 se desglosa: molestias → enfermedades → tratamientos y cambios → sustancias/cantidad/hora → ayudas ya probadas»; borrador con palabras de Q14 y su nota (Jesús lo revisa)"
       },
       {
         "id": "Q15",
