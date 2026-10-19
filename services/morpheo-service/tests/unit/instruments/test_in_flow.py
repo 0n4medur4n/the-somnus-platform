@@ -158,6 +158,9 @@ def test_epworth_and_stop_bang_placement_is_marked_as_a_default() -> None:
 
 
 def test_a_stopped_interview_offers_no_instrument(registry: InstrumentRegistry) -> None:
-    keys, answers = _walk({"AGE": Answer(value=45), "S1@start": YES}, registry)
-    assert keys == ["AGE", "S1@start"]
+    narrative = Answer(value="x", text="A veces pienso en quitarme la vida")
+    keys, answers = _walk(
+        {"AGE": Answer(value=45), "Q01": narrative, "S4@exception:Q01": YES}, registry
+    )
+    assert keys == ["AGE", "Q01", "S4@exception:Q01"]
     assert evaluate(A, answers, registry).instruments == ()

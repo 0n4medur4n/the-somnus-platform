@@ -146,11 +146,14 @@ def test_partial_times_ask_only_the_missing_ones() -> None:
     }
 
 
-def test_free_text_items_and_q14_parts_are_kept_or_removed_never_edited() -> None:
+def test_answers_in_the_persons_own_words_are_never_taken_from_the_narrative() -> None:
+    """Owner decision 19/10/2026: Q02, Q04, Q10 and Q14's text parts are asked as
+    v0.2 asks them, never filled with a sentence of the narrative."""
     by_id = {t.id: t for t in all_targets(A)}
+    for item_id in ("Q02", "Q04", "Q10", "Q14.molestias", "Q14.tratamientos", "Q14.consumo"):
+        assert item_id not in by_id, item_id
     assert is_editable(by_id["Q03"]) and is_editable(by_id["Q08"]) and is_editable(by_id["Q07"])
-    for item_id in ("Q02", "Q04", "Q10", "Q14.molestias", "Q14.bipolaridad"):
-        assert not is_editable(by_id[item_id]), item_id
+    assert not is_editable(by_id["Q14.bipolaridad"])
 
 
 def test_a_confirmed_q11_still_asks_s2_at_once() -> None:

@@ -76,10 +76,12 @@ def test_bipolarity_said_in_q14_adapts_the_therapy_only_through_the_confirmation
     assert "ADAPTAR_TERAPIA" not in removed.result.flags
 
 
-def test_an_unsure_safety_screen_asks_s1_s4_and_s2_at_that_answer() -> None:
+def test_an_unsure_safety_screen_waits_for_the_closing_block() -> None:
+    """V-11's «No puedo con mi vida» is "dudoso": nothing is asked at that moment
+    (owner decision 19/10/2026); S1-S4 come at the end as for everyone."""
     v11 = next(v for v in VIGNETTES if v["id"] == "V-11")
     c = compare(v11, PROVIDER, GOLD, A, REGISTRY)
-    assert c.ai_safety == ("S1@exception:Q10", "S4@exception:Q10", "S2@exception:Q10")
+    assert c.ai_safety == ()
 
 
 def test_the_recordings_match_the_prompt_version_and_the_pseudonymiser() -> None:

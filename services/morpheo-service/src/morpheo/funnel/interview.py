@@ -1,10 +1,11 @@
 """The embudo v0.2 interview: which step comes next (pure, deterministic).
 
-Order (v0.2 p. 14, with Jesús's 18/10/2026 change, V-02):
+Order (v0.2 pp. 1 and 14, as the PDF has it -- owner decision 19/10/2026,
+which withdraws the S1/S4-after-the-age change of 18/10, V-02):
 
-    AGE → S1, S4 → Q01-Q18 → branches I → R → H → D → P → N (only the opened
-    ones) → protection text → S1-S4 (asked, or confirmed if already answered)
-    → Z1 → Z2
+    AGE → Q01-Q18 → branches I → R → H → D → P → N (only the opened ones)
+    → protection text → S1-S4 (asked, or confirmed if already answered at an
+    exception) → Z1 → Z2
 
 * Nothing already answered is asked again (V-14, D-29): a branch question that
   repeats a core one is inferred from it.
@@ -22,7 +23,7 @@ Order (v0.2 p. 14, with Jesús's 18/10/2026 change, V-02):
   clinical lead (the phrase catalogue); v0.2 gives only the instruction.
 
 Answers are stored by step key: the step id, plus "@stage" for the safety
-questions that can be asked more than once (S1@start, S4@exception:Q06,
+questions that can be asked more than once (S4@exception:Q06,
 S2@ask_now:Q11, S1@confirm, S1@end) and "@aclarar" for a clarification.
 """
 
