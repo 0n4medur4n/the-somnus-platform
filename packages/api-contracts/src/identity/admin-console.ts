@@ -57,17 +57,43 @@ export const AdminUserDetailSchema = z.object({
     .object({
       firstName: z.string(),
       lastName: z.string(),
+      dateOfBirth: z.string().nullable().optional(),
+      phone: z.string().nullable().optional(),
+      gender: z.enum(["male", "female", "prefer_not_to_say"]).nullable().optional(),
+      country: z.string().nullable().optional(),
+      city: z.string().nullable().optional(),
       registrationRole: z.enum(["adult", "parent", "professional"]).nullable(),
     })
     .nullable(),
   professionalProfile: z
     .object({
+      licenseNumber: z.string().optional(),
       specialty: ProfessionalSpecialtySchema,
       verificationStatus: z.enum(["pending", "verified", "rejected"]),
     })
     .nullable(),
   internalRoles: z.array(RoleKeySchema),
   organizationIds: z.array(opaqueIdSchema),
+  updatedAt: z.iso.datetime().optional(),
+  roleAssignments: z
+    .array(
+      z.object({
+        roleKey: RoleKeySchema,
+        organizationId: opaqueIdSchema.nullable(),
+        assignedAt: z.iso.datetime(),
+      }),
+    )
+    .optional(),
+  organizations: z
+    .array(
+      z.object({
+        id: opaqueIdSchema,
+        name: z.string(),
+        status: z.enum(["active", "suspended"]),
+        membershipStatus: z.enum(["active", "inactive", "removed"]),
+      }),
+    )
+    .optional(),
 });
 export type AdminUserDetail = z.infer<typeof AdminUserDetailSchema>;
 
