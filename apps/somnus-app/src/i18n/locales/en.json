@@ -550,7 +550,34 @@
         "declined": "skipped by the person",
         "incomplete": "incomplete",
         "pending_file": "pending: Jesús's official file"
+      },
+      "ai": {
+        "title": "AI (extraction and risk)",
+        "status": {
+          "ok": "ok",
+          "failed": "failed: every question is asked"
+        },
+        "risk": "Risk according to the AI",
+        "discarded": "discarded",
+        "decision": {
+          "confirmado": "confirmed",
+          "corregido": "corrected",
+          "quitado": "removed",
+          "pendiente": "awaiting confirmation"
+        }
       }
+    },
+    "extraction": {
+      "evidence": "Your words: «{{words}}»",
+      "decisions": {
+        "confirmado": "Yes, that's right",
+        "corregido": "No, I'll correct it",
+        "quitado": "No, remove it"
+      },
+      "correctHint": "Give the correct answer:",
+      "corrected": "Corrected.",
+      "removedHint": "We won't use it. If it's needed, we'll ask you later.",
+      "saveCorrection": "Save correction"
     }
   }
 }

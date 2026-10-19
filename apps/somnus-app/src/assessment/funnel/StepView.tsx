@@ -5,14 +5,18 @@ import {
   type FunnelStep,
   findIdentifyingData,
 } from "@somnus/api-contracts";
-import { type FormEvent, useId, useState } from "react";
+import { createContext, type FormEvent, useContext, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { ChoiceCard } from "../../components/ChoiceCard.js";
+import { ConfirmExtraction } from "./ConfirmExtraction.js";
 
 export type AnswerBody = Omit<FunnelAnswerRequest, "key">;
 
 const NONE = "ninguna";
+
+/** The answer form's button label, when it is not "Continuar" (a correction's "Guardar"). */
+export const SubmitLabelContext = createContext<string | null>(null);
 
 type StepViewProps = {
   step: FunnelStep;
@@ -34,6 +38,9 @@ export function StepView({ step, busy, onAnswer, onCorrect }: StepViewProps) {
   const headingId = useId();
   const isZ1 = step.questionId === "Z1";
 
+  if (step.kind === "confirm_extraction") {
+    return <ConfirmExtraction step={step} busy={busy} onAnswer={onAnswer} />;
+  }
   return (
     <section
       aria-labelledby={headingId}
@@ -61,7 +68,7 @@ export function StepView({ step, busy, onAnswer, onCorrect }: StepViewProps) {
           onNo={onCorrect}
         />
       ) : (
-        <Answer step={step} busy={busy} onAnswer={onAnswer} />
+        <AnswerInput step={step} busy={busy} onAnswer={onAnswer} />
       )}
       {step.allowAbsence && !isZ1 && step.kind !== "instrument_intro" ? (
         <Absences busy={busy} onAnswer={onAnswer} />
@@ -70,7 +77,8 @@ export function StepView({ step, busy, onAnswer, onCorrect }: StepViewProps) {
   );
 }
 
-function Answer({
+/** The answer form for a step's type (also used to correct an item the AI proposed). */
+export function AnswerInput({
   step,
   busy,
   onAnswer,
@@ -181,10 +189,11 @@ function Absences({ busy, onAnswer }: { busy: boolean; onAnswer: (body: AnswerBo
 
 function Submit({ busy, disabled }: { busy: boolean; disabled: boolean }) {
   const { t } = useTranslation();
+  const label = useContext(SubmitLabelContext);
   return (
     <div>
       <Button type="submit" disabled={busy || disabled}>
-        {t("funnel.actions.continue")}
+        {label ?? t("funnel.actions.continue")}
       </Button>
     </div>
   );

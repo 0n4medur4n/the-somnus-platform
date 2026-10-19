@@ -550,7 +550,34 @@
         "declined": "ignoré par la personne",
         "incomplete": "incomplet",
         "pending_file": "en attente : fichier officiel de Jesús"
+      },
+      "ai": {
+        "title": "IA (extraction et risque)",
+        "status": {
+          "ok": "réussie",
+          "failed": "échec : toutes les questions sont posées"
+        },
+        "risk": "Risque selon l'IA",
+        "discarded": "écartées",
+        "decision": {
+          "confirmado": "confirmé",
+          "corregido": "corrigé",
+          "quitado": "retiré",
+          "pendiente": "en attente de confirmation"
+        }
       }
+    },
+    "extraction": {
+      "evidence": "Vos mots : « {{words}} »",
+      "decisions": {
+        "confirmado": "Oui, c'est exact",
+        "corregido": "Non, je corrige",
+        "quitado": "Non, retirez-le"
+      },
+      "correctHint": "Indiquez la bonne réponse :",
+      "corrected": "Corrigé.",
+      "removedHint": "Nous n'en tiendrons pas compte. Si nécessaire, nous vous le demanderons plus tard.",
+      "saveCorrection": "Enregistrer la correction"
     }
   }
 }

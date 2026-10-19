@@ -1,4 +1,9 @@
-import type { FunnelInstrument, FunnelResultPanel, FunnelStepPanel } from "@somnus/api-contracts";
+import type {
+  FunnelAiPanel,
+  FunnelInstrument,
+  FunnelResultPanel,
+  FunnelStepPanel,
+} from "@somnus/api-contracts";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -19,6 +24,7 @@ export function StepPanel({ panel }: { panel: FunnelStepPanel }) {
       <Row label={t("funnel.panel.mainAction")}>{panel.mainAction ?? t("funnel.panel.none")}</Row>
       <Row label={t("funnel.panel.phrases")}>{list(panel.phraseIds, t)}</Row>
       <Instruments instruments={panel.instruments} />
+      <AiCalls calls={panel.ai} />
     </Panel>
   );
 }
@@ -47,6 +53,7 @@ export function ResultPanel({ panel }: { panel: FunnelResultPanel }) {
       <Row label={t("funnel.panel.pendingData")}>{list(panel.pendingData, t)}</Row>
       <Row label={t("funnel.panel.phrases")}>{list(panel.phraseIds, t)}</Row>
       <Instruments instruments={panel.instruments} />
+      <AiCalls calls={panel.ai} />
       <Row label={t("funnel.panel.trace")}>
         <ul className="list-disc pl-5">
           {panel.trace.map((line) => (
@@ -71,6 +78,43 @@ function Instruments({ instruments }: { instruments: FunnelInstrument[] }) {
               {instrument.code}: {t(`funnel.panel.instrumentStatus.${instrument.status}`)}
               {instrument.total !== null ? ` · ${instrument.total} · ${instrument.band ?? ""}` : ""}
               <span className="block text-somnus-subtle">{instrument.placement}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Row>
+  );
+}
+
+/** What the AI took from each free text, the words it came from, and what the person did. */
+function AiCalls({ calls }: { calls: FunnelAiPanel[] }) {
+  const { t } = useTranslation();
+  return (
+    <Row label={t("funnel.panel.ai.title")}>
+      {calls.length === 0 ? (
+        t("funnel.panel.none")
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {calls.map((call) => (
+            <li key={call.source} data-testid="team-panel-ai">
+              <span className="font-medium">{call.source}</span> ·{" "}
+              {t(`funnel.panel.ai.status.${call.status}`)} · {call.model ?? "—"} ·{" "}
+              {call.promptVersion ?? "—"}
+              <span className="block text-somnus-subtle">
+                {t("funnel.panel.ai.risk")}: S1 {call.risk.S1 ?? "—"} · S4 {call.risk.S4 ?? "—"} ·
+                S2 {call.risk.S2 ?? "—"} · {t("funnel.panel.ai.discarded")}: {call.discarded}
+              </span>
+              {call.items.length > 0 ? (
+                <ul className="list-disc pl-5">
+                  {call.items.map((item) => (
+                    <li key={item.id}>
+                      {item.id}: {item.answer} — «{item.evidence}» →{" "}
+                      {t(`funnel.panel.ai.decision.${item.decision}`)}
+                      {item.corrected ? ` (${item.corrected})` : ""}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </li>
           ))}
         </ul>

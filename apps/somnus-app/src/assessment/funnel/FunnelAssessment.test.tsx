@@ -1,5 +1,5 @@
 import type { FunnelState, FunnelStep, MeResponse } from "@somnus/api-contracts";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n, renderWithProviders } from "../../test/utils.js";
@@ -49,9 +49,55 @@ function step(overrides: Partial<FunnelStep> = {}): FunnelStep {
     instrument: null,
     phase: "start",
     answeredCount: 0,
+    extraction: null,
     panel: null,
     ...overrides,
   };
+}
+
+/** The confirmation screen after Q01: two items the AI took from the narrative. */
+function confirmation(): FunnelStep {
+  return step({
+    key: "Q01#confirmacion",
+    questionId: "IA_CONFIRMAR",
+    kind: "confirm_extraction",
+    type: "confirm_extraction",
+    text: "Por lo que nos ha contado, entendemos:",
+    note: "¿Es correcto?",
+    unit: null,
+    answeredCount: 3,
+    extraction: {
+      source: "Q01",
+      items: [
+        {
+          id: "Q03",
+          question: "¿Desde cuándo le ocurre?",
+          answer: "6 meses",
+          evidence: "Desde hace unos seis meses",
+          editable: true,
+          type: "duration",
+          options: [],
+          fields: [],
+          noneOption: false,
+          unit: null,
+          units: ["dias", "semanas", "meses", "años"],
+        },
+        {
+          id: "Q14.epilepsia",
+          question: "¿Hay alguna molestia, enfermedad o tratamiento que influya en su descanso?",
+          answer: "Tiene epilepsia",
+          evidence: "tengo epilepsia",
+          editable: false,
+          type: "info",
+          options: [],
+          fields: [],
+          noneOption: false,
+          unit: null,
+          units: [],
+        },
+      ],
+    },
+  });
 }
 
 function state(overrides: Partial<FunnelState> = {}): FunnelState {
@@ -243,6 +289,26 @@ describe("FunnelAssessment", () => {
             rulesFired: [],
             mainAction: null,
             phraseIds: [],
+            ai: [
+              {
+                source: "Q01",
+                status: "ok",
+                model: "gpt-6-luna",
+                promptVersion: "extraccion-v2.0-1",
+                risk: { S1: "no", S4: "no", S2: "dudoso" },
+                discarded: 1,
+                items: [
+                  {
+                    id: "Q03",
+                    question: "¿Desde cuándo le ocurre?",
+                    answer: "6 meses",
+                    evidence: "Desde hace unos seis meses",
+                    decision: "confirmado",
+                    corrected: null,
+                  },
+                ],
+              },
+            ],
             instruments: [
               {
                 code: "ISI",
@@ -263,6 +329,10 @@ describe("FunnelAssessment", () => {
     const panel = await screen.findByTestId("team-panel");
     await user.click(screen.getByText(es("funnel.panel.title")));
     expect(panel).toHaveTextContent("pendiente: archivo oficial de Jesús");
+    // What the AI proposed, the words it came from, and what the person decided.
+    const ai = screen.getByTestId("team-panel-ai");
+    expect(ai).toHaveTextContent("S2 dudoso");
+    expect(ai).toHaveTextContent("Q03: 6 meses — «Desde hace unos seis meses» → confirmado");
   });
 
   it("resumes the interview in progress after a reload", async () => {
@@ -271,5 +341,83 @@ describe("FunnelAssessment", () => {
     renderWithProviders(<FunnelAssessment />);
     expect(await screen.findByRole("heading", { name: "¿Qué edad tiene?" })).toBeVisible();
     await waitFor(() => expect(edgeMock.getFunnel).toHaveBeenCalledWith("f-9", false));
+  });
+});
+
+describe("FunnelAssessment · what the AI took from the narrative", () => {
+  it("shows each item with the person's words and counts nothing until each one is decided", async () => {
+    const user = userEvent.setup();
+    edgeMock.startFunnel.mockResolvedValue(state({ step: confirmation() }));
+    edgeMock.answerFunnel.mockResolvedValue(state());
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    expect(
+      await screen.findByRole("heading", { name: "Por lo que nos ha contado, entendemos:" }),
+    ).toBeVisible();
+    expect(screen.getByText("6 meses")).toBeVisible();
+    expect(
+      screen.getByText(es("funnel.extraction.evidence", { words: "Desde hace unos seis meses" })),
+    ).toBeVisible();
+    expect(screen.getAllByText("¿Es correcto?")).toHaveLength(2);
+    const next = screen.getByRole("button", { name: es("funnel.actions.continue") });
+    expect(next).toBeDisabled();
+    const [first, second] = screen.getAllByRole("group");
+    await user.click(
+      within(first as HTMLElement).getByLabelText(es("funnel.extraction.decisions.confirmado")),
+    );
+    expect(next).toBeDisabled();
+    // A Q14 flag can be kept or removed, not edited.
+    expect(
+      within(second as HTMLElement).queryByLabelText(es("funnel.extraction.decisions.corregido")),
+    ).toBeNull();
+    await user.click(
+      within(second as HTMLElement).getByLabelText(es("funnel.extraction.decisions.quitado")),
+    );
+    expect(screen.getByText(es("funnel.extraction.removedHint"))).toBeVisible();
+    await user.click(next);
+    expect(edgeMock.answerFunnel).toHaveBeenCalledWith(
+      "f-1",
+      {
+        key: "Q01#confirmacion",
+        decisions: [
+          { id: "Q03", decision: "confirmado" },
+          { id: "Q14.epilepsia", decision: "quitado" },
+        ],
+      },
+      false,
+    );
+  });
+
+  it("corrects an item with its own question's answer form", async () => {
+    const user = userEvent.setup();
+    edgeMock.startFunnel.mockResolvedValue(state({ step: confirmation() }));
+    edgeMock.answerFunnel.mockResolvedValue(state());
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    const [first, second] = await screen.findAllByRole("group");
+    await user.click(
+      within(first as HTMLElement).getByLabelText(es("funnel.extraction.decisions.corregido")),
+    );
+    const next = screen.getByRole("button", { name: es("funnel.actions.continue") });
+    await user.type(screen.getByLabelText(es("funnel.duration.amount")), "2");
+    await user.selectOptions(screen.getByLabelText(es("funnel.duration.unit")), "años");
+    // The correction form's own button records the value; the screen's button sends.
+    await user.click(screen.getByRole("button", { name: es("funnel.extraction.saveCorrection") }));
+    expect(screen.getByText(es("funnel.extraction.corrected"), { exact: false })).toBeVisible();
+    await user.click(
+      within(second as HTMLElement).getByLabelText(es("funnel.extraction.decisions.confirmado")),
+    );
+    await user.click(next);
+    expect(edgeMock.answerFunnel).toHaveBeenCalledWith(
+      "f-1",
+      {
+        key: "Q01#confirmacion",
+        decisions: [
+          { id: "Q03", decision: "corregido", value: { value: 2, unit: "años" } },
+          { id: "Q14.epilepsia", decision: "confirmado" },
+        ],
+      },
+      false,
+    );
   });
 });
