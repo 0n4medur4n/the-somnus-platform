@@ -206,7 +206,7 @@ export function UsersScreen({
             <dt className="text-somnus-subtle">{t("users.professional")}</dt>
             <dd className="text-somnus-text">
               {detail.professionalProfile
-                ? `${t(`specialty.${detail.professionalProfile.specialty}`)} · ${detail.professionalProfile.verificationStatus}`
+                ? `${t(`specialty.${detail.professionalProfile.specialty}`)} · ${t(`metadata.verification.${detail.professionalProfile.verificationStatus}`)}`
                 : t("users.none")}
             </dd>
           </dl>
