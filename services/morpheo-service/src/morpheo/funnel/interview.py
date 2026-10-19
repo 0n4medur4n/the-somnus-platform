@@ -31,7 +31,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from morpheo.funnel.artifact import FunnelArtifact, StepDef
@@ -60,8 +60,8 @@ class Answer:
 
     `value` is None when there is no answer; `absence` then says why. `text` is
     the person's own words (free text, or the note of a yes/no). `extracted`
-    holds the fields the AI extracted from free text -- confirmed by the person
-    in Z1 before any rule reads them (V-04).
+    holds the Q14 fields taken from free text -- confirmed by the person on the
+    confirmation screen before any rule reads them (V-04).
     """
 
     value: Any = None
@@ -69,6 +69,11 @@ class Answer:
     text: str | None = None
     extracted: Mapping[str, Any] = field(default_factory=dict)
     confirmed: bool = True
+    # Set only on an answer taken from a narrative and confirmed on the
+    # confirmation screen ("ia", or "ia_corregido" when the person changed the
+    # value there), with the person's words it came from.
+    origin: str | None = None
+    evidence: str | None = None
 
 
 @dataclass(frozen=True)
@@ -103,8 +108,12 @@ class Interview:
     """Read-only view of the answers given so far."""
 
     def __init__(self, artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> None:
+        from morpheo.funnel.extraction import expand  # local: extraction reads Answer
+
         self.a = artifact
-        self.answers = answers
+        # What the person gave, plus what they confirmed from their narrative
+        # (`expand`): nothing unconfirmed is ever read from here.
+        self.answers = expand(answers, artifact)
 
     # --- reading answers ---
 
@@ -237,6 +246,7 @@ def next_step(
     instruments: InstrumentRegistry | None = None,
 ) -> Step | None:
     iv = Interview(artifact, answers)
+    answers = iv.answers
     if iv.stopped():
         return None
 
@@ -257,13 +267,21 @@ def next_step(
             return True
         return question == "S2" and iv.safety_asked("S2")
 
-    # 1. The cross-cutting exception, in the order the answers were given.
+    # 1. The cross-cutting exception, in the order the answers were given --
+    # from the term list (D-01) and from the AI's risk classifier; then the
+    # confirmation of what the AI took from the person's words.
+    from morpheo.funnel import ai_steps  # local: ai_steps reads this module's types
+
+    fallback = ai_steps.fallback_source(answers)
     for key, ans in answers.items():
+        ai_step = ai_steps.pending(artifact, iv, key, ans, fallback, already_settled)
+        if ai_step is not None:
+            return ai_step
         base = key.split("@")[0]
         definition = iv._first(base)
         if definition is None:
             continue
-        if definition.risk_scan:
+        if definition.risk_scan and ans.origin is None:
             for question in risk_hits(artifact, ans.text if ans.text else None):
                 ask = f"{question}@exception:{base}"
                 if ask not in answers and not already_settled(question):
@@ -314,6 +332,12 @@ def _pending(iv: Interview, d: StepDef) -> Step | None:
         return None if d.id in answers else Step(d.id, d, "info")
     given = answers.get(d.id)
     if given is None:
+        partial = answers.get(f"{d.id}#parcial")
+        if d.type == "times" and partial is not None and isinstance(partial.value, dict):
+            missing = tuple(f for f in d.fields if f.key not in partial.value)
+            return Step(
+                d.id, replace(d, fields=missing), "ask", "p. 3: solo los horarios que faltan"
+            )
         return Step(d.id, d, "ask")
     clarify = d.clarify_once or d.id == "AGE"
     if clarify and given.absence == NO_LO_SE and f"{d.id}@aclarar" not in answers:
