@@ -28,6 +28,7 @@ vi.mock("./lib/edge.js", () => ({
     verificationQueue: vi.fn().mockResolvedValue([]),
     decideVerification: vi.fn(),
     assignRole: vi.fn(),
+    staffInvitations: vi.fn().mockResolvedValue({ invitations: [] }),
     adminMe: vi.fn(),
     createSession: vi.fn(),
     logout: vi.fn(),

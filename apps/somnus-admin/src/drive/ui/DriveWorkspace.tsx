@@ -554,14 +554,17 @@ export function DriveWorkspace({
         />
       ) : null}
       <div
-        className={`grid overflow-hidden border border-white/[0.06] bg-somnus-surface/60 lg:grid-cols-[240px_minmax(0,1fr)] ${
+        className={`grid border border-white/[0.06] bg-somnus-surface/60 lg:grid-cols-[240px_minmax(0,1fr)] ${
           fullScreen
-            ? "min-h-0 flex-1 rounded-none border-x-0 border-b-0"
-            : "min-h-[70vh] rounded-xl"
+            ? // One row as tall as the window: each column scrolls on its own
+              // instead of being cut off by the frame.
+              // Narrower than lg the columns stack, and the whole stack scrolls.
+              "min-h-0 flex-1 overflow-y-auto rounded-none border-x-0 border-b-0 lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden"
+            : "min-h-[70vh] overflow-hidden rounded-xl"
         }`}
       >
         {/* --- left: new, folders, security --- */}
-        <aside className="flex flex-col gap-4 border-b border-white/[0.06] p-3 lg:border-b-0 lg:border-r">
+        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-b border-white/[0.06] p-3 lg:border-b-0 lg:border-r">
           <Menu
             label={t("drive.new")}
             align="left"
@@ -636,7 +639,7 @@ export function DriveWorkspace({
         {/* --- middle: toolbar + contents --- */}
         <section
           aria-label={t("drive.folder.items")}
-          className="relative flex min-w-0 flex-col"
+          className="relative flex min-h-0 min-w-0 flex-col"
           onDragOver={(e) => {
             if (!canEdit || trash) return;
             e.preventDefault();

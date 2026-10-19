@@ -149,3 +149,5 @@ través de su propio allowlist y junto a la categoría.
 ## Morpheo invitations and user management
 
 User management (ADR 0021): the Users screen begins with Morpheo invitations (`admin_users_invite`, superadmin only) and the existing staff invitation section (`admin_roles_assign`). Morpheo branches are adult/professional awaiting verification; all four email languages are selectable. The detail includes available operational profile/contact data, roles with scope, organization memberships and dates. Clinical answers/reports still require the existing break-glass path.
+
+Internal roles also offers staff invitations: choose a registered active account by email (its name and language are suggested), or enter a new email. The recipient accepts before the invited role is granted, including recipients who already hold another internal role. Direct assignment to an existing account uses the same email picker; copying UUIDs is unnecessary. Self-selection is blocked and the authoritative server self-assignment denial remains in place. No new endpoint, dependency or infrastructure is added.
