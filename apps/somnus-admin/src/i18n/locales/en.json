@@ -427,7 +427,7 @@
     "closeGuide": "Close the guide",
     "changePassphrase": "Change passphrase",
     "yourFingerprint": "Your security fingerprint",
-    "fingerprintHint": "Compare it with your colleagues by phone or in person to confirm nobody is impersonating you.",
+    "fingerprintHint": "This is your security fingerprint and it is public: colleagues compare it with you (by phone or in person) before sharing folders. It is not your recovery code, which is secret.",
     "working": "Working…",
     "cancel": "Cancel",
     "save": "Save",
@@ -461,7 +461,8 @@
       "fileTitle": "The Somnus · Encrypted Drive · Recovery code",
       "fileWarning": "Keep this code somewhere safe. It opens your Drive if you forget your passphrase.",
       "confirm": "I have saved the code somewhere safe",
-      "continue": "Enter my Drive"
+      "continue": "Enter my Drive",
+      "notAFingerprint": "This code is secret and yours alone. It is not your security fingerprint: do not compare it or share it with anyone, not even The Somnus team."
     },
     "unlock": {
       "heading": "Open your encrypted Drive",
@@ -584,11 +585,14 @@
       "noColleagues": "No other colleagues have set up the Drive. Ask them to open Encrypted Drive once.",
       "roleLabel": "Permission",
       "addSubmit": "Share",
-      "checkFingerprint": "Before sharing, check with {{who}} that their fingerprint is:",
       "renameFolder": "Rename the folder",
       "deleteFolder": "Delete the folder",
       "deleteConfirmLabel": "Type the folder's name to delete it with everything in it",
-      "deleteSubmit": "Delete forever"
+      "deleteSubmit": "Delete forever",
+      "fingerprintOf": "{{who}}'s security fingerprint",
+      "fingerprintExplain": "It is the public identifier of their Drive, not a secret code. Ask {{who}} to open 'Security & passphrase' in their Drive and read it to you by phone or in person: if it matches this one, you are sharing with who you think.",
+      "notRecoveryCode": "It has nothing to do with your recovery code (letters and numbers separated by dashes): that one is secret, yours alone, and is never compared or shared.",
+      "confirmMatches": "I have checked with {{who}} that their fingerprint matches"
     },
     "trust": {
       "self": "You",

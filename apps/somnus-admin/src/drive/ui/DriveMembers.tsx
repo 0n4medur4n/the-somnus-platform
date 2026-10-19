@@ -36,14 +36,21 @@ export function DriveMembers({
   const [chosen, setChosen] = useState("");
   const [role, setRole] = useState<DriveRole>("viewer");
   const [deleteName, setDeleteName] = useState("");
+  const [checked, setChecked] = useState(false);
   const candidate = candidates.find((c) => c.userId === chosen);
 
   async function share(event: FormEvent) {
     event.preventDefault();
     if (!candidate) return;
-    const ok = await task.run(() => session.addMember(view, candidate.userId, role));
+    const ok = await task.run(async () => {
+      // Confirmed out of band just now: remember it, so the member list shows
+      // "verified" and a later key change stands out.
+      if (checked && candidate.trust !== "verified") await session.markVerified(candidate.userId);
+      return session.addMember(view, candidate.userId, role);
+    });
     if (ok !== null) {
       setChosen("");
+      setChecked(false);
       onChanged();
     }
   }
@@ -168,7 +175,10 @@ export function DriveMembers({
                 {t("drive.members.colleague")}
                 <select
                   value={chosen}
-                  onChange={(e) => setChosen(e.target.value)}
+                  onChange={(e) => {
+                    setChosen(e.target.value);
+                    setChecked(false);
+                  }}
                   className="rounded-md border border-somnus-muted/40 bg-somnus-background px-3 py-2 text-somnus-text"
                 >
                   <option value="">{t("drive.members.chooseColleague")}</option>
@@ -194,12 +204,27 @@ export function DriveMembers({
                 </select>
               </label>
               {candidate ? (
-                <div className="flex flex-col gap-2 text-sm text-somnus-subtle">
-                  <p>{t("drive.members.checkFingerprint", { who: candidate.email })}</p>
+                <div className="flex flex-col gap-2 rounded-lg border border-white/10 bg-somnus-background/60 p-3 text-sm text-somnus-subtle">
+                  <p className="font-medium text-somnus-text">
+                    {t("drive.members.fingerprintOf", { who: candidate.email })}
+                  </p>
                   <Fingerprint value={candidate.fingerprint} />
+                  <p>{t("drive.members.fingerprintExplain", { who: candidate.email })}</p>
+                  <p className="text-xs">{t("drive.members.notRecoveryCode")}</p>
                   <TrustBadge trust={candidate.trust} />
                   {candidate.trust === "changed" ? (
                     <Notice tone="danger">{t("drive.trustHelp.changed")}</Notice>
+                  ) : null}
+                  {candidate.trust === "known" ? (
+                    <label className="mt-1 flex items-start gap-2 text-somnus-text">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => setChecked(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-somnus-primary"
+                      />
+                      <span>{t("drive.members.confirmMatches", { who: candidate.email })}</span>
+                    </label>
                   ) : null}
                 </div>
               ) : null}
