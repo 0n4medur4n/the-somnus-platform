@@ -537,7 +537,8 @@
       "kind": {
         "folder": "Carpeta",
         "note": "Nota",
-        "file": "Archivo"
+        "file": "Archivo",
+        "document": "Documento"
       }
     },
     "note": {
@@ -662,6 +663,70 @@
       "created": "Creado",
       "signature": "Firma",
       "version": "Versión"
+    },
+    "app": {
+      "toConsole": "Consola"
+    },
+    "viewer": {
+      "editAsDocument": "Editar como documento"
+    },
+    "doc": {
+      "new": "Documento",
+      "untitled": "Documento sin título",
+      "title": "Título del documento",
+      "body": "Contenido del documento",
+      "back": "Volver a la carpeta",
+      "save": "Guardar",
+      "readOnly": "Solo lectura",
+      "toolbar": "Formato",
+      "status": {
+        "saved": "Guardado y cifrado",
+        "dirty": "Cambios sin guardar",
+        "saving": "Guardando…",
+        "error": "No se ha guardado",
+        "conflict": "Conflicto de versiones"
+      },
+      "conflict": "Otra persona ha guardado una versión más reciente de este documento. Exporta tu texto si lo necesitas y vuelve a abrir el documento.",
+      "saveFailed": "No se ha podido guardar. Tus cambios siguen en pantalla; vuelve a intentarlo.",
+      "export": {
+        "title": "Exportar",
+        "docx": "Word (.docx)",
+        "pdf": "PDF (.pdf)",
+        "html": "Página web (.html)",
+        "md": "Markdown (.md)",
+        "txt": "Texto (.txt)"
+      },
+      "tools": {
+        "undo": "Deshacer",
+        "redo": "Rehacer",
+        "style": "Estilo de párrafo",
+        "paragraph": "Texto normal",
+        "h1": "Título 1",
+        "h2": "Título 2",
+        "h3": "Título 3",
+        "bold": "Negrita",
+        "italic": "Cursiva",
+        "underline": "Subrayado",
+        "strike": "Tachado",
+        "link": "Enlace",
+        "linkUrl": "Dirección del enlace",
+        "applyLink": "Aplicar",
+        "alignLeft": "Alinear a la izquierda",
+        "alignCenter": "Centrar",
+        "alignRight": "Alinear a la derecha",
+        "alignJustify": "Justificar",
+        "bulletList": "Lista con viñetas",
+        "orderedList": "Lista numerada",
+        "quote": "Cita",
+        "codeBlock": "Bloque de código",
+        "rule": "Línea horizontal",
+        "table": "Insertar tabla",
+        "addRowAfter": "+ Fila",
+        "addColumnAfter": "+ Columna",
+        "deleteRow": "− Fila",
+        "deleteColumn": "− Columna",
+        "deleteTable": "Quitar tabla"
+      }
     }
   },
   "charts": {

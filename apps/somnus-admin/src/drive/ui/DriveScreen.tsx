@@ -25,7 +25,7 @@ type Phase =
  * else: locking, signing out, closing the tab or 15 idle minutes drop them, and
  * the passphrase is needed again. Nothing is written to browser storage.
  */
-export function DriveScreen() {
+export function DriveScreen({ fullScreen = false }: { fullScreen?: boolean } = {}) {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const sessionRef = useRef<DriveSession | null>(null);
@@ -117,12 +117,13 @@ export function DriveScreen() {
         account={phase.account}
         onAccountChanged={(account) => setPhase({ ...phase, account })}
         onLock={() => lock()}
+        fullScreen={fullScreen}
       />
     );
   }
 
   return (
-    <section aria-label={t("drive.title")}>
+    <section aria-label={t("drive.title")} className={fullScreen ? "px-4 py-10" : undefined}>
       {phase.kind === "loading" ? (
         <p className="text-center text-somnus-subtle">{t("drive.loading")}</p>
       ) : null}

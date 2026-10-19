@@ -60,6 +60,29 @@ const PATHS = {
   help: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zm-2.5-11.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6m0 3h.01",
   fingerprint:
     "M12 11v3c0 2.5-.7 4.7-2 6.5M8.5 11a3.5 3.5 0 0 1 7 0v2c0 1.8-.3 3.5-.9 5M5.5 15c.3-1.2.5-2.6.5-4a6 6 0 0 1 10.5-4M19.2 8.5c.5.8.8 1.6.8 2.5v2c0 1.6-.2 3.1-.6 4.5",
+  // Document editor (owner decision 2026-10-19).
+  bold: "M7 5h6a3.5 3.5 0 0 1 0 7H7zm0 7h7a3.5 3.5 0 0 1 0 7H7z",
+  italic: "M10 5h8M6 19h8M14 5l-4 14",
+  underline: "M7 4v7a5 5 0 0 0 10 0V4M5 20h14",
+  strike:
+    "M5 12h14M16 7.5C15.4 5.9 13.9 5 12 5c-2.5 0-4 1.4-4 3.2M8.3 16c.6 1.8 2 3 3.9 3 2.5 0 4-1.4 4-3.3",
+  listBullet: "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01",
+  listOrdered: "M10 6h10M10 12h10M10 18h10M4 4.5h1.5V9M4 9h3M4 14.5c0-1 2.5-1 2.5.5L4 18h3",
+  quote: "M7 11h4v6H5v-4c0-3 1-5 4-6M17 11h4v6h-6v-4c0-3 1-5 4-6",
+  code: "M9 8l-4 4 4 4m6-8l4 4-4 4",
+  alignLeft: "M4 6h16M4 10h10M4 14h16M4 18h10",
+  alignCenter: "M4 6h16M7 10h10M4 14h16M7 18h10",
+  alignRight: "M4 6h16M10 10h10M4 14h16M10 18h10",
+  alignJustify: "M4 6h16M4 10h16M4 14h16M4 18h16",
+  link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",
+  table: "M4 5h16v14H4zM4 10h16M4 15h16M10 5v14",
+  undo: "M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3",
+  redo: "M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3",
+  minus: "M5 12h14",
+  document: "M7 3h7l5 5v13H7zM14 3v5h5M10 12h6M10 16h6",
+  external: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
+  arrowLeft: "M19 12H5m6-6l-6 6 6 6",
+  save: "M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6",
 } as const;
 
 export type IconName = keyof typeof PATHS;

@@ -80,3 +80,96 @@ body {
 .skip-link:focus {
   top: 0.5rem;
 }
+
+/* --- Drive documents (owner decision 2026-10-19): the page, like a word processor --- */
+.somnus-doc {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: #0f172a;
+}
+.somnus-doc > * + * {
+  margin-top: 0.75em;
+}
+.somnus-doc h1,
+.somnus-doc h2,
+.somnus-doc h3 {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 1.4em;
+}
+.somnus-doc h1 {
+  font-size: 1.85rem;
+}
+.somnus-doc h2 {
+  font-size: 1.45rem;
+}
+.somnus-doc h3 {
+  font-size: 1.2rem;
+}
+.somnus-doc ul {
+  list-style: disc;
+  padding-left: 1.6em;
+}
+.somnus-doc ol {
+  list-style: decimal;
+  padding-left: 1.6em;
+}
+.somnus-doc li > p {
+  margin: 0.15em 0;
+}
+.somnus-doc blockquote {
+  border-left: 3px solid #cbd5e1;
+  padding-left: 1em;
+  color: #475569;
+}
+.somnus-doc pre {
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 0.75em 1em;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9rem;
+  overflow-x: auto;
+}
+.somnus-doc code {
+  font-family: ui-monospace, Consolas, monospace;
+  background: #f1f5f9;
+  padding: 0 0.25em;
+  border-radius: 3px;
+}
+.somnus-doc a {
+  color: #1f5fd6;
+  text-decoration: underline;
+}
+.somnus-doc hr {
+  border: 0;
+  border-top: 1px solid #cbd5e1;
+  margin: 1.5em 0;
+}
+.somnus-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+.somnus-doc td,
+.somnus-doc th {
+  border: 1px solid #94a3b8;
+  padding: 0.4em 0.6em;
+  vertical-align: top;
+}
+.somnus-doc th {
+  background: #f1f5f9;
+  font-weight: 700;
+  text-align: left;
+}
+.somnus-doc .selectedCell {
+  background: #dbeafe;
+}
+.somnus-doc p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

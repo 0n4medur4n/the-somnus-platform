@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { lazy, type ReactNode, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { AdminAuthProvider } from "./auth/AdminAuthProvider.js";
@@ -10,6 +10,22 @@ import { ConsoleHome } from "./routes/ConsoleHome.js";
 import { Denied } from "./routes/Denied.js";
 import { Invited } from "./routes/Invited.js";
 import { Login } from "./routes/Login.js";
+
+// The Drive tab carries the editor and the converters; the console never loads them.
+const DriveApp = lazy(() => import("./routes/DriveApp.js").then((m) => ({ default: m.DriveApp })));
+
+function DriveRoute() {
+  return (
+    <Suspense fallback={<FullPageStatusLoading />}>
+      <DriveApp />
+    </Suspense>
+  );
+}
+
+function FullPageStatusLoading() {
+  const { t } = useTranslation();
+  return <FullPageStatus message={t("common.loading")} />;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
@@ -37,6 +53,8 @@ export function Gate() {
 const router = createBrowserRouter([
   { path: "/auth/callback", element: <AuthCallback /> },
   { path: "/", element: <Gate /> },
+  // The staff Drive in its own tab (owner decision 2026-10-19), behind the same gate.
+  { path: "/drive", element: <DriveRoute /> },
   // Everything else is the gate too: an unknown path must not leak the shape of
   // the console to someone who has no access to it.
   { path: "*", element: <Navigate to="/" replace /> },
