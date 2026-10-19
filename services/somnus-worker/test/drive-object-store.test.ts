@@ -109,6 +109,18 @@ describe("GcsObjectStore", () => {
     ).rejects.toThrow("status 503");
   });
 
+  it("a 412 that meets its own earlier attempt is a success, not a conflict", async () => {
+    // The SDK retried after a lost answer; what is stored is what this call wrote.
+    const store = new GcsObjectStore("b", fakeStorage({ saveStatus: 412 }).storage);
+    await expect(
+      store.put("a", Buffer.from("payload"), { ifGeneration: MUST_NOT_EXIST }),
+    ).resolves.toBeUndefined();
+    // Anything else stored there is a real conflict.
+    await expect(
+      store.put("a", Buffer.from("someone else"), { ifGeneration: MUST_NOT_EXIST }),
+    ).rejects.toBeInstanceOf(PreconditionFailed);
+  });
+
   it("passes the generation as the SDK's ifGenerationMatch, and nothing when unconditional", async () => {
     const { storage, calls } = fakeStorage();
     const store = new GcsObjectStore("b", storage);

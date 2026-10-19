@@ -82,8 +82,24 @@ export class GcsObjectStore implements ObjectStore {
           : {}),
       });
     } catch (error) {
-      if (statusOf(error) === 412) throw new PreconditionFailed(name);
-      throw error;
+      if (statusOf(error) !== 412) throw error;
+      // The SDK retries a conditional write by itself (a precondition makes it
+      // idempotent). When the first attempt landed but its answer was lost -- a
+      // cold start, a reset connection -- the retry meets OUR OWN write and gets
+      // 412. Seen in production on 2026-10-18: the Drive account was created and
+      // the person was told it already existed. If what is stored now is exactly
+      // what this call wrote, the write succeeded; anything else is a real conflict.
+      if (await this.holds(name, data)) return;
+      throw new PreconditionFailed(name);
+    }
+  }
+
+  private async holds(name: string, data: Buffer): Promise<boolean> {
+    try {
+      const [current] = await this.bucket.file(name).download();
+      return current.equals(data);
+    } catch {
+      return false;
     }
   }
 
