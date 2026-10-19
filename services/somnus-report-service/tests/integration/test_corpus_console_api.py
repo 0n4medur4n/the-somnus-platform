@@ -317,6 +317,8 @@ def _evidence_json(evidence: dict[str, str | None]) -> str:
 
 # --- what the API cannot do ---------------------------------------------------
 
+PERSON_ERASURE = "/internal/v1/reports/person/delete"
+
 
 def _served_operations(client: TestClient) -> list[tuple[str, str]]:
     """Every (path, method) the assembled application serves.
@@ -346,9 +348,16 @@ def test_no_route_deletes_anything(client: TestClient) -> None:
     # Nothing anywhere in this service deletes, not just nothing in the corpus:
     # §B3's rule is about the data, and a delete route elsewhere would reach the
     # same rows.
+    # The one exception, named: erasing a person's own stored reports with their
+    # account (right to erasure, owner decision 2026-10-19). It reaches
+    # `person_reports` only, never the corpus -- the next test proves it.
+    erasure = (PERSON_ERASURE, "POST")
     for path, method in served:
         assert method != "DELETE", f"{method} {path} exists"
+        if (path, method) == erasure:
+            continue
         assert "delete" not in path.lower(), f"{path} looks like a delete route"
+    assert erasure in served
 
     assert any(path.endswith("/retire") for path, _ in corpus)
 
@@ -459,3 +468,25 @@ def test_enriching_a_source_leaves_its_artifact_fields_untouched(
     src = next(view for view in after if view["artifact"]["id"] == "SRC-05")
     assert [item["title"] for item in src["enrichments"]] == ["Cómo explicamos SRC-05 a familias"]
     assert src["enrichments"][0]["status"] == "published"
+
+
+def test_the_persons_erasure_route_never_reaches_the_corpus(client: TestClient) -> None:
+    """The only delete-named route hands the ids to the person-reports store and
+    nothing else; the corpus document is still there afterwards."""
+
+    class _PersonReports:
+        def __init__(self) -> None:
+            self.asked: list[list[str]] = []
+
+        def delete_for(self, assessment_ids: list[str]) -> int:
+            self.asked.append(assessment_ids)
+            return 0
+
+    store = _PersonReports()
+    client.app.state.person_reports = store  # type: ignore[attr-defined]
+    draft = _create(client)
+    response = client.post(PERSON_ERASURE, json={"assessmentIds": [draft["id"]]})
+    assert response.status_code == 200, response.text
+    assert response.json() == {"deleted": 0}
+    assert store.asked == [[draft["id"]]]
+    assert client.get(f"{CORPUS}/documents/{draft['id']}").status_code == 200
