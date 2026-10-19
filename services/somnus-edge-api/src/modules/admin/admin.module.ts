@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { PlatformInvitationModule } from "../platform-invitation/platform-invitation.module.js";
 import { SessionsModule } from "../sessions/sessions.module.js";
 import { StaffInvitationModule } from "../staff-invitation/staff-invitation.module.js";
 import { AdminProxyService } from "./admin.service.js";
@@ -16,6 +17,7 @@ import { AdminInsightsController } from "./admin-insights.controller.js";
 import { AdminInsightsService } from "./admin-insights.service.js";
 import { AdminMeController } from "./admin-me.controller.js";
 import { AdminOperationsController } from "./admin-operations.controller.js";
+import { AdminPlatformInvitationsController } from "./admin-platform-invitations.controller.js";
 import { AdminStaffInvitationsController } from "./admin-staff-invitations.controller.js";
 
 /**
@@ -28,7 +30,7 @@ import { AdminStaffInvitationsController } from "./admin-staff-invitations.contr
  */
 @Module({
   // StaffInvitationModule for the invitation email sender (owner decision 2026-10-18).
-  imports: [SessionsModule, StaffInvitationModule],
+  imports: [SessionsModule, StaffInvitationModule, PlatformInvitationModule],
   controllers: [
     AdminMeController,
     AdminOperationsController,
@@ -38,6 +40,7 @@ import { AdminStaffInvitationsController } from "./admin-staff-invitations.contr
     AdminCorpusController,
     AdminDriveController,
     AdminStaffInvitationsController,
+    AdminPlatformInvitationsController,
   ],
   providers: [
     AdminProxyService,

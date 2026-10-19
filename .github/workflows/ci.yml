@@ -556,7 +556,7 @@ jobs:
     name: Deploy frontends to dev Hosting
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [quality-gate, somnus-app, somnus-admin, somnus-marketing]
+    needs: [quality-gate, identity-service, somnus-app, somnus-admin, edge-api, somnus-app-e2e, somnus-marketing, morpheo-service, report-service, worker-service, docker-build]
     # Build plan §20 Checkpoint 9.2 exit: the frontends deploy to dev Hosting
     # from CI. Three sites since Addendum A §A2.1 added the admin console on
     # its own site. PRs get a preview channel; main goes live to dev.

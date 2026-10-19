@@ -212,3 +212,7 @@ hardening) and Checkpoint 8.2 (composition: internal OIDC clients via
 `@somnus/cloud-run-client`, `/v1/me`, consent proxying, downstream
 error normalization, and the `no-tidb.arch` test proving this service
 holds no database connection).
+
+## Morpheo invitations and user management
+
+Morpheo invitations (ADR 0021): `/admin/v1/platform-invitations` supports list/create/revoke behind `admin_users_invite` and the normal admin audit interceptor. `/v1/platform-invitation/lookup` and `/accept` require a session and CSRF. The verified session supplies email/UID, and the email callback is fixed by server configuration. `emailQueued` describes queue acceptance, not inbox delivery. The existing worker invitation template is reused with Morpheo as the non-clinical destination.

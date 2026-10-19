@@ -24,6 +24,8 @@ import type {
   OrganizationCreateRequest,
   OwnAssessmentsResponse,
   PersonReportResponse,
+  PlatformInvitation,
+  PlatformInvitationAcceptRequest,
   ProfilePatchRequest,
   RegistrationRequest,
   SessionResponse,
@@ -38,6 +40,10 @@ import { api, BinaryBody } from "./api.js";
  * the contract is the single source of truth on both sides.
  */
 export const edge = {
+  platformInvitation: (invitationId: string): Promise<PlatformInvitation> =>
+    api.post<PlatformInvitation>("/v1/platform-invitation/lookup", { invitationId }),
+  acceptPlatformInvitation: (body: PlatformInvitationAcceptRequest): Promise<void> =>
+    api.post<void>("/v1/platform-invitation/accept", body),
   createSession: (idToken: string): Promise<SessionResponse> =>
     api.post<SessionResponse>("/v1/sessions", { idToken }),
   getMe: (): Promise<MeResponse> => api.get<MeResponse>("/v1/me"),

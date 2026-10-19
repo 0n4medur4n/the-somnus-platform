@@ -7,13 +7,14 @@ import {
   deletionRequests,
   individualProfiles,
   organizationInvitations,
-  staffInvitations,
   organizationMemberships,
+  platformInvitations,
   professionalCredentials,
   professionalProfiles,
   professionalVerificationCases,
   roleAssignments,
   sessionRevocations,
+  staffInvitations,
   userIdentities,
   users,
 } from "../schema/index.js";
@@ -96,6 +97,19 @@ export class AccountDeletionRepository {
         .delete(staffInvitations)
         .where(
           or(eq(staffInvitations.acceptedUserId, userId), eq(staffInvitations.invitedBy, userId)),
+        );
+      await tx
+        .delete(platformInvitations)
+        .where(
+          or(
+            eq(platformInvitations.preparedUserId, userId),
+            eq(platformInvitations.invitedBy, userId),
+            eq(
+              platformInvitations.email,
+              (await tx.select({ email: users.email }).from(users).where(eq(users.id, userId)))[0]
+                ?.email ?? "",
+            ),
+          ),
         );
       await tx.delete(organizationMemberships).where(eq(organizationMemberships.userId, userId));
       await tx.delete(roleAssignments).where(eq(roleAssignments.userId, userId));

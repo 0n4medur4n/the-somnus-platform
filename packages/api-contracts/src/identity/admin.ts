@@ -20,6 +20,7 @@ import { UserSchema } from "./user.js";
  * outside identity. edge-api only knows which capability a route requires.
  */
 export const ADMIN_CAPABILITIES = [
+  "admin_users_invite",
   /** Search users, view account status/metadata. */
   "admin_users_read",
   /** Suspend / reactivate an account. */

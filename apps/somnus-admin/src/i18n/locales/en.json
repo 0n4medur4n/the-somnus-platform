@@ -52,7 +52,13 @@
     "professional_verifier": "Professional verifier",
     "clinical_governance_reviewer": "Clinical governance reviewer",
     "platform_admin": "Platform administrator",
-    "platform_super_admin": "Platform super administrator"
+    "platform_super_admin": "Platform super administrator",
+    "individual_user": "Individual",
+    "professional": "Professional",
+    "organization_owner": "Organization owner",
+    "organization_admin": "Organization administrator",
+    "professional_manager": "Professional manager",
+    "clinical_supervisor": "Clinical supervisor"
   },
   "capability": {
     "admin_users_read": "Search users and view their status",
@@ -69,7 +75,8 @@
     "admin_system_health": "System health",
     "admin_corpus_manage": "Manage the reference corpus",
     "admin_audit_export": "Export the audit log",
-    "admin_drive": "The team's encrypted Drive (shared folders)"
+    "admin_drive": "The team's encrypted Drive (shared folders)",
+    "admin_users_invite": "Invite people to Morpheo"
   },
   "errors": {
     "required": "This field is required.",
@@ -831,6 +838,58 @@
       "accepted": "Accepted",
       "revoked": "Withdrawn",
       "expired": "Expired"
+    }
+  },
+  "platformInvite": {
+    "title": "Morpheo invitations",
+    "add": "Invite to Morpheo",
+    "type": "Account type",
+    "hint": "The invitee completes registration and their own consents. Professionals require verification before receiving professional permissions. This invitation does not grant access to Nox.",
+    "queued": "Invitation saved and email queued for delivery.",
+    "notQueued": "Invitation saved. The email could not be queued; you can resend it.",
+    "revoked": "Invitation revoked.",
+    "expires": "Expires: {{date}}",
+    "role": {
+      "adult": "Individual adult",
+      "professional": "Professional awaiting verification"
+    }
+  },
+  "metadata": {
+    "id": "Identifier",
+    "name": "Full name",
+    "type": "Registration type",
+    "locale": "Language",
+    "created": "Created",
+    "updated": "Last updated",
+    "dateOfBirth": "Date of birth",
+    "phone": "Phone",
+    "country": "Country",
+    "city": "City",
+    "gender": "Gender",
+    "license": "Licence number",
+    "missing": "Not provided",
+    "roles": "Assigned roles and scope",
+    "platform": "Platform",
+    "productNotice": "Administrative roles and a Morpheo account do not by themselves grant clinical access to other products.",
+    "role": {
+      "adult": "Individual adult",
+      "parent": "Parent or guardian",
+      "professional": "Professional"
+    },
+    "genderValue": {
+      "male": "Man",
+      "female": "Woman",
+      "prefer_not_to_say": "Prefers not to say"
+    },
+    "verification": {
+      "pending": "Awaiting verification",
+      "verified": "Verified",
+      "rejected": "Verification rejected"
+    },
+    "membership": {
+      "active": "Active membership",
+      "inactive": "Inactive membership",
+      "removed": "Removed membership"
     }
   }
 }

@@ -23,6 +23,7 @@ import type { ActorStatus } from "./authorization-policy.js";
  * internal roles. A "seniority" shortcut would quietly grant the wrong cells.
  */
 const CAPABILITY_ROLES: Readonly<Record<AdminCapability, ReadonlySet<RoleKey>>> = Object.freeze({
+  admin_users_invite: new Set<RoleKey>(["platform_super_admin"]),
   // Search users, view account status/metadata
   admin_users_read: new Set<RoleKey>([
     "support_agent",

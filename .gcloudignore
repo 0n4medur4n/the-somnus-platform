@@ -1,0 +1,16 @@
+.gcloudignore
+.git
+.git/**
+node_modules
+**/node_modules/**
+**/dist/**
+**/coverage/**
+**/.env
+**/.env.*
+**/.venv/**
+**/.terraform/**
+**/*.tfstate*
+**/*.tfplan
+**/terraform.tfvars
+**/__pycache__/**
+**/.pytest_cache/**
