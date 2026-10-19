@@ -21,6 +21,7 @@ import {
  * cells is then asserted, so a cell cannot be widened without this failing.
  */
 const EXPECTED: Readonly<Record<AdminCapability, ReadonlyArray<RoleKey>>> = {
+  admin_users_invite: ["platform_super_admin"],
   admin_users_read: [
     "support_agent",
     "professional_verifier",

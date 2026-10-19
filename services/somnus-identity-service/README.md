@@ -533,3 +533,7 @@ Phase 6 / Checkpoint 6.1 (identity data layer), Phase 6 / Checkpoint
 every endpoint except `sessions`, stubbed until Phase 8), Phase 6 /
 Checkpoint 6.3 (the immutable negative-authorization suite), and Phase
 7 / Checkpoint 7.1 (the consent module, fully isolated).
+
+## Morpheo invitations and user management
+
+Morpheo invitations (ADR 0021): `internal/v1/admin/platform-invitations` is checked in Identity against `admin_users_invite`; lookup/accept use a verified email and Firebase identity from edge. Migration 0007 adds only `platform_invitations` (down drops that table; back up pending invitations before rollback). Prepared accounts stay suspended until required consent receipts are stored; accepting grants no professional or Nox role. `node dist/migrate.js` is the one-off identity-only migration Job entry point; the runtime image includes SQL, never database credentials. User detail now includes operational profile/contact fields, scoped role assignments and organization membership state.
