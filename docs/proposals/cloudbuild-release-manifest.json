@@ -540,8 +540,8 @@
     },
     {
       "path": "scripts/cloudbuild-admin-user-images.yaml",
-      "bytes": 703,
-      "sha256": "ffa1d618d3ec2285cb9829e175de2855f2f8f82b3a4963e9a1b53be8c948f94b"
+      "bytes": 761,
+      "sha256": "dadab6a8e342c7c8368f6338082d04e422a95ea4fee1c314db9df3372bc5a277"
     },
     {
       "path": "services/somnus-edge-api/.gitignore",
