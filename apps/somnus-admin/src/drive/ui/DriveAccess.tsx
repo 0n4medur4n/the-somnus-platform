@@ -143,6 +143,7 @@ export function RecoveryKit({ code, onDone }: { code: string; onDone: () => void
         {t("drive.recovery.heading")}
       </h2>
       <p className="text-somnus-text">{t("drive.recovery.intro")}</p>
+      <Notice tone="danger">{t("drive.recovery.notAFingerprint")}</Notice>
       <p
         data-testid="recovery-code"
         className="rounded-lg border border-somnus-primary/40 bg-somnus-background p-4 text-center font-mono text-lg tracking-widest text-somnus-text"

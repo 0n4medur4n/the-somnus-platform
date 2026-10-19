@@ -57,7 +57,7 @@ export function DocumentEditor({
     immediatelyRender: true,
     editorProps: {
       attributes: {
-        class: "somnus-doc min-h-[60vh] focus:outline-none",
+        class: "somnus-doc",
         "aria-label": t("drive.doc.body"),
       },
     },
@@ -207,8 +207,10 @@ export function DocumentEditor({
         </p>
       ) : null}
 
-      <main className="flex-1 px-4 py-8">
-        <div className="mx-auto w-full max-w-[816px] rounded-sm bg-white px-[clamp(1.5rem,6vw,4.5rem)] py-16 text-slate-900 shadow-2xl shadow-black/40">
+      <main className="flex-1 overflow-x-auto px-4 py-8">
+        {/* An A4 sheet with Google Docs' 2.54 cm margins; it grows a page at a
+            time, and a faint line marks where each printed page ends. */}
+        <div className="somnus-page mx-auto text-[#202124] shadow-[0_1px_3px_rgba(0,0,0,0.35)]">
           <EditorContent editor={editor} />
         </div>
       </main>

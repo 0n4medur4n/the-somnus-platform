@@ -240,8 +240,9 @@
   "roles": {
     "title": "Roles internos",
     "intro": "Solo un superadministrador de plataforma puede asignar roles internos.",
-    "targetLabel": "Id de la persona usuaria",
-    "targetHint": "Búscala en Personas usuarias y copia su id.",
+    "targetLabel": "Buscar persona por correo",
+    "targetHint": "Escribe parte del correo, busca y selecciona una cuenta activa.",
+    "directTitle": "Asignar un rol a una cuenta existente",
     "roleLabel": "Rol",
     "assign": "Asignar rol",
     "assigned": "Rol asignado.",
@@ -427,7 +428,7 @@
     "closeGuide": "Cerrar la guía",
     "changePassphrase": "Cambiar frase",
     "yourFingerprint": "Tu huella de seguridad",
-    "fingerprintHint": "Compárala con la de tus colegas por teléfono o en persona para confirmar que nadie se hace pasar por ti.",
+    "fingerprintHint": "Esta es tu huella de seguridad y es pública: tus colegas la comparan contigo (por teléfono o en persona) antes de compartir carpetas. No es tu código de recuperación, que es secreto.",
     "working": "Trabajando…",
     "cancel": "Cancelar",
     "save": "Guardar",
@@ -461,7 +462,8 @@
       "fileTitle": "The Somnus · Drive cifrado · Código de recuperación",
       "fileWarning": "Guarda este código en un lugar seguro. Con él se puede abrir tu Drive si olvidas tu frase de paso.",
       "confirm": "He guardado el código en un lugar seguro",
-      "continue": "Entrar en mi Drive"
+      "continue": "Entrar en mi Drive",
+      "notAFingerprint": "Este código es secreto y solo tuyo. No es tu huella de seguridad: no lo compares ni lo compartas con nadie, ni siquiera con el equipo de The Somnus."
     },
     "unlock": {
       "heading": "Abre tu Drive cifrado",
@@ -584,11 +586,14 @@
       "noColleagues": "No hay más colegas con el Drive configurado. Pídeles que entren en Drive cifrado una vez.",
       "roleLabel": "Permiso",
       "addSubmit": "Compartir",
-      "checkFingerprint": "Antes de compartir, comprueba con {{who}} que su huella es:",
       "renameFolder": "Renombrar la carpeta",
       "deleteFolder": "Eliminar la carpeta",
       "deleteConfirmLabel": "Escribe el nombre de la carpeta para eliminarla con todo su contenido",
-      "deleteSubmit": "Eliminar para siempre"
+      "deleteSubmit": "Eliminar para siempre",
+      "fingerprintOf": "Huella de seguridad de {{who}}",
+      "fingerprintExplain": "Es la identificación pública de su Drive, no un código secreto. Pídele a {{who}} que abra «Seguridad y frase» en su Drive y te la lea por teléfono o en persona: si coincide con esta, compartes con quien crees.",
+      "notRecoveryCode": "No tiene nada que ver con tu código de recuperación (letras y números separados por guiones): ese es secreto, solo tuyo, y nunca se compara ni se comparte.",
+      "confirmMatches": "He comprobado con {{who}} que su huella coincide"
     },
     "trust": {
       "self": "Tú",
@@ -798,7 +803,7 @@
   },
   "invited": {
     "title": "Hola, {{name}}",
-    "body": "Te han invitado a la consola de The Somnus como {{role}}. Al aceptar se crea tu cuenta de personal con ese rol.",
+    "body": "Te han invitado a la consola de The Somnus como {{role}}. Este rol se activa en tu cuenta cuando aceptas la invitación.",
     "expires": "La invitación es válida hasta el {{date}}.",
     "privacy": "He leído y acepto la",
     "privacyLink": "política de privacidad",
@@ -806,11 +811,16 @@
     "failed": "No se ha podido aceptar la invitación. Puede que haya caducado o que ya se haya usado; pide a quien te invitó que la vuelva a enviar."
   },
   "staff": {
+    "recipient": "Persona destinataria",
+    "recipientMode": {
+      "email": "Invitar por correo",
+      "existing": "Elegir una persona ya registrada"
+    },
     "title": "Personal de The Somnus",
     "subtitle": "Invita a alguien del equipo con su rol. Recibirá un correo para entrar en la consola y aceptar.",
     "add": "Añadir persona",
     "formTitle": "Invitar a una persona del equipo",
-    "formHint": "La cuenta se crea cuando la persona entra con el enlace y acepta; hasta entonces no tiene acceso a nada.",
+    "formHint": "El rol invitado se activa cuando la persona abre el enlace, confirma la política de privacidad y acepta la invitación.",
     "firstName": "Nombre",
     "lastName": "Apellidos",
     "colName": "Nombre",
@@ -853,6 +863,12 @@
       "adult": "Particular adulto",
       "professional": "Profesional pendiente de verificar"
     }
+  },
+  "userPicker": {
+    "searchLabel": "Buscar cuenta por correo",
+    "choose": "Seleccionar {{email}}",
+    "selected": "Cuenta seleccionada: {{email}}",
+    "empty": "No hay cuentas activas con ese correo. Puedes invitar por correo a una persona nueva."
   },
   "metadata": {
     "id": "Identificador",

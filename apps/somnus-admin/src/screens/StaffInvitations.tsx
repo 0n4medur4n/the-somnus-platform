@@ -2,11 +2,12 @@ import {
   STAFF_INVITATION_ROLE_KEYS,
   type StaffInvitation,
   type StaffInvitationCreateRequest,
+  StaffInvitationCreateRequestSchema,
   type StaffInvitationRoleKey,
   type SupportedLocale,
 } from "@somnus/api-contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../components/Button.js";
 import { Field } from "../components/Field.js";
@@ -14,6 +15,7 @@ import { SelectField } from "../components/SelectField.js";
 import { Icon } from "../components/ui/Icon.js";
 import { Modal } from "../components/ui/ui.js";
 import { edge } from "../lib/edge.js";
+import { ExistingUserPicker } from "./ExistingUserPicker.js";
 
 const LOCALES: SupportedLocale[] = ["es", "en", "ca", "fr"];
 const QUERY_KEY = ["users", "staffInvitations"];
@@ -33,7 +35,7 @@ const STATUS_STYLE: Record<StaffInvitation["status"], string> = {
  * sign in and accept. Nobody gets an account they did not accept themselves.
  * Rendered only for holders of `admin_roles_assign`.
  */
-export function StaffInvitations() {
+export function StaffInvitations({ actingAdminUserId }: { actingAdminUserId?: string } = {}) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -213,6 +215,7 @@ export function StaffInvitations() {
 
       {open ? (
         <InviteForm
+          {...(actingAdminUserId ? { actingAdminUserId } : {})}
           onClose={() => setOpen(false)}
           onSubmit={async (body) => {
             if (await send(body)) setOpen(false);
@@ -226,28 +229,32 @@ export function StaffInvitations() {
 function InviteForm({
   onClose,
   onSubmit,
+  actingAdminUserId,
 }: {
   onClose: () => void;
   onSubmit: (body: StaffInvitationCreateRequest) => Promise<void>;
+  actingAdminUserId?: string;
 }) {
   const { t, i18n } = useTranslation();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [mode, setMode] = useState<"existing" | "email">("email");
+  const [selected, setSelected] = useState(false);
+  const selectionVersion = useRef(0);
   const [roleKey, setRoleKey] = useState<StaffInvitationRoleKey | "">("");
   const [locale, setLocale] = useState<SupportedLocale>(
     LOCALES.includes(i18n.language as SupportedLocale) ? (i18n.language as SupportedLocale) : "es",
   );
   const [busy, setBusy] = useState(false);
   const ready =
-    firstName.trim().length > 0 &&
-    lastName.trim().length > 0 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
-    roleKey !== "";
+    StaffInvitationCreateRequestSchema.safeParse({ firstName, lastName, email, roleKey, locale })
+      .success &&
+    (mode === "email" || selected);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!ready) return;
+    if (!ready || roleKey === "") return;
     setBusy(true);
     await onSubmit({
       firstName: firstName.trim(),
@@ -263,6 +270,53 @@ function InviteForm({
     <Modal title={t("staff.formTitle")} onClose={onClose}>
       <form className="flex flex-col gap-4" onSubmit={(event) => void submit(event)}>
         <p className="text-sm text-somnus-subtle">{t("staff.formHint")}</p>
+        <fieldset className="flex flex-wrap gap-4">
+          <legend className="mb-2 text-sm font-medium">{t("staff.recipient")}</legend>
+          {(["email", "existing"] as const).map((value) => (
+            <label key={value} className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="staff-recipient"
+                value={value}
+                checked={mode === value}
+                onChange={() => {
+                  selectionVersion.current++;
+                  setMode(value);
+                  setSelected(false);
+                  setFirstName("");
+                  setLastName("");
+                  setEmail("");
+                }}
+              />
+              {t(`staff.recipientMode.${value}`)}
+            </label>
+          ))}
+        </fieldset>
+        {mode === "existing" ? (
+          <ExistingUserPicker
+            id="staff-user-search"
+            label={t("userPicker.searchLabel")}
+            hint={t("roles.targetHint")}
+            {...(actingAdminUserId ? { excludedUserId: actingAdminUserId } : {})}
+            onQueryChange={() => {
+              selectionVersion.current++;
+              setSelected(false);
+              setEmail("");
+              setFirstName("");
+              setLastName("");
+            }}
+            onSelect={async (user) => {
+              const version = ++selectionVersion.current;
+              const detail = await edge.userDetail(user.id);
+              if (version !== selectionVersion.current) return;
+              setEmail(user.email);
+              setFirstName(detail.individualProfile?.firstName ?? "");
+              setLastName(detail.individualProfile?.lastName ?? "");
+              setLocale(user.locale);
+              setSelected(true);
+            }}
+          />
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             label={t("staff.firstName")}
@@ -285,6 +339,7 @@ function InviteForm({
           label={t("users.colEmail")}
           type="email"
           value={email}
+          readOnly={mode === "existing"}
           autoComplete="off"
           maxLength={320}
           required
@@ -302,7 +357,7 @@ function InviteForm({
         />
         <SelectField
           label={t("staff.emailLanguage")}
-          defaultValue={locale}
+          value={locale}
           options={LOCALES.map((value) => ({ value, label: t(`staff.locale.${value}`) }))}
           onChange={(event) => setLocale(event.target.value as SupportedLocale)}
         />
