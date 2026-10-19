@@ -132,6 +132,11 @@ def parse(raw: dict[str, Any]) -> FunnelArtifact:
             raise FunnelArtifactError(
                 f"step {spec['id']!r}: {text!r} is not verbatim from {spec['source']}"
             )
+        if spec.get("capitalise"):
+            # A fragment cut from mid-sentence («¿hay …») starts the screen:
+            # only its first letter changes.
+            opening = 1 if text.startswith("¿") else 0
+            text = text[:opening] + text[opening].upper() + text[opening + 1 :]
         options = tuple(Option(o["key"], o["label"]) for o in spec.get("options", []))
         fields = tuple(Option(o["key"], o["label"]) for o in spec.get("fields", []))
         for o in (*options, *fields):

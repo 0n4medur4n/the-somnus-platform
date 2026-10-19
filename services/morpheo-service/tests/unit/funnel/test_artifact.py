@@ -29,7 +29,11 @@ def test_every_step_text_is_a_fragment_of_its_v02_source() -> None:
     checked = 0
     for step in artifact.steps:
         if step.source in texts and step.draft is None:
-            assert step.text in texts[step.source], step.id
+            # The only change allowed: the first letter after «¿» when a
+            # question is cut from mid-sentence (R4).
+            text = step.text
+            as_cut = text[:1] + text[1:2].lower() + text[2:] if text.startswith("¿") else text
+            assert text in texts[step.source] or as_cut in texts[step.source], step.id
             checked += 1
     assert checked > 40
 
@@ -103,3 +107,13 @@ def test_z2_asks_only_its_question_not_the_interviewers_instruction() -> None:
     z2 = funnel_artifact().step("Z2")
     assert z2.text == "¿Qué le facilitaría seguir este plan?"
     assert "Explicar" not in z2.text
+
+
+def test_r4_asks_only_its_question_not_the_interviewers_condition() -> None:
+    """v0.2 p. 6: «Si hay sospecha: ¿hay enfermedad cardiopulmonar …?». «Si hay
+    sospecha:» is the interviewer's condition (the engine opens R only then)."""
+    r4 = funnel_artifact().step("R4")
+    assert r4.text == (
+        "¿Hay enfermedad cardiopulmonar relevante, ictus, opioides, debilidad respiratoria"
+        " o insomnio grave?"
+    )
