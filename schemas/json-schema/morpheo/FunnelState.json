@@ -36,7 +36,8 @@
                 "ask",
                 "confirm",
                 "info",
-                "instrument_intro"
+                "instrument_intro",
+                "confirm_extraction"
               ]
             },
             "type": {
@@ -51,7 +52,8 @@
                 "multi",
                 "single",
                 "info",
-                "instrument_intro"
+                "instrument_intro",
+                "confirm_extraction"
               ]
             },
             "text": {
@@ -175,6 +177,148 @@
               "minimum": 0,
               "maximum": 9007199254740991
             },
+            "extraction": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "items": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          },
+                          "question": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "answer": {
+                            "type": "string"
+                          },
+                          "evidence": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "editable": {
+                            "type": "boolean"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "number",
+                              "yes_no",
+                              "yes_no_note",
+                              "free_text",
+                              "duration",
+                              "times",
+                              "multi",
+                              "single",
+                              "info",
+                              "instrument_intro",
+                              "confirm_extraction"
+                            ]
+                          },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 64
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "key",
+                                "label"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "fields": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 64
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "key",
+                                "label"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "noneOption": {
+                            "type": "boolean"
+                          },
+                          "unit": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "units": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "question",
+                          "answer",
+                          "evidence",
+                          "editable",
+                          "type",
+                          "options",
+                          "fields",
+                          "noneOption",
+                          "unit",
+                          "units"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "items"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "panel": {
               "anyOf": [
                 {
@@ -287,6 +431,167 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "ai": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "ok",
+                              "failed"
+                            ]
+                          },
+                          "model": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "promptVersion": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "risk": {
+                            "type": "object",
+                            "properties": {
+                              "S1": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "si",
+                                      "no",
+                                      "dudoso"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "S4": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "si",
+                                      "no",
+                                      "dudoso"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "S2": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "si",
+                                      "no",
+                                      "dudoso"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "S1",
+                              "S4",
+                              "S2"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "discarded": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "question": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "answer": {
+                                  "type": "string"
+                                },
+                                "evidence": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "decision": {
+                                  "type": "string",
+                                  "enum": [
+                                    "confirmado",
+                                    "corregido",
+                                    "quitado",
+                                    "pendiente"
+                                  ]
+                                },
+                                "corrected": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "question",
+                                "answer",
+                                "evidence",
+                                "decision",
+                                "corrected"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "status",
+                          "model",
+                          "promptVersion",
+                          "risk",
+                          "discarded",
+                          "items"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -296,7 +601,8 @@
                     "rulesFired",
                     "mainAction",
                     "phraseIds",
-                    "instruments"
+                    "instruments",
+                    "ai"
                   ],
                   "additionalProperties": false
                 },
@@ -322,6 +628,7 @@
             "instrument",
             "phase",
             "answeredCount",
+            "extraction",
             "panel"
           ],
           "additionalProperties": false
@@ -626,6 +933,167 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "ai": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "ok",
+                              "failed"
+                            ]
+                          },
+                          "model": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "promptVersion": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "risk": {
+                            "type": "object",
+                            "properties": {
+                              "S1": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "si",
+                                      "no",
+                                      "dudoso"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "S4": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "si",
+                                      "no",
+                                      "dudoso"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "S2": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "si",
+                                      "no",
+                                      "dudoso"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "S1",
+                              "S4",
+                              "S2"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "discarded": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "question": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "answer": {
+                                  "type": "string"
+                                },
+                                "evidence": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "decision": {
+                                  "type": "string",
+                                  "enum": [
+                                    "confirmado",
+                                    "corregido",
+                                    "quitado",
+                                    "pendiente"
+                                  ]
+                                },
+                                "corrected": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "question",
+                                "answer",
+                                "evidence",
+                                "decision",
+                                "corrected"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "status",
+                          "model",
+                          "promptVersion",
+                          "risk",
+                          "discarded",
+                          "items"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -636,7 +1104,8 @@
                     "phraseIds",
                     "branchesOpened",
                     "orientations",
-                    "instruments"
+                    "instruments",
+                    "ai"
                   ],
                   "additionalProperties": false
                 },

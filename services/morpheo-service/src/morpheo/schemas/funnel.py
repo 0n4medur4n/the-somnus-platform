@@ -13,7 +13,7 @@ from pydantic import Field, model_validator
 from morpheo.schemas.base import ContractModel
 
 FunnelAbsence = Literal["no_lo_se", "prefiero_no_responder"]
-FunnelStepKind = Literal["ask", "confirm", "info", "instrument_intro"]
+FunnelStepKind = Literal["ask", "confirm", "info", "instrument_intro", "confirm_extraction"]
 FunnelAnswerType = Literal[
     "number",
     "yes_no",
@@ -25,10 +25,13 @@ FunnelAnswerType = Literal[
     "single",
     "info",
     "instrument_intro",
+    "confirm_extraction",
 ]
 FunnelPhase = Literal["start", "story", "branches", "instrument", "protection", "closing"]
 FunnelStatus = Literal["open", "finished", "stopped", "paused"]
 FunnelInstrumentStatus = Literal["completed", "declined", "incomplete", "pending_file"]
+FunnelExtractionDecision = Literal["confirmado", "corregido", "quitado"]
+FunnelRisk = Literal["si", "no", "dudoso"]
 
 
 class FunnelOptionDTO(ContractModel):
@@ -45,6 +48,31 @@ class FunnelInstrumentDTO(ContractModel):
     placement: str
 
 
+class FunnelAiItemPanelDTO(ContractModel):
+    id: str
+    question: str
+    answer: str
+    evidence: str
+    decision: FunnelExtractionDecision | Literal["pendiente"]
+    corrected: str | None
+
+
+class FunnelAiRiskDTO(ContractModel):
+    s1: FunnelRisk | None = Field(alias="S1")
+    s4: FunnelRisk | None = Field(alias="S4")
+    s2: FunnelRisk | None = Field(alias="S2")
+
+
+class FunnelAiPanelDTO(ContractModel):
+    source: str
+    status: Literal["ok", "failed"]
+    model: str | None
+    prompt_version: str | None
+    risk: FunnelAiRiskDTO
+    discarded: int
+    items: list[FunnelAiItemPanelDTO]
+
+
 class FunnelStepPanelDTO(ContractModel):
     reason: str | None
     source: str
@@ -53,11 +81,31 @@ class FunnelStepPanelDTO(ContractModel):
     main_action: str | None
     phrase_ids: list[str]
     instruments: list[FunnelInstrumentDTO]
+    ai: list[FunnelAiPanelDTO]
 
 
 class FunnelStepInstrumentDTO(ContractModel):
     code: str
     name: str
+
+
+class FunnelExtractionItemDTO(ContractModel):
+    id: str
+    question: str
+    answer: str
+    evidence: str
+    editable: bool
+    type: FunnelAnswerType
+    options: list[FunnelOptionDTO]
+    fields: list[FunnelOptionDTO]
+    none_option: bool
+    unit: str | None
+    units: list[str]
+
+
+class FunnelExtractionDTO(ContractModel):
+    source: str
+    items: list[FunnelExtractionItemDTO]
 
 
 class FunnelStepDTO(ContractModel):
@@ -76,6 +124,7 @@ class FunnelStepDTO(ContractModel):
     instrument: FunnelStepInstrumentDTO | None
     phase: FunnelPhase
     answered_count: int
+    extraction: FunnelExtractionDTO | None
     panel: FunnelStepPanelDTO | None
 
 
@@ -100,6 +149,7 @@ class FunnelResultPanelDTO(ContractModel):
     branches_opened: list[str]
     orientations: list[FunnelOrientationDTO]
     instruments: list[FunnelInstrumentDTO]
+    ai: list[FunnelAiPanelDTO]
 
 
 class FunnelResultDTO(ContractModel):
@@ -143,16 +193,25 @@ class FunnelDurationDTO(ContractModel):
 FunnelValue = str | int | list[str] | FunnelDurationDTO | dict[str, str]
 
 
+class FunnelExtractionDecisionDTO(ContractModel):
+    id: str = Field(min_length=1, max_length=64)
+    decision: FunnelExtractionDecision
+    value: FunnelValue | None = None
+
+
 class FunnelAnswerRequestDTO(ContractModel):
     key: str = Field(min_length=1, max_length=64)
     value: FunnelValue | None = None
     absence: FunnelAbsence | None = None
     text: str | None = Field(default=None, max_length=2000)
+    # The confirmation screen: the person's decision on each proposed item.
+    decisions: list[FunnelExtractionDecisionDTO] | None = Field(default=None, max_length=60)
 
     @model_validator(mode="after")
     def _one_of(self) -> FunnelAnswerRequestDTO:
-        if (self.value is None) == (self.absence is None):
-            raise ValueError("exactly one of value and absence")
+        given = [self.value is not None, self.absence is not None, self.decisions is not None]
+        if sum(given) != 1:
+            raise ValueError("exactly one of value, absence and decisions")
         return self
 
 

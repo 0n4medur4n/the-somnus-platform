@@ -8,7 +8,10 @@ import { FREE_TEXT_MAX_LENGTH, findIdentifyingData } from "./identifying-data.js
  * the safety exceptions and the final text all live in morpheo.
  *
  * The final text comes only from the v0.2 templates and the approved phrase
- * catalogue -- no model writes any of it. `panel` (why a step was asked, the
+ * catalogue -- no model writes any of it. The AI only proposes answers taken
+ * from the person's own words (v0.2 p. 14), shown on a confirmation screen
+ * (`confirm_extraction`); nothing it proposes counts until the person keeps or
+ * corrects it there. `panel` (why a step was asked, the
  * branches, rules and phrases behind it) is for the team only: the edge strips
  * it for anyone without an internal role.
  */
@@ -18,7 +21,13 @@ export const FUNNEL_ABSENCES = ["no_lo_se", "prefiero_no_responder"] as const;
 export const FunnelAbsenceSchema = z.enum(FUNNEL_ABSENCES);
 export type FunnelAbsence = z.infer<typeof FunnelAbsenceSchema>;
 
-export const FUNNEL_STEP_KINDS = ["ask", "confirm", "info", "instrument_intro"] as const;
+export const FUNNEL_STEP_KINDS = [
+  "ask",
+  "confirm",
+  "info",
+  "instrument_intro",
+  "confirm_extraction",
+] as const;
 export const FunnelStepKindSchema = z.enum(FUNNEL_STEP_KINDS);
 export type FunnelStepKind = z.infer<typeof FunnelStepKindSchema>;
 
@@ -33,6 +42,7 @@ export const FUNNEL_ANSWER_TYPES = [
   "single",
   "info",
   "instrument_intro",
+  "confirm_extraction",
 ] as const;
 export const FunnelAnswerTypeSchema = z.enum(FUNNEL_ANSWER_TYPES);
 export type FunnelAnswerType = z.infer<typeof FunnelAnswerTypeSchema>;
@@ -61,6 +71,14 @@ export const FUNNEL_INSTRUMENT_STATUSES = [
 ] as const;
 export const FunnelInstrumentStatusSchema = z.enum(FUNNEL_INSTRUMENT_STATUSES);
 
+/** The person's decision on one item the AI proposed. */
+export const FUNNEL_EXTRACTION_DECISIONS = ["confirmado", "corregido", "quitado"] as const;
+export const FunnelExtractionDecisionSchema = z.enum(FUNNEL_EXTRACTION_DECISIONS);
+export type FunnelExtractionDecision = z.infer<typeof FunnelExtractionDecisionSchema>;
+
+/** The risk screen's view of a safety question; it only ever adds a question. */
+export const FunnelRiskSchema = z.enum(["si", "no", "dudoso"]);
+
 export const FunnelOptionSchema = z
   .object({ key: z.string().min(1).max(64), label: z.string().min(1) })
   .strict();
@@ -80,6 +98,40 @@ export const FunnelInstrumentSchema = z
   .strict();
 export type FunnelInstrument = z.infer<typeof FunnelInstrumentSchema>;
 
+/** For the team: one AI call -- what it proposed, the words it came from, what the person did. */
+export const FunnelAiPanelSchema = z
+  .object({
+    /** The answer it read (Q01, Q06, …). */
+    source: z.string().min(1),
+    status: z.enum(["ok", "failed"]),
+    model: z.string().nullable(),
+    promptVersion: z.string().nullable(),
+    risk: z
+      .object({
+        S1: FunnelRiskSchema.nullable(),
+        S4: FunnelRiskSchema.nullable(),
+        S2: FunnelRiskSchema.nullable(),
+      })
+      .strict(),
+    /** Proposals dropped by validation (out of schema, or evidence not in the text). */
+    discarded: z.number().int().min(0),
+    items: z.array(
+      z
+        .object({
+          id: z.string().min(1),
+          question: z.string().min(1),
+          answer: z.string(),
+          evidence: z.string().min(1),
+          decision: z.enum([...FUNNEL_EXTRACTION_DECISIONS, "pendiente"]),
+          /** The value the person gave instead, when they corrected it. */
+          corrected: z.string().nullable(),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+export type FunnelAiPanel = z.infer<typeof FunnelAiPanelSchema>;
+
 /** The team panel on an interview screen: why this step, and what stands so far. */
 export const FunnelStepPanelSchema = z
   .object({
@@ -90,9 +142,37 @@ export const FunnelStepPanelSchema = z
     mainAction: z.string().nullable(),
     phraseIds: z.array(z.string()),
     instruments: z.array(FunnelInstrumentSchema),
+    ai: z.array(FunnelAiPanelSchema),
   })
   .strict();
 export type FunnelStepPanel = z.infer<typeof FunnelStepPanelSchema>;
+
+/**
+ * One item on the confirmation screen: the v0.2 question, what the AI took as
+ * the answer, and the person's exact words it came from. An editable item
+ * carries its question's answer shape so the person can correct it there.
+ */
+export const FunnelExtractionItemSchema = z
+  .object({
+    id: z.string().min(1).max(64),
+    question: z.string().min(1),
+    answer: z.string(),
+    evidence: z.string().min(1),
+    editable: z.boolean(),
+    type: FunnelAnswerTypeSchema,
+    options: z.array(FunnelOptionSchema),
+    fields: z.array(FunnelOptionSchema),
+    noneOption: z.boolean(),
+    unit: z.string().nullable(),
+    units: z.array(z.string()),
+  })
+  .strict();
+export type FunnelExtractionItem = z.infer<typeof FunnelExtractionItemSchema>;
+
+export const FunnelExtractionSchema = z
+  .object({ source: z.string().min(1), items: z.array(FunnelExtractionItemSchema).min(1) })
+  .strict();
+export type FunnelExtraction = z.infer<typeof FunnelExtractionSchema>;
 
 export const FunnelStepSchema = z
   .object({
@@ -118,6 +198,8 @@ export const FunnelStepSchema = z
       .nullable(),
     phase: FunnelPhaseSchema,
     answeredCount: z.number().int().min(0),
+    /** The confirmation screen's items (only on a `confirm_extraction` step). */
+    extraction: FunnelExtractionSchema.nullable(),
     panel: FunnelStepPanelSchema.nullable(),
   })
   .strict();
@@ -149,6 +231,7 @@ export const FunnelResultPanelSchema = z
     orientations: z.array(FunnelOrientationSchema),
     /** Every instrument this interview would offer, pending ones included. */
     instruments: z.array(FunnelInstrumentSchema),
+    ai: z.array(FunnelAiPanelSchema),
   })
   .strict();
 export type FunnelResultPanel = z.infer<typeof FunnelResultPanelSchema>;
@@ -206,32 +289,45 @@ export const FunnelDurationSchema = z
   .object({ value: z.number().positive().max(1000), unit: z.string().min(1).max(16) })
   .strict();
 
+const FunnelValueSchema = z.union([
+  FreeTextSchema,
+  z.number().int().min(0).max(200),
+  z.array(z.string().min(1).max(64)).max(20),
+  FunnelDurationSchema,
+  z.record(z.string().min(1).max(32), z.string().regex(/^\d{2}:\d{2}$/)),
+]);
+
+/** The person's decision on one proposed item; a correction carries its value. */
+export const FunnelExtractionDecisionBodySchema = z
+  .object({
+    id: z.string().min(1).max(64),
+    decision: FunnelExtractionDecisionSchema,
+    value: FunnelValueSchema.nullable().optional(),
+  })
+  .strict();
+export type FunnelExtractionDecisionBody = z.infer<typeof FunnelExtractionDecisionBodySchema>;
+
 /**
- * One answer, to the step the engine served (`key`). Exactly one of `value` and
- * `absence`. Free text never carries an email, a phone or a DNI/NIE: refused here
- * and again in morpheo.
+ * One answer, to the step the engine served (`key`). Exactly one of `value`,
+ * `absence` and `decisions` (the confirmation screen). Free text never carries
+ * an email, a phone or a DNI/NIE: refused here and again in morpheo.
  */
 export const FunnelAnswerRequestSchema = z
   .object({
     key: z.string().min(1).max(64),
-    value: z
-      .union([
-        FreeTextSchema,
-        z.number().int().min(0).max(200),
-        z.array(z.string().min(1).max(64)).max(20),
-        FunnelDurationSchema,
-        z.record(z.string().min(1).max(32), z.string().regex(/^\d{2}:\d{2}$/)),
-      ])
-      .nullable()
-      .optional(),
+    value: FunnelValueSchema.nullable().optional(),
     absence: FunnelAbsenceSchema.nullable().optional(),
     /** The note of a yes/no question that admits one. */
     text: FreeTextSchema.nullable().optional(),
+    decisions: z.array(FunnelExtractionDecisionBodySchema).max(60).nullable().optional(),
   })
   .strict()
-  .refine((body) => (body.value != null) !== (body.absence != null), {
-    message: "exactly one of value and absence",
-  });
+  .refine(
+    (body) =>
+      [body.value != null, body.absence != null, body.decisions != null].filter(Boolean).length ===
+      1,
+    { message: "exactly one of value, absence and decisions" },
+  );
 export type FunnelAnswerRequest = z.infer<typeof FunnelAnswerRequestSchema>;
 
 /** Go back to an answered step to change it (Z1 correction): it and everything after it go. */

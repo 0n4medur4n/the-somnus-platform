@@ -15,7 +15,10 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from morpheo.ai.pipeline import AiExtractor
 from morpheo.domain.identifying_data import FREE_TEXT_MAX_LENGTH, find_identifying_data
+from morpheo.funnel import extraction
+from morpheo.funnel.ai_steps import CONFIRM_KIND, confirm_step
 from morpheo.funnel.artifact import FunnelArtifact, StepDef, funnel_artifact
 from morpheo.funnel.catalogue import Catalogue, funnel_catalogue
 from morpheo.funnel.display import answer_label
@@ -36,8 +39,13 @@ from morpheo.infrastructure.models import FunnelAnswer, FunnelSession
 from morpheo.instruments.definitions import InstrumentRegistry
 from morpheo.repositories.funnel import FunnelRepository
 from morpheo.schemas.funnel import (
+    FunnelAiItemPanelDTO,
+    FunnelAiPanelDTO,
+    FunnelAiRiskDTO,
     FunnelAnswerRequestDTO,
     FunnelDurationDTO,
+    FunnelExtractionDTO,
+    FunnelExtractionItemDTO,
     FunnelHistoryItemDTO,
     FunnelInstrumentDTO,
     FunnelOptionDTO,
@@ -78,9 +86,11 @@ class FunnelService:
         registry: InstrumentRegistry | None = None,
         artifact: FunnelArtifact | None = None,
         catalogue: Catalogue | None = None,
+        ai: AiExtractor | None = None,
     ) -> None:
         self._repo = FunnelRepository(session)
         self._registry = registry
+        self._ai = ai
         self._a = artifact or funnel_artifact()
         self._c = catalogue or funnel_catalogue()
 
@@ -108,10 +118,22 @@ class FunnelService:
         step = next_step(self._a, answers, self._registry)
         if step is None or body.key != step.key:
             raise AnswerRejected("not_the_current_step")
-        value, absence, text = self._validate(step, body)
+        if step.kind == CONFIRM_KIND:
+            value, absence, text = self._decisions(step, answers, body), None, None
+        else:
+            value, absence, text = self._validate(step, body)
         value_json = None if value is None else json.dumps(value, ensure_ascii=False)
         self._repo.add_answer(session_id, step.key, value_json, absence, text)
         answers = self._answers(session_id)
+        if self._ai is not None and text is not None and step.kind == "ask":
+            # v0.2 p. 14: extract from the person's words, and screen them for
+            # risk. A failed call still leaves a record: the interview then
+            # asks every question and the safety fallback.
+            call = self._ai.process(self._a, answers, step.key, text)
+            if call is not None:
+                record = json.dumps(call.record.to_json(), ensure_ascii=False)
+                self._repo.add_answer(session_id, step.key + extraction.RECORD, record, None, None)
+                answers = self._answers(session_id)
         self._settle(session, answers)
         return self._state(session, answers)
 
@@ -119,7 +141,10 @@ class FunnelService:
         session = self._session(session_id, actor_id)
         if session is None:
             return None
-        rows = self._repo.answers(session_id)
+        # The person's last answer goes, with the AI record written after it.
+        rows = [
+            r for r in self._repo.answers(session_id) if not extraction.is_record_key(r.step_key)
+        ]
         if rows:
             self._repo.delete_from(session_id, rows[-1].id)
         return self._reopen(session)
@@ -129,11 +154,22 @@ class FunnelService:
         session = self._session(session_id, actor_id)
         if session is None:
             return None
-        row = next((r for r in self._repo.answers(session_id) if r.step_key == key), None)
+        rows = self._repo.answers(session_id)
+        row = next((r for r in rows if r.step_key == key), None)
+        if row is None:
+            # An answer confirmed from the narrative: back to its confirmation.
+            row = next((r for r in rows if self._confirms(r, key)), None)
         if row is None:
             raise AnswerRejected("not_answered")
         self._repo.delete_from(session_id, row.id)
         return self._reopen(session)
+
+    @staticmethod
+    def _confirms(row: FunnelAnswer, item_id: str) -> bool:
+        if not extraction.is_decision_key(row.step_key) or row.value_json is None:
+            return False
+        decision = json.loads(row.value_json).get(item_id, {})
+        return decision.get("decision") in (extraction.CONFIRMED, extraction.CORRECTED)
 
     # --- reading and writing answers ---
 
@@ -227,6 +263,38 @@ class FunnelService:
                 raise AnswerRejected("invalid_value")
         return value, None, note
 
+    def _decisions(
+        self, step: Step, answers: dict[str, Answer], body: FunnelAnswerRequestDTO
+    ) -> dict[str, dict[str, Any]]:
+        """The confirmation screen: one decision per proposed item, nothing else."""
+        record = extraction.record_of(answers.get(self._record_key(step.key)))
+        if record is None or body.decisions is None:
+            raise AnswerRejected("invalid_value")
+        given = {d.id: d for d in body.decisions}
+        if len(given) != len(body.decisions) or set(given) != {i.id for i in record.items}:
+            raise AnswerRejected("invalid_value")
+        targets = {t.id: t for t in extraction.all_targets(self._a)}
+        out: dict[str, dict[str, Any]] = {}
+        for item_id, decision in given.items():
+            entry: dict[str, Any] = {"decision": decision.decision}
+            if decision.decision == extraction.CORRECTED:
+                target = targets[item_id]
+                if not extraction.is_editable(target) or decision.value is None:
+                    raise AnswerRejected("invalid_value")
+                corrected, _, _ = self._validate(
+                    Step(item_id, self._a.step(item_id), "ask"),
+                    FunnelAnswerRequestDTO(key=item_id, value=decision.value),
+                )
+                entry["value"] = corrected
+            elif decision.value is not None:
+                raise AnswerRejected("invalid_value")
+            out[item_id] = entry
+        return out
+
+    @staticmethod
+    def _record_key(decision_key: str) -> str:
+        return decision_key.removesuffix(extraction.DECISION) + extraction.RECORD
+
     @staticmethod
     def _free_text(text: str) -> str:
         cleaned = text.strip()
@@ -244,6 +312,10 @@ class FunnelService:
 
     def _definition_for(self, key: str) -> tuple[StepDef | None, str]:
         """The step definition behind an answer key, and the kind it was asked as."""
+        if extraction.is_decision_key(key):
+            return confirm_step("core"), CONFIRM_KIND
+        if extraction.is_ai_key(key):
+            return None, "ask"
         base = key.split("@")[0]
         kind = "confirm" if key.endswith("@confirm") else "ask"
         if "#" in base and self._registry is not None:
@@ -306,11 +378,12 @@ class FunnelService:
         panel = FunnelStepPanelDTO(
             reason=step.reason,
             source=d.source,
-            branches_opened=self._branches_opened([*answers, step.key]),
+            branches_opened=self._branches_opened([*iv.answers, step.key]),
             rules_fired=list(provisional.rule_ids),
             main_action=provisional.accion_principal,
             phrase_ids=list(provisional.phrase_ids),
             instruments=[self._instrument(o) for o in provisional.instruments],
+            ai=self._ai_panel(answers),
         )
         return FunnelStepDTO(
             key=step.key,
@@ -318,7 +391,8 @@ class FunnelService:
             kind=step.kind,
             type=d.type,
             text=text,
-            note=None,
+            # The confirmation screen's closing question («¿Es correcto?»).
+            note=d.note if step.kind == CONFIRM_KIND else None,
             options=[FunnelOptionDTO(key=o.key, label=o.label) for o in d.options],
             fields=[FunnelOptionDTO(key=f.key, label=f.label) for f in d.fields],
             none_option=d.none_option,
@@ -327,7 +401,8 @@ class FunnelService:
             allow_absence=step.kind != "info",
             instrument=instrument,
             phase=self._phase(step),
-            answered_count=len(answers),
+            answered_count=sum(1 for k in answers if not extraction.is_ai_key(k)),
+            extraction=self._extraction(step, answers) if step.kind == CONFIRM_KIND else None,
             panel=panel,
         )
 
@@ -359,14 +434,110 @@ class FunnelService:
                     for o in result.orientations
                 ],
                 instruments=[self._instrument(o) for o in result.instruments],
+                ai=self._ai_panel(answers),
             ),
         )
 
-    def _history(self, answers: dict[str, Answer], iv: Interview) -> list[FunnelHistoryItemDTO]:
-        items: list[FunnelHistoryItemDTO] = []
+    # --- the AI's proposals, as the person and the team see them ---
+
+    def _item_question(self, item_id: str) -> str:
+        return self._a.step("Q14" if item_id.startswith("Q14.") else item_id).text
+
+    def _item_label(self, item_id: str, value: Any) -> str:
+        if item_id.startswith("Q14."):
+            name = item_id.removeprefix("Q14.")
+            if value is True:
+                # The approved Z1 phrase for the same fact ("tiene epilepsia").
+                phrase = next(
+                    (
+                        p.text
+                        for phrases in self._c.lists.values()
+                        for p in phrases.phrases
+                        if p.when == {"x": name}
+                    ),
+                    name,
+                )
+                return phrase[:1].upper() + phrase[1:]
+            label = dict(extraction.Q14_TEXT_PARTS).get(name, name)
+            return f"{label[:1].upper()}{label[1:]}: «{value}»"
+        return answer_label(Answer(value=value), self._a.step(item_id), "ask")
+
+    def _extraction(self, step: Step, answers: dict[str, Answer]) -> FunnelExtractionDTO:
+        record = extraction.record_of(answers.get(self._record_key(step.key)))
+        assert record is not None
+        targets = {t.id: t for t in extraction.all_targets(self._a)}
+        items: list[FunnelExtractionItemDTO] = []
+        for item in record.items:
+            editable = extraction.is_editable(targets[item.id])
+            d = self._a.step(item.id) if editable else None
+            items.append(
+                FunnelExtractionItemDTO(
+                    id=item.id,
+                    question=self._item_question(item.id),
+                    answer=self._item_label(item.id, item.value),
+                    evidence=item.evidence,
+                    editable=editable,
+                    type=d.type if d is not None else "info",
+                    options=[FunnelOptionDTO(key=o.key, label=o.label) for o in d.options]
+                    if d is not None
+                    else [],
+                    fields=[FunnelOptionDTO(key=f.key, label=f.label) for f in d.fields]
+                    if d is not None
+                    else [],
+                    none_option=d.none_option if d is not None else False,
+                    unit=d.unit if d is not None else None,
+                    units=self._units(d) if d is not None and d.type == "duration" else [],
+                )
+            )
+        return FunnelExtractionDTO(source=record.source, items=items)
+
+    def _ai_panel(self, answers: dict[str, Answer]) -> list[FunnelAiPanelDTO]:
+        """For the team: what the AI proposed, the words it came from, and what the person did."""
+        panels: list[FunnelAiPanelDTO] = []
         for key, answer in answers.items():
+            record = extraction.record_of(answer) if extraction.is_record_key(key) else None
+            if record is None:
+                continue
+            decision_key = key.removesuffix(extraction.RECORD) + extraction.DECISION
+            chosen = extraction.decisions_of(answers.get(decision_key))
+            items: list[FunnelAiItemPanelDTO] = []
+            for item in record.items:
+                entry = chosen.get(item.id, {})
+                decision = entry.get("decision", "pendiente")
+                corrected = entry.get("value") if decision == extraction.CORRECTED else None
+                items.append(
+                    FunnelAiItemPanelDTO(
+                        id=item.id,
+                        question=self._item_question(item.id),
+                        answer=self._item_label(item.id, item.value),
+                        evidence=item.evidence,
+                        decision=decision,
+                        corrected=None
+                        if corrected is None
+                        else self._item_label(item.id, corrected),
+                    )
+                )
+            risk = record.risk
+            panels.append(
+                FunnelAiPanelDTO(
+                    source=record.source,
+                    status="ok" if record.status == "ok" else "failed",
+                    model=record.model,
+                    prompt_version=record.prompt_version,
+                    risk=FunnelAiRiskDTO(s1=risk.get("S1"), s4=risk.get("S4"), s2=risk.get("S2")),
+                    discarded=record.discarded,
+                    items=items,
+                )
+            )
+        return panels
+
+    def _history(self, answers: dict[str, Answer], iv: Interview) -> list[FunnelHistoryItemDTO]:
+        # What the person confirmed from their narrative is listed as theirs too,
+        # so Z1 can correct it like any other answer.
+        items: list[FunnelHistoryItemDTO] = []
+        for key, answer in iv.answers.items():
             definition, kind = self._definition_for(key)
-            if definition is None or kind == "info":
+            if definition is None or kind in ("info", CONFIRM_KIND):
                 continue
             question, _ = question_text(definition, iv, self._c)
             items.append(
