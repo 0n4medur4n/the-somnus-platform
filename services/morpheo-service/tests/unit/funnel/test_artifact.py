@@ -62,11 +62,11 @@ def test_a_template_override_must_match_the_v02_text() -> None:
         parse(raw)
 
 
-def test_the_draft_is_inactive_and_pending_clinical_review() -> None:
+def test_v02_is_the_active_flow_content_2_0() -> None:
+    # Owner and clinical lead, 19/10/2026: the active flow until Jesús says otherwise.
     artifact = funnel_artifact()
-    assert artifact.raw["meta"]["active"] is False
-    assert artifact.raw["meta"]["status"] == "pending_clinical_review"
-    assert artifact.content_version == "2.0-draft"
+    assert artifact.raw["meta"]["active"] is True
+    assert artifact.content_version == artifact.rules_version == "2.0"
     # D-07, approved by the clinical lead on 18/10/2026.
     assert artifact.engine["resources"]["EMERGENCIA"] == "112"
     # Texts v0.2 does not give are drafts in the phrase catalogue, not here.

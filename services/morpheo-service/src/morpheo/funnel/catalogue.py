@@ -1,14 +1,19 @@
 """The closed phrase catalogue that fills the v0.2 template placeholders.
 
-`clinical/morpheo_textos_v2_borrador.json` gives, for every [placeholder] of
+`clinical/morpheo_textos_v2.json` gives, for every [placeholder] of
 the v0.2 templates (pp. 11-12) and for Z1's [resumen], a closed list of short
 third-person phrases, each selected by an exact answer or rule. The engine picks
 them deterministically; no model writes here, and the person's own words never
 enter a template -- only the numbers they gave (nights per week, duration).
 
+It also holds the full patient-facing texts v0.2 gives only as an instruction
+or not at all (the safety actions, the S2 warning, safe-place question and
+pause, recent insomnia with high impact). The clinical lead approved the
+catalogue and these texts as they are on 19/10/2026.
+
 The loader fails loudly if a template placeholder has no list, if a condition
-names a question or option the artifact does not have, or if a phrase is not a
-short, finished phrase.
+names a question or option the artifact does not have, if a phrase is not a
+short, finished phrase, or if anything is not marked approved.
 """
 
 from __future__ import annotations
@@ -24,12 +29,8 @@ from typing import Any
 from morpheo.funnel.artifact import FunnelArtifact, FunnelArtifactError, funnel_artifact
 from morpheo.funnel.interview import Interview
 
-CATALOGUE_FILE = (
-    Path(__file__).resolve().parents[3] / "clinical" / "morpheo_textos_v2_borrador.json"
-)
-CATALOGUE_STATUS = "BORRADOR \N{EN DASH} Jesús lo aprueba"
-# Patient-facing texts v0.2 gives only as system instructions, or not at all.
-DRAFT_STATUS = "BORRADOR \N{EN DASH} Jesús"
+CATALOGUE_FILE = Path(__file__).resolve().parents[3] / "clinical" / "morpheo_textos_v2.json"
+APPROVED_STATUS = "APROBADO \N{EN DASH} Jesús, 19/10/2026"
 REQUIRED_DRAFTS = ("S2_aviso", "S2_seguro", "S2_pausa", "T_RECIENTE")
 MAX_PHRASE_LENGTH = 160
 MAX_DRAFT_LENGTH = 600
@@ -153,15 +154,16 @@ def _validate_text(text: str, limit: int, where: str) -> None:
 
 def parse_catalogue(raw: dict[str, Any], artifact: FunnelArtifact) -> Catalogue:
     status = raw["meta"]["status"]
-    if status != CATALOGUE_STATUS:
-        raise FunnelArtifactError(f"catalogue status must be {CATALOGUE_STATUS!r}")
+    if status != APPROVED_STATUS:
+        raise FunnelArtifactError(f"catalogue status must be {APPROVED_STATUS!r}")
     lists: dict[str, PhraseList] = {}
     seen_ids: set[str] = set()
     for name, spec in raw["lists"].items():
         list_status = spec.get("status", status)
-        if list_status not in (CATALOGUE_STATUS, DRAFT_STATUS):
-            raise FunnelArtifactError(f"list {name}: unknown status {list_status!r}")
-        limit = MAX_DRAFT_LENGTH if list_status == DRAFT_STATUS else MAX_PHRASE_LENGTH
+        if list_status != APPROVED_STATUS:
+            raise FunnelArtifactError(f"list {name}: not approved ({list_status!r})")
+        # Full sentences (the safety actions) may be longer than a phrase.
+        limit = MAX_DRAFT_LENGTH if spec.get("full_texts") else MAX_PHRASE_LENGTH
         phrases = []
         for p in spec["phrases"]:
             where = f"phrase {p['id']}"
@@ -211,8 +213,8 @@ def parse_catalogue(raw: dict[str, Any], artifact: FunnelArtifact) -> Catalogue:
         raise FunnelArtifactError(f"placeholders without a phrase list: {sorted(missing)}")
     drafts: dict[str, Draft] = {}
     for draft_id, spec in raw.get("drafts", {}).items():
-        if spec["status"] != DRAFT_STATUS:
-            raise FunnelArtifactError(f"draft {draft_id}: status must be {DRAFT_STATUS!r}")
+        if spec["status"] != APPROVED_STATUS:
+            raise FunnelArtifactError(f"text {draft_id}: not approved ({spec['status']!r})")
         _validate_text(spec["text"], MAX_DRAFT_LENGTH, f"draft {draft_id}")
         drafts[draft_id] = Draft(draft_id, spec["describes"], spec["text"], spec["status"])
     absent = [d for d in REQUIRED_DRAFTS if d not in drafts]

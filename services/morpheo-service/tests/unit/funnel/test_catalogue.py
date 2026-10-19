@@ -9,8 +9,7 @@ import pytest
 
 from morpheo.funnel.artifact import FunnelArtifactError, funnel_artifact
 from morpheo.funnel.catalogue import (
-    CATALOGUE_STATUS,
-    DRAFT_STATUS,
+    APPROVED_STATUS,
     Selector,
     funnel_catalogue,
     parse_catalogue,
@@ -38,8 +37,8 @@ def _selector(answers: dict[str, Answer], pending: tuple[str, ...] = ()) -> Sele
     return Selector(C, Interview(A, answers), pending)
 
 
-def test_the_whole_catalogue_is_a_draft_for_the_clinical_lead() -> None:
-    assert C.status == CATALOGUE_STATUS == "BORRADOR \N{EN DASH} Jesús lo aprueba"
+def test_the_whole_catalogue_is_approved_by_the_clinical_lead() -> None:
+    assert C.status == APPROVED_STATUS == "APROBADO \N{EN DASH} Jesús, 19/10/2026"
 
 
 def test_a_template_placeholder_without_a_list_is_refused() -> None:
@@ -141,10 +140,17 @@ def test_the_z1_summary_joins_with_semicolons_and_has_a_fallback() -> None:
     )
 
 
-def test_drafts_are_marked_for_the_clinical_lead() -> None:
+def test_the_new_texts_are_approved_too() -> None:
     assert set(C.drafts) == {"S2_aviso", "S2_seguro", "S2_pausa", "T_RECIENTE"}
-    assert all(d.status == DRAFT_STATUS == "BORRADOR \N{EN DASH} Jesús" for d in C.drafts.values())
-    assert C.lists["accion_seguridad"].status == DRAFT_STATUS
+    assert all(d.status == APPROVED_STATUS for d in C.drafts.values())
+    assert C.lists["accion_seguridad"].status == APPROVED_STATUS
+
+
+def test_an_unapproved_text_is_refused() -> None:
+    raw = _raw()
+    raw["drafts"]["S2_aviso"]["status"] = "BORRADOR"
+    with pytest.raises(FunnelArtifactError, match="not approved"):
+        parse_catalogue(raw, A)
 
 
 def test_a_missing_draft_is_refused() -> None:
