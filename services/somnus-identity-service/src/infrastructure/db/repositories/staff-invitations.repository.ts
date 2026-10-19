@@ -34,7 +34,9 @@ export class StaffInvitationsRepository {
       await tx
         .update(staffInvitations)
         .set({ status: "revoked" })
-        .where(and(eq(staffInvitations.email, input.email), eq(staffInvitations.status, "pending")));
+        .where(
+          and(eq(staffInvitations.email, input.email), eq(staffInvitations.status, "pending")),
+        );
       await tx.insert(staffInvitations).values({ id, ...input });
     });
     const row = await this.findById(id);
