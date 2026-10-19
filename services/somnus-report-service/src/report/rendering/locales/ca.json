@@ -21,5 +21,9 @@
   "date": "Data",
   "reference": "Referència",
   "page": "Pàgina",
-  "emergencyNow": "Busca atenció d'emergència ara."
+  "emergencyNow": "Busca atenció d'emergència ara.",
+  "v2Title": "Orientació del son",
+  "instruments": "Qüestionaris",
+  "points": "punts",
+  "clinicalLanguage": "L'orientació següent és en castellà, la llengua en què es va aprovar clínicament."
 }

@@ -23,6 +23,7 @@ from report.api.health import router as health_router
 from report.api.reports import router as reports_router
 from report.api.version import router as version_router
 from report.application.content_review import ContentReviewService
+from report.application.funnel_report import FunnelReportService
 from report.application.narrative import NarrativeService
 from report.application.provenance import ProvenanceRecorder, ProvenanceResolver
 from report.application.render_service import RenderService
@@ -229,6 +230,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.narrative_service = narrative_service
 
+    # The v2 report: deterministic, no model, nothing stored.
+    app.state.funnel_reports = FunnelReportService(WeasyPrintPdfRenderer())
     app.state.render_service = RenderService(
         content_provider=content_provider,
         pdf_renderer=WeasyPrintPdfRenderer(),

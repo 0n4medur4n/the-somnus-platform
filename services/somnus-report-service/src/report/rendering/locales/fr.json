@@ -21,5 +21,9 @@
   "date": "Date",
   "reference": "Référence",
   "page": "Page",
-  "emergencyNow": "Demandez des soins d'urgence maintenant."
+  "emergencyNow": "Demandez des soins d'urgence maintenant.",
+  "v2Title": "Orientation sur le sommeil",
+  "instruments": "Questionnaires",
+  "points": "points",
+  "clinicalLanguage": "L'orientation ci-dessous est en espagnol, la langue dans laquelle elle a été validée cliniquement."
 }

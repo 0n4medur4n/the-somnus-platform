@@ -1,4 +1,6 @@
 export {
+  type FunnelReportRequest,
+  FunnelReportRequestSchema,
   type PersonReport,
   type PersonReportResponse,
   PersonReportResponseSchema,

@@ -117,3 +117,30 @@ class PersonReportsDeleteRequestDTO(ContractModel):
 
 class PersonReportsDeleteResultDTO(ContractModel):
     deleted: int = Field(ge=0)
+
+
+class FunnelTextDTO(ContractModel):
+    template: str
+    text: str
+
+
+class FunnelInstrumentDTO(ContractModel):
+    code: str
+    name: str | None
+    status: Literal["completed", "declined", "incomplete", "pending_file"]
+    total: int | None
+    band: str | None
+    placement: str
+
+
+class FunnelReportRequestDTO(ContractModel):
+    """edge -> report: the v2 report (embudo v0.2), laid out as morpheo wrote it."""
+
+    session_id: str
+    locale: Locale
+    completed_at: str
+    content_version: str
+    rules_version: str
+    texts: list[FunnelTextDTO] = Field(min_length=1)
+    instruments: list[FunnelInstrumentDTO]
+    instruments_note: str | None

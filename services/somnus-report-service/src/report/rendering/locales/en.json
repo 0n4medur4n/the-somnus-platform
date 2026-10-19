@@ -21,5 +21,9 @@
   "date": "Date",
   "reference": "Reference",
   "page": "Page",
-  "emergencyNow": "Seek emergency care now."
+  "emergencyNow": "Seek emergency care now.",
+  "v2Title": "Sleep guidance",
+  "instruments": "Questionnaires",
+  "points": "points",
+  "clinicalLanguage": "The guidance below is in Spanish, the language in which it was clinically approved."
 }

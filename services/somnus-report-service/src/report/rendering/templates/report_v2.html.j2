@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="{{ request.locale }}">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ strings.brand }} · {{ strings.v2Title }}</title>
+    <style>
+      /* report_v2: the embudo v0.2 result, laid out as morpheo wrote it. */
+      @page {
+        size: A4;
+        margin: 16mm 16mm 20mm;
+        @bottom-left { content: "{{ strings.brand }} · The Somnus"; font-size: 7.5pt; color: #64748b; }
+        @bottom-right { content: "{{ strings.page }} " counter(page) " / " counter(pages); font-size: 7.5pt; color: #64748b; }
+      }
+      body { font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #1e293b; line-height: 1.55; margin: 0; }
+      .report-header { background: #090d1a; color: #e2e8f0; border-radius: 10pt; padding: 16pt 18pt 14pt; margin-bottom: 16pt; }
+      .brand { font-size: 24pt; font-weight: bold; color: #ffffff; margin: 0; letter-spacing: 0.6pt; }
+      .brand-dot { color: #437ef7; }
+      .byline { margin: 1pt 0 10pt; color: #9fb0c3; font-size: 9.5pt; }
+      h1 { font-size: 13.5pt; margin: 0; color: #ffffff; font-weight: normal; }
+      .report-date { color: #9fb0c3; margin: 4pt 0 0; font-size: 9pt; }
+      h2 { font-size: 11.5pt; color: #2f6ae0; margin: 0 0 6pt; padding-left: 7pt; border-left: 3pt solid #437ef7; }
+      section { margin: 0 0 14pt; }
+      .guidance p { margin: 0 0 9pt; page-break-inside: avoid; }
+      .language-note { color: #475569; font-size: 9pt; margin: 0 0 10pt; }
+      .instruments { page-break-inside: avoid; }
+      .instruments ul { margin: 0 0 6pt; padding-left: 14pt; }
+      .instruments li { margin: 0 0 4pt; }
+      .instruments-note { color: #475569; font-size: 9pt; }
+      .report-footer { margin-top: 12pt; border-top: 1pt solid #e2e8f0; padding-top: 6pt; font-size: 7.5pt; color: #94a3b8; }
+    </style>
+  </head>
+  <body>
+    <header class="report-header">
+      <p class="brand">{{ strings.brand }}<span class="brand-dot">.</span></p>
+      <p class="byline">{{ strings.byline }}</p>
+      <h1>{{ strings.v2Title }}</h1>
+      <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
+    </header>
+    <section class="guidance">
+      {% if strings.clinicalLanguage %}
+      <p class="language-note">{{ strings.clinicalLanguage }}</p>
+      {% endif %}
+      {% for paragraph in request.texts %}
+      <p class="paragraph" data-template="{{ paragraph.template }}">{{ paragraph.text }}</p>
+      {% endfor %}
+    </section>
+    {% if request.instruments %}
+    <section class="instruments">
+      <h2>{{ strings.instruments }}</h2>
+      <ul>
+        {% for instrument in request.instruments %}
+        <li><strong>{{ instrument.name or instrument.code }}</strong>: {{ instrument.total }} {{ strings.points }}{% if instrument.band %} · {{ instrument.band }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% if request.instruments_note %}
+      <p class="instruments-note">{{ request.instruments_note }}</p>
+      {% endif %}
+    </section>
+    {% endif %}
+    <footer class="report-footer">
+      {{ strings.reference }}: {{ request.session_id }} · {{ strings.versions }}: {{ template_version }} / {{ request.rules_version }} / {{ request.content_version }}
+    </footer>
+  </body>
+</html>
