@@ -451,5 +451,106 @@
     "existing": "Pots acceptar amb el teu compte actual. Es mantenen les teves dades, idioma i permisos.",
     "accept": "Acceptar invitació",
     "unavailable": "No es pot acceptar aquesta invitació. Pot haver caducat, haver estat utilitzada o revocada, o correspondre a un altre compte. Contacta amb qui et va convidar."
+  },
+  "funnel": {
+    "title": "Orientació del son",
+    "intro": "Li farem unes preguntes, una cada vegada. Pot respondre «No ho sé» o «Prefereixo no respondre» quan ho necessiti. No és un diagnòstic.",
+    "spanishOnly": "Les preguntes i l'orientació són en castellà, la llengua en què es van aprovar clínicament.",
+    "loading": "S'està carregant…",
+    "consent": {
+      "anonymousHint": "Si inicia la sessió abans de començar, l'orientació es desarà al seu compte."
+    },
+    "actions": {
+      "start": "Començar",
+      "continue": "Continuar",
+      "back": "Enrere",
+      "yes": "Sí",
+      "no": "No",
+      "unknown": "No ho sé",
+      "prefer": "Prefereixo no respondre",
+      "same": "Continua igual",
+      "changed": "Ha canviat",
+      "answerInstrument": "Respondre",
+      "skipInstrument": "Ara no",
+      "correct": "Sí, és correcte",
+      "fix": "No, vull corregir alguna cosa",
+      "change": "Canviar",
+      "backToSummary": "Tornar al resum",
+      "none": "Cap d'aquestes",
+      "restart": "Tornar a començar"
+    },
+    "text": {
+      "label": "La seva resposta",
+      "noteLabel": "Si vol, expliqui-ho (opcional)",
+      "hint": "No escrigui el seu nom, telèfon, correu ni DNI.",
+      "identifying": "Sembla que ha escrit un correu, un telèfon o un DNI. Esborri'l per continuar: no el necessitem."
+    },
+    "duration": {
+      "amount": "Quantitat",
+      "unit": "Unitat"
+    },
+    "units": {
+      "dias": "dies",
+      "semanas": "setmanes",
+      "meses": "mesos",
+      "años": "anys",
+      "horas": "hores"
+    },
+    "correct": {
+      "title": "Què vol corregir?",
+      "intro": "Triï la resposta que vol canviar. Tornarem a aquella pregunta i continuarem des d'allà."
+    },
+    "result": {
+      "title": "La seva orientació",
+      "instruments": "Qüestionaris",
+      "points_one": "{{count}} punt",
+      "points_other": "{{count}} punts",
+      "saved": "Aquesta orientació està desada al seu compte.",
+      "download": "Descarregar l'informe (PDF)",
+      "notSaved": "Aquesta orientació no està desada al seu compte.",
+      "signInHint": "Per desar l'orientació i descarregar l'informe, iniciï la sessió abans de començar."
+    },
+    "progress": {
+      "label": "Progrés de l'entrevista",
+      "now_one": "{{part}} · {{count}} resposta",
+      "now_other": "{{part}} · {{count}} respostes",
+      "parts": {
+        "start": "Inici",
+        "story": "El seu son",
+        "branches": "Detalls",
+        "protection": "Protecció",
+        "closing": "Tancament",
+        "result": "Orientació"
+      }
+    },
+    "errors": {
+      "generic": "No s'ha pogut desar la resposta. Torni-ho a provar.",
+      "identifying_data": "La resposta conté un correu, un telèfon o un DNI. Esborri'l per continuar.",
+      "invalid_value": "Revisi la resposta: no encaixa amb el que es pregunta.",
+      "not_the_current_step": "L'entrevista ha avançat en una altra finestra. Recarregui la pàgina per continuar.",
+      "not_answered": "Aquesta pregunta ja no forma part de l'entrevista."
+    },
+    "panel": {
+      "title": "Tauler de proves de l'equip",
+      "reason": "Per què es pregunta",
+      "order": "Ordre de v0.2",
+      "source": "Origen",
+      "branches": "Branques obertes",
+      "rules": "Regles aplicades",
+      "mainAction": "Acció principal",
+      "phrases": "Frases del catàleg",
+      "instruments": "Instruments",
+      "orientations": "Orientacions",
+      "flags": "Indicadors",
+      "pendingData": "Dades que falten",
+      "trace": "Traça",
+      "none": "—",
+      "instrumentStatus": {
+        "completed": "completat",
+        "declined": "omès per la persona",
+        "incomplete": "incomplet",
+        "pending_file": "pendent: arxiu oficial de Jesús"
+      }
+    }
   }
 }

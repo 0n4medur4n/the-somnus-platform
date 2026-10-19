@@ -41,6 +41,8 @@ export class ApiRequestError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    /** `details.reason`, when the error names one (e.g. "identifying_data"). */
+    readonly reason?: string,
   ) {
     super(message);
     this.name = "ApiRequestError";
@@ -100,10 +102,12 @@ async function send(
 
 function toError(raw: RawResponse): ApiRequestError {
   const err = (raw.data as ApiErrorBody | undefined)?.error;
+  const reason = err?.details?.reason;
   return new ApiRequestError(
     raw.status,
     err?.code ?? "UNKNOWN",
     err?.message ?? `Request failed (${raw.status})`,
+    typeof reason === "string" ? reason : undefined,
   );
 }
 

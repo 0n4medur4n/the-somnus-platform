@@ -5,13 +5,18 @@ import {
   type GateReason,
   type MeResponse,
   type RoleId,
-  type SupportedLocale,
 } from "@somnus/api-contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import {
+  CONSENT_SOURCE,
+  CONSENT_STATUS_QUERY,
+  legalDocumentsQuery,
+} from "../assessment/consent-queries.js";
 import { DownloadReportLink } from "../assessment/DownloadReportLink.js";
+import { FunnelAssessment } from "../assessment/funnel/FunnelAssessment.js";
 import { ResultView } from "../assessment/ResultView.js";
 import { type SafetyAnswer, SafetyQuestions } from "../assessment/SafetyQuestions.js";
 import { type AssessmentStep, StepProgress } from "../assessment/StepProgress.js";
@@ -33,28 +38,38 @@ const ROLES: RoleId[] = ["adult", "parent", "professional"];
 /** A Morpheo user assesses themselves or a minor in their care; the professional path is not theirs. */
 const MORPHEO_USER_ROLES: RoleId[] = ["adult", "parent"];
 
-export const legalDocumentsQuery = (locale: SupportedLocale) =>
-  ["legal-documents", locale] as const;
-export const CONSENT_STATUS_QUERY = ["consent-status"] as const;
-/** Where a health-data consent given in the questionnaire is recorded from. */
-const CONSENT_SOURCE = "morpheo-assessment";
+export { CONSENT_STATUS_QUERY, legalDocumentsQuery };
+/** Which flow the app runs (v1 or v2), from morpheo through the edge. */
+export const FUNNEL_CONFIG_QUERY = ["funnel-config"] as const;
 
 /**
  * `/assessment`. A signed-in Morpheo user takes the questionnaire inside their
  * own space; everyone else gets the public page.
+ *
+ * The v2 interview (the embudo v0.2) is the app's flow. The v1 questionnaire
+ * runs only when morpheo says so (FUNNEL_V2_ENABLED=false), so rolling back is
+ * one config change; if the config cannot be read, v2 is shown.
  */
 export function AssessmentRoute() {
   const { t } = useTranslation();
   const { state } = useAuth();
-  if (state.status === "loading") return <FullPageStatus message={t("common.loading")} />;
+  const flow = useQuery({
+    queryKey: FUNNEL_CONFIG_QUERY,
+    queryFn: edge.getFunnelConfig,
+    staleTime: 5 * 60_000,
+  });
+  if (state.status === "loading" || flow.isPending) {
+    return <FullPageStatus message={t("common.loading")} />;
+  }
+  const v1 = flow.data?.activeFlow === "v1";
   if (state.status === "authenticated" && accountViewOf(state.me).isMorpheoUser) {
     return (
       <MorpheoLayout brand="morpheo">
-        <Assessment embedded me={state.me} />
+        {v1 ? <Assessment embedded me={state.me} /> : <FunnelAssessment embedded me={state.me} />}
       </MorpheoLayout>
     );
   }
-  return <Assessment />;
+  return v1 ? <Assessment /> : <FunnelAssessment />;
 }
 
 /** The role a Morpheo user registered for, and their age when it is known. */

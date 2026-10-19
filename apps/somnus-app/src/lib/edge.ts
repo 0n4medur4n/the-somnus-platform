@@ -12,6 +12,9 @@ import type {
   ConsentRecordsResponse,
   ConsentStatusListResponse,
   CurrentLegalDocumentsResponse,
+  FunnelAnswerRequest,
+  FunnelConfigResponse,
+  FunnelState,
   Invitation,
   InvitationAcceptRequest,
   InvitationCreateRequest,
@@ -131,4 +134,43 @@ export const edge = {
   /** The signed-in person's own saved assessments, newest first. */
   getOwnAssessments: (): Promise<OwnAssessmentsResponse> =>
     api.get<OwnAssessmentsResponse>("/v1/assessments/mine"),
+
+  // --- Morpheo v2: the embudo v0.2 interview. The engine serves each step. ---
+  /** Which flow the app runs (v1 or v2): one config change in morpheo rolls back. */
+  getFunnelConfig: (): Promise<FunnelConfigResponse> =>
+    api.get<FunnelConfigResponse>("/v1/funnel/config"),
+  startFunnel: (panel: boolean): Promise<FunnelState> =>
+    api.post<FunnelState>(`/v1/funnel/sessions${panelQuery(panel)}`, { consentGiven: true }),
+  getFunnel: (sessionId: string, panel: boolean): Promise<FunnelState> =>
+    api.get<FunnelState>(
+      `/v1/funnel/sessions/${encodeURIComponent(sessionId)}${panelQuery(panel)}`,
+    ),
+  answerFunnel: (
+    sessionId: string,
+    body: FunnelAnswerRequest,
+    panel: boolean,
+  ): Promise<FunnelState> =>
+    api.post<FunnelState>(
+      `/v1/funnel/sessions/${encodeURIComponent(sessionId)}/answers${panelQuery(panel)}`,
+      body,
+    ),
+  backFunnel: (sessionId: string, panel: boolean): Promise<FunnelState> =>
+    api.post<FunnelState>(
+      `/v1/funnel/sessions/${encodeURIComponent(sessionId)}/back${panelQuery(panel)}`,
+    ),
+  rewindFunnel: (sessionId: string, key: string, panel: boolean): Promise<FunnelState> =>
+    api.post<FunnelState>(
+      `/v1/funnel/sessions/${encodeURIComponent(sessionId)}/rewind${panelQuery(panel)}`,
+      { key },
+    ),
+  /** The person's own v2 report as a PDF (a download link; signed-in owners only). */
+  funnelReportUrl: (sessionId: string, locale: SupportedLocale): string =>
+    api.url(
+      `/v1/funnel/sessions/${encodeURIComponent(sessionId)}/report.pdf?locale=${encodeURIComponent(locale)}`,
+    ),
 };
+
+/** The team panel is asked for only by staff; the edge keeps it only for them. */
+function panelQuery(panel: boolean): string {
+  return panel ? "?panel=1" : "";
+}
