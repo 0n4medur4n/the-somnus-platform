@@ -813,7 +813,7 @@
     "subtitle": "Invite someone on the team with their role. They'll get an email to sign in to the console and accept.",
     "add": "Add a person",
     "formTitle": "Invite a team member",
-    "formHint": "The account is created when the person signs in with the link and accepts; until then they have access to nothing.",
+    "formHint": "The invited role becomes active when the person opens the link, acknowledges the privacy policy and accepts the invitation.",
     "firstName": "First name",
     "lastName": "Last name",
     "colName": "Name",
