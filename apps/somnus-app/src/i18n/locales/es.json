@@ -451,5 +451,106 @@
     "existing": "Puedes aceptar con tu cuenta actual. Tus datos, idioma y permisos se mantienen.",
     "accept": "Aceptar invitación",
     "unavailable": "No se puede aceptar esta invitación. Puede haber caducado, sido utilizada o revocada, o corresponder a otra cuenta. Contacta con quien te invitó."
+  },
+  "funnel": {
+    "title": "Orientación del sueño",
+    "intro": "Le haremos unas preguntas, una cada vez. Puede responder «No lo sé» o «Prefiero no responder» cuando lo necesite. No es un diagnóstico.",
+    "spanishOnly": "Las preguntas y la orientación están en español, el idioma en que se aprobaron clínicamente.",
+    "loading": "Cargando…",
+    "consent": {
+      "anonymousHint": "Si inicia sesión antes de empezar, la orientación se guardará en su cuenta."
+    },
+    "actions": {
+      "start": "Empezar",
+      "continue": "Continuar",
+      "back": "Atrás",
+      "yes": "Sí",
+      "no": "No",
+      "unknown": "No lo sé",
+      "prefer": "Prefiero no responder",
+      "same": "Sigue igual",
+      "changed": "Ha cambiado",
+      "answerInstrument": "Responder",
+      "skipInstrument": "Ahora no",
+      "correct": "Sí, es correcto",
+      "fix": "No, quiero corregir algo",
+      "change": "Cambiar",
+      "backToSummary": "Volver al resumen",
+      "none": "Ninguna de estas",
+      "restart": "Empezar de nuevo"
+    },
+    "text": {
+      "label": "Su respuesta",
+      "noteLabel": "Si quiere, cuéntelo (opcional)",
+      "hint": "No escriba su nombre, teléfono, correo ni DNI.",
+      "identifying": "Parece que ha escrito un correo, un teléfono o un DNI. Bórrelo para continuar: no los necesitamos."
+    },
+    "duration": {
+      "amount": "Cantidad",
+      "unit": "Unidad"
+    },
+    "units": {
+      "dias": "días",
+      "semanas": "semanas",
+      "meses": "meses",
+      "años": "años",
+      "horas": "horas"
+    },
+    "correct": {
+      "title": "¿Qué quiere corregir?",
+      "intro": "Elija la respuesta que quiere cambiar. Volveremos a esa pregunta y seguiremos desde ahí."
+    },
+    "result": {
+      "title": "Su orientación",
+      "instruments": "Cuestionarios",
+      "points_one": "{{count}} punto",
+      "points_other": "{{count}} puntos",
+      "saved": "Esta orientación está guardada en su cuenta.",
+      "download": "Descargar informe (PDF)",
+      "notSaved": "Esta orientación no está guardada en su cuenta.",
+      "signInHint": "Para guardar la orientación y descargar el informe, inicie sesión antes de empezar."
+    },
+    "progress": {
+      "label": "Progreso de la entrevista",
+      "now_one": "{{part}} · {{count}} respuesta",
+      "now_other": "{{part}} · {{count}} respuestas",
+      "parts": {
+        "start": "Inicio",
+        "story": "Su sueño",
+        "branches": "Detalles",
+        "protection": "Protección",
+        "closing": "Cierre",
+        "result": "Orientación"
+      }
+    },
+    "errors": {
+      "generic": "No se ha podido guardar la respuesta. Vuelva a intentarlo.",
+      "identifying_data": "La respuesta contiene un correo, un teléfono o un DNI. Bórrelo para continuar.",
+      "invalid_value": "Revise la respuesta: no encaja con lo que se pregunta.",
+      "not_the_current_step": "La entrevista ha avanzado en otra ventana. Recargue la página para seguir.",
+      "not_answered": "Esa pregunta ya no está en la entrevista."
+    },
+    "panel": {
+      "title": "Panel de pruebas del equipo",
+      "reason": "Por qué se pregunta",
+      "order": "Orden de v0.2",
+      "source": "Origen",
+      "branches": "Ramas abiertas",
+      "rules": "Reglas aplicadas",
+      "mainAction": "Acción principal",
+      "phrases": "Frases del catálogo",
+      "instruments": "Instrumentos",
+      "orientations": "Orientaciones",
+      "flags": "Indicadores",
+      "pendingData": "Datos que faltan",
+      "trace": "Traza",
+      "none": "—",
+      "instrumentStatus": {
+        "completed": "completado",
+        "declined": "omitido por la persona",
+        "incomplete": "incompleto",
+        "pending_file": "pendiente: archivo oficial de Jesús"
+      }
+    }
   }
 }

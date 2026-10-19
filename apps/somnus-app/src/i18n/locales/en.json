@@ -451,5 +451,106 @@
     "existing": "Accept with your existing account. Your profile, language and permissions are kept.",
     "accept": "Accept invitation",
     "unavailable": "This invitation cannot be accepted. It may have expired, been used or revoked, or belong to another account. Contact the person who invited you."
+  },
+  "funnel": {
+    "title": "Sleep guidance",
+    "intro": "We will ask you some questions, one at a time. You can answer “I don't know” or “I'd rather not say” whenever you need to. This is not a diagnosis.",
+    "spanishOnly": "The questions and the guidance are in Spanish, the language in which they were clinically approved.",
+    "loading": "Loading…",
+    "consent": {
+      "anonymousHint": "If you sign in before starting, the guidance will be saved to your account."
+    },
+    "actions": {
+      "start": "Start",
+      "continue": "Continue",
+      "back": "Back",
+      "yes": "Yes",
+      "no": "No",
+      "unknown": "I don't know",
+      "prefer": "I'd rather not say",
+      "same": "Still the same",
+      "changed": "It has changed",
+      "answerInstrument": "Answer",
+      "skipInstrument": "Not now",
+      "correct": "Yes, that's right",
+      "fix": "No, I want to correct something",
+      "change": "Change",
+      "backToSummary": "Back to the summary",
+      "none": "None of these",
+      "restart": "Start again"
+    },
+    "text": {
+      "label": "Your answer",
+      "noteLabel": "Tell us more if you like (optional)",
+      "hint": "Do not write your name, phone number, email or ID number.",
+      "identifying": "It looks like you wrote an email, a phone number or an ID number. Please delete it to continue: we don't need it."
+    },
+    "duration": {
+      "amount": "Amount",
+      "unit": "Unit"
+    },
+    "units": {
+      "dias": "days",
+      "semanas": "weeks",
+      "meses": "months",
+      "años": "years",
+      "horas": "hours"
+    },
+    "correct": {
+      "title": "What would you like to correct?",
+      "intro": "Choose the answer you want to change. We will go back to that question and continue from there."
+    },
+    "result": {
+      "title": "Your guidance",
+      "instruments": "Questionnaires",
+      "points_one": "{{count}} point",
+      "points_other": "{{count}} points",
+      "saved": "This guidance is saved to your account.",
+      "download": "Download report (PDF)",
+      "notSaved": "This guidance is not saved to your account.",
+      "signInHint": "To save the guidance and download the report, sign in before starting."
+    },
+    "progress": {
+      "label": "Interview progress",
+      "now_one": "{{part}} · {{count}} answer",
+      "now_other": "{{part}} · {{count}} answers",
+      "parts": {
+        "start": "Start",
+        "story": "Your sleep",
+        "branches": "Details",
+        "protection": "Safety",
+        "closing": "Wrap-up",
+        "result": "Guidance"
+      }
+    },
+    "errors": {
+      "generic": "Your answer could not be saved. Please try again.",
+      "identifying_data": "The answer contains an email, a phone number or an ID number. Please delete it to continue.",
+      "invalid_value": "Please check your answer: it does not fit the question.",
+      "not_the_current_step": "The interview moved on in another window. Reload the page to continue.",
+      "not_answered": "That question is no longer part of the interview."
+    },
+    "panel": {
+      "title": "Team test panel",
+      "reason": "Why it is asked",
+      "order": "v0.2 order",
+      "source": "Source",
+      "branches": "Branches opened",
+      "rules": "Rules fired",
+      "mainAction": "Main action",
+      "phrases": "Catalogue phrases",
+      "instruments": "Instruments",
+      "orientations": "Orientations",
+      "flags": "Flags",
+      "pendingData": "Missing data",
+      "trace": "Trace",
+      "none": "—",
+      "instrumentStatus": {
+        "completed": "completed",
+        "declined": "skipped by the person",
+        "incomplete": "incomplete",
+        "pending_file": "pending: Jesús's official file"
+      }
+    }
   }
 }

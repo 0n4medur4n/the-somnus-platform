@@ -451,5 +451,106 @@
     "existing": "Acceptez avec votre compte actuel. Votre profil, langue et autorisations sont conservés.",
     "accept": "Accepter l’invitation",
     "unavailable": "Cette invitation ne peut pas être acceptée. Elle a peut-être expiré, a été utilisée ou révoquée, ou appartient à un autre compte. Contactez la personne qui vous a invité."
+  },
+  "funnel": {
+    "title": "Orientation sur le sommeil",
+    "intro": "Nous allons vous poser quelques questions, une à la fois. Vous pouvez répondre « Je ne sais pas » ou « Je préfère ne pas répondre » à tout moment. Ce n'est pas un diagnostic.",
+    "spanishOnly": "Les questions et l'orientation sont en espagnol, la langue dans laquelle elles ont été validées cliniquement.",
+    "loading": "Chargement…",
+    "consent": {
+      "anonymousHint": "Si vous vous connectez avant de commencer, l'orientation sera enregistrée dans votre compte."
+    },
+    "actions": {
+      "start": "Commencer",
+      "continue": "Continuer",
+      "back": "Retour",
+      "yes": "Oui",
+      "no": "Non",
+      "unknown": "Je ne sais pas",
+      "prefer": "Je préfère ne pas répondre",
+      "same": "C'est toujours pareil",
+      "changed": "Cela a changé",
+      "answerInstrument": "Répondre",
+      "skipInstrument": "Pas maintenant",
+      "correct": "Oui, c'est exact",
+      "fix": "Non, je veux corriger quelque chose",
+      "change": "Modifier",
+      "backToSummary": "Revenir au résumé",
+      "none": "Aucune de ces options",
+      "restart": "Recommencer"
+    },
+    "text": {
+      "label": "Votre réponse",
+      "noteLabel": "Si vous le souhaitez, précisez (facultatif)",
+      "hint": "N'écrivez ni votre nom, ni votre téléphone, ni votre e-mail, ni votre numéro d'identité.",
+      "identifying": "Il semble que vous ayez écrit un e-mail, un téléphone ou un numéro d'identité. Effacez-le pour continuer : nous n'en avons pas besoin."
+    },
+    "duration": {
+      "amount": "Quantité",
+      "unit": "Unité"
+    },
+    "units": {
+      "dias": "jours",
+      "semanas": "semaines",
+      "meses": "mois",
+      "años": "ans",
+      "horas": "heures"
+    },
+    "correct": {
+      "title": "Que souhaitez-vous corriger ?",
+      "intro": "Choisissez la réponse à modifier. Nous reviendrons à cette question et continuerons à partir de là."
+    },
+    "result": {
+      "title": "Votre orientation",
+      "instruments": "Questionnaires",
+      "points_one": "{{count}} point",
+      "points_other": "{{count}} points",
+      "saved": "Cette orientation est enregistrée dans votre compte.",
+      "download": "Télécharger le rapport (PDF)",
+      "notSaved": "Cette orientation n'est pas enregistrée dans votre compte.",
+      "signInHint": "Pour enregistrer l'orientation et télécharger le rapport, connectez-vous avant de commencer."
+    },
+    "progress": {
+      "label": "Progression de l'entretien",
+      "now_one": "{{part}} · {{count}} réponse",
+      "now_other": "{{part}} · {{count}} réponses",
+      "parts": {
+        "start": "Début",
+        "story": "Votre sommeil",
+        "branches": "Détails",
+        "protection": "Sécurité",
+        "closing": "Clôture",
+        "result": "Orientation"
+      }
+    },
+    "errors": {
+      "generic": "Votre réponse n'a pas pu être enregistrée. Veuillez réessayer.",
+      "identifying_data": "La réponse contient un e-mail, un téléphone ou un numéro d'identité. Effacez-le pour continuer.",
+      "invalid_value": "Vérifiez votre réponse : elle ne correspond pas à la question.",
+      "not_the_current_step": "L'entretien a avancé dans une autre fenêtre. Rechargez la page pour continuer.",
+      "not_answered": "Cette question ne fait plus partie de l'entretien."
+    },
+    "panel": {
+      "title": "Panneau de test de l'équipe",
+      "reason": "Pourquoi cette question",
+      "order": "Ordre de la v0.2",
+      "source": "Source",
+      "branches": "Branches ouvertes",
+      "rules": "Règles appliquées",
+      "mainAction": "Action principale",
+      "phrases": "Phrases du catalogue",
+      "instruments": "Instruments",
+      "orientations": "Orientations",
+      "flags": "Indicateurs",
+      "pendingData": "Données manquantes",
+      "trace": "Trace",
+      "none": "—",
+      "instrumentStatus": {
+        "completed": "terminé",
+        "declined": "ignoré par la personne",
+        "incomplete": "incomplet",
+        "pending_file": "en attente : fichier officiel de Jesús"
+      }
+    }
   }
 }
