@@ -663,6 +663,23 @@ module "cleanup_unclaimed_assessments" {
   depends_on = [module.project_apis_backend, module.iam_worker]
 }
 
+# Claim tokens past their 72 h TTL (privacy policy; blocker before the first
+# real patient). Hourly, so none outlives 72 h by more than an hour. Same
+# worker endpoint pattern and scheduler identity as the 30-day cleanup.
+module "cleanup_claim_tokens" {
+  source                     = "../../modules/cloud-scheduler-job"
+  project_id                 = var.project_id
+  region                     = var.region
+  job_id                     = "cleanup-claim-tokens"
+  schedule                   = "15 * * * *"
+  time_zone                  = "Europe/Madrid"
+  http_uri                   = "${module.run_worker.url}/internal/v1/jobs/cleanup-claim-tokens"
+  oidc_service_account_email = module.sa_scheduler.email
+  oidc_audience              = module.run_worker.url
+
+  depends_on = [module.project_apis_backend, module.iam_worker]
+}
+
 module "edge_api_warm_ping" {
   source      = "../../modules/cloud-scheduler-job"
   project_id  = var.project_id
