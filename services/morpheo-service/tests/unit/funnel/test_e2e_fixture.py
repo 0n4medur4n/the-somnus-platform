@@ -3,7 +3,8 @@
 The app's Playwright test (apps/somnus-app/tests/e2e/funnel-v2.spec.ts) plays
 FT-1 and V-10 through the real UI from this file and asserts the same final
 text as the vignette runner. If the engine, the catalogue or a vignette
-changes, run `uv run python -X utf8 -m morpheo.funnel.vignettes --e2e-fixture`.
+changes, run `uv run python -X utf8 -m morpheo.funnel.vignettes --e2e-fixture`
+and then `biome format --write` on the file.
 """
 
 from __future__ import annotations
@@ -20,7 +21,9 @@ from morpheo.funnel.vignettes import (
 
 
 def test_the_committed_fixture_matches_the_engine() -> None:
-    assert E2E_FIXTURE.read_text(encoding="utf-8") == e2e_fixture()
+    # Compared as data: the committed file is laid out by Biome.
+    committed = json.loads(E2E_FIXTURE.read_text(encoding="utf-8"))
+    assert committed == json.loads(e2e_fixture())
 
 
 def test_the_fixture_ends_with_the_runners_final_text() -> None:
