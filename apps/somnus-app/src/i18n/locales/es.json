@@ -550,7 +550,34 @@
         "declined": "omitido por la persona",
         "incomplete": "incompleto",
         "pending_file": "pendiente: archivo oficial de Jesús"
+      },
+      "ai": {
+        "title": "IA (extracción y riesgo)",
+        "status": {
+          "ok": "correcta",
+          "failed": "falló: se pregunta todo"
+        },
+        "risk": "Riesgo según la IA",
+        "discarded": "descartadas",
+        "decision": {
+          "confirmado": "confirmado",
+          "corregido": "corregido",
+          "quitado": "quitado",
+          "pendiente": "pendiente de confirmar"
+        }
       }
+    },
+    "extraction": {
+      "evidence": "Sus palabras: «{{words}}»",
+      "decisions": {
+        "confirmado": "Sí, es correcto",
+        "corregido": "No, lo corrijo",
+        "quitado": "No, quítelo"
+      },
+      "correctHint": "Indique el dato correcto:",
+      "corrected": "Corregido.",
+      "removedHint": "No lo tendremos en cuenta. Si hace falta, se lo preguntaremos más adelante.",
+      "saveCorrection": "Guardar corrección"
     }
   }
 }

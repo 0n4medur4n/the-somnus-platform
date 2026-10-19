@@ -550,7 +550,34 @@
         "declined": "omès per la persona",
         "incomplete": "incomplet",
         "pending_file": "pendent: arxiu oficial de Jesús"
+      },
+      "ai": {
+        "title": "IA (extracció i risc)",
+        "status": {
+          "ok": "correcta",
+          "failed": "ha fallat: es pregunta tot"
+        },
+        "risk": "Risc segons la IA",
+        "discarded": "descartades",
+        "decision": {
+          "confirmado": "confirmat",
+          "corregido": "corregit",
+          "quitado": "tret",
+          "pendiente": "pendent de confirmar"
+        }
       }
+    },
+    "extraction": {
+      "evidence": "Les seves paraules: «{{words}}»",
+      "decisions": {
+        "confirmado": "Sí, és correcte",
+        "corregido": "No, ho corregeixo",
+        "quitado": "No, traieu-ho"
+      },
+      "correctHint": "Indiqueu la dada correcta:",
+      "corrected": "Corregit.",
+      "removedHint": "No ho tindrem en compte. Si cal, us ho preguntarem més endavant.",
+      "saveCorrection": "Desa la correcció"
     }
   }
 }
