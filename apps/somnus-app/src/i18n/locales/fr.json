@@ -127,7 +127,7 @@
       "genderRequired": "Choisissez une option (vous pouvez choisir « Je préfère ne pas le dire »).",
       "countryRequired": "Choisissez votre pays."
     },
-    "lockedNotice": "Vous rejoignez sur invitation d'une organisation, votre compte est donc créé comme compte professionnel.",
+    "lockedNotice": "Votre invitation indique le type d’inscription. Vous complétez vos informations et consentements.",
     "readTerms": "Lire les Conditions d'utilisation",
     "readPrivacy": "Lire la Politique de confidentialité",
     "aboutTitle": "À propos de vous",
@@ -445,5 +445,11 @@
   },
   "report": {
     "download": "Télécharger le rapport (PDF)"
+  },
+  "platformInvite": {
+    "title": "Invitation à Morpheo",
+    "existing": "Acceptez avec votre compte actuel. Votre profil, langue et autorisations sont conservés.",
+    "accept": "Accepter l’invitation",
+    "unavailable": "Cette invitation ne peut pas être acceptée. Elle a peut-être expiré, a été utilisée ou révoquée, ou appartient à un autre compte. Contactez la personne qui vous a invité."
   }
 }

@@ -32,6 +32,7 @@ RUN addgroup -S somnus && adduser -S somnus -G somnus
 # are already in the right places.
 WORKDIR /app/services/somnus-identity-service
 COPY --from=build --chown=somnus:somnus /app/services/somnus-identity-service/dist ./dist
+COPY --from=build --chown=somnus:somnus /app/services/somnus-identity-service/migrations ./migrations
 COPY --from=build --chown=somnus:somnus /app/services/somnus-identity-service/node_modules ./node_modules
 # pnpm-workspace places transitive deps in a virtual store at
 # /app/node_modules/.pnpm/ that the top-level symlinks resolve to.

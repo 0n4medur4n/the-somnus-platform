@@ -46,10 +46,12 @@ export class SessionsController {
   ): Promise<SessionResponse> {
     let firebaseUid: string;
     let email: string | null;
+    let emailVerified: boolean;
     try {
       const decoded = await this.firebase.verifyIdToken(body.idToken);
       firebaseUid = decoded.uid;
       email = decoded.email ?? null;
+      emailVerified = decoded.email_verified === true;
     } catch {
       // Forged, malformed, expired, or wrong-project token: all one
       // 401, no detail leaked about which.
@@ -61,6 +63,7 @@ export class SessionsController {
     const session = await this.sessions.create({
       firebaseUid,
       email,
+      emailVerified,
       ttlSeconds: this.config.SESSION_TTL_SECONDS,
     });
 

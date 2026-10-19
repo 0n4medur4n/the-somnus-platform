@@ -1,0 +1,29 @@
+# Disposable MySQL on the build VM's loopback. No shared database credentials.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        trap 'docker rm -f somnus-invitation-validation-mysql >/dev/null 2>&1 || true' EXIT
+        docker run -d --name somnus-invitation-validation-mysql -p 127.0.0.1:3306:3306 -e MYSQL_ROOT_PASSWORD=rootpw -e MYSQL_ROOT_HOST=% mysql:8.4
+        for attempt in {1..90}; do
+          if docker exec somnus-invitation-validation-mysql mysql -uroot -prootpw -Nse "SELECT 1" >/dev/null 2>&1; then break; fi
+          sleep 2
+        done
+        docker exec somnus-invitation-validation-mysql mysql -uroot -prootpw -e 'CREATE DATABASE somnus_identity; CREATE DATABASE somnus_consent;'
+        docker run --rm --network host -v /workspace:/workspace -w /workspace \
+          -e DATABASE_URL=mysql://root:rootpw@127.0.0.1:3306/somnus_identity \
+          -e CONSENT_DATABASE_URL=mysql://root:rootpw@127.0.0.1:3306/somnus_consent \
+          -e DB_SSL=false -e CONSENT_DB_SSL=false -e SOMNUS_ALLOW_DESTRUCTIVE_TESTS=1 \
+          node:24-bookworm bash -ceu '
+            corepack enable
+            corepack prepare pnpm@12.11.2 --activate
+            pnpm install --frozen-lockfile
+            pnpm --if-present -r --filter "./packages/*" run build
+            pnpm --filter @somnus/identity-service generate:openapi
+            pnpm --filter @somnus/identity-service test:coverage
+          '
+timeout: 1200s
+options:
+  logging: CLOUD_LOGGING_ONLY

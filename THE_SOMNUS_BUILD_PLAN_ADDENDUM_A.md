@@ -28,6 +28,8 @@ Rules that hold across all rows:
 - Minors never register. Every pediatric interaction is through a guardian account with the guardian role, in the Morpheo Kids flow.
 - **Staff invitations — owner decision, 2026-10-18.** A holder of `admin_roles_assign` may invite a member of staff from the console: first name, last name, address, one internal role. The email carries a console sign-in link; **no account exists until the invited person signs in with that address and accepts**, acknowledging the privacy policy themselves (a consent receipt, source `staff_invitation`). The role is then granted through the same single path as every internal role, on behalf of the admin who invited — so "never to oneself" holds (an admin cannot invite their own address). Internal roles only; people who use the platform and professionals keep registering on their own. Pending for 7 days; a new invitation to the same address replaces the pending one.
 
+- **Morpheo invitations ? owner approval, 2026-10-19 (ADR 0021).** In addition to self-registration, `platform_super_admin` may invite an individual adult or a professional to Morpheo from Users, selecting es/en/ca/fr. The recipient completes their own registration and consents; professional verification remains mandatory, and no professional or Nox permission is granted by this invitation. Invitations last seven days. Existing internal staff and organization invitation flows remain separate. The admin user detail shows full operational profile/contact, roles, memberships and timestamps; clinical data still requires break-glass. Nox's physician-only restriction is a future product requirement, not an implemented entitlement here.
+
 # A2. Admin console scope
 
 ## A2.1 Placement

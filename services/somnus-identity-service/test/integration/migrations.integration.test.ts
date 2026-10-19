@@ -6,6 +6,7 @@ import { runMigrationsDown, runMigrationsUp } from "../../src/infrastructure/db/
 import { roles } from "../../src/infrastructure/db/schema/index.js";
 
 const EXPECTED_TABLES = [
+  "platform_invitations",
   "users",
   "user_identities",
   "individual_profiles",

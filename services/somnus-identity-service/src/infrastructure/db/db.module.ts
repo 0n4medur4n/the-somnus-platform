@@ -9,6 +9,7 @@ import {
   OrganizationInvitationsRepository,
   OrganizationMembershipsRepository,
   OrganizationsRepository,
+  PlatformInvitationsRepository,
   ProfessionalProfilesRepository,
   RoleAssignmentsRepository,
   RolesRepository,
@@ -27,6 +28,11 @@ export const DB = Symbol("DB");
 @Global()
 @Module({
   providers: [
+    {
+      provide: PlatformInvitationsRepository,
+      useFactory: (db: Db) => new PlatformInvitationsRepository(db),
+      inject: [DB],
+    },
     {
       provide: DB,
       useFactory: (): Db => {
@@ -94,6 +100,7 @@ export const DB = Symbol("DB");
     OrganizationMembershipsRepository,
     OrganizationInvitationsRepository,
     RolesRepository,
+    PlatformInvitationsRepository,
     StaffInvitationsRepository,
     RoleAssignmentsRepository,
     AccessGrantsRepository,

@@ -88,5 +88,7 @@ ui-debug.log
 # Generated
 schemas/openapi/**
 !schemas/openapi/.gitkeep
+!schemas/openapi/identity-service.json
+!schemas/openapi/edge-api.json
 *.gen.ts
 *.gen.json

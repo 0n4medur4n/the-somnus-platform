@@ -71,6 +71,16 @@ describe("edge (admin console surface)", () => {
       () => edge.createOrganization({ name: "Org" }),
       () => edge.setOrganizationStatus("o1", { status: "active", reason: "why" }),
       () => edge.organizationMembers("o1"),
+      () => edge.platformInvitations(),
+      () =>
+        edge.invitePlatformUser({
+          firstName: "Ana",
+          lastName: "Garcia",
+          email: "invite@example.com",
+          role: "adult",
+          locale: "ca",
+        }),
+      () => edge.revokePlatformInvitation("s1"),
       () => edge.staffInvitations(),
       () =>
         edge.inviteStaff({
