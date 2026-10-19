@@ -10,6 +10,7 @@ import {
   SafetyLevelIdSchema,
   TernaryValueSchema,
 } from "./enums.js";
+import { FUNNEL_CONTRACT_SCHEMAS } from "./funnel.js";
 import {
   AccountAssessmentsDeleteRequestSchema,
   MaintenanceDeleteRequestSchema,
@@ -223,4 +224,6 @@ export const MORPHEO_CONTRACT_SCHEMAS = {
   UserAssessmentsResponse: UserAssessmentsResponseSchema,
   OwnAssessment: OwnAssessmentSchema,
   OwnAssessmentsResponse: OwnAssessmentsResponseSchema,
+  // The v2 interview (embudo v0.2).
+  ...FUNNEL_CONTRACT_SCHEMAS,
 } as const;
