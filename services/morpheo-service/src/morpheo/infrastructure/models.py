@@ -248,3 +248,43 @@ class MorpheoAuditEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
+
+
+# --- The v2 interview (the embudo v0.2, ADR 0020). ---
+# An open session is anonymous; a signed-in person's session is theirs from the
+# start (`owner_id`, set by the edge from the session cookie, never by the
+# browser). Answers hold health data, free text included (owner decision
+# 2026-10-17): never logged, never on the bus, deleted with the session (30-day
+# TTL for anonymous sessions, erasure with the account).
+
+
+class FunnelSession(Base):
+    __tablename__ = "funnel_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    consent_given: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)  # open|finished|stopped|paused
+    content_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    rules_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class FunnelAnswer(Base):
+    __tablename__ = "funnel_answers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("funnel_sessions.id"), nullable=False, index=True
+    )
+    step_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    value_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    absence: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # A free-text answer or a yes/no note. Health data.
+    text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )

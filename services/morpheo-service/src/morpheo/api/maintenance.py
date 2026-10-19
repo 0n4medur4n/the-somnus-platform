@@ -11,6 +11,7 @@ from fastapi import APIRouter
 
 from morpheo.api.dependencies import SessionDep
 from morpheo.repositories.assessment import AssessmentRepository
+from morpheo.repositories.funnel import FunnelRepository
 from morpheo.schemas.maintenance import (
     AccountAssessmentsDeleteRequestDTO,
     MaintenanceDeleteRequestDTO,
@@ -29,6 +30,8 @@ def delete_unclaimed(
     body: MaintenanceDeleteRequestDTO, session: SessionDep
 ) -> MaintenanceDeleteResultDTO:
     deleted = AssessmentRepository(session).delete_unclaimed_before(body.before)
+    # The v2 interviews of nobody in particular share the 30-day TTL.
+    deleted += FunnelRepository(session).delete_anonymous_before(body.before)
     return MaintenanceDeleteResultDTO(deleted=deleted)
 
 
@@ -53,4 +56,6 @@ def delete_user_assessments(
     body: AccountAssessmentsDeleteRequestDTO, session: SessionDep
 ) -> MaintenanceDeleteResultDTO:
     deleted = AssessmentRepository(session).delete_by_claimed_by(body.user_id)
+    # And every v2 interview that was theirs, with its answers.
+    deleted += FunnelRepository(session).delete_owned_by(body.user_id)
     return MaintenanceDeleteResultDTO(deleted=deleted)
