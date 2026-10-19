@@ -52,3 +52,19 @@ def test_written_once_per_language_and_the_first_is_the_original(
     original = repo.original("a1")
     assert original is not None and original[0] == "es"
     assert repo.original("nobody") is None
+
+
+def test_erasure_deletes_every_language_of_the_named_assessments_only(
+    repo: PersonReportRepositorySql,
+) -> None:
+    store = {"content_version": "1.4", "model_id": "gpt-6-luna", "input_hash": "0" * 64}
+    repo.put("a1", "es", _narrative("uno"), **store)
+    repo.put("a1", "ca", _narrative("uno ca"), **store, translated_from="es")
+    repo.put("a2", "es", _narrative("dos"), **store)
+    repo.put("other", "es", _narrative("de otra persona"), **store)
+
+    assert repo.delete_for(["a1", "a2", "never-written"]) == 3
+    assert repo.get("a1", "es") is None and repo.get("a1", "ca") is None
+    assert repo.get("a2", "es") is None
+    assert repo.get("other", "es") == _narrative("de otra persona")
+    assert repo.delete_for([]) == 0

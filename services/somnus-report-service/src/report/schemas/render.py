@@ -107,3 +107,13 @@ class ReportRefDTO(ContractModel):
     created_at: str
     html_url: str | None
     pdf_url: str | None
+
+
+class PersonReportsDeleteRequestDTO(ContractModel):
+    """edge -> report: erase the stored reports of these assessments (erasure)."""
+
+    assessment_ids: list[str] = Field(max_length=1000)
+
+
+class PersonReportsDeleteResultDTO(ContractModel):
+    deleted: int = Field(ge=0)

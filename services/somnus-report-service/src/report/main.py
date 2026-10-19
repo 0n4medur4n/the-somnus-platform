@@ -218,9 +218,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # -> every person reads the protocol's own wording.
     content_provider = MorpheoContentClient(settings.morpheo_base_url)
     app.state.content_provider = content_provider
+    person_reports = PersonReportRepositorySql(session_factory)
+    app.state.person_reports = person_reports
     narrative_service = NarrativeService(
         provider=OpenAiAdapter(settings.openai_api_key) if settings.openai_api_key else None,
-        store=PersonReportRepositorySql(session_factory),
+        store=person_reports,
         chat_model=settings.llm_model,
         reasoning_effort=settings.llm_reasoning_effort,
         temperature=settings.llm_temperature,

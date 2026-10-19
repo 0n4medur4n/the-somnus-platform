@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -20,6 +20,17 @@ from report.schemas.narrative import NarrativeDTO
 class PersonReportRepositorySql:
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         self._session_factory = session_factory
+
+    def delete_for(self, assessment_ids: list[str]) -> int:
+        """Erase every stored report of these assessments, in every language."""
+        if not assessment_ids:
+            return 0
+        with self._session_factory() as session:
+            result = session.execute(
+                delete(PersonReportRow).where(PersonReportRow.assessment_id.in_(assessment_ids))
+            )
+            session.commit()
+            return int(getattr(result, "rowcount", 0) or 0)
 
     def get(self, assessment_id: str, locale: str) -> NarrativeDTO | None:
         with self._session_factory() as session:

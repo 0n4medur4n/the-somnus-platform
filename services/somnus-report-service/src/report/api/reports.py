@@ -11,8 +11,15 @@ from fastapi import APIRouter, Request
 from report.application.narrative import NarrativeService
 from report.application.render_service import RenderService
 from report.infrastructure.morpheo_client import ContentProvider
+from report.repositories.person_report_repository import PersonReportRepositorySql
 from report.schemas.narrative import NarrativeResponseDTO
-from report.schemas.render import ReportPdfDTO, ReportRefDTO, ReportRenderRequestDTO
+from report.schemas.render import (
+    PersonReportsDeleteRequestDTO,
+    PersonReportsDeleteResultDTO,
+    ReportPdfDTO,
+    ReportRefDTO,
+    ReportRenderRequestDTO,
+)
 
 router = APIRouter(prefix="/internal/v1/reports", tags=["reports"])
 
@@ -46,3 +53,15 @@ def person_report(body: ReportRenderRequestDTO, request: Request) -> NarrativeRe
     narratives: NarrativeService = request.app.state.narrative_service
     content: ContentProvider = request.app.state.content_provider
     return narratives.for_assessment(body, content.get_content())
+
+
+@router.post(
+    "/person/delete",
+    response_model=PersonReportsDeleteResultDTO,
+    summary="Erase the stored person's reports of these assessments (right to erasure).",
+)
+def delete_person_reports(
+    body: PersonReportsDeleteRequestDTO, request: Request
+) -> PersonReportsDeleteResultDTO:
+    store: PersonReportRepositorySql = request.app.state.person_reports
+    return PersonReportsDeleteResultDTO(deleted=store.delete_for(body.assessment_ids))
