@@ -427,7 +427,7 @@
     "closeGuide": "Cerrar la guía",
     "changePassphrase": "Cambiar frase",
     "yourFingerprint": "Tu huella de seguridad",
-    "fingerprintHint": "Compárala con la de tus colegas por teléfono o en persona para confirmar que nadie se hace pasar por ti.",
+    "fingerprintHint": "Esta es tu huella de seguridad y es pública: tus colegas la comparan contigo (por teléfono o en persona) antes de compartir carpetas. No es tu código de recuperación, que es secreto.",
     "working": "Trabajando…",
     "cancel": "Cancelar",
     "save": "Guardar",
@@ -461,7 +461,8 @@
       "fileTitle": "The Somnus · Drive cifrado · Código de recuperación",
       "fileWarning": "Guarda este código en un lugar seguro. Con él se puede abrir tu Drive si olvidas tu frase de paso.",
       "confirm": "He guardado el código en un lugar seguro",
-      "continue": "Entrar en mi Drive"
+      "continue": "Entrar en mi Drive",
+      "notAFingerprint": "Este código es secreto y solo tuyo. No es tu huella de seguridad: no lo compares ni lo compartas con nadie, ni siquiera con el equipo de The Somnus."
     },
     "unlock": {
       "heading": "Abre tu Drive cifrado",
@@ -584,11 +585,14 @@
       "noColleagues": "No hay más colegas con el Drive configurado. Pídeles que entren en Drive cifrado una vez.",
       "roleLabel": "Permiso",
       "addSubmit": "Compartir",
-      "checkFingerprint": "Antes de compartir, comprueba con {{who}} que su huella es:",
       "renameFolder": "Renombrar la carpeta",
       "deleteFolder": "Eliminar la carpeta",
       "deleteConfirmLabel": "Escribe el nombre de la carpeta para eliminarla con todo su contenido",
-      "deleteSubmit": "Eliminar para siempre"
+      "deleteSubmit": "Eliminar para siempre",
+      "fingerprintOf": "Huella de seguridad de {{who}}",
+      "fingerprintExplain": "Es la identificación pública de su Drive, no un código secreto. Pídele a {{who}} que abra «Seguridad y frase» en su Drive y te la lea por teléfono o en persona: si coincide con esta, compartes con quien crees.",
+      "notRecoveryCode": "No tiene nada que ver con tu código de recuperación (letras y números separados por guiones): ese es secreto, solo tuyo, y nunca se compara ni se comparte.",
+      "confirmMatches": "He comprobado con {{who}} que su huella coincide"
     },
     "trust": {
       "self": "Tú",
