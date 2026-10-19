@@ -105,30 +105,6 @@
         }
       }
     },
-    "18ae2cadea81109d2a0f5b0e3e3377381b19965e3e9191c8e79e334aebc94889": {
-      "set": "FT-6",
-      "source": "Q14",
-      "model": "stand-in",
-      "output": {
-        "items": [
-          {
-            "id": "Q14.bipolaridad",
-            "value": "si",
-            "evidence": "Tengo trastorno bipolar"
-          },
-          {
-            "id": "Q14.medicacion",
-            "value": "si",
-            "evidence": "tomo litio"
-          }
-        ],
-        "risk": {
-          "S1": "no",
-          "S4": "no",
-          "S2": "no"
-        }
-      }
-    },
     "1f36009ceee8cd0905179668ee404b74508ae7883e26a020fddfb382ff853641": {
       "set": "FT-7",
       "source": "Q06",
@@ -144,7 +120,7 @@
     },
     "2299928844ec1cc7c2cf4ff978b7a5d777d161d96eb63356a979ab647c7e6015": {
       "set": "V-10",
-      "source": "Q14",
+      "source": "Q14c",
       "model": "stand-in",
       "output": {
         "items": [
@@ -190,19 +166,6 @@
     "308f595320b11083d68eac22064ebc303aa91f72bf00034949dafd613e4e6053": {
       "set": "FT-3",
       "source": "Q04",
-      "model": "stand-in",
-      "output": {
-        "items": [],
-        "risk": {
-          "S1": "no",
-          "S4": "no",
-          "S2": "no"
-        }
-      }
-    },
-    "32c49f7538aa2544e1ed060aa03f4031be9556c59e69e2c73e93cffdcac57c8b": {
-      "set": "FT-1",
-      "source": "Q14",
       "model": "stand-in",
       "output": {
         "items": [],
@@ -369,6 +332,25 @@
             "id": "Q14.medicacion",
             "value": "si",
             "evidence": "Tomo tramadol"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "3dfcee06efffb2f9d9fb51f55d4e6332292a0c52c422d47529482d4d31ca6858": {
+      "set": "FT-6",
+      "source": "Q14b",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.bipolaridad",
+            "value": "si",
+            "evidence": "Tengo trastorno bipolar"
           }
         ],
         "risk": {
@@ -691,6 +673,19 @@
         }
       }
     },
+    "6dde136e6aa89a79733107e9807a9a07c26852eb66eec2734a45bb6ba55b8a87": {
+      "set": "V-12",
+      "source": "Q14a",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
     "726f987f4ec1805262e179829b2dbaedec714e275ca265d124f24db73b7f86d8": {
       "set": "FT-3",
       "source": "Q10",
@@ -714,6 +709,25 @@
             "id": "Q14.sustancias",
             "value": "si",
             "evidence": "no depender tanto del café"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "80459d0361bcd2160d7bd3f4a992e70817207f7426f14385f0aac7a762ed8106": {
+      "set": "V-12",
+      "source": "Q14c",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.medicacion",
+            "value": "si",
+            "evidence": "Tomo tramadol"
           }
         ],
         "risk": {
@@ -756,12 +770,18 @@
       "output": {
         "items": [
           {
-            "id": "Q07",
+            "id": "Q07a",
             "value": [
               {
                 "field": "acostarse",
                 "time": "23:00"
-              },
+              }
+            ],
+            "evidence": "Me acuesto a las 23:00 y me levanto a las 7"
+          },
+          {
+            "id": "Q07d",
+            "value": [
               {
                 "field": "levantarse",
                 "time": "07:00"
@@ -798,19 +818,6 @@
             "evidence": "me despierta varias veces"
           }
         ],
-        "risk": {
-          "S1": "no",
-          "S4": "no",
-          "S2": "no"
-        }
-      }
-    },
-    "9326865ef9250a19710ad46de6b3b12c9d696edba18ae9802ff6eda3904b5d91": {
-      "set": "V-12",
-      "source": "Q14",
-      "model": "stand-in",
-      "output": {
-        "items": [],
         "risk": {
           "S1": "no",
           "S4": "no",
@@ -883,12 +890,18 @@
       "output": {
         "items": [
           {
-            "id": "Q07",
+            "id": "Q07a",
             "value": [
               {
                 "field": "acostarse",
                 "time": "01:00"
-              },
+              }
+            ],
+            "evidence": "Me acuesto a la una, me duermo enseguida y a las seis suena el despertador"
+          },
+          {
+            "id": "Q07c",
+            "value": [
               {
                 "field": "despertarse",
                 "time": "06:00"
@@ -975,19 +988,6 @@
             "evidence": "ronco muchísimo"
           }
         ],
-        "risk": {
-          "S1": "no",
-          "S4": "no",
-          "S2": "no"
-        }
-      }
-    },
-    "a9231370b50fb21fe8f6442c0b835cd1827fdc3c5d63e55313862a6903112b17": {
-      "set": "V-11",
-      "source": "Q14",
-      "model": "stand-in",
-      "output": {
-        "items": [],
         "risk": {
           "S1": "no",
           "S4": "no",
@@ -1181,7 +1181,7 @@
     },
     "c6a65bd0c3733b3cd17c2783b7ea5c5b7b6c4972c05767dc9798d9c28eb872ad": {
       "set": "FT-5",
-      "source": "Q14",
+      "source": "Q14c",
       "model": "stand-in",
       "output": {
         "items": [
@@ -1296,6 +1296,25 @@
             "id": "H3b",
             "value": "si",
             "evidence": "con turnos rotativos"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "dd33c79240249b30442458f06c77dc94455b461d036fe388240618f9d1dd80d0": {
+      "set": "FT-6",
+      "source": "Q14c",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.medicacion",
+            "value": "si",
+            "evidence": "Tomo litio"
           }
         ],
         "risk": {

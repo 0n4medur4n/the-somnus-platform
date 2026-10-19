@@ -150,12 +150,17 @@ def test_assumed_answers_are_marked_in_the_text_output() -> None:
 
 def test_assumed_answers_differ_between_cases() -> None:
     ages = {v["assumed"].get("AGE") for v in VIGNETTES}
-    schedules = {json.dumps(v["assumed"].get("Q07")) for v in VIGNETTES if "Q07" in v["assumed"]}
+    schedules = {
+        json.dumps([v["assumed"].get(f"Q07{s}") for s in "abcd"])
+        for v in VIGNETTES
+        if "Q07a" in v["assumed"]
+    }
     impacts = {v["assumed"].get("Q10", {}).get("text") for v in VIGNETTES if "Q10" in v["assumed"]}
     assert len(ages) == len(VIGNETTES)
     assert len(schedules) >= 9 and len(impacts) >= 9
 
 
 def test_the_night_driver_sleeps_by_day() -> None:
-    q07 = _vignette("V-10")["answers"]["Q07"]["value"]
-    assert q07["acostarse"] < "12:00" < q07["despertarse"] < "18:00"
+    answers = _vignette("V-10")["answers"]
+    bed, wake = answers["Q07a"]["value"]["acostarse"], answers["Q07c"]["value"]["despertarse"]
+    assert bed < "12:00" < wake < "18:00"

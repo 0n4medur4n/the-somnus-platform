@@ -37,7 +37,9 @@ from morpheo.funnel.interview import NO, YES, Answer
 
 # After which answers the model is asked to extract (the core free texts and
 # the note of Q04). Z2 comes after everything, so it is only screened for risk.
-EXTRACT_AFTER = ("Q01", "Q02", "Q04", "Q06", "Q10", "Q14")
+# Q14 is asked broken down, as p. 4 says (Q14a-e): each note is read too.
+Q14_SCREENS = ("Q14a", "Q14b", "Q14c", "Q14d", "Q14e")
+EXTRACT_AFTER = ("Q01", "Q02", "Q04", "Q06", "Q10", *Q14_SCREENS)
 SCREEN_ONLY = ("Z2",)
 # Never taken from a narrative (a DEFAULT the clinical lead can change): the age gate
 # and every safety question (only the person's own answer counts), and every
@@ -45,7 +47,7 @@ SCREEN_ONLY = ("Z2",)
 # (what changed), Q06 (the night), Q10 (the day after), Q14, Z1-Z2. Each is
 # asked as v0.2 asks it; a sentence of the narrative is never offered back as
 # the answer to one of them (owner decision 19/10/2026: it read as repetition).
-NEVER_EXTRACTED = ("AGE", "Q01", "Q02", "Q04", "Q06", "Q10", "Q14", "PROT", "Z1", "Z2")
+NEVER_EXTRACTED = ("AGE", "Q01", "Q02", "Q04", "Q06", "Q10", *Q14_SCREENS, "PROT", "Z1", "Z2")
 
 # The suffixes of the two records an extraction leaves among the answers.
 RECORD, DECISION, EXTRACTED, PARTIAL = "#ia", "#confirmacion", "#extraido", "#parcial"
@@ -212,9 +214,9 @@ def all_targets(artifact: FunnelArtifact) -> tuple[Target, ...]:
     for _, label in Q14_TEXT_PARTS:
         if label not in note:
             raise FunnelArtifactError(f"Q14 part {label!r} is not in the p. 4 note")
-    q14 = artifact.step("Q14")
+    extracts = {name for d in artifact.steps if d.source == "Q14" for name in d.extracts}
     for name in Q14_FLAGS:
-        if name not in q14.extracts:
+        if name not in extracts:
             raise FunnelArtifactError(f"Q14 flag {name!r} is not in the artifact's extracts")
         targets.append(Target(id=f"Q14.{name}", type="q14_flag", text=f"Q14: {name}"))
     return tuple(targets)

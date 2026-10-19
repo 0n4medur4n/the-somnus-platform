@@ -57,19 +57,46 @@
           "value": "Me duermo bien, pero hacia las tres me despierto y tardo más de una hora en volver a dormirme"
         },
         {
-          "key": "Q07",
+          "key": "Q07a",
           "kind": "ask",
           "type": "times",
           "value": {
-            "acostarse": "23:15",
-            "intentar_dormir": "23:30",
-            "despertarse": "06:45",
+            "acostarse": "23:15"
+          },
+          "fields": {
+            "se acuesta": "23:15"
+          }
+        },
+        {
+          "key": "Q07b",
+          "kind": "ask",
+          "type": "times",
+          "value": {
+            "intentar_dormir": "23:30"
+          },
+          "fields": {
+            "intenta dormir": "23:30"
+          }
+        },
+        {
+          "key": "Q07c",
+          "kind": "ask",
+          "type": "times",
+          "value": {
+            "despertarse": "06:45"
+          },
+          "fields": {
+            "se despierta": "06:45"
+          }
+        },
+        {
+          "key": "Q07d",
+          "kind": "ask",
+          "type": "times",
+          "value": {
             "levantarse": "07:00"
           },
           "fields": {
-            "se acuesta": "23:15",
-            "intenta dormir": "23:30",
-            "se despierta": "06:45",
             "se levanta": "07:00"
           }
         },
@@ -119,10 +146,34 @@
           "value": "si"
         },
         {
-          "key": "Q14",
+          "key": "Q14a",
           "kind": "ask",
-          "type": "free_text",
-          "value": "Nada en especial; no tomo medicación"
+          "type": "yes_no_note",
+          "value": "no"
+        },
+        {
+          "key": "Q14b",
+          "kind": "ask",
+          "type": "yes_no_note",
+          "value": "no"
+        },
+        {
+          "key": "Q14c",
+          "kind": "ask",
+          "type": "yes_no_note",
+          "value": "no"
+        },
+        {
+          "key": "Q14d",
+          "kind": "ask",
+          "type": "yes_no_note",
+          "value": "no"
+        },
+        {
+          "key": "Q14e",
+          "kind": "ask",
+          "type": "yes_no_note",
+          "value": "no"
         },
         {
           "key": "Q15",
@@ -270,19 +321,46 @@
           "value": "Llego a casa sobre las ocho, me acuesto y de día duermo a ratos por el ruido de la calle"
         },
         {
-          "key": "Q07",
+          "key": "Q07a",
           "kind": "ask",
           "type": "times",
           "value": {
-            "acostarse": "08:30",
-            "intentar_dormir": "09:00",
-            "despertarse": "14:30",
+            "acostarse": "08:30"
+          },
+          "fields": {
+            "se acuesta": "08:30"
+          }
+        },
+        {
+          "key": "Q07b",
+          "kind": "ask",
+          "type": "times",
+          "value": {
+            "intentar_dormir": "09:00"
+          },
+          "fields": {
+            "intenta dormir": "09:00"
+          }
+        },
+        {
+          "key": "Q07c",
+          "kind": "ask",
+          "type": "times",
+          "value": {
+            "despertarse": "14:30"
+          },
+          "fields": {
+            "se despierta": "14:30"
+          }
+        },
+        {
+          "key": "Q07d",
+          "kind": "ask",
+          "type": "times",
+          "value": {
             "levantarse": "15:00"
           },
           "fields": {
-            "se acuesta": "08:30",
-            "intenta dormir": "09:00",
-            "se despierta": "14:30",
             "se levanta": "15:00"
           }
         },
@@ -328,13 +406,26 @@
           "value": "no"
         },
         {
-          "key": "Q14",
+          "key": "Q14a",
           "kind": "ask",
-          "type": "free_text",
-          "value": "Tomo pastillas para la tensión"
+          "type": "yes_no_note",
+          "value": "no"
         },
         {
-          "key": "Q14#confirmacion",
+          "key": "Q14b",
+          "kind": "ask",
+          "type": "yes_no_note",
+          "value": "no"
+        },
+        {
+          "key": "Q14c",
+          "kind": "ask",
+          "type": "yes_no_note",
+          "value": "si",
+          "text": "Tomo pastillas para la tensión"
+        },
+        {
+          "key": "Q14c#confirmacion",
           "kind": "confirm_extraction",
           "type": "confirm_extraction",
           "decisions": [
@@ -343,6 +434,18 @@
               "decision": "confirmado"
             }
           ]
+        },
+        {
+          "key": "Q14d",
+          "kind": "ask",
+          "type": "yes_no_note",
+          "value": "no"
+        },
+        {
+          "key": "Q14e",
+          "kind": "ask",
+          "type": "yes_no_note",
+          "value": "no"
         },
         {
           "key": "Q15",

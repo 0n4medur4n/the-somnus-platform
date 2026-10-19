@@ -10,7 +10,10 @@
 
 The loader fails loudly if an option label or a split screen is not a literal
 fragment of its source text: the engine may cut a v0.2 question into screens,
-never reword it.
+never reword it. The one exception is a screen v0.2 asks for but does not write
+(Q07 «separar cada pregunta», Q14's breakdown on p. 4): its text is a draft,
+written with the PDF's own words where they suffice, and it says so (`draft`)
+so the clinical lead can review it.
 """
 
 from __future__ import annotations
@@ -55,6 +58,9 @@ class StepDef:
     extracts: tuple[str, ...] = ()
     unit: str | None = None
     outcomes: dict[str, str] = field(default_factory=dict)
+    # Why this screen's text is not literally v0.2 (a split v0.2 asks for but
+    # does not write), for the clinical lead's review; None when it is verbatim.
+    draft: str | None = None
 
 
 @dataclass(frozen=True)
@@ -118,8 +124,11 @@ def parse(raw: dict[str, Any]) -> FunnelArtifact:
         if item is None:
             raise FunnelArtifactError(f"step {spec['id']!r}: unknown source {spec['source']!r}")
         full, note = item["text"], item.get("note")
-        text = spec.get("fragment") or full
-        if not _fragment_of(text, full):
+        text = spec.get("draft_text") or spec.get("fragment") or full
+        draft = spec.get("draft")
+        if spec.get("draft_text") and not draft:
+            raise FunnelArtifactError(f"step {spec['id']!r}: a draft text must say why (draft)")
+        if not draft and not _fragment_of(text, full):
             raise FunnelArtifactError(
                 f"step {spec['id']!r}: {text!r} is not verbatim from {spec['source']}"
             )
@@ -148,6 +157,7 @@ def parse(raw: dict[str, Any]) -> FunnelArtifact:
                 extracts=tuple(spec.get("extracts", [])),
                 unit=spec.get("unit"),
                 outcomes=dict(item.get("outcomes", {})),
+                draft=draft,
             )
         )
     templates = {t["id"]: t["text"] for t in source["templates"]}
