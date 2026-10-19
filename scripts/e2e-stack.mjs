@@ -166,6 +166,8 @@ try {
   startMorpheo("morpheo-v2", "8081", `${root}/services/morpheo-service`, {
     ...morpheoDb,
     FUNNEL_V2_ENABLED: "true",
+    // The AI from recorded model outputs: no model is called in E2E.
+    AI_FIXTURE_FILE: `${root}/services/morpheo-service/tests/fixtures/ai/recordings_v2.json`,
   });
   start("edge-api", `${root}/services/somnus-edge-api`, edgeEnv("8090", "8080"));
   start("edge-api-v2", `${root}/services/somnus-edge-api`, edgeEnv("8091", "8081"));
