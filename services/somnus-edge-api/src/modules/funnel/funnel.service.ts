@@ -26,6 +26,12 @@ import { ActorResolver } from "../sessions/actor-resolver.service.js";
 import type { SessionRecord } from "../sessions/session.service.js";
 
 const FUNNEL = "/internal/v1/funnel";
+/**
+ * An answer to a free-text question waits for morpheo's AI step (v0.2 p. 14),
+ * which gives up on the model after AI_TIMEOUT_SECONDS (8 s by default) and
+ * goes on without it. The edge waits a little longer than that.
+ */
+const FUNNEL_ANSWER_TIMEOUT_MS = 15_000;
 
 /**
  * Proxies the v2 interview (the embudo v0.2) to morpheo. The edge never runs
@@ -81,7 +87,9 @@ export class FunnelProxyService {
     rawCorrelationId?: string,
   ): Promise<FunnelState> {
     const path = `${this.path(sessionId)}/answers`;
-    return this.forward("POST", path, session, panel, rawCorrelationId, body);
+    return this.forward("POST", path, session, panel, rawCorrelationId, body, {
+      timeoutMs: FUNNEL_ANSWER_TIMEOUT_MS,
+    });
   }
 
   back(
@@ -157,6 +165,7 @@ export class FunnelProxyService {
     panel: boolean,
     rawCorrelationId: string | undefined,
     body?: unknown,
+    options: { timeoutMs?: number } = {},
   ): Promise<FunnelState> {
     const correlationId = correlationOf(rawCorrelationId);
     const actorId = await this.actorOf(session, correlationId);
@@ -164,7 +173,7 @@ export class FunnelProxyService {
     const response =
       method === "GET"
         ? await this.morpheo.get(path, { correlationId, headers })
-        : await this.morpheo.post(path, { correlationId, headers, body });
+        : await this.morpheo.post(path, { correlationId, headers, body, ...options });
     const state = this.parse(FunnelStateSchema, response.body, correlationId);
     const staff = panel && actorId !== undefined && (await this.isStaff(actorId, correlationId));
     return staff ? state : withoutPanel(state);

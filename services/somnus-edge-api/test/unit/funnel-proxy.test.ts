@@ -37,6 +37,7 @@ function state(): FunnelState {
       instrument: null,
       phase: "start",
       answeredCount: 0,
+      extraction: null,
       panel: {
         reason: null,
         source: "AGE",
@@ -45,6 +46,7 @@ function state(): FunnelState {
         mainAction: null,
         phraseIds: [],
         instruments: [],
+        ai: [],
       },
     },
     result: null,
@@ -152,11 +154,71 @@ describe("FunnelProxyService", () => {
           branchesOpened: ["I"],
           orientations: [],
           instruments: [],
+          ai: [],
         },
       },
     };
     expect(withoutPanel(withResult).result?.panel).toBeNull();
     expect(withoutPanel(withResult).result?.texts).toEqual(withResult.result?.texts);
+  });
+
+  it("strips what the AI proposed from the panel but leaves the person their own confirmation screen", () => {
+    const item = {
+      id: "Q03",
+      question: "¿Desde cuándo le ocurre?",
+      answer: "6 meses",
+      evidence: "Desde hace unos seis meses",
+    };
+    const confirming: FunnelState = {
+      ...state(),
+      step: {
+        ...(state().step as NonNullable<FunnelState["step"]>),
+        key: "Q01#confirmacion",
+        questionId: "IA_CONFIRMAR",
+        kind: "confirm_extraction",
+        type: "confirm_extraction",
+        text: "Por lo que nos ha contado, entendemos:",
+        note: "¿Es correcto?",
+        extraction: {
+          source: "Q01",
+          items: [
+            {
+              ...item,
+              editable: true,
+              type: "duration",
+              options: [],
+              fields: [],
+              noneOption: false,
+              unit: null,
+              units: ["dias", "semanas", "meses", "años"],
+            },
+          ],
+        },
+        panel: {
+          reason: "p. 14",
+          source: "p. 14",
+          branchesOpened: [],
+          rulesFired: [],
+          mainAction: null,
+          phraseIds: [],
+          instruments: [],
+          ai: [
+            {
+              source: "Q01",
+              status: "ok",
+              model: "gpt-6-luna",
+              promptVersion: "extraccion-v2.0-1",
+              risk: { S1: "no", S4: "no", S2: "no" },
+              discarded: 0,
+              items: [{ ...item, decision: "pendiente", corrected: null }],
+            },
+          ],
+        },
+      },
+    };
+    const stripped = withoutPanel(confirming);
+    expect(stripped.step?.panel).toBeNull();
+    expect(stripped.step?.extraction).toEqual(confirming.step?.extraction);
   });
 
   it("renders the owner's finished interview as a PDF, from morpheo's result only", async () => {
