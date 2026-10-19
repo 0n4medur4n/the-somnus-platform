@@ -17,6 +17,11 @@
  * (which serves the SPA on :5173 itself). edge-api runs on 8090 to dodge a
  * common local Apache on 8080. Set PW_GREP to filter tests. Exits with
  * Playwright's code and tears the services down.
+ *
+ * Two assessment flows, two pairs (FUNNEL_V2_ENABLED is read by morpheo, the
+ * app asks which flow runs): morpheo :8080 with v2 off behind edge :8090 for
+ * the v1 specs, and morpheo :8081 with v2 on behind edge :8091 for the specs
+ * tagged @v2. Side by side, so nothing is restarted between the two runs.
  */
 import { spawn } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -66,15 +71,55 @@ function start(name, cwd, extraEnv) {
 // morpheo is the Python service (build plan §5.5); it runs under uvicorn, not
 // `node dist/main.js`, against the docker MySQL `somnus_morpheo` (migrated by
 // `just dev-up` / the CI job).
-function startMorpheo(cwd, extraEnv) {
+function startMorpheo(name, port, cwd, extraEnv) {
   return spawnService(
-    "morpheo",
+    name,
     "uv",
-    ["run", "uvicorn", "morpheo.main:app", "--host", "127.0.0.1", "--port", "8080"],
+    ["run", "uvicorn", "morpheo.main:app", "--host", "127.0.0.1", "--port", port],
     cwd,
     extraEnv,
     true,
   );
+}
+
+function edgeEnv(port, morpheoPort) {
+  return {
+    PORT: port,
+    SERVICE_NAME: "somnus-edge-api",
+    NODE_ENV: "development",
+    FIREBASE_PROJECT_ID: "somnus-dev-test",
+    // Sessions live in their own project (see edge-config). Set explicitly so
+    // the stack does not depend on the default matching.
+    FIRESTORE_PROJECT_ID: "somnus-dev-test",
+    FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099",
+    FIRESTORE_EMULATOR_HOST: "127.0.0.1:9098",
+    IDENTITY_BASE_URL: "http://localhost:3001",
+    MORPHEO_BASE_URL: `http://localhost:${morpheoPort}`,
+    INTERNAL_AUTH_MODE: "insecure-dev",
+    COOKIE_SECURE: "false",
+    // Only the ceiling moves; the window stays at the production default so
+    // the two configurations differ on exactly one axis.
+    RATE_LIMIT_MAX: E2E_RATE_LIMIT_MAX,
+    CORS_ORIGINS: "http://localhost:5173,http://localhost:4173",
+  };
+}
+
+function runPlaywright(edgeUrl, filterArgs) {
+  const pwArgs = ["--filter", "@somnus/app", "exec", "playwright", "test", ...filterArgs];
+  const grep = process.env["PW_GREP"];
+  if (grep) pwArgs.push("-g", grep);
+  const pw = spawn("pnpm", pwArgs, {
+    cwd: root,
+    stdio: "inherit",
+    shell: true,
+    env: {
+      ...process.env,
+      VITE_EDGE_API_URL: edgeUrl,
+      VITE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099",
+      VITE_FIREBASE_PROJECT_ID: "somnus-dev-test",
+    },
+  });
+  return new Promise((resolve) => pw.on("exit", (code) => resolve(code ?? 1)));
 }
 
 async function waitHealth(url, name, tries = 90) {
@@ -110,49 +155,31 @@ try {
     SERVICE_NAME: "somnus-identity-service",
     NODE_ENV: "development",
   });
-  startMorpheo(`${root}/services/morpheo-service`, {
+  const morpheoDb = {
     DATABASE_URL: "mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_morpheo",
     ENV: "development",
+  };
+  startMorpheo("morpheo-v1", "8080", `${root}/services/morpheo-service`, {
+    ...morpheoDb,
+    FUNNEL_V2_ENABLED: "false",
   });
-  start("edge-api", `${root}/services/somnus-edge-api`, {
-    PORT: "8090",
-    SERVICE_NAME: "somnus-edge-api",
-    NODE_ENV: "development",
-    FIREBASE_PROJECT_ID: "somnus-dev-test",
-    // Sessions live in their own project (see edge-config). Set explicitly so
-    // the stack does not depend on the default matching.
-    FIRESTORE_PROJECT_ID: "somnus-dev-test",
-    FIREBASE_AUTH_EMULATOR_HOST: "127.0.0.1:9099",
-    FIRESTORE_EMULATOR_HOST: "127.0.0.1:9098",
-    IDENTITY_BASE_URL: "http://localhost:3001",
-    MORPHEO_BASE_URL: "http://localhost:8080",
-    INTERNAL_AUTH_MODE: "insecure-dev",
-    COOKIE_SECURE: "false",
-    // Only the ceiling moves; the window stays at the production default so
-    // the two configurations differ on exactly one axis.
-    RATE_LIMIT_MAX: E2E_RATE_LIMIT_MAX,
-    CORS_ORIGINS: "http://localhost:5173,http://localhost:4173",
+  startMorpheo("morpheo-v2", "8081", `${root}/services/morpheo-service`, {
+    ...morpheoDb,
+    FUNNEL_V2_ENABLED: "true",
   });
+  start("edge-api", `${root}/services/somnus-edge-api`, edgeEnv("8090", "8080"));
+  start("edge-api-v2", `${root}/services/somnus-edge-api`, edgeEnv("8091", "8081"));
 
   await waitHealth("http://localhost:3001/health/live", "identity");
-  await waitHealth("http://localhost:8080/health/live", "morpheo");
+  await waitHealth("http://localhost:8080/health/live", "morpheo-v1");
+  await waitHealth("http://localhost:8081/health/live", "morpheo-v2");
   await waitHealth("http://localhost:8090/health/live", "edge-api");
+  await waitHealth("http://localhost:8091/health/live", "edge-api-v2");
 
-  const grep = process.env["PW_GREP"];
-  const pwArgs = ["--filter", "@somnus/app", "exec", "playwright", "test"];
-  if (grep) pwArgs.push("-g", grep);
-  const pw = spawn("pnpm", pwArgs, {
-    cwd: root,
-    stdio: "inherit",
-    shell: true,
-    env: {
-      ...process.env,
-      VITE_EDGE_API_URL: "http://localhost:8090",
-      VITE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099",
-      VITE_FIREBASE_PROJECT_ID: "somnus-dev-test",
-    },
-  });
-  exitCode = await new Promise((resolve) => pw.on("exit", (code) => resolve(code ?? 1)));
+  // The v1 specs with v2 off, then the @v2 specs with it on. Both always run.
+  const v1 = await runPlaywright("http://localhost:8090", ["--grep-invert", "@v2"]);
+  const v2 = await runPlaywright("http://localhost:8091", ["--grep", "@v2"]);
+  exitCode = v1 !== 0 ? v1 : v2;
 } catch (err) {
   console.error(err);
 } finally {
