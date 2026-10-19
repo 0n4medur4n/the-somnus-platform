@@ -1724,7 +1724,10 @@
             "label": "insomnio grave"
           }
         ],
-        "none_option": true
+        "none_option": true,
+        "fragment": "¿hay enfermedad cardiopulmonar relevante, ictus, opioides, debilidad respiratoria o insomnio grave?",
+        "capitalise": true,
+        "fragment_note": "D-44 (20/10/2026): «Si hay sospecha:» es la condición para quien entrevista (el motor solo abre R con sospecha); a la persona se le pregunta el resto, literal."
       },
       {
         "id": "R6",
