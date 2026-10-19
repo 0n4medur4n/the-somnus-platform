@@ -12,11 +12,13 @@ filled with the person's confirmed answers, never written by a model.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from morpheo.funnel.artifact import FunnelArtifact
+from morpheo.funnel.instruments import InstrumentOutcome, outcomes
 from morpheo.funnel.interview import (
     NO,
     S2_PAUSED,
@@ -26,6 +28,7 @@ from morpheo.funnel.interview import (
     Interview,
     chronic_from_core,
 )
+from morpheo.instruments.definitions import InstrumentRegistry
 
 
 @dataclass(frozen=True)
@@ -52,6 +55,10 @@ class FunnelResult:
     trace: tuple[str, ...] = field(default=())
     # The catalogue phrases the texts used, by id (for clinical review).
     phrase_ids: tuple[str, ...] = field(default=())
+    # The validated instruments offered (scores never feed the rules above).
+    instruments: tuple[InstrumentOutcome, ...] = field(default=())
+    # v0.2 p. 14, shown with any score: no scale confirms apnoea.
+    instruments_note: str | None = None
 
 
 def _labels(iv: Interview, step_id: str, chosen: Any) -> list[str]:
@@ -62,7 +69,45 @@ def _labels(iv: Interview, step_id: str, chosen: Any) -> list[str]:
     return [by_key[k] for k in chosen if k in by_key]
 
 
-def evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> FunnelResult:
+def _instruments_note(artifact: FunnelArtifact) -> str:
+    text: str = artifact.raw["source"]["instruments"]["text"]
+    found = re.search(r"Ninguna escala[^.]*\.", text)
+    assert found is not None, "v0.2 p. 14 lost its sentence on scales"
+    return found.group(0)
+
+
+def evaluate(
+    artifact: FunnelArtifact,
+    answers: Mapping[str, Answer],
+    instruments: InstrumentRegistry | None = None,
+) -> FunnelResult:
+    """R01-R08 on the confirmed answers, then the instruments' outcome beside them."""
+    result = _evaluate(artifact, answers)
+    iv = Interview(artifact, answers)
+
+    def value_of(key: str) -> object:
+        given = answers.get(key)
+        return None if given is None else given.value
+
+    found = outcomes(instruments, iv, value_of)
+    if not found:
+        return result
+    trace = [
+        f"Instrumento {o.code}: {o.status}"
+        + (f" · {o.total} · {o.band}" if o.total is not None else "")
+        + (f" · {o.placement}")
+        for o in found
+    ]
+    scored = any(o.status == "completed" for o in found)
+    return replace(
+        result,
+        instruments=found,
+        instruments_note=_instruments_note(artifact) if scored else None,
+        trace=(*result.trace, *trace),
+    )
+
+
+def _evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> FunnelResult:
     iv = Interview(artifact, answers)
     v, s = iv.value, iv.safety
     trace: list[str] = []

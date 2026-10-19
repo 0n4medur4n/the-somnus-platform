@@ -35,6 +35,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from morpheo.funnel.artifact import FunnelArtifact, StepDef
+from morpheo.funnel.instruments import next_instrument_step
+from morpheo.instruments.definitions import InstrumentRegistry
 
 YES, NO = "si", "no"
 NO_LO_SE, PREFIERO = "no_lo_se", "prefiero_no_responder"
@@ -205,6 +207,12 @@ class Interview:
         q03, q05 = self.value("Q03"), self.value("Q05")
         return isinstance(q03, dict) and isinstance(q05, int)
 
+    def insomnia_pattern(self) -> bool:
+        """I6 (p. 5): I1-I3 are "Sí" -- I3 derived from Q03/Q05 when it was not asked."""
+        if not self.branch_open("I") or self.value("I1") != YES or self.value("I2") != YES:
+            return False
+        return self.value("I3") == YES or chronic_from_core(self) is True
+
 
 def _days(duration: Mapping[str, Any]) -> float:
     per = {"dias": 1, "semanas": 7, "meses": 30.4, "años": 365, "horas": 1 / 24}
@@ -218,7 +226,11 @@ def chronic_from_core(iv: Interview) -> bool | None:
     return q05 >= 3 and _days(q03) >= 90
 
 
-def next_step(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> Step | None:
+def next_step(
+    artifact: FunnelArtifact,
+    answers: Mapping[str, Answer],
+    instruments: InstrumentRegistry | None = None,
+) -> Step | None:
     iv = Interview(artifact, answers)
     if iv.stopped():
         return None
@@ -264,8 +276,15 @@ def next_step(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> Step |
                     reason = f"{definition.then_ask_now['default']}: {base} = {ans.value}"
                     return Step(ask, artifact.step(question, "end"), "ask", reason)
 
-    # 2. The fixed order.
+    # 2. The fixed order; an instrument due at the end of its branch comes
+    # before the first step of a later stage.
+    stage_order = ["start", "core", *artifact.engine["branch_order"], "end"]
     for definition in artifact.steps:
+        due = next_instrument_step(instruments, iv, definition.stage, stage_order)
+        if due is not None:
+            instrument_step, reason = due
+            kind = "instrument_intro" if instrument_step.id.endswith("#intro") else "ask"
+            return Step(instrument_step.id, instrument_step, kind, reason)
         step = _pending(iv, definition)
         if step is not None:
             return step
