@@ -8,12 +8,14 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
+from report.application.funnel_report import FunnelReportService
 from report.application.narrative import NarrativeService
 from report.application.render_service import RenderService
 from report.infrastructure.morpheo_client import ContentProvider
 from report.repositories.person_report_repository import PersonReportRepositorySql
 from report.schemas.narrative import NarrativeResponseDTO
 from report.schemas.render import (
+    FunnelReportRequestDTO,
     PersonReportsDeleteRequestDTO,
     PersonReportsDeleteResultDTO,
     ReportPdfDTO,
@@ -65,3 +67,13 @@ def delete_person_reports(
 ) -> PersonReportsDeleteResultDTO:
     store: PersonReportRepositorySql = request.app.state.person_reports
     return PersonReportsDeleteResultDTO(deleted=store.delete_for(body.assessment_ids))
+
+
+@router.post(
+    "/funnel/pdf",
+    response_model=ReportPdfDTO,
+    summary="The v2 report (embudo v0.2) as a PDF: morpheo's final text, laid out, not stored.",
+)
+def funnel_report_pdf(body: FunnelReportRequestDTO, request: Request) -> ReportPdfDTO:
+    service: FunnelReportService = request.app.state.funnel_reports
+    return service.render_pdf(body)

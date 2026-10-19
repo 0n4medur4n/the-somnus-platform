@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { LocaleSchema } from "../locale.js";
 import { ModuleIdSchema, RoleIdSchema, SafetyLevelIdSchema } from "../morpheo/enums.js";
+import { FunnelInstrumentSchema, FunnelTextSchema } from "../morpheo/funnel.js";
 
 /**
  * The report service boundary (build plan §5.6 / §20 Checkpoint 11.1). The
@@ -127,6 +128,26 @@ export const PersonReportsDeleteResultSchema = z
   .strict();
 export type PersonReportsDeleteResult = z.infer<typeof PersonReportsDeleteResultSchema>;
 
+/**
+ * edge -> report: the v2 report (embudo v0.2) as a PDF, on demand, not stored.
+ * Deterministic: it lays out morpheo's final text paragraph by paragraph --
+ * written only from the v0.2 templates and the approved phrase catalogue --
+ * and the completed instrument scores. No model writes or rewrites any of it.
+ */
+export const FunnelReportRequestSchema = z
+  .object({
+    sessionId: z.string().min(1),
+    locale: LocaleSchema,
+    completedAt: z.string().min(1),
+    contentVersion: z.string().min(1),
+    rulesVersion: z.string().min(1),
+    texts: z.array(FunnelTextSchema).min(1),
+    instruments: z.array(FunnelInstrumentSchema),
+    instrumentsNote: z.string().nullable(),
+  })
+  .strict();
+export type FunnelReportRequest = z.infer<typeof FunnelReportRequestSchema>;
+
 /** The named set exported as JSON Schema artifacts (schemas/json-schema/report). */
 export const REPORT_CONTRACT_SCHEMAS = {
   ReportRenderRequest: ReportRenderRequestSchema,
@@ -135,4 +156,5 @@ export const REPORT_CONTRACT_SCHEMAS = {
   PersonReportResponse: PersonReportResponseSchema,
   PersonReportsDeleteRequest: PersonReportsDeleteRequestSchema,
   PersonReportsDeleteResult: PersonReportsDeleteResultSchema,
+  FunnelReportRequest: FunnelReportRequestSchema,
 } as const;

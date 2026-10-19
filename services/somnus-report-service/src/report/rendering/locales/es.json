@@ -21,5 +21,9 @@
   "date": "Fecha",
   "reference": "Referencia",
   "page": "Página",
-  "emergencyNow": "Busca atención de emergencia ahora."
+  "emergencyNow": "Busca atención de emergencia ahora.",
+  "v2Title": "Orientación de sueño",
+  "instruments": "Cuestionarios",
+  "points": "puntos",
+  "clinicalLanguage": ""
 }
