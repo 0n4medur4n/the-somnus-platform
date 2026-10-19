@@ -94,3 +94,12 @@ def test_t_insomnio_extra_sentence_comes_from_its_v02_guidance() -> None:
     sentence = funnel_artifact().templates["T_INSOMNIO.sin_otras_senales"]
     assert sentence
     assert "«" not in sentence and "»" not in sentence
+
+
+def test_z2_asks_only_its_question_not_the_interviewers_instruction() -> None:
+    """v0.2 p. 10 writes Z2 as «Explicar posible problema y siguiente paso. ¿Qué le
+    facilitaría seguir este plan?»: the first sentence tells the interviewer what to
+    do (the result explains it); the person is asked only the second, word for word."""
+    z2 = funnel_artifact().step("Z2")
+    assert z2.text == "¿Qué le facilitaría seguir este plan?"
+    assert "Explicar" not in z2.text

@@ -1904,7 +1904,9 @@
         "source": "Z2",
         "stage": "end",
         "type": "free_text",
-        "risk_scan": true
+        "risk_scan": true,
+        "fragment": "¿Qué le facilitaría seguir este plan?",
+        "fragment_note": "D-43 (20/10/2026): «Explicar posible problema y siguiente paso» es una indicación para quien entrevista (el resultado lo explica); a la persona solo se le pregunta la segunda frase, literal."
       }
     ],
     "branch_order": [

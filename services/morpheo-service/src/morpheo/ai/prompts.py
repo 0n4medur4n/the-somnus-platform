@@ -15,7 +15,7 @@ from typing import Any
 from morpheo.funnel.artifact import FunnelArtifact
 from morpheo.funnel.extraction import RISK_QUESTIONS, RISK_VALUES, Target
 
-PROMPT_VERSION = "extraccion-v2.1-1"
+PROMPT_VERSION = "extraccion-v2.1-2"
 SCHEMA_NAME = "extraccion_relato"
 
 SYSTEM = """Eres un extractor de datos para una entrevista sobre el sueño de personas adultas.
@@ -34,6 +34,10 @@ items:
 6. Números, duraciones y horas solo si se dicen («seis meses», «a las 23:00»).
    Una opción de una lista solo si el texto la nombra: «me despierto y me cuesta volver a
    dormirme» son despertares, no «despertar antes de lo deseado».
+   Horas: «se despierta» (Q07) es la hora a la que se despierta por la mañana para
+   empezar el día; un despertar en mitad de la noche («a las tres me despierto») no es esa
+   hora ni ninguna otra hora del horario. H2 («sin despertador») solo si el texto dice que
+   se despierta sin despertador o en días libres.
    «Casi todas las noches» o «hace tiempo» no son un número.
 7. Q14: cada parte solo si se nombra. Las marcas (bipolaridad, epilepsia, embarazo, opioides,
    sustancias, medicacion) solo si se dicen expresamente: no las deduzcas de un medicamento.
