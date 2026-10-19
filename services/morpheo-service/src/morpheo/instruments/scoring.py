@@ -1,8 +1,10 @@
-"""Scoring a completed instrument: the sum of item values, banded by its manual.
+"""Scoring a completed instrument with its original scoring and cut-offs.
 
-Deterministic and generic: the bands (cut-offs and labels) come only from the
-licensed file, kept as validated (v0.2 p. 14). An unanswered item is unknown,
-never zero (R03): with any item missing there is no total and no band.
+Deterministic and generic: the total is the sum of item values, the band comes
+from the official file's cut-offs (v0.2 p. 14: "conservar sus puntos de corte"),
+and an override of the official scoring (STOP-Bang) can raise it. An
+unanswered item is unknown, never zero (R03): with any item missing there is
+no total and no band.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ from morpheo.instruments.definitions import InstrumentDefinition
 class InstrumentResult:
     code: str
     version: str
-    source_sha256: str
+    official_sha256: str
     total: int | None
     band: str | None
     missing: tuple[str, ...]
@@ -48,12 +50,23 @@ def score(
         return InstrumentResult(
             definition.code,
             definition.version,
-            definition.source_sha256,
+            definition.official_sha256,
             None,
             None,
             tuple(missing),
         )
     band = next(b.label for b in definition.bands if b.min <= total <= b.max)
+    order = [b.label for b in definition.bands]
+    for override in definition.overrides:
+        subtotal = sum(responses[i] or 0 for i in override.subtotal_items)
+        any_hit = not override.any_items or any(responses[i] for i in override.any_items)
+        # An override only ever raises the band, never lowers it.
+        if (
+            subtotal >= override.subtotal_min
+            and any_hit
+            and (order.index(override.label) > order.index(band))
+        ):
+            band = override.label
     return InstrumentResult(
-        definition.code, definition.version, definition.source_sha256, total, band, ()
+        definition.code, definition.version, definition.official_sha256, total, band, ()
     )

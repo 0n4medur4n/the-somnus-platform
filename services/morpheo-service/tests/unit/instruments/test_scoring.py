@@ -1,21 +1,26 @@
-"""Scoring: the sum of item values, banded by the licensed file only."""
+"""Scoring: the sum of item values, banded by the official file only."""
 
 from __future__ import annotations
 
 import datetime as dt
+from typing import Any
 
 import pytest
 
 from morpheo.instruments.definitions import InstrumentDefinition, parse_definition
 from morpheo.instruments.scoring import score
 
-from .synthetic import synthetic
+from .synthetic import MARK, official_text, sha256_of, synthetic
 
-TODAY = dt.date(2026, 10, 18)
+TODAY = dt.date(2026, 10, 19)
 
 
-def _definition(code: str) -> InstrumentDefinition:
-    return parse_definition(synthetic(code), "a" * 64, today=TODAY, allow_synthetic=True)
+def _definition(code: str, raw: dict[str, Any] | None = None) -> InstrumentDefinition:
+    raw = raw or synthetic(code)
+    raw = {**raw, "official_text": {"file": "x", "sha256": sha256_of(raw)}}
+    return parse_definition(
+        raw, official_text(raw), sha256_of(raw), today=TODAY, allow_synthetic=True
+    )
 
 
 def test_the_total_is_the_sum_and_the_band_comes_from_the_file() -> None:
@@ -24,7 +29,8 @@ def test_the_total_is_the_sum_and_the_band_comes_from_the_file() -> None:
     assert result.total == 28
     assert result.band == isi.bands[-1].label
     assert result.complete
-    assert (result.code, result.version, result.source_sha256) == ("ISI", "test-0", "a" * 64)
+    assert (result.code, result.version) == ("ISI", "test-0")
+    assert result.official_sha256 == isi.official_sha256
 
 
 def test_band_edges_are_inclusive() -> None:
@@ -37,6 +43,21 @@ def test_band_edges_are_inclusive() -> None:
     assert score(ess, answers).band == ess.bands[0].label
     answers["i8"] = 1
     assert score(ess, answers).band == ess.bands[1].label
+
+
+def test_an_override_of_the_official_scoring_raises_the_band() -> None:
+    raw = synthetic("STOP-BANG")
+    raw["scoring"]["band_overrides"] = [
+        {
+            "band": f"{MARK} banda alta",
+            "subtotal": {"items": ["i1", "i2", "i3", "i4"], "min": 2},
+            "any_of_items": ["i5", "i7", "i8"],
+        }
+    ]
+    stop_bang = _definition("STOP-BANG", raw)
+    low = {f"i{n}": 0 for n in range(1, 9)} | {"i1": 1, "i2": 1}
+    assert score(stop_bang, low).band == f"{MARK} banda baja"
+    assert score(stop_bang, low | {"i8": 1}).band == f"{MARK} banda alta"
 
 
 def test_an_unanswered_item_is_unknown_not_zero() -> None:
