@@ -7,10 +7,13 @@ Reading the records in the order they were written, the interview
    for it -- the AI adds a question, never an alert: only the person's answer
    raises one (D-01). The term list keeps running on its own; both use the same
    key (`S4@exception:Q01`), so a question is never asked twice for one text;
-2. when a call failed or the classifier was unsure ("dudoso"), asks S1 and S4,
-   and S2 if it has not been asked yet -- once per interview, at the first such
-   call (a DEFAULT the clinical lead can change). The AI can add safety questions,
-   never take one away;
+2. when a call failed (provider down, timeout, out of schema), asks S1 and
+   S4, and S2 if it has not been asked yet -- once per interview, at the first
+   failed call (a DEFAULT the clinical lead can change): without the screen,
+   the free text was not read for risk. An unsure classifier ("dudoso") asks
+   nothing at that moment (owner decision 19/10/2026, v0.2 p. 1: act at that
+   moment only when a risk appears); the closing S1-S4 block still comes. The
+   AI can add safety questions, never take one away;
 3. then shows the confirmation screen for what the call proposed («Por lo que
    nos ha contado, entendemos: … ¿Es correcto?»). Only what the person keeps
    or corrects there counts (`extraction.expand`).
@@ -42,10 +45,10 @@ def confirm_step(stage: str) -> StepDef:
 
 
 def fallback_source(answers: Mapping[str, Answer]) -> str | None:
-    """The source of the first failed or unsure call: the one that asks S1/S4/S2."""
+    """The source of the first failed call: the one that asks S1/S4/S2."""
     for key, answer in answers.items():
         record = record_of(answer) if is_record_key(key) else None
-        if record is not None and record.uncertain:
+        if record is not None and record.status != "ok":
             return record.source
     return None
 
@@ -79,9 +82,8 @@ def pending(
             if step is not None:
                 return step
     if fallback == source:
-        why = "falló" if record.status != "ok" else "no está segura"
         for question in RISK_QUESTIONS:
-            reason = f"IA {why} en {source}: S1, S4 y S2 ahora, una vez ({DEFAULT_MARK})"
+            reason = f"IA falló en {source}: S1, S4 y S2 ahora, una vez ({DEFAULT_MARK})"
             step = ask(question, reason)
             if step is not None:
                 return step

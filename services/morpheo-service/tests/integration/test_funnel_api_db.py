@@ -69,8 +69,8 @@ def test_a_full_interview_is_stored_in_order_and_ends_with_the_runners_text(
             )
         )
         stored = session.get(FunnelSession, state["sessionId"])
-    assert keys[:5] == ["AGE", "S1@start", "S4@start", "Q01", "S2@exception:Q01"]
-    assert keys[5:7] == ["S2_aviso", "S2_seguro"]
+    assert keys[:3] == ["AGE", "Q01", "S2@exception:Q01"]
+    assert keys[3:5] == ["S2_aviso", "S2_seguro"]
     assert stored is not None and stored.status == "finished" and stored.finished_at is not None
 
 
@@ -88,7 +88,7 @@ def test_back_and_rewind_delete_on_the_real_schema(client: TestClient, engine: E
             .where(FunnelAnswer.session_id == session_id)
         )
         stored = session.get(FunnelSession, session_id)
-    assert count == 3  # AGE, S1@start, S4@start
+    assert count == 1  # AGE
     assert stored is not None and stored.status == "open" and stored.finished_at is None
 
 
@@ -188,4 +188,4 @@ def test_narrative_mode_stores_the_ai_record_and_the_decisions_on_the_real_schem
                 .order_by(FunnelAnswer.id)
             )
         )
-    assert keys[3:6] == ["Q01", "Q01#ia", "Q01#confirmacion"]
+    assert keys[1:4] == ["Q01", "Q01#ia", "Q01#confirmacion"]

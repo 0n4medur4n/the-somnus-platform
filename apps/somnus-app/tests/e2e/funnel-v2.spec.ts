@@ -172,17 +172,12 @@ test("@v2 back undoes the last answer and the free-text filter stops a phone num
   await startInterview(page);
   await page.locator('section[data-step-key="AGE"] input[type=number]').fill("44");
   await page.getByRole("button", { name: t.actions.continue }).click();
-  await expect(page.locator('section[data-step-key="S1@start"]')).toBeVisible();
+  // v0.2 order: after the age comes the narrative, never a safety question.
+  await expect(page.locator('section[data-step-key="Q01"]')).toBeVisible();
   await page.getByRole("button", { name: t.actions.back, exact: true }).click();
   await expect(page.locator('section[data-step-key="AGE"]')).toBeVisible();
   await page.locator('section[data-step-key="AGE"] input[type=number]').fill("44");
   await page.getByRole("button", { name: t.actions.continue }).click();
-  for (const key of ["S1@start", "S4@start"]) {
-    await page
-      .locator(`section[data-step-key="${key}"]`)
-      .getByRole("button", { name: t.actions.no, exact: true })
-      .click();
-  }
   const story = page.locator('section[data-step-key="Q01"]');
   await story.locator("textarea").fill("Duermo mal, llamadme al 612 345 678");
   await expect(story.getByRole("alert")).toHaveText(t.text.identifying);

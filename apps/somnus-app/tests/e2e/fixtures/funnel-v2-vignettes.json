@@ -11,18 +11,6 @@
           "value": 52
         },
         {
-          "key": "S1@start",
-          "kind": "ask",
-          "type": "yes_no",
-          "value": "no"
-        },
-        {
-          "key": "S4@start",
-          "kind": "ask",
-          "type": "yes_no",
-          "value": "no"
-        },
-        {
           "key": "Q01",
           "kind": "ask",
           "type": "free_text",
@@ -174,10 +162,10 @@
           "value": "visto"
         },
         {
-          "key": "S1@confirm",
-          "kind": "confirm",
+          "key": "S1@end",
+          "kind": "ask",
           "type": "yes_no",
-          "value": "sigue_igual"
+          "value": "no"
         },
         {
           "key": "S2@end",
@@ -192,10 +180,10 @@
           "value": "no"
         },
         {
-          "key": "S4@confirm",
-          "kind": "confirm",
+          "key": "S4@end",
+          "kind": "ask",
           "type": "yes_no",
-          "value": "sigue_igual"
+          "value": "no"
         },
         {
           "key": "Z1",
@@ -222,18 +210,6 @@
           "kind": "ask",
           "type": "number",
           "value": 50
-        },
-        {
-          "key": "S1@start",
-          "kind": "ask",
-          "type": "yes_no",
-          "value": "no"
-        },
-        {
-          "key": "S4@start",
-          "kind": "ask",
-          "type": "yes_no",
-          "value": "no"
         },
         {
           "key": "Q01",
@@ -362,10 +338,6 @@
           "kind": "confirm_extraction",
           "type": "confirm_extraction",
           "decisions": [
-            {
-              "id": "Q14.tratamientos",
-              "decision": "confirmado"
-            },
             {
               "id": "Q14.medicacion",
               "decision": "confirmado"
@@ -496,10 +468,10 @@
           "value": "visto"
         },
         {
-          "key": "S1@confirm",
-          "kind": "confirm",
+          "key": "S1@end",
+          "kind": "ask",
           "type": "yes_no",
-          "value": "sigue_igual"
+          "value": "no"
         },
         {
           "key": "S2@confirm",
@@ -514,10 +486,10 @@
           "value": "no"
         },
         {
-          "key": "S4@confirm",
-          "kind": "confirm",
+          "key": "S4@end",
+          "kind": "ask",
           "type": "yes_no",
-          "value": "sigue_igual"
+          "value": "no"
         },
         {
           "key": "Z1",

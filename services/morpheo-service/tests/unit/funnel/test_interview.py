@@ -27,12 +27,16 @@ def _walk(script: dict[str, Answer], stop_at: str | None = None) -> list[str]:
     raise AssertionError("the interview did not end")
 
 
-def test_age_then_s1_and_s4_come_first() -> None:
-    assert _walk({"AGE": ADULT}, stop_at="Q02") == ["AGE", "S1@start", "S4@start", "Q01"]
+def test_after_the_age_comes_the_narrative() -> None:
+    """v0.2 pp. 1 and 14: AGE -> Q01-Q18; no safety question before the story
+    (owner decision 19/10/2026, withdrawing V-02's S1/S4 after the age)."""
+    assert _walk({"AGE": ADULT}, stop_at="Q02") == ["AGE", "Q01"]
 
 
-def test_a_yes_to_s1_at_the_start_ends_the_interview() -> None:
-    assert _walk({"AGE": ADULT, "S1@start": Answer(value="si")}) == ["AGE", "S1@start"]
+def test_a_yes_to_s1_at_the_end_ends_the_interview_before_z1() -> None:
+    keys = _walk({"AGE": ADULT, "S1@end": Answer(value="si")})
+    assert keys[-1] == "S1@end"
+    assert "Z1" not in keys
 
 
 def test_a_yes_to_s4_at_the_end_ends_the_interview_before_z1() -> None:
@@ -55,7 +59,7 @@ def test_unknown_age_is_clarified_once_then_stops() -> None:
 def test_a_risk_term_in_the_narrative_asks_s4_at_that_moment() -> None:
     narrative = Answer(value="x", text="A veces pienso en quitarme la vida")
     keys = _walk({"AGE": ADULT, "Q01": narrative}, stop_at="Q02")
-    assert keys == ["AGE", "S1@start", "S4@start", "Q01", "S4@exception:Q01"]
+    assert keys == ["AGE", "Q01", "S4@exception:Q01"]
 
 
 def test_risk_terms_ignore_case_and_accents() -> None:
@@ -70,16 +74,30 @@ def test_a_positive_q11_asks_s2_now_and_not_again_at_the_end() -> None:
     assert "S2@confirm" in keys and "S2@end" not in keys
 
 
-def test_s1_and_s4_are_confirmed_at_the_end_not_asked_again() -> None:
+def test_the_safety_block_comes_after_the_protection_text_s1_to_s4() -> None:
     keys = _walk({"AGE": ADULT})
-    assert {"S1@confirm", "S4@confirm", "S2@end", "S3@end"} <= set(keys)
-    assert "S1@end" not in keys and "S4@end" not in keys
+    closing = [k for k in keys if k.split("@")[0] in ("PROT", "S1", "S2", "S3", "S4")]
+    assert closing == ["PROT", "S1@end", "S2@end", "S3@end", "S4@end"]
     assert keys[-2:] == ["Z1", "Z2"]
 
 
+def test_a_safety_question_asked_at_an_exception_is_only_confirmed_at_the_end() -> None:
+    narrative = Answer(value="x", text="A veces pienso en quitarme la vida")
+    keys = _walk({"AGE": ADULT, "Q01": narrative, "S4@exception:Q01": Answer(value="no")})
+    assert "S4@confirm" in keys and "S4@end" not in keys
+
+
 def test_a_changed_answer_at_confirmation_is_asked_again() -> None:
-    keys = _walk({"AGE": ADULT, "S1@confirm": Answer(value="ha_cambiado")})
-    assert keys[keys.index("S1@confirm") + 1] == "S1@end"
+    narrative = Answer(value="x", text="A veces pienso en quitarme la vida")
+    keys = _walk(
+        {
+            "AGE": ADULT,
+            "Q01": narrative,
+            "S4@exception:Q01": Answer(value="no"),
+            "S4@confirm": Answer(value="ha_cambiado"),
+        }
+    )
+    assert keys[keys.index("S4@confirm") + 1] == "S4@end"
 
 
 def test_unknown_duration_is_clarified_once() -> None:

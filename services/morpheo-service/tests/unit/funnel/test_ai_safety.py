@@ -89,9 +89,12 @@ def test_the_fallback_runs_once_per_interview() -> None:
     assert not _next(answers).key.endswith("@exception:Q02")
 
 
-def test_an_unsure_classifier_triggers_the_same_fallback() -> None:
+def test_an_unsure_classifier_asks_nothing_at_that_moment() -> None:
+    """Owner decision 19/10/2026 (v0.2 p. 1: act at that moment only when a risk
+    appears): "dudoso" waits for the closing S1-S4 block. It replaces the earlier
+    DEFAULT under which "dudoso" asked S1/S4/S2 at once."""
     answers = {**START, "Q01": Answer(value="x", text="x"), "Q01#ia": _record("Q01", S4="dudoso")}
-    assert _next(answers).key == "S1@exception:Q01"
+    assert _next(answers).key == "Q02"
 
 
 def test_a_positive_risk_asks_that_question_at_that_moment() -> None:

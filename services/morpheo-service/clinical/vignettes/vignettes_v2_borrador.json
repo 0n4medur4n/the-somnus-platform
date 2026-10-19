@@ -28,8 +28,6 @@
       },
       "assumed": {
         "AGE": 52,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Volver a dormir del tirón y no desvelarme a las tres de la mañana"
         },
@@ -59,9 +57,9 @@
         "Q14": {
           "text": "Nada en especial; no tomo medicación"
         },
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",
@@ -106,8 +104,6 @@
       },
       "assumed": {
         "AGE": 58,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Dormir de un tirón y que mi mujer deje de preocuparse"
         },
@@ -144,9 +140,9 @@
         "R3": "no",
         "R4": [],
         "R6": "no",
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",
@@ -192,8 +188,6 @@
       },
       "assumed": {
         "AGE": 34,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Rendir mejor y no depender tanto del café"
         },
@@ -232,9 +226,9 @@
         "H3a": "no",
         "H3b": "no",
         "H5": "no",
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",
@@ -277,8 +271,6 @@
       },
       "assumed": {
         "AGE": 61,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Estar despierto durante el día y quedarme tranquilo"
         },
@@ -320,9 +312,9 @@
         "R6": "no",
         "D2a": "no",
         "D2b": "no",
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",
@@ -361,8 +353,6 @@
       },
       "assumed": {
         "AGE": 47,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Despertarme descansado"
         },
@@ -403,9 +393,9 @@
         "R2b": "no",
         "R3": "no",
         "R4": [],
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",
@@ -449,8 +439,6 @@
       },
       "assumed": {
         "AGE": 39,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Dormir más horas seguidas sin desvelarme"
         },
@@ -480,9 +468,9 @@
         "Q17": "no",
         "Q18": "no",
         "Q13": "si",
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",
@@ -525,8 +513,6 @@
       },
       "assumed": {
         "AGE": 44,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Dormirme antes y no dar tantas vueltas en la cama"
         },
@@ -559,9 +545,9 @@
         "Q14": {
           "text": "Nada en especial"
         },
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",
@@ -602,8 +588,6 @@
       },
       "assumed": {
         "AGE": 66,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Poder estar tranquila en la cama y dormirme"
         },
@@ -640,9 +624,9 @@
         "Q15": [],
         "Q17": "no",
         "Q18": "no",
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",
@@ -670,12 +654,10 @@
       "status": "BORRADOR – Jesús las corrige",
       "narrative": "Llevo meses sin dormir bien y estoy muy cansada. A veces pienso que lo mejor sería quitarme la vida.",
       "answers": {
-        "S4@start": "no",
         "S4@exception": "si"
       },
       "assumed": {
-        "AGE": 29,
-        "S1@start": "no"
+        "AGE": 29
       },
       "expected": {
         "accion_principal": "EMERGENCIA",
@@ -688,7 +670,7 @@
         ],
         "max_questions": 5
       },
-      "note": "S4 se contesta «No» al principio; el relato la hace preguntar otra vez en ese momento (D-01)."
+      "note": "El relato hace preguntar S4 en ese momento (D-01), antes de seguir con el embudo."
     },
     {
       "id": "V-10",
@@ -717,8 +699,6 @@
       },
       "assumed": {
         "AGE": 50,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Llegar despejado al final de la ruta"
         },
@@ -766,9 +746,9 @@
         "H5": "no",
         "D2a": "no",
         "D2b": "no",
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",
@@ -828,8 +808,6 @@
       },
       "assumed": {
         "AGE": 37,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Rendir en el trabajo como antes"
         },
@@ -859,9 +837,9 @@
         "Q14": {
           "text": "Nada en especial"
         },
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "Z1": "si",
         "Z2": {
@@ -921,8 +899,6 @@
       },
       "assumed": {
         "AGE": 63,
-        "S1@start": "no",
-        "S4@start": "no",
         "Q02": {
           "text": "Dormir sin sobresaltos"
         },
@@ -958,9 +934,9 @@
         "R2c": "no",
         "R3": "no",
         "R6": "no",
-        "S1@confirm": "sigue_igual",
+        "S1@end": "no",
         "S2@confirm": "sigue_igual",
-        "S4@confirm": "sigue_igual",
+        "S4@end": "no",
         "S2@end": "no",
         "S3@end": "no",
         "Z1": "si",

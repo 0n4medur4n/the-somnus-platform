@@ -354,7 +354,15 @@ class FunnelService:
             placement=o.placement,
         )
 
-    def _phase(self, step: Step) -> FunnelPhase:
+    def _phase(self, step: Step, answers: dict[str, Answer]) -> FunnelPhase:
+        # A safety question asked at that moment (an exception, Q11's S2, and the
+        # S2 warning that follows) belongs to where the person is, not to the
+        # closing protection block: the progress bar does not jump ahead.
+        source = self._raised_by(step.key, answers)
+        if source is not None:
+            definition = next((d for d in self._a.steps if d.id == source), None)
+            if definition is not None:
+                return self._phase(Step(source, definition, "ask"), {})
         stage = step.definition.stage
         if stage.startswith("instrument:"):
             return "instrument"
@@ -367,6 +375,18 @@ class FunnelService:
         if step.definition.id in ("Z1", "Z2"):
             return "closing"
         return "protection"
+
+    @staticmethod
+    def _raised_by(key: str, answers: dict[str, Answer]) -> str | None:
+        """The answer that raised a safety question at that moment, if it was one."""
+        for marker in ("@exception:", "@ask_now:"):
+            if marker in key:
+                return key.split(marker, 1)[1].split("@")[0]
+        if key in ("S2_aviso", "S2_seguro"):
+            raised = [k for k in answers if k.startswith("S2@") and ":" in k]
+            if raised:
+                return raised[-1].split(":", 1)[1].split("@")[0]
+        return None
 
     def _step(self, step: Step, answers: dict[str, Answer], iv: Interview) -> FunnelStepDTO:
         d = step.definition
@@ -400,7 +420,7 @@ class FunnelService:
             units=self._units(d) if d.type == "duration" else [],
             allow_absence=step.kind != "info",
             instrument=instrument,
-            phase=self._phase(step),
+            phase=self._phase(step, answers),
             answered_count=sum(1 for k in answers if not extraction.is_ai_key(k)),
             extraction=self._extraction(step, answers) if step.kind == CONFIRM_KIND else None,
             panel=panel,

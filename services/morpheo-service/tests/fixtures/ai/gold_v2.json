@@ -1,5 +1,5 @@
 {
-  "note": "Gold labels for the AI extraction (v0.2 p. 14), hand-annotated test data: for each synthetic text, only what it states explicitly, in the model's output encoding, each item with its exact words. Nothing inferred: «Vivo solo» is not «duerme solo», «tramadol» is not «opioides», «casi todas las noches» is not a number. Texts: every free text the 12 vignettes send in narrative mode, and the 28 synthetic narratives of the 2026-10-18 pseudonymisation proposal. Risk labels: «si» where the text points at S1/S4/S2, «dudoso» where an idiom could (V-11 Q10), else «no». Used by the quality harness (precision/recall per field) and, until `python -m morpheo.ai.record` is run with a key, as the stand-in recordings.",
+  "note": "Gold labels for the AI extraction (v0.2 p. 14), hand-annotated test data: for each synthetic text, only what it states explicitly, in the model's output encoding, each item with its exact words. Nothing inferred: «Vivo solo» is not «duerme solo», «tramadol» is not «opioides», «casi todas las noches» is not a number. Q02, Q04, Q10 and Q14's text parts are never extracted (owner decision 2026-10-19). Texts: every free text the 12 vignettes send in narrative mode, and the 28 synthetic narratives of the 2026-10-18 pseudonymisation proposal. Risk labels: «si» where the text points at S1/S4/S2, «dudoso» where an idiom could (V-11 Q10), else «no». Used by the quality harness (precision/recall per field) and, until `python -m morpheo.ai.record` is run with a key, as the stand-in recordings.",
   "texts": [
     {"set": "FT-1", "source": "Q01", "text": "Desde hace unos seis meses me despierto casi todas las noches y me cuesta volver a dormirme.", "items": [
       {"id": "Q03", "value": {"amount": 6, "unit": "meses"}, "evidence": "Desde hace unos seis meses"},
@@ -31,7 +31,6 @@
       {"id": "Q09", "value": {"amount": 5, "unit": "horas"}, "evidence": "solo puedo dormir unas cinco"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "FT-3", "source": "Q02", "text": "Rendir mejor y no depender tanto del café", "items": [
-      {"id": "Q14.consumo", "value": "no depender tanto del café", "evidence": "no depender tanto del café"},
       {"id": "Q14.sustancias", "value": "si", "evidence": "no depender tanto del café"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "FT-3", "source": "Q04", "text": "Me ascendieron y desde entonces salgo muy tarde", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
@@ -60,7 +59,6 @@
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "FT-5", "source": "Q10", "text": "Me cuesta arrancar por la mañana", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "FT-5", "source": "Q14", "text": "Tomo un medicamento para la tensión", "items": [
-      {"id": "Q14.tratamientos", "value": "Tomo un medicamento para la tensión", "evidence": "Tomo un medicamento para la tensión"},
       {"id": "Q14.medicacion", "value": "si", "evidence": "Tomo un medicamento para la tensión"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "FT-5", "source": "Z2", "text": "Que me digan si hace falta repetir la prueba", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
@@ -74,8 +72,6 @@
       {"id": "I2", "value": "si", "evidence": "Estoy más irritable y me cuesta concentrarme"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "FT-6", "source": "Q14", "text": "Tengo trastorno bipolar y tomo litio", "items": [
-      {"id": "Q14.enfermedades", "value": "Tengo trastorno bipolar", "evidence": "Tengo trastorno bipolar"},
-      {"id": "Q14.tratamientos", "value": "tomo litio", "evidence": "tomo litio"},
       {"id": "Q14.bipolaridad", "value": "si", "evidence": "Tengo trastorno bipolar"},
       {"id": "Q14.medicacion", "value": "si", "evidence": "tomo litio"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
@@ -107,7 +103,6 @@
     {"set": "V-10", "source": "Q06", "text": "Llego a casa sobre las ocho, me acuesto y de día duermo a ratos por el ruido de la calle", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "V-10", "source": "Q10", "text": "En la segunda mitad de la ruta me cuesta mucho mantenerme despierto", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "si"}},
     {"set": "V-10", "source": "Q14", "text": "Tomo pastillas para la tensión", "items": [
-      {"id": "Q14.tratamientos", "value": "Tomo pastillas para la tensión", "evidence": "Tomo pastillas para la tensión"},
       {"id": "Q14.medicacion", "value": "si", "evidence": "Tomo pastillas para la tensión"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "V-10", "source": "Z2", "text": "Poder hacer la consulta sin perder días de trabajo", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
@@ -127,13 +122,11 @@
       {"id": "Q03", "value": {"amount": 1, "unit": "años"}, "evidence": "Desde hace un año"},
       {"id": "Q08", "value": ["despertares"], "evidence": "me despierto ahogándome"},
       {"id": "Q15", "value": ["ahogo"], "evidence": "me despierto ahogándome"},
-      {"id": "Q14.tratamientos", "value": "Tomo tramadol por la espalda", "evidence": "Tomo tramadol por la espalda"},
       {"id": "Q14.medicacion", "value": "si", "evidence": "Tomo tramadol"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "V-12", "source": "Q02", "text": "Dormir sin sobresaltos", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "V-12", "source": "Q04", "text": "Empezó cuando me operaron de la espalda", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "V-12", "source": "Q06", "text": "Me cuesta coger postura por el dolor y me despierto varias veces", "items": [
-      {"id": "Q14.molestias", "value": "Me cuesta coger postura por el dolor", "evidence": "Me cuesta coger postura por el dolor"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "V-12", "source": "Q10", "text": "Estoy agotado y de peor humor", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "V-12", "source": "Q14", "text": "Dolor de espalda, tomo tramadol", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
@@ -147,11 +140,9 @@
       {"id": "Q09", "value": {"amount": 3, "unit": "horas"}, "evidence": "no consigo dormir más de tres horas"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-03", "source": "Q01", "text": "Mi médica del CAP Balaguer, la doctora Pujol, me dio lorazepam pero no me hace nada. Llámame al 654 321 987 si necesitáis algo.", "items": [
-      {"id": "Q14.tratamientos", "value": "me dio lorazepam pero no me hace nada", "evidence": "me dio lorazepam pero no me hace nada"},
       {"id": "Q14.medicacion", "value": "si", "evidence": "me dio lorazepam"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-04", "source": "Q01", "text": "Desde el 14 de febrero de 2025, cuando murió mi madre, me despierto a las cuatro y ya no me duermo.", "items": [
-      {"id": "Q04", "value": "si", "evidence": "cuando murió mi madre"},
       {"id": "Q08", "value": ["despertar_precoz"], "evidence": "me despierto a las cuatro y ya no me duermo"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-05", "source": "Q01", "text": "Vivo en la calle Mayor 23 de Tàrrega con mi hija Lucía, que tiene 8 años, y me despierta varias veces.", "items": [
@@ -168,22 +159,18 @@
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-10", "source": "Q01", "text": "Nací el 03/05/1968 y desde la menopausia tengo sofocos que me despiertan todas las noches.", "items": [
       {"id": "Q05", "value": 7, "evidence": "todas las noches"},
-      {"id": "Q08", "value": ["despertares"], "evidence": "tengo sofocos que me despiertan todas las noches"},
-      {"id": "Q14.molestias", "value": "tengo sofocos", "evidence": "tengo sofocos"}
+      {"id": "Q08", "value": ["despertares"], "evidence": "tengo sofocos que me despiertan todas las noches"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-11", "source": "Q01", "text": "Mi DNI es 45678912K, lo pongo por si hace falta. Tomo café por la tarde y alcohol los fines de semana.", "items": [
-      {"id": "Q14.consumo", "value": "Tomo café por la tarde y alcohol los fines de semana", "evidence": "Tomo café por la tarde y alcohol los fines de semana"},
       {"id": "Q14.sustancias", "value": "si", "evidence": "Tomo café por la tarde y alcohol los fines de semana"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-12", "source": "Q01", "text": "Rosa, mi vecina, me recomendó melatonina. Yo trabajo en Mercadona de cajera con turnos rotativos.", "items": [
       {"id": "H3b", "value": "si", "evidence": "con turnos rotativos"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-13", "source": "Q01", "text": "Desde que nos mudamos a Madrid, al barrio de Vallecas, hay mucho ruido y no descanso.", "items": [
-      {"id": "Q04", "value": "si", "evidence": "Desde que nos mudamos"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-14", "source": "Q01", "text": "El doctor Fernández López del Centro de Salud de Mollerussa me dijo que podía ser apnea.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-15", "source": "Q01", "text": "Tengo piernas inquietas, sobre todo cuando veo la tele por la noche. Mi hermano Iñaki tiene lo mismo.", "items": [
-      {"id": "Q14.enfermedades", "value": "Tengo piernas inquietas", "evidence": "Tengo piernas inquietas"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-16", "source": "Q01", "text": "Me despierto ahogándome. Mi mujer Dolores se asusta mucho. Vivimos en Cervera desde 2010.", "items": [
       {"id": "Q08", "value": ["despertares"], "evidence": "Me despierto ahogándome"},
@@ -194,13 +181,10 @@
       {"id": "H3b", "value": "si", "evidence": "hago turno de noche una semana de cada tres"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-18", "source": "Q01", "text": "Mi psiquiatra en la Clínica Corachan me ajustó la sertralina en septiembre y desde entonces duermo peor.", "items": [
-      {"id": "Q04", "value": "si", "evidence": "me ajustó la sertralina en septiembre y desde entonces duermo peor"},
-      {"id": "Q14.tratamientos", "value": "me ajustó la sertralina", "evidence": "me ajustó la sertralina"},
       {"id": "Q14.medicacion", "value": "si", "evidence": "me ajustó la sertralina"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-19", "source": "Q01", "text": "Escribidme a maria_lopez@hotmail.es o al +34 612 98 76 54. Mi hijo Álex dice que hablo en sueños.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-20", "source": "Q01", "text": "Desde el accidente de moto en la carretera de Alcarràs tengo pesadillas y me despierto sudando.", "items": [
-      {"id": "Q04", "value": "si", "evidence": "Desde el accidente de moto"},
       {"id": "Q08", "value": ["despertares"], "evidence": "me despierto sudando"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-21", "source": "Q01", "text": "Mi NIE es X1234567L. Soy de Rumanía y vivo en Fraga. Duermo cinco horas porque tengo dos trabajos.", "items": [
@@ -216,16 +200,13 @@
       {"id": "Q17", "value": "si", "evidence": "me levanto y camino dormida por el pasillo"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-25", "source": "Q01", "text": "Me operaron de la nariz en el Hospital Universitario de Bellvitge el 2 de junio y sigo roncando.", "items": [
-      {"id": "Q14.tratamientos", "value": "Me operaron de la nariz", "evidence": "Me operaron de la nariz"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-26", "source": "Q01", "text": "Tomo Orfidal cuando no puedo más, y a veces Dormidina. Por el día estoy agotado y me duermo en el sofá.", "items": [
       {"id": "Q12", "value": "si", "evidence": "Por el día estoy agotado y me duermo en el sofá"},
-      {"id": "Q14.ayudas_probadas", "value": "Tomo Orfidal cuando no puedo más, y a veces Dormidina", "evidence": "Tomo Orfidal cuando no puedo más, y a veces Dormidina"},
       {"id": "Q14.medicacion", "value": "si", "evidence": "Tomo Orfidal"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-27", "source": "Q01", "text": "Soy Joan Puig i Serra, tengo 54 años y trabajo de vigilante en el polígono El Segre.", "items": [], "risk": {"S1": "no", "S4": "no", "S2": "no"}},
     {"set": "relato-28", "source": "Q01", "text": "Mi teléfono es 973 44 55 66. Desde que nació mi segundo hijo, Marc, no he vuelto a dormir bien.", "items": [
-      {"id": "Q04", "value": "si", "evidence": "Desde que nació mi segundo hijo"}
     ], "risk": {"S1": "no", "S4": "no", "S2": "no"}}
   ]
 }

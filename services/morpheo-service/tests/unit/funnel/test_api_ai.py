@@ -57,8 +57,6 @@ def _to_narrative(client: TestClient) -> dict[str, Any]:
     state = client.post(f"{BASE}/sessions", json={"consentGiven": True}).json()
     for body in (
         {"key": "AGE", "value": 52},
-        {"key": "S1@start", "value": "no"},
-        {"key": "S4@start", "value": "no"},
         {"key": "Q01", "value": NARRATIVE},
     ):
         state = _ok(client, state, body)
@@ -80,7 +78,7 @@ def test_the_narrative_is_followed_by_the_confirmation_screen(client: TestClient
         "meses",
         "años",
     ]
-    assert step["answeredCount"] == 4  # the AI's record is not one of the person's answers
+    assert step["answeredCount"] == 2  # the AI's record is not one of the person's answers
     [call] = step["panel"]["ai"]
     assert call["source"] == "Q01" and call["status"] == "ok"
     assert {i["decision"] for i in call["items"]} == {"pendiente"}

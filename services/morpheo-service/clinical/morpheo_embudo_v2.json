@@ -1362,20 +1362,6 @@
         "max": 120
       },
       {
-        "id": "S1",
-        "source": "S1",
-        "stage": "start",
-        "type": "yes_no",
-        "safety": true
-      },
-      {
-        "id": "S4",
-        "source": "S4",
-        "stage": "start",
-        "type": "yes_no",
-        "safety": true
-      },
-      {
         "id": "Q01",
         "source": "Q01",
         "stage": "core",

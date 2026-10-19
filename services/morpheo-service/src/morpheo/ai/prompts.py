@@ -15,7 +15,7 @@ from typing import Any
 from morpheo.funnel.artifact import FunnelArtifact
 from morpheo.funnel.extraction import RISK_QUESTIONS, RISK_VALUES, Target
 
-PROMPT_VERSION = "extraccion-v2.0-2"
+PROMPT_VERSION = "extraccion-v2.1-1"
 SCHEMA_NAME = "extraccion_relato"
 
 SYSTEM = """Eres un extractor de datos para una entrevista sobre el sueño de personas adultas.
@@ -32,13 +32,17 @@ items:
 4. Listas: solo las opciones que el texto menciona, nunca una lista vacía.
 5. Cansancio («me falta energía») no es quedarse dormido sin querer («me duermo sin querer»).
 6. Números, duraciones y horas solo si se dicen («seis meses», «a las 23:00»).
+   Una opción de una lista solo si el texto la nombra: «me despierto y me cuesta volver a
+   dormirme» son despertares, no «despertar antes de lo deseado».
    «Casi todas las noches» o «hace tiempo» no son un número.
 7. Q14: cada parte solo si se nombra. Las marcas (bipolaridad, epilepsia, embarazo, opioides,
    sustancias, medicacion) solo si se dicen expresamente: no las deduzcas de un medicamento.
 8. Las marcas [PERSONA_1], [LUGAR_1]… sustituyen datos personales: cópialas tal cual.
 
-risk: para S1, S4 y S2, "si" si el texto podría apuntar a esa situación, "no" si claramente
-no, "dudoso" si no estás seguro. Ante la duda, "dudoso"."""
+risk: para S1, S4 y S2, "si" solo si el texto habla de esa situación (p. ej. ideas de
+hacerse daño, quedarse dormido conduciendo, ahogo o dolor de pecho ahora); "no" si el texto
+no dice nada de ella; "dudoso" si la menciona de forma ambigua. Un relato de sueño sin
+ninguna de esas situaciones es "no" en las tres."""
 
 
 def _describe(target: Target, labels: dict[str, str]) -> str:
