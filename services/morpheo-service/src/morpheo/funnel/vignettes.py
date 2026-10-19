@@ -19,9 +19,17 @@ Usage:
     uv run python -m morpheo.funnel.vignettes --file my_cases.json
 
 The same `run_vignette` serves the admin console later (behind the v2.0 flag).
-Free text is not sent to any model here: what the AI would extract is written in
-the vignette (`extracted`) and treated as confirmed in Z1, so a run is fully
-deterministic.
+In the default run no free text is sent to any model: what the AI would
+extract is written in the vignette (`extracted`) and treated as confirmed, so a
+run is fully deterministic.
+
+Narrative mode (`--narrative`, or `run_vignette(..., extract=…)`) plays the
+interview as the app does with the AI on: after each free-text answer the
+extractor proposes answers (from recorded model outputs in tests, never a live
+call), the confirmation screen is answered from the vignette's
+`narrative_decisions` (every item kept by default), and the questions already
+answered are skipped. The scripted `extracted` fields are ignored there: what
+Q14 says only counts if the AI took it and the person kept it.
 """
 
 from __future__ import annotations
@@ -29,12 +37,15 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from morpheo.funnel.ai_steps import CONFIRM_KIND
 from morpheo.funnel.artifact import FunnelArtifact, StepDef, funnel_artifact
 from morpheo.funnel.display import answer_label
+from morpheo.funnel.extraction import DECISION, RECORD, Record, record_of
 from morpheo.funnel.interview import NO_LO_SE, PREFIERO, Answer, Interview, Step, next_step
 from morpheo.funnel.render import question_text
 from morpheo.funnel.rules import FunnelResult, evaluate
@@ -45,6 +56,10 @@ VIGNETTES_FILE = (
     Path(__file__).resolve().parents[3] / "clinical" / "vignettes" / "vignettes_v2_borrador.json"
 )
 MAX_STEPS = 200
+
+# What a narrative-mode run calls after each free-text answer: the AI's record
+# for that text (the answers so far, the step key, the text), or None.
+Extract = Callable[[FunnelArtifact, Mapping[str, Answer], str, str], Record | None]
 
 
 @dataclass(frozen=True)
@@ -74,6 +89,8 @@ class VignetteRun:
     phrase_ids: tuple[str, ...]
     expected: dict[str, Any]
     failures: tuple[str, ...]
+    # Narrative mode: what the AI proposed for each free text, in order.
+    records: tuple[Record, ...] = ()
 
     @property
     def passed(self) -> bool:
@@ -98,20 +115,33 @@ def _default(definition: StepDef, kind: str) -> Answer:
     return Answer(absence=NO_LO_SE)
 
 
-def _from_script(spec: Any, definition: StepDef) -> Answer:
+def _from_script(spec: Any, definition: StepDef, narrative: bool = False) -> Answer:
     if isinstance(spec, dict):
+        extracted = {} if narrative else spec.get("extracted", {})
         if "absence" in spec:
             return Answer(absence=spec["absence"], text=spec.get("text"))
         if "text" in spec and "value" not in spec:
             value = spec["text"] if definition.type == "free_text" else None
-            return Answer(value=value, text=spec["text"], extracted=spec.get("extracted", {}))
+            return Answer(value=value, text=spec["text"], extracted=extracted)
         if "value" in spec and "unit" in spec:
             return Answer(value={"value": spec["value"], "unit": spec["unit"]})
         if "value" in spec:
-            return Answer(
-                value=spec["value"], text=spec.get("text"), extracted=spec.get("extracted", {})
-            )
+            return Answer(value=spec["value"], text=spec.get("text"), extracted=extracted)
     return Answer(value=spec)
+
+
+def _decisions(
+    vignette: dict[str, Any], step: Step, answers: Mapping[str, Answer] | None
+) -> Answer:
+    """The confirmation screen, from `narrative_decisions` (item id → decision, or
+    {"decision": "corregido", "value": …}); an item not listed is kept."""
+    record = record_of((answers or {}).get(step.key.removesuffix(DECISION) + RECORD))
+    chosen = vignette.get("narrative_decisions", {})
+    value: dict[str, dict[str, Any]] = {}
+    for item in record.items if record else ():
+        spec = chosen.get(item.id, "confirmado")
+        value[item.id] = dict(spec) if isinstance(spec, dict) else {"decision": spec}
+    return Answer(value=value)
 
 
 def _lookup(script: dict[str, Any], key: str) -> Any:
@@ -132,8 +162,15 @@ def _scripts(vignette: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     return script, dict(vignette.get("assumed", {}))
 
 
-def scripted_answer(vignette: dict[str, Any], step: Step) -> tuple[Answer, str]:
+def scripted_answer(
+    vignette: dict[str, Any],
+    step: Step,
+    answers: Mapping[str, Answer] | None = None,
+    narrative: bool = False,
+) -> tuple[Answer, str]:
     """The vignette's answer to a step, and where it came from (see `AskedStep`)."""
+    if step.kind == CONFIRM_KIND:
+        return _decisions(vignette, step, answers), "case"
     script, assumed = _scripts(vignette)
     spec, source = _lookup(script, step.key), "case"
     if spec is None:
@@ -145,18 +182,25 @@ def scripted_answer(vignette: dict[str, Any], step: Step) -> tuple[Answer, str]:
     answer = (
         _default(step.definition, step.kind)
         if spec is None
-        else _from_script(spec, step.definition)
+        else _from_script(spec, step.definition, narrative)
     )
     return answer, source
 
 
 def answer_request(key: str, answer: Answer, definition: StepDef) -> dict[str, Any]:
     """The same answer as the v2 API takes it (FunnelAnswerRequest), for tests and E2E."""
+    if definition.type == CONFIRM_KIND:
+        decisions = [{"id": item_id, **choice} for item_id, choice in answer.value.items()]
+        return {"key": key, "decisions": decisions}
     if answer.absence is not None:
         return {"key": key, "absence": answer.absence}
     if definition.type == "free_text":
         return {"key": key, "value": answer.text if answer.text is not None else answer.value}
-    body: dict[str, Any] = {"key": key, "value": answer.value}
+    value = answer.value
+    if definition.type == "times" and isinstance(value, dict):
+        # Only the times the step asks for (the rest may be confirmed already).
+        value = {f.key: value[f.key] for f in definition.fields if f.key in value}
+    body: dict[str, Any] = {"key": key, "value": value}
     if answer.text is not None and definition.type == "yes_no_note":
         body["text"] = answer.text
     return body
@@ -200,17 +244,20 @@ def run_vignette(
     vignette: dict[str, Any],
     artifact: FunnelArtifact | None = None,
     instruments: InstrumentRegistry | None = None,
+    extract: Extract | None = None,
 ) -> VignetteRun:
+    """The interview from the script; with `extract`, in narrative mode (see above)."""
     artifact = artifact or funnel_artifact()
     script, _ = _scripts(vignette)
     answers: dict[str, Answer] = {}
     asked: list[AskedStep] = []
     phrase_ids: list[str] = []
+    records: list[Record] = []
     for n in range(1, MAX_STEPS + 1):
         step = next_step(artifact, answers, instruments)
         if step is None:
             break
-        answer, source = scripted_answer(vignette, step)
+        answer, source = scripted_answer(vignette, step, answers, narrative=extract is not None)
         if step.key == "PROT":
             question = artifact.protection_text
         else:
@@ -218,8 +265,16 @@ def run_vignette(
             question, used = question_text(step.definition, Interview(artifact, answers))
             phrase_ids.extend(used)
         answers[step.key] = answer
-        shown = answer_label(answer, step.definition, step.kind)
+        if step.kind == CONFIRM_KIND:
+            shown = ", ".join(f"{k}: {v['decision']}" for k, v in answer.value.items())
+        else:
+            shown = answer_label(answer, step.definition, step.kind)
         asked.append(AskedStep(n, step.key, step.kind, question, shown, source, step.reason))
+        if extract is not None and answer.text and step.kind == "ask":
+            record = extract(artifact, answers, step.key, answer.text)
+            if record is not None:
+                answers[step.key + RECORD] = Answer(value=record.to_json())
+                records.append(record)
     else:
         raise RuntimeError(f"{vignette['id']}: more than {MAX_STEPS} steps")
     if "T_HABITOS.cambio" in script:
@@ -240,7 +295,24 @@ def run_vignette(
         phrase_ids=tuple(dict.fromkeys([*phrase_ids, *result.phrase_ids])),
         expected=expected,
         failures=tuple(_check(result, expected, asked)),
+        records=tuple(records),
     )
+
+
+def result_signature(result: FunnelResult) -> dict[str, Any]:
+    """What the person and the team get from a run: equal signatures, equal outcome."""
+    return {
+        "stopped_by": result.stopped_by,
+        "alerts": result.alerts,
+        "accion_principal": result.accion_principal,
+        "acciones_asociadas": result.acciones_asociadas,
+        "prueba_a_valorar": result.prueba_a_valorar,
+        "rule_ids": result.rule_ids,
+        "orientations": result.orientations,
+        "datos_pendientes": result.datos_pendientes,
+        "flags": result.flags,
+        "texts": result.texts,
+    }
 
 
 def load_vignettes(path: Path = VIGNETTES_FILE) -> list[dict[str, Any]]:
@@ -296,9 +368,12 @@ def e2e_plan(
     vignette: dict[str, Any],
     artifact: FunnelArtifact | None = None,
     instruments: InstrumentRegistry | None = None,
+    extract: Extract | None = None,
 ) -> dict[str, Any]:
     """What the E2E test does on each screen of the real UI, and the final text
-    it must end with -- the same answers and the same text as the runner."""
+    it must end with -- the same answers and the same text as the runner. With
+    `extract`, the plan is the narrative mode's (the E2E stack runs the AI from
+    the same recorded outputs)."""
     artifact = artifact or funnel_artifact()
     answers: dict[str, Answer] = {}
     steps: list[dict[str, Any]] = []
@@ -306,7 +381,7 @@ def e2e_plan(
         step = next_step(artifact, answers, instruments)
         if step is None:
             break
-        answer, _ = scripted_answer(vignette, step)
+        answer, _ = scripted_answer(vignette, step, answers, narrative=extract is not None)
         body = answer_request(step.key, answer, step.definition)
         d = step.definition
         labels = {o.key: o.label for o in (*d.options, *d.fields)}
@@ -316,21 +391,41 @@ def e2e_plan(
             ui["labels"] = [labels[k] for k in answer.value]
         if d.type == "single" and isinstance(answer.value, str):
             ui["labels"] = [labels.get(answer.value, "")]
-        if d.type == "times" and isinstance(answer.value, dict):
-            ui["fields"] = {labels[k]: v for k, v in answer.value.items()}
+        if d.type == "times" and isinstance(body["value"], dict):
+            ui["fields"] = {labels[k]: v for k, v in body["value"].items()}
         steps.append(ui)
         answers[step.key] = answer
+        if extract is not None and answer.text and step.kind == "ask":
+            record = extract(artifact, answers, step.key, answer.text)
+            if record is not None:
+                answers[step.key + RECORD] = Answer(value=record.to_json())
     result = evaluate(artifact, answers, instruments)
     return {"id": vignette["id"], "steps": steps, "finalText": [x for _, x in result.texts]}
 
 
 def e2e_fixture() -> str:
+    # The E2E stack runs morpheo v2 with the AI from the recorded outputs
+    # (AI_FIXTURE_FILE), so the plan is the narrative mode's.
+    from morpheo.ai.narrative import recorded_provider  # local: the engine never needs it
+    from morpheo.ai.pipeline import AiExtractor
+
+    extractor = AiExtractor(recorded_provider()[0])
+
+    def extract(
+        a: FunnelArtifact, answers: Mapping[str, Answer], key: str, text: str
+    ) -> Record | None:
+        call = extractor.process(a, answers, key, text)
+        return None if call is None else call.record
+
     registry = load_registry(Settings())
     plans = [
-        e2e_plan(v, instruments=registry) for v in load_vignettes() if v["id"] in E2E_VIGNETTES
+        e2e_plan(v, instruments=registry, extract=extract)
+        for v in load_vignettes()
+        if v["id"] in E2E_VIGNETTES
     ]
     note = (
-        "Generated by `python -m morpheo.funnel.vignettes --e2e-fixture`; "
+        "Generated by `python -m morpheo.funnel.vignettes --e2e-fixture` (narrative mode, "
+        "the AI from tests/fixtures/ai/recordings_v2.json); "
         "then laid out by Biome; tests/unit/funnel/test_e2e_fixture.py fails if it "
         "falls out of step with the engine."
     )

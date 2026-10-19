@@ -1,0 +1,1714 @@
+{
+  "note": "STAND-IN: the gold labels written as model outputs, no model was called. Replace with `uv run python -m morpheo.ai.record` (OPENAI_API_KEY set).",
+  "source": "stand-in",
+  "model": "stand-in",
+  "prompt_version": "extraccion-v2.0-2",
+  "recordings": {
+    "0610902228eacf11928073a7928685b75989bc93cddd63c81722cb26cd952459": {
+      "set": "relato-01",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q15",
+            "value": [
+              "dejar_de_respirar"
+            ],
+            "evidence": "a veces dejo de respirar"
+          },
+          {
+            "id": "R2a",
+            "value": "si",
+            "evidence": "ronco muchísimo"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "06880c73d5e34091849283c66df183027742baf1cc74d03c12c6d9dcf2633e67": {
+      "set": "FT-1",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "0737d6f78dbb401554ebcc5e5afc1c9a88e5b82bb48737a0f1ac3f0d7c737c85": {
+      "set": "relato-25",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.tratamientos",
+            "value": "Me operaron de la nariz",
+            "evidence": "Me operaron de la nariz"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "0c42465cbbe341945e074b6aff68160104d636b98bd8012645ca3a18632ebb57": {
+      "set": "V-12",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q03",
+            "value": {
+              "amount": 1,
+              "unit": "años"
+            },
+            "evidence": "Desde hace un año"
+          },
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "me despierto ahogándome"
+          },
+          {
+            "id": "Q15",
+            "value": [
+              "ahogo"
+            ],
+            "evidence": "me despierto ahogándome"
+          },
+          {
+            "id": "Q14.tratamientos",
+            "value": "Tomo tramadol por la espalda",
+            "evidence": "Tomo tramadol por la espalda"
+          },
+          {
+            "id": "Q14.medicacion",
+            "value": "si",
+            "evidence": "Tomo tramadol"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "13946966da9ebd70ba0d2dbad0238e303a5a5755d83a4df0836e6d3387e54104": {
+      "set": "FT-1",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "1416aa5583806e8034ee02794d96b236b89055df5af8519bd9bcc622c7911122": {
+      "set": "relato-18",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q04",
+            "value": "si",
+            "evidence": "me ajustó la sertralina en septiembre y desde entonces duermo peor"
+          },
+          {
+            "id": "Q14.tratamientos",
+            "value": "me ajustó la sertralina",
+            "evidence": "me ajustó la sertralina"
+          },
+          {
+            "id": "Q14.medicacion",
+            "value": "si",
+            "evidence": "me ajustó la sertralina"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "1abac85ee8498581d43d6a3b7068ef39ba19f56fe3c0d1c4b86a918195a238b4": {
+      "set": "relato-27",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "1af06f53020890bc25b85dd2806bfe61d83523728d0b185c0a1a962e58dd0005": {
+      "set": "relato-11",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.consumo",
+            "value": "Tomo café por la tarde y alcohol los fines de semana",
+            "evidence": "Tomo café por la tarde y alcohol los fines de semana"
+          },
+          {
+            "id": "Q14.sustancias",
+            "value": "si",
+            "evidence": "Tomo café por la tarde y alcohol los fines de semana"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "23a4d37b3c6034adc4cee159858db7e95479340adaed3f7485838b9c301ed977": {
+      "set": "V-12",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "287bd22ec0a49548962aac240b618f537034c6f8419237fa0a25e1ef9a52e44a": {
+      "set": "relato-19",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "29502e4b3997330b4cf9ef472735b0589c002553bb43d77d7d0d40ac5914f961": {
+      "set": "FT-7",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "2b348ce5f12b87f0d5aae8d2470242d3b4eef2710df3f5f19777f07e1cf3e935": {
+      "set": "relato-20",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q04",
+            "value": "si",
+            "evidence": "Desde el accidente de moto"
+          },
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "me despierto sudando"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "2cf443662cfcdc5d6edb46fdfa9f12f5e5c58ff1137c96caf59ba955ee288fdf": {
+      "set": "FT-3",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q07",
+            "value": [
+              {
+                "field": "acostarse",
+                "time": "01:00"
+              },
+              {
+                "field": "despertarse",
+                "time": "06:00"
+              }
+            ],
+            "evidence": "Me acuesto a la una, me duermo enseguida y a las seis suena el despertador"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "2d76882c31f0d1a885a824c5c25bca9ad72328543a86de6faf71479544a33778": {
+      "set": "FT-1",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q03",
+            "value": {
+              "amount": 6,
+              "unit": "meses"
+            },
+            "evidence": "Desde hace unos seis meses"
+          },
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "me despierto casi todas las noches y me cuesta volver a dormirme"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "2e934f33fc4fb6547ef66301d1869de6476fd49e8b8a9a87b1fb78af7727f166": {
+      "set": "V-10",
+      "source": "Q14",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.tratamientos",
+            "value": "Tomo pastillas para la tensión",
+            "evidence": "Tomo pastillas para la tensión"
+          },
+          {
+            "id": "Q14.medicacion",
+            "value": "si",
+            "evidence": "Tomo pastillas para la tensión"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "34b698d602ddb1dde80275fc51f1fe19bec4f3238dce280eaca6c17649dfaadf": {
+      "set": "V-12",
+      "source": "Q14",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "3a684ed0b058d66d93bd9a10dd3a847b93e5355da44bd278e45337ae3236ef18": {
+      "set": "FT-6",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "3b80d28ae3c5b8f73ef8b2833a4ee1c4bedc536e1bdceaa81023aa7240d43975": {
+      "set": "FT-1",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "4165fce070881b348b07d4d2be20fe7a1719421931c884401e019f8e51633847": {
+      "set": "V-11",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "43304dcd65ff6196e03646af0c0fed9613d2d1b8f49513f3255ddbf2daafd665": {
+      "set": "FT-8",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "436e0f9042240b36c436171b81035b17f4ddd3a9666b5d7bcf626be7be158ff3": {
+      "set": "relato-21",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q09",
+            "value": {
+              "amount": 5,
+              "unit": "horas"
+            },
+            "evidence": "Duermo cinco horas"
+          },
+          {
+            "id": "H4",
+            "value": "si",
+            "evidence": "Duermo cinco horas porque tengo dos trabajos"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "4cf311b513ac5e5b1b228fab2f9ebbb62f3a1cb7209443fd5866b71e283898c0": {
+      "set": "relato-28",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q04",
+            "value": "si",
+            "evidence": "Desde que nació mi segundo hijo"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "508693c59ebc8d2aa94358b9eff94d12e274dd90d805d07801858aa77487394a": {
+      "set": "relato-09",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q17",
+            "value": "si",
+            "evidence": "doy patadas por la noche"
+          },
+          {
+            "id": "N2",
+            "value": [
+              "lesiones"
+            ],
+            "evidence": "una vez le hice un moratón"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "51e7cc913a9c79107b7d9c5a5f5c1f440b719b30d2f4078ebe49191c6282bdfe": {
+      "set": "relato-05",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "me despierta varias veces"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "5345f38266583f9effbdae68874aabe780f38378b1b0130891e3bda4e65f3a07": {
+      "set": "V-10",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "si"
+        }
+      }
+    },
+    "5a38ee8697614d94e358f2d177614d1c766b03c3eeef5de5fb9a6b2117bb84ed": {
+      "set": "FT-5",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "R2a",
+            "value": "si",
+            "evidence": "ronco mucho"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "5b2725c3334d5ebef686b21f04aaa98de02a92e56a719d9b917fb1e7452b97e7": {
+      "set": "FT-8",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "5bc0590dabd6dc657e28733d3f99ae1cccf225ae562c80bc91f4ee3d8678fa0c": {
+      "set": "FT-6",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "Me despierto casi todas las noches"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "5c4f713554e30adcae335ee88f07e36c04c5b986c8f3f368ae6feb351d84c653": {
+      "set": "FT-4",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "5d7e2f74d79c64700a517379001c594c6439def28e3e419f21fd3e554ca81637": {
+      "set": "FT-6",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "I2",
+            "value": "si",
+            "evidence": "Estoy más irritable y me cuesta concentrarme"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "605fd9e9c5645552ecd7d839c4aa1a91f258b2c1a0ded411782a86c837dd0047": {
+      "set": "FT-6",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "60d52ef2bf063b0b41f1c0c80e5d054b524a1e927d0ec30cca7e5fa8379f2c81": {
+      "set": "V-12",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "6109edae423229a4b23750d1960fe7e494d506f7af7ead9314109c589126f4a8": {
+      "set": "FT-6",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "61bc96982646ebc23393a615ee109a7f6a028c170f6d5aba5f9570b7d57a870f": {
+      "set": "FT-5",
+      "source": "Q14",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.tratamientos",
+            "value": "Tomo un medicamento para la tensión",
+            "evidence": "Tomo un medicamento para la tensión"
+          },
+          {
+            "id": "Q14.medicacion",
+            "value": "si",
+            "evidence": "Tomo un medicamento para la tensión"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "63cd3acc4556d16b293473561a6b011f0094635fd99aee3c44956dd129e65a7a": {
+      "set": "FT-2",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "6b0c28c11649019e99dfad756760c6815d7879719f0a36ec849b47bd0b2d2f52": {
+      "set": "V-11",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "Me despierto muchas veces"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "6c146166c82bb1a471daf6009199a5facd9a11dc706f42e528a87f3937cacfd4": {
+      "set": "FT-4",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "6ce10b13513e71ce3e8022ebc82d61a246d96740a42751c5382e88700f5bc795": {
+      "set": "FT-4",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "6db4519866f4f5bef0ef80ccf6b31bb371348d303f6592ca24f9f42281ac6656": {
+      "set": "FT-3",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "7556d16cf78f78b11ec4fd0836a65e37350b35a10d2341c219fd1d8a4f4acd54": {
+      "set": "FT-7",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "75bd71f16ba2cb424a2653a512b68ff43f6878804b75536cdb5ce768c60e8a0d": {
+      "set": "V-12",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "797edab9873339efaae27d724f823f81889dd0b7d7402c4747dce4d7b2475ccd": {
+      "set": "relato-12",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "H3b",
+            "value": "si",
+            "evidence": "con turnos rotativos"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "7bc028aeae02e5ea47a1f2d7a23b9718277a11fb30a23a70f3539f9d4f95e485": {
+      "set": "FT-7",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "828f6068176f396b0f06361c41e7bd796c0212acba6504ece9fae06d3d2ac1c2": {
+      "set": "FT-3",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.consumo",
+            "value": "no depender tanto del café",
+            "evidence": "no depender tanto del café"
+          },
+          {
+            "id": "Q14.sustancias",
+            "value": "si",
+            "evidence": "no depender tanto del café"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "84495765bc96f5b516ef629130b09cf1ecb55ffa8797250a169483b9b3e7d14d": {
+      "set": "relato-14",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "84815c4bd1ab3638d7c05f2b550005e84f163530ed875b6a1a9e101515f19266": {
+      "set": "relato-07",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "si"
+        }
+      }
+    },
+    "87c974f3f91ce861eb684b7f50ed0ae4910eecc174a51c7d38e407194ed1ac53": {
+      "set": "FT-3",
+      "source": "Q04",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "8c30511bab0d4d2798405d705618886c27c35ba76041fb1837c9daf09193c9f2": {
+      "set": "FT-2",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "I2",
+            "value": "si",
+            "evidence": "Por la tarde me cuesta mantener la atención en las reuniones"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "8d8744d55350040b29df18be7a0d4d5ba1527badad6eddb1797c8cfa1e260eaa": {
+      "set": "FT-8",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q16",
+            "value": "si",
+            "evidence": "noto una molestia en las piernas que me obliga a moverlas"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "8eacc500003185c0fef5f9087c8c4dc57ff5152a8f6e4940f2a7c341095063cc": {
+      "set": "relato-22",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "92d934c87b0a84ad7edc2402bb5a7ae1f1ff26e85c2300877a0b22b6ca7d76b1": {
+      "set": "V-11",
+      "source": "Q14",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "9578f80ebcc22d6cad0be081c0f5846fef5849fca903444865e1992e1911c493": {
+      "set": "relato-03",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.tratamientos",
+            "value": "me dio lorazepam pero no me hace nada",
+            "evidence": "me dio lorazepam pero no me hace nada"
+          },
+          {
+            "id": "Q14.medicacion",
+            "value": "si",
+            "evidence": "me dio lorazepam"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "95d71abc6c6f12d371a948fde18992c77002e6c57a76cfd95772be03aa12e60f": {
+      "set": "FT-4",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "96b141e72cc3aca70faef9ac829843d51e807017817907565ecb6e4ea34414bf": {
+      "set": "FT-2",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q03",
+            "value": {
+              "amount": 6,
+              "unit": "meses"
+            },
+            "evidence": "Desde hace seis meses"
+          },
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "me despierto muchas noches"
+          },
+          {
+            "id": "Q15",
+            "value": [
+              "dejar_de_respirar"
+            ],
+            "evidence": "mi mujer dice que a veces dejo de respirar"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "9bcebc5a54b5b7ed2f0f7a5a76836a941cc9f6d6da38a30f1db5dd72f1b52f8f": {
+      "set": "V-09",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "si",
+          "S2": "no"
+        }
+      }
+    },
+    "9d393c374e0e4e2eb63a0fea5c7765217a0e63ec0be5ff47698796fa2a0c0f13": {
+      "set": "FT-7",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "a14c0e8112474fe821a25d14532362b3945c374cb872e30cb6ed1184bbc46f5b": {
+      "set": "relato-24",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q17",
+            "value": "si",
+            "evidence": "me levanto y camino dormida por el pasillo"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "a33f3a2e897108dc0b87320c6bc2a161ad03a8bdcff4420170c18cc79276ada2": {
+      "set": "FT-3",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q09",
+            "value": {
+              "amount": 5,
+              "unit": "horas"
+            },
+            "evidence": "solo puedo dormir unas cinco"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "a82050f1e29b33c0aa7f77b1ecfc560ab4443d3af0e31de75ff509e10256cde2": {
+      "set": "relato-15",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.enfermedades",
+            "value": "Tengo piernas inquietas",
+            "evidence": "Tengo piernas inquietas"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "a99c980246076875530d8164412131652941493d3bc36744d204cc6a97d03b2e": {
+      "set": "relato-08",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "acf33f43a000753b75ab73d8e333c7717aaa9375d438a92e8012ab834557161b": {
+      "set": "FT-5",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q15",
+            "value": [
+              "ronca_fuerte"
+            ],
+            "evidence": "Ronco muy fuerte"
+          },
+          {
+            "id": "R2c",
+            "value": "si",
+            "evidence": "tengo la tensión alta"
+          },
+          {
+            "id": "R6",
+            "value": "si",
+            "evidence": "Ya me hicieron un estudio en casa y salió bien"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "ae30497f514e70db6dde49a1c3e61d3cf8c29632099a4991b084adeb487feaba": {
+      "set": "relato-04",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q04",
+            "value": "si",
+            "evidence": "cuando murió mi madre"
+          },
+          {
+            "id": "Q08",
+            "value": [
+              "despertar_precoz"
+            ],
+            "evidence": "me despierto a las cuatro y ya no me duermo"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "b0564aa0e7eba52e86dd31c128d0d775474129d6e70784f29329e78c2a7a4141": {
+      "set": "FT-2",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "b1047921a5d163f4c64ff2de9560b7e519ce2e86697eaffb033fe33bbe24d76d": {
+      "set": "relato-23",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q07",
+            "value": [
+              {
+                "field": "acostarse",
+                "time": "23:00"
+              },
+              {
+                "field": "levantarse",
+                "time": "07:00"
+              }
+            ],
+            "evidence": "Me acuesto a las 23:00 y me levanto a las 7"
+          },
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "me despierto tres o cuatro veces"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "b20ea132c74ef40f465e51f0dd5355d3cbb65e82380506ba00091aafad7c6240": {
+      "set": "relato-17",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q03",
+            "value": {
+              "amount": 2,
+              "unit": "años"
+            },
+            "evidence": "Llevo dos años así"
+          },
+          {
+            "id": "H3b",
+            "value": "si",
+            "evidence": "hago turno de noche una semana de cada tres"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "b27d38b5a91469d5695c0cabec74af603fabbc786b3e52520c72f3874dab2e50": {
+      "set": "V-11",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "I2",
+            "value": "si",
+            "evidence": "lo noto muchísimo en el trabajo"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "b4abe618824e1cc7790f21b9a8efd4e25e4d57481a304bd1a467b60be72f19b5": {
+      "set": "V-11",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "bf9a3965a18f3cb3245378d7ecc55c43af0bb7fa1c9efd10f2027b631867a439": {
+      "set": "FT-8",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "c4ec3c1e8150480e9bcf4fe518bf00870160df2a7c87b2627bd41c291cab49ff": {
+      "set": "FT-1",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "I2",
+            "value": "si",
+            "evidence": "Voy cansado al trabajo y por la tarde me cuesta concentrarme"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "c6bc589a2c7b22f2945e8dd6636030bb6ba08287b043dcc2d643cb11a06a76c3": {
+      "set": "FT-6",
+      "source": "Q14",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.enfermedades",
+            "value": "Tengo trastorno bipolar",
+            "evidence": "Tengo trastorno bipolar"
+          },
+          {
+            "id": "Q14.tratamientos",
+            "value": "tomo litio",
+            "evidence": "tomo litio"
+          },
+          {
+            "id": "Q14.bipolaridad",
+            "value": "si",
+            "evidence": "Tengo trastorno bipolar"
+          },
+          {
+            "id": "Q14.medicacion",
+            "value": "si",
+            "evidence": "tomo litio"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "c9a477a64ea0149b42555a7940adc837542dff7790317162982eb1d64a124a94": {
+      "set": "relato-16",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "Me despierto ahogándome"
+          },
+          {
+            "id": "Q15",
+            "value": [
+              "ahogo"
+            ],
+            "evidence": "Me despierto ahogándome"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "cddaef0da38993e7761599de98ccc1ed5ab418fc706afa49412c0eee3da5d171": {
+      "set": "FT-5",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "d78d2d54972d2a1d5f5f2cbe35aff56dd21286d573889b3fda1350281baab355": {
+      "set": "relato-10",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q05",
+            "value": 7,
+            "evidence": "todas las noches"
+          },
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "tengo sofocos que me despiertan todas las noches"
+          },
+          {
+            "id": "Q14.molestias",
+            "value": "tengo sofocos",
+            "evidence": "tengo sofocos"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "d7ac0a0644d2d0cf6b6a11ac4459b15fa19b266a4cf1cd316e55941e7eb3746a": {
+      "set": "V-12",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q14.molestias",
+            "value": "Me cuesta coger postura por el dolor",
+            "evidence": "Me cuesta coger postura por el dolor"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "d7e7c5c0639dbacf6f34a077ec8c88c0cc7a827256b400b49e8df2345dc1ad06": {
+      "set": "FT-1",
+      "source": "Q04",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "db4d0310a310b047dd53e94cd5772bcea0b41815f6d75096e4275818cc4d3492": {
+      "set": "V-10",
+      "source": "Q04",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "db92fd30bb9f6fb9fb445e1fa830237bded53e8615f5c6e345c5ef853811ea02": {
+      "set": "FT-2",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "e1147528829b6089915a8a8d19da7e88dd5a8ba9bc60707122513046ab20b880": {
+      "set": "relato-13",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q04",
+            "value": "si",
+            "evidence": "Desde que nos mudamos"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "e66d38e4c5870947752e49e1651d21bc715afd7ac022074fd40b1c1b8a301a09": {
+      "set": "FT-8",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "e8bd48de619c40f7b80e48d7ce338557efbb01090ae9015cca175a45d5386e21": {
+      "set": "V-10",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "e914aea0c9992fb70744b3706d2e660f45fa32e662c3368d589268802506c030": {
+      "set": "FT-5",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "ea51fc16fbe91be719cda60e40c3561bf1b6425cf6be556bd950034ef98356bb": {
+      "set": "relato-26",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q12",
+            "value": "si",
+            "evidence": "Por el día estoy agotado y me duermo en el sofá"
+          },
+          {
+            "id": "Q14.ayudas_probadas",
+            "value": "Tomo Orfidal cuando no puedo más, y a veces Dormidina",
+            "evidence": "Tomo Orfidal cuando no puedo más, y a veces Dormidina"
+          },
+          {
+            "id": "Q14.medicacion",
+            "value": "si",
+            "evidence": "Tomo Orfidal"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "eb378fbeb9480805913736703eb3a97a3bf0e0bfc62b58e692d385fe0ae47a1f": {
+      "set": "FT-5",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "eddcb0ace6ea64bae9fa079edc501a183a9ce1e78193d5fd108e8b8d227abe09": {
+      "set": "FT-3",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "edf787aad376fa471ee91d61afd57a2206489ab4b709f5ddb855863c2575317f": {
+      "set": "FT-1",
+      "source": "Q14",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "eeab3ecffd778d3c1313bc75569cedd3971204a95b65e098d5302e01bcc8b721": {
+      "set": "FT-4",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "f01b04a33c0e8a9740cb8be381c3a5a0ca69e724cddca416d2cdf7f2a3ba03c4": {
+      "set": "relato-06",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q08",
+            "value": [
+              "dormirse"
+            ],
+            "evidence": "Me cuesta mucho conciliar el sueño"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "f51d3c543b27055c2c11f950edc528ab6105dd53d27890a04357ae50f0860632": {
+      "set": "V-11",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "dudoso",
+          "S2": "no"
+        }
+      }
+    },
+    "f57e0a22faa89a023ea1b57452bea26449b08abe16f457f83e679476e75e45f7": {
+      "set": "V-10",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "si"
+        }
+      }
+    },
+    "f823ea065c3fdbfa1a8b94ed8758a1cbaeaf40e4c163f5e5de41ad6adaaa62e6": {
+      "set": "V-10",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "f8a61579f6819b94b142927112f427d3c104b5939316bd4f0cb214c3a7886598": {
+      "set": "relato-02",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q09",
+            "value": {
+              "amount": 3,
+              "unit": "horas"
+            },
+            "evidence": "no consigo dormir más de tres horas"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "fb6ca291a7bd55cc4d15d295af8e971dc08b02a6109a3cef6d19bdcc22b1b21c": {
+      "set": "FT-7",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q08",
+            "value": [
+              "dormirse"
+            ],
+            "evidence": "Me cuesta mucho dormirme"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "feb427ee6d882aa3a2c9f25ba0f5bacd91b479d493f4df1f63ff20768d0aa259": {
+      "set": "V-10",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "si"
+        }
+      }
+    },
+    "ff329e135711202eb6f4b4966abe5207cf94a9d038c7b062b644a518c73d606f": {
+      "set": "V-12",
+      "source": "Q04",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    }
+  }
+}
