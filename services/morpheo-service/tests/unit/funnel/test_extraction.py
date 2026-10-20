@@ -55,13 +55,24 @@ def test_targets_never_include_safety_age_or_the_narratives_themselves() -> None
     assert not ids & {"AGE", "S1", "S2", "S3", "S4", "Q01", "Q06", "Q14", "Z1", "Z2", "PROT"}
     # A branch question that follows from a core one is not extracted on its own.
     assert not ids & {"R1", "D1", "P1", "N1", "I4", "H1"}
-    assert {"Q03", "Q05", "Q08", "Q11", "Q15", "I2", "R2c", "R6", "H3b"} <= ids
+    assert {"Q03", "Q05", "Q08", "Q15", "I2", "R2c", "R6", "H3b"} <= ids
+    # Where the live model was wrong most (200-case test, 2026-10-20): Q11 is one
+    # choice among three and always asked; I3 is derived by the engine.
+    assert not ids & {"Q11", "I3"}
     assert {f"Q14.{name}" for name in Q14_FLAGS} <= ids
 
 
 def test_ninguna_is_never_offered_to_the_model() -> None:
-    q11 = next(t for t in all_targets(A) if t.id == "Q11")
-    assert "ninguna" not in q11.options
+    for target in all_targets(A):
+        assert "ninguna" not in target.options, target.id
+
+
+def test_the_goal_is_only_screened_for_risk() -> None:
+    """Q02 is a wish («dormirme antes»), not a fact about how they sleep now."""
+    from morpheo.ai.pipeline import purpose_of
+
+    assert purpose_of("Q02") == "cribado"
+    assert purpose_of("Q01") == purpose_of("Q06") == purpose_of("Q10") == "extraccion"
 
 
 def test_the_confirmation_screen_comes_right_after_the_narrative() -> None:

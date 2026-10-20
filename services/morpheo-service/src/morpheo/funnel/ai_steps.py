@@ -74,6 +74,9 @@ def pending(
         step_key = f"{question}@exception:{source}"
         if step_key in answers or already_settled(question):
             return None
+        # Answered (or confirmed) in the closing block just now: not again.
+        if f"{question}@end" in answers or f"{question}@confirm" in answers:
+            return None
         return Step(step_key, artifact.step(question, "end"), "ask", reason)
 
     for question in RISK_QUESTIONS:

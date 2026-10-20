@@ -143,3 +143,15 @@ def test_safety_comes_before_the_confirmation_screen() -> None:
     assert _next(answers).key == "S4@exception:Q01"
     answers["S4@exception:Q01"] = Answer(value="no")
     assert _next(answers).key == "Q01#confirmacion"
+
+
+def test_a_failed_call_after_the_closing_block_asks_nothing_again() -> None:
+    """Seen live: a timeout on Z2 asked S1 and S4 right after the person had answered
+    them in the closing block. A question answered there is not asked again."""
+    answers = {**START, "Q01": Answer(value="x", text="x")}
+    for q in ("S1", "S2", "S3", "S4"):
+        answers[f"{q}@end"] = Answer(value="no")
+    answers["Z2"] = Answer(value="y", text="y")
+    answers["Z2#ia"] = _record("Z2", "failed")
+    step = next_step(A, answers)
+    assert step is None or "@exception:Z2" not in step.key

@@ -15,7 +15,7 @@ from typing import Any
 from morpheo.funnel.artifact import FunnelArtifact
 from morpheo.funnel.extraction import RISK_QUESTIONS, RISK_VALUES, Target
 
-PROMPT_VERSION = "extraccion-v2.1-2"
+PROMPT_VERSION = "extraccion-v2.2-1"
 SCHEMA_NAME = "extraccion_relato"
 
 SYSTEM = """Eres un extractor de datos para una entrevista sobre el sueño de personas adultas.
@@ -33,15 +33,20 @@ items:
 5. Cansancio («me falta energía») no es quedarse dormido sin querer («me duermo sin querer»).
 6. Números, duraciones y horas solo si se dicen («seis meses», «a las 23:00»).
    Una opción de una lista solo si el texto la nombra: «me despierto y me cuesta volver a
-   dormirme» son despertares, no «despertar antes de lo deseado».
+   dormirme» son despertares, no «despertar antes de lo deseado»; «me despierto mucho antes
+   de lo que quiero y ya no me duermo» es solo «despertar antes de lo deseado» (ni
+   despertares ni dormirse); «duermo seguido» no dice nada de ninguna opción.
    Horas: «se despierta» (Q07) es la hora a la que se despierta por la mañana para
    empezar el día; un despertar en mitad de la noche («a las tres me despierto») no es esa
    hora ni ninguna otra hora del horario. H2 («sin despertador») solo si el texto dice que
-   se despierta sin despertador o en días libres.
+   se despierta sin despertador o en días libres. Una hora es de la acción que nombra:
+   «ceno sobre las ocho» no es la hora de acostarse.
    «Casi todas las noches» o «hace tiempo» no son un número.
 7. Q14: cada parte solo si se nombra. Las marcas (bipolaridad, epilepsia, embarazo, opioides,
    sustancias, medicacion) solo si se dicen expresamente: no las deduzcas de un medicamento.
 8. Las marcas [PERSONA_1], [LUGAR_1]… sustituyen datos personales: cópialas tal cual.
+9. La evidencia tiene que decir el dato por sí sola. Si para justificarlo hay que
+   suponer algo, no lo incluyas.
 
 risk: para S1, S4 y S2, "si" solo si el texto habla de esa situación (p. ej. ideas de
 hacerse daño, quedarse dormido conduciendo, ahogo o dolor de pecho ahora); "no" si el texto
