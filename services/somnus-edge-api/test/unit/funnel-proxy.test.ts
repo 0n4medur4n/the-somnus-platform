@@ -94,6 +94,19 @@ describe("FunnelProxyService", () => {
     expect(morpheo.requests[0]?.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
   });
 
+  it("never re-sends an interview answer: one stored twice reads as 'not the current step'", async () => {
+    const morpheo = makeFakeIdentityClient(() => ({ status: 503, body: {} }));
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const service = new FunnelProxyService(morpheo.client, identity.client, resolver, unusedReport);
+    await expect(
+      service.answer(undefined, "f-1", { key: "AGE", value: 52 }, false, "c1"),
+    ).rejects.toBeDefined();
+    await expect(
+      service.create(undefined, { consentGiven: true }, false, "c1"),
+    ).rejects.toBeDefined();
+    expect(morpheo.requests).toHaveLength(2);
+  });
+
   it("forwards the answer to the step morpheo served, unchanged", async () => {
     const { morpheo, service } = setup([]);
     await service.answer(undefined, "f-1", { key: "AGE", value: 52 }, false, "c1");

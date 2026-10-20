@@ -104,8 +104,7 @@ def run(
     extract: bool,
 ) -> AiCall:
     step_id = source_key.split("@")[0]
-    stage = "end" if step_id in SCREEN_ONLY else None
-    question = artifact.step(step_id, stage).text
+    question = next(d.text for d in artifact.steps if d.id == step_id and not d.safety)
     pseudo = pseudonymise(text)
     allowed = targets(artifact, settled_ids(artifact, answers)) if extract else ()
     user = user_message(artifact, question, pseudo.text, allowed)

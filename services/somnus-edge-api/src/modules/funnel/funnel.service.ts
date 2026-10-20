@@ -28,10 +28,10 @@ import type { SessionRecord } from "../sessions/session.service.js";
 const FUNNEL = "/internal/v1/funnel";
 /**
  * An answer to a free-text question waits for morpheo's AI step (v0.2 p. 14),
- * which gives up on the model after AI_TIMEOUT_SECONDS (8 s by default) and
- * goes on without it. The edge waits a little longer than that.
+ * which gives up on the model after AI_TIMEOUT_SECONDS (12 s by default) and
+ * goes on without it. The edge waits longer than that, plus a cold start.
  */
-const FUNNEL_ANSWER_TIMEOUT_MS = 15_000;
+const FUNNEL_ANSWER_TIMEOUT_MS = 25_000;
 
 /**
  * Proxies the v2 interview (the embudo v0.2) to morpheo. The edge never runs
@@ -173,7 +173,16 @@ export class FunnelProxyService {
     const response =
       method === "GET"
         ? await this.morpheo.get(path, { correlationId, headers })
-        : await this.morpheo.post(path, { correlationId, headers, body, ...options });
+        : // Never re-sent: an answer that timed out may already be stored, and a
+          // second copy is refused as "not the current step" (seen in the
+          // 200-case live test, 2026-10-20). The person retries, not the edge.
+          await this.morpheo.post(path, {
+            correlationId,
+            headers,
+            body,
+            skipRetry: true,
+            ...options,
+          });
     const state = this.parse(FunnelStateSchema, response.body, correlationId);
     const staff = panel && actorId !== undefined && (await this.isStaff(actorId, correlationId));
     return staff ? state : withoutPanel(state);

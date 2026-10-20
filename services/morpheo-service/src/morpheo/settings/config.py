@@ -66,8 +66,10 @@ class Settings(BaseSettings):
         default="none", alias="AI_EXTRACTION_REASONING_EFFORT"
     )
     ai_temperature: float = Field(default=0.0, ge=0.0, le=1.0, alias="AI_EXTRACTION_TEMPERATURE")
-    # Short: a slow model never holds the person up (the edge waits longer).
-    ai_timeout_seconds: float = Field(default=8.0, gt=0, le=20, alias="AI_TIMEOUT_SECONDS")
+    # A slow model never holds the person up for long (the edge waits 25 s).
+    # 12 s: at 8 s, 3 % of live calls timed out (p99 of the others 6.4 s, max
+    # 7.8 s; 200-case test, 2026-10-20), each one asking S1/S4/S2 for nothing.
+    ai_timeout_seconds: float = Field(default=12.0, gt=0, le=20, alias="AI_TIMEOUT_SECONDS")
     # Recorded model outputs instead of OpenAI (local runs and E2E only).
     ai_fixture_file: str | None = Field(default=None, alias="AI_FIXTURE_FILE")
     # Real patients' text may reach the model only through the EU endpoint

@@ -39,15 +39,34 @@ from morpheo.funnel.interview import NO, YES, Answer
 # the note of Q04). Z2 comes after everything, so it is only screened for risk.
 # Q14 is asked broken down, as p. 4 says (Q14a-e): each note is read too.
 Q14_SCREENS = ("Q14a", "Q14b", "Q14c", "Q14d", "Q14e")
-EXTRACT_AFTER = ("Q01", "Q02", "Q04", "Q06", "Q10", *Q14_SCREENS)
-SCREEN_ONLY = ("Z2",)
+# Q02 is the person's goal: a wish is no fact («dormirme antes» says nothing of
+# how they sleep now), so it is only screened for risk (200-case test).
+EXTRACT_AFTER = ("Q01", "Q04", "Q06", "Q10", *Q14_SCREENS)
+SCREEN_ONLY = ("Q02", "Z2")
 # Never taken from a narrative (a DEFAULT the clinical lead can change): the age gate
 # and every safety question (only the person's own answer counts), and every
 # question answered in the person's own words -- Q01, Q02 (their goal), Q04
 # (what changed), Q06 (the night), Q10 (the day after), Q14, Z1-Z2. Each is
 # asked as v0.2 asks it; a sentence of the narrative is never offered back as
 # the answer to one of them (owner decision 19/10/2026: it read as repetition).
-NEVER_EXTRACTED = ("AGE", "Q01", "Q02", "Q04", "Q06", "Q10", *Q14_SCREENS, "PROT", "Z1", "Z2")
+NEVER_EXTRACTED = (
+    "AGE",
+    "Q01",
+    "Q02",
+    "Q04",
+    "Q06",
+    "Q10",
+    *Q14_SCREENS,
+    "PROT",
+    "Z1",
+    "Z2",
+    # Q11 is one choice among «cansancio / dormido sin querer / ambas»: «estoy
+    # cansado» does not say they never fall asleep, and its answer opens D and
+    # may ask S2 at once -- the person always answers it. I3 is derived by the
+    # engine from Q03 and Q05 (v0.2 p. 5). 200-case test, 2026-10-20.
+    "Q11",
+    "I3",
+)
 
 # The suffixes of the two records an extraction leaves among the answers.
 RECORD, DECISION, EXTRACTED, PARTIAL = "#ia", "#confirmacion", "#extraido", "#parcial"
