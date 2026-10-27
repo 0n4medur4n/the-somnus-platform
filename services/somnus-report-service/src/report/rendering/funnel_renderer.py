@@ -17,13 +17,20 @@ from report.rendering.renderer import _env
 from report.schemas.render import FunnelReportRequestDTO
 
 TEMPLATE_VERSION_V2 = "report_v2"
+TEMPLATE_VERSION_V3 = "report_v3"
+
+
+def template_version(request: FunnelReportRequestDTO) -> str:
+    """The one-page layout when morpheo sent the report block, the v2 layout otherwise."""
+    return TEMPLATE_VERSION_V2 if request.report is None else TEMPLATE_VERSION_V3
 
 
 def render_funnel_html(request: FunnelReportRequestDTO) -> str:
-    template = _env.get_template(f"{TEMPLATE_VERSION_V2}.html.j2")
+    version = template_version(request)
+    template = _env.get_template(f"{version}.html.j2")
     return template.render(
         strings=strings_for(request.locale),
         request=request,
-        template_version=TEMPLATE_VERSION_V2,
+        template_version=version,
         completed_display=format_datetime(request.completed_at, request.locale),
     )

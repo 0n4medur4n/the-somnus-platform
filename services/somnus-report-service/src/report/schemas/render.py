@@ -133,6 +133,62 @@ class FunnelInstrumentDTO(ContractModel):
     placement: str
 
 
+class FunnelReportResourceDTO(ContractModel):
+    code: str
+    text: str
+
+
+class FunnelReportHelpDTO(ContractModel):
+    sentences: list[str]
+    resources: list[FunnelReportResourceDTO]
+
+
+class FunnelReportFlagDTO(ContractModel):
+    id: str
+    reasons: list[str]
+
+
+class FunnelReportSafetyDTO(ContractModel):
+    question: str
+    answer: str
+    when: Literal["moment", "end", "confirmed"]
+
+
+class FunnelReportAnswerDTO(ContractModel):
+    id: str
+    question: str
+    answer: str
+    origin: Literal["answered", "narrative", "corrected"]
+
+
+class FunnelReportProfessionalDTO(ContractModel):
+    main_action: str | None
+    associated_actions: list[str]
+    templates: list[str]
+    rules: list[str]
+    flags: list[FunnelReportFlagDTO]
+    alerts: list[str]
+    pending_data: list[str]
+    safety: list[FunnelReportSafetyDTO]
+    answers: list[FunnelReportAnswerDTO]
+    narrative: str | None
+
+
+class FunnelReportDTO(ContractModel):
+    """morpheo's one-page report and the professional's page, as morpheo built them."""
+
+    status: Literal["borrador", "aprobado"]
+    layout: Literal["urgent", "standard"]
+    headline: list[str]
+    secondary: list[str]
+    summary: str | None
+    steps: list[str]
+    help: FunnelReportHelpDTO
+    limits: list[str]
+    sources: list[str]
+    professional: FunnelReportProfessionalDTO | None
+
+
 class FunnelReportRequestDTO(ContractModel):
     """edge -> report: the v2 report (embudo v0.2), laid out as morpheo wrote it."""
 
@@ -144,3 +200,5 @@ class FunnelReportRequestDTO(ContractModel):
     texts: list[FunnelTextDTO] = Field(min_length=1)
     instruments: list[FunnelInstrumentDTO]
     instruments_note: str | None
+    # The one-page report (REPORT_V3); absent: the v2 layout.
+    report: FunnelReportDTO | None = None
