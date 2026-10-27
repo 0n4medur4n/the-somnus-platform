@@ -77,7 +77,7 @@ class FlagRow:
 
 @dataclass(frozen=True)
 class Grounding:
-    """What the report service may search in its library: source ids and approved sentences."""
+    """What the report service may search in its library: source ids and fixed search terms."""
 
     source_ids: tuple[str, ...]
     queries: tuple[str, ...]
@@ -162,10 +162,12 @@ def parse(
         if code not in artifact.engine["resources"]:
             raise InformeError(f"ayuda: unknown resource {code!r}")
     registry = {source.id for source in load_workflows().sources}
-    for key, ids in raw["pasajes"].items():
+    for key, entry in raw["pasajes"].items():
         if key.startswith("_"):
             continue
-        for source_id in ids:
+        if not entry["busqueda"]:
+            raise InformeError(f"pasajes: {key} has no search terms")
+        for source_id in entry["fuentes"]:
             if source_id not in registry:
                 raise InformeError(f"pasajes: {key} names {source_id}, not in the SRC registry")
     items = _v02_sources(artifact)
@@ -292,15 +294,17 @@ def _flags(result: FunnelResult) -> tuple[FlagRow, ...]:
     return tuple(FlagRow(flag, tuple(reasons.get(flag, ()))) for flag in result.flags)
 
 
-def _grounding(
-    raw: Mapping[str, Any], templates: list[str], queries: tuple[str, ...]
-) -> Grounding | None:
-    """The sources to search for these orientations, and the approved sentences to search with."""
+def _grounding(raw: Mapping[str, Any], templates: list[str]) -> Grounding | None:
+    """The sources to search for these orientations, and the fixed terms to search with."""
     ids: list[str] = []
+    terms: list[str] = []
     for template in templates:
-        ids.extend(raw["pasajes"].get(template, ()))
-    unique = tuple(dict.fromkeys(ids))
-    return Grounding(unique, queries) if unique and queries else None
+        entry = raw["pasajes"].get(template)
+        if entry is not None:
+            ids.extend(entry["fuentes"])
+            terms.extend(entry["busqueda"])
+    sources, queries = tuple(dict.fromkeys(ids)), tuple(dict.fromkeys(terms))
+    return Grounding(sources, queries) if sources and queries else None
 
 
 def build(
@@ -363,6 +367,6 @@ def build(
             safety=_safety(artifact, iv),
             answers=_answers(artifact, iv),
             narrative=first.text if first is not None else None,
-            grounding=_grounding(raw, templates, (*headline, *secondary)),
+            grounding=_grounding(raw, templates),
         ),
     )

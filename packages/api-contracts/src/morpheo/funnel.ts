@@ -291,8 +291,8 @@ export const FunnelReportSchema = z
         narrative: z.string().nullable(),
         /**
          * What the report service may search in its library for verbatim passages: the
-         * SRC ids that back the orientation and the approved sentences to search with.
-         * Never data about the person.
+         * SRC ids that back the orientation and the fixed search terms of the clinical
+         * artifact. Never data about the person.
          */
         grounding: z
           .object({ sourceIds: z.array(z.string().min(1)), queries: z.array(z.string().min(1)) })

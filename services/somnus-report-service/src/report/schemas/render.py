@@ -162,7 +162,7 @@ class FunnelReportAnswerDTO(ContractModel):
 
 
 class FunnelReportGroundingDTO(ContractModel):
-    """What the library may be searched with: source ids and approved sentences, nothing else."""
+    """What the library may be searched with: source ids and fixed search terms, nothing else."""
 
     source_ids: list[str]
     queries: list[str]
