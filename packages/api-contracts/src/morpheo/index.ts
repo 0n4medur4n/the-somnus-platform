@@ -114,6 +114,8 @@ export {
   FunnelOrientationSchema,
   type FunnelPhase,
   FunnelPhaseSchema,
+  type FunnelReport,
+  FunnelReportSchema,
   type FunnelResult,
   type FunnelResultPanel,
   FunnelResultPanelSchema,

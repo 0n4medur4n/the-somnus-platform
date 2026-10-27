@@ -236,6 +236,68 @@ export const FunnelResultPanelSchema = z
   .strict();
 export type FunnelResultPanel = z.infer<typeof FunnelResultPanelSchema>;
 
+/**
+ * The patient's report (one page) and the professional's page, built by morpheo
+ * from the engine's result -- never by a model. `status` says whether the clinical
+ * lead has signed the texts: a "borrador" report is never sent to a patient.
+ * Everything the person reads is an already approved sentence or a literal v0.2
+ * phrase; the headline is the sentence of the approved template that says what to do.
+ */
+export const FunnelReportSchema = z
+  .object({
+    status: z.enum(["borrador", "aprobado"]),
+    /** "urgent": only the urgent message (the texts), nothing else. */
+    layout: z.enum(["urgent", "standard"]),
+    headline: z.array(z.string()),
+    secondary: z.array(z.string()),
+    /** What the person confirmed in Z1, as a sentence continuing «Esto es lo que he entendido:». */
+    summary: z.string().nullable(),
+    steps: z.array(z.string()),
+    help: z
+      .object({
+        sentences: z.array(z.string()),
+        resources: z.array(z.object({ code: z.string().min(1), text: z.string().min(1) }).strict()),
+      })
+      .strict(),
+    limits: z.array(z.string()),
+    /** The v0.2 p. 15 sources behind the orientation, as that page writes them. */
+    sources: z.array(z.string()),
+    professional: z
+      .object({
+        mainAction: z.string().nullable(),
+        associatedActions: z.array(z.string()),
+        templates: z.array(z.string()),
+        rules: z.array(z.string()),
+        flags: z.array(z.object({ id: z.string().min(1), reasons: z.array(z.string()) }).strict()),
+        alerts: z.array(z.string()),
+        pendingData: z.array(z.string()),
+        safety: z.array(
+          z
+            .object({
+              question: z.string().min(1),
+              answer: z.string(),
+              when: z.enum(["moment", "end", "confirmed"]),
+            })
+            .strict(),
+        ),
+        answers: z.array(
+          z
+            .object({
+              id: z.string().min(1),
+              question: z.string().min(1),
+              answer: z.string(),
+              origin: z.enum(["answered", "narrative", "corrected"]),
+            })
+            .strict(),
+        ),
+        narrative: z.string().nullable(),
+      })
+      .strict()
+      .nullable(),
+  })
+  .strict();
+export type FunnelReport = z.infer<typeof FunnelReportSchema>;
+
 export const FunnelResultSchema = z
   .object({
     stoppedBy: z.string().nullable(),
@@ -251,6 +313,8 @@ export const FunnelResultSchema = z
     instrumentsNote: z.string().nullable(),
     contentVersion: z.string().min(1),
     rulesVersion: z.string().min(1),
+    /** The one-page report; absent until REPORT_V3_ENABLED, so older edges keep working. */
+    report: FunnelReportSchema.nullable().optional(),
     panel: FunnelResultPanelSchema.nullable(),
   })
   .strict();

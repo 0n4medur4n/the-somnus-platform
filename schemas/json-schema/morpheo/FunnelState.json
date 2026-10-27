@@ -790,6 +790,283 @@
               "type": "string",
               "minLength": 1
             },
+            "report": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "borrador",
+                        "aprobado"
+                      ]
+                    },
+                    "layout": {
+                      "type": "string",
+                      "enum": [
+                        "urgent",
+                        "standard"
+                      ]
+                    },
+                    "headline": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "secondary": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "summary": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "help": {
+                      "type": "object",
+                      "properties": {
+                        "sentences": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "resources": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "text": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "text"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "sentences",
+                        "resources"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "limits": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "professional": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "mainAction": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "associatedActions": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "templates": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "rules": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "flags": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "reasons": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "reasons"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "alerts": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "pendingData": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "safety": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "question": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "answer": {
+                                    "type": "string"
+                                  },
+                                  "when": {
+                                    "type": "string",
+                                    "enum": [
+                                      "moment",
+                                      "end",
+                                      "confirmed"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "question",
+                                  "answer",
+                                  "when"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "answers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "question": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "answer": {
+                                    "type": "string"
+                                  },
+                                  "origin": {
+                                    "type": "string",
+                                    "enum": [
+                                      "answered",
+                                      "narrative",
+                                      "corrected"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "question",
+                                  "answer",
+                                  "origin"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "narrative": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "mainAction",
+                            "associatedActions",
+                            "templates",
+                            "rules",
+                            "flags",
+                            "alerts",
+                            "pendingData",
+                            "safety",
+                            "answers",
+                            "narrative"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "layout",
+                    "headline",
+                    "secondary",
+                    "summary",
+                    "steps",
+                    "help",
+                    "limits",
+                    "sources",
+                    "professional"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "panel": {
               "anyOf": [
                 {
