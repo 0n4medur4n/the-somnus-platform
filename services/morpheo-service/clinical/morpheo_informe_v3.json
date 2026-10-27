@@ -123,5 +123,47 @@
     "ADAPTAR_TERAPIA": [
       4
     ]
+  },
+  "pasajes": {
+    "_nota": "Qué documentos subidos a la biblioteca (SRC del registro) se consultan para mostrar, en la página del profesional, pasajes literales que respaldan cada orientación. La búsqueda usa solo las frases aprobadas de la orientación (nunca datos de la persona). Es una propuesta derivada del contenido de cada fuente; Jesús la confirma (decisión 10).",
+    "T_INSOMNIO": [
+      "SRC-01",
+      "SRC-14"
+    ],
+    "T_COMBINADO": [
+      "SRC-01",
+      "SRC-02",
+      "SRC-03",
+      "SRC-14"
+    ],
+    "T_RECIENTE": [
+      "SRC-01",
+      "SRC-14"
+    ],
+    "T_HABITOS": [
+      "SRC-01",
+      "SRC-14"
+    ],
+    "T_HORARIO": [
+      "SRC-01",
+      "SRC-14"
+    ],
+    "T_RESPIRACION": [
+      "SRC-02",
+      "SRC-03"
+    ],
+    "T_PSG": [
+      "SRC-02",
+      "SRC-03",
+      "SRC-10"
+    ],
+    "T_NOCTURNO": [
+      "SRC-04",
+      "SRC-10"
+    ],
+    "T_SOMNOLENCIA": [
+      "SRC-03",
+      "SRC-10"
+    ]
   }
 }

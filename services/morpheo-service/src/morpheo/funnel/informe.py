@@ -25,6 +25,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from morpheo.clinical.loader import load_workflows
 from morpheo.funnel.artifact import FunnelArtifact
 from morpheo.funnel.catalogue import Catalogue
 from morpheo.funnel.display import answer_label
@@ -75,6 +76,14 @@ class FlagRow:
 
 
 @dataclass(frozen=True)
+class Grounding:
+    """What the report service may search in its library: source ids and approved sentences."""
+
+    source_ids: tuple[str, ...]
+    queries: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Professional:
     main_action: str | None
     associated_actions: tuple[str, ...]
@@ -86,6 +95,7 @@ class Professional:
     safety: tuple[SafetyRow, ...]
     answers: tuple[AnswerRow, ...]
     narrative: str | None
+    grounding: Grounding | None = None
 
 
 @dataclass(frozen=True)
@@ -134,7 +144,7 @@ def parse(
 ) -> InformeArtifact:
     """Checks every sentence the report carries against the approved sources."""
     known = set(artifact.templates) | set(catalogue.drafts)
-    for table in ("accion", "fuentes"):
+    for table in ("accion", "fuentes", "pasajes"):
         for key in raw[table]:
             if key.startswith("_") or key == "ADAPTAR_TERAPIA":
                 continue
@@ -151,6 +161,13 @@ def parse(
     for code in raw["ayuda"]["recursos"]:
         if code not in artifact.engine["resources"]:
             raise InformeError(f"ayuda: unknown resource {code!r}")
+    registry = {source.id for source in load_workflows().sources}
+    for key, ids in raw["pasajes"].items():
+        if key.startswith("_"):
+            continue
+        for source_id in ids:
+            if source_id not in registry:
+                raise InformeError(f"pasajes: {key} names {source_id}, not in the SRC registry")
     items = _v02_sources(artifact)
     for key, numbers in raw["fuentes"].items():
         if key.startswith("_"):
@@ -275,6 +292,17 @@ def _flags(result: FunnelResult) -> tuple[FlagRow, ...]:
     return tuple(FlagRow(flag, tuple(reasons.get(flag, ()))) for flag in result.flags)
 
 
+def _grounding(
+    raw: Mapping[str, Any], templates: list[str], queries: tuple[str, ...]
+) -> Grounding | None:
+    """The sources to search for these orientations, and the approved sentences to search with."""
+    ids: list[str] = []
+    for template in templates:
+        ids.extend(raw["pasajes"].get(template, ()))
+    unique = tuple(dict.fromkeys(ids))
+    return Grounding(unique, queries) if unique and queries else None
+
+
 def build(
     artifact: FunnelArtifact,
     catalogue: Catalogue,
@@ -335,5 +363,6 @@ def build(
             safety=_safety(artifact, iv),
             answers=_answers(artifact, iv),
             narrative=first.text if first is not None else None,
+            grounding=_grounding(raw, templates, (*headline, *secondary)),
         ),
     )

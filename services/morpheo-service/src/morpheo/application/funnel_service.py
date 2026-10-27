@@ -55,6 +55,7 @@ from morpheo.schemas.funnel import (
     FunnelReportAnswerDTO,
     FunnelReportDTO,
     FunnelReportFlagDTO,
+    FunnelReportGroundingDTO,
     FunnelReportHelpDTO,
     FunnelReportProfessionalDTO,
     FunnelReportResourceDTO,
@@ -521,6 +522,12 @@ class FunnelService:
                     for a in pro.answers
                 ],
                 narrative=pro.narrative,
+                grounding=None
+                if pro.grounding is None
+                else FunnelReportGroundingDTO(
+                    source_ids=list(pro.grounding.source_ids),
+                    queries=list(pro.grounding.queries),
+                ),
             ),
         )
 
