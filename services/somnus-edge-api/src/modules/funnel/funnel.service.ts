@@ -149,6 +149,8 @@ export class FunnelProxyService {
         texts: state.result.texts,
         instruments: state.result.instruments,
         instrumentsNote: state.result.instrumentsNote,
+        // The one-page report, when morpheo built one (REPORT_V3_ENABLED).
+        ...(state.result.report ? { report: state.result.report } : {}),
       },
     });
     return this.parse(ReportPdfSchema, rendered.body, correlationId);

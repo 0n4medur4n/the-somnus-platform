@@ -287,6 +287,113 @@ describe("FunnelProxyService", () => {
     expect(pdf.templateVersion).toBe("report_v2");
   });
 
+  it("hands the one-page report to the report service when morpheo built one", async () => {
+    const report = {
+      status: "borrador" as const,
+      layout: "standard" as const,
+      headline: ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
+      secondary: [],
+      summary: "se despierta varias veces por la noche.",
+      steps: ["Diario 7-14 días y revisión propuesta a las 2-4 semanas."],
+      help: { sentences: ["Si siente que el peligro es inmediato, llame al 112."], resources: [] },
+      limits: ["No es un diagnóstico."],
+      sources: [],
+      professional: null,
+    };
+    const finished: FunnelState = {
+      ...state(),
+      status: "finished",
+      step: null,
+      owned: true,
+      result: {
+        stoppedBy: null,
+        alerts: [],
+        mainAction: "TERAPIA",
+        associatedActions: [],
+        testToConsider: null,
+        texts: [{ template: "T_INSOMNIO", text: "Nos ha contado que…" }],
+        instruments: [],
+        instrumentsNote: null,
+        contentVersion: "2.0",
+        rulesVersion: "2.0",
+        report,
+        panel: null,
+      },
+    };
+    const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: finished }));
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const reportClient = makeFakeIdentityClient((req) => {
+      expect(JSON.parse(req.body ?? "{}").report).toEqual(report);
+      return {
+        status: 200,
+        body: {
+          assessmentId: "f-1",
+          templateVersion: "report_v3",
+          definitionVersion: "2.0",
+          contentVersion: "2.0",
+          locale: "es",
+          createdAt: "2026-10-19T10:00:00+00:00",
+          pdfBase64: Buffer.from("%PDF-1.7").toString("base64"),
+        },
+      };
+    });
+    const service = new FunnelProxyService(
+      morpheo.client,
+      identity.client,
+      resolver,
+      reportClient.client,
+    );
+    const pdf = await service.reportPdf(SESSION, "f-1", "es", "c1");
+    expect(pdf.templateVersion).toBe("report_v3");
+    expect(withoutPanel(finished).result?.report).toEqual(report);
+  });
+
+  it("sends no report block when morpheo built none", async () => {
+    const finished: FunnelState = {
+      ...state(),
+      status: "finished",
+      step: null,
+      owned: true,
+      result: {
+        stoppedBy: null,
+        alerts: [],
+        mainAction: "TERAPIA",
+        associatedActions: [],
+        testToConsider: null,
+        texts: [{ template: "T_INSOMNIO", text: "Nos ha contado que…" }],
+        instruments: [],
+        instrumentsNote: null,
+        contentVersion: "2.0",
+        rulesVersion: "2.0",
+        panel: null,
+      },
+    };
+    const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: finished }));
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const reportClient = makeFakeIdentityClient((req) => {
+      expect(Object.keys(JSON.parse(req.body ?? "{}"))).not.toContain("report");
+      return {
+        status: 200,
+        body: {
+          assessmentId: "f-1",
+          templateVersion: "report_v2",
+          definitionVersion: "2.0",
+          contentVersion: "2.0",
+          locale: "es",
+          createdAt: "2026-10-19T10:00:00+00:00",
+          pdfBase64: Buffer.from("%PDF-1.7").toString("base64"),
+        },
+      };
+    });
+    const service = new FunnelProxyService(
+      morpheo.client,
+      identity.client,
+      resolver,
+      reportClient.client,
+    );
+    await service.reportPdf(SESSION, "f-1", "es", "c1");
+  });
+
   it("gives no PDF for an interview that is not the person's own", async () => {
     const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: state() }));
     const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
