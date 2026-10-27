@@ -125,45 +125,97 @@
     ]
   },
   "pasajes": {
-    "_nota": "Qué documentos subidos a la biblioteca (SRC del registro) se consultan para mostrar, en la página del profesional, pasajes literales que respaldan cada orientación. La búsqueda usa solo las frases aprobadas de la orientación (nunca datos de la persona). Es una propuesta derivada del contenido de cada fuente; Jesús la confirma (decisión 10).",
-    "T_INSOMNIO": [
-      "SRC-01",
-      "SRC-14"
-    ],
-    "T_COMBINADO": [
-      "SRC-01",
-      "SRC-02",
-      "SRC-03",
-      "SRC-14"
-    ],
-    "T_RECIENTE": [
-      "SRC-01",
-      "SRC-14"
-    ],
-    "T_HABITOS": [
-      "SRC-01",
-      "SRC-14"
-    ],
-    "T_HORARIO": [
-      "SRC-01",
-      "SRC-14"
-    ],
-    "T_RESPIRACION": [
-      "SRC-02",
-      "SRC-03"
-    ],
-    "T_PSG": [
-      "SRC-02",
-      "SRC-03",
-      "SRC-10"
-    ],
-    "T_NOCTURNO": [
-      "SRC-04",
-      "SRC-10"
-    ],
-    "T_SOMNOLENCIA": [
-      "SRC-03",
-      "SRC-10"
-    ]
+    "_nota": "Qué documentos de la biblioteca (SRC del registro) se consultan para mostrar, en la página del profesional, pasajes literales que respaldan cada orientación, y con qué términos se busca. Los términos son fijos (en español y en inglés, porque las fuentes están en ambos idiomas), no salen de la persona y no se muestran. Es una propuesta derivada del contenido de cada fuente; Jesús la confirma (decisión 10).",
+    "T_INSOMNIO": {
+      "fuentes": [
+        "SRC-01",
+        "SRC-14"
+      ],
+      "busqueda": [
+        "cognitive behavioural therapy for insomnia (CBT-I) as first-line treatment of chronic insomnia",
+        "terapia cognitivo-conductual como tratamiento de primera línea del insomnio crónico"
+      ]
+    },
+    "T_RECIENTE": {
+      "fuentes": [
+        "SRC-01",
+        "SRC-14"
+      ],
+      "busqueda": [
+        "management of acute short-term insomnia lasting less than three months",
+        "insomnio agudo de corta duración: valoración y tratamiento"
+      ]
+    },
+    "T_HABITOS": {
+      "fuentes": [
+        "SRC-01",
+        "SRC-14"
+      ],
+      "busqueda": [
+        "sleep diary, regular sleep schedule, sleep hygiene and sleep restriction",
+        "diario de sueño, horarios regulares, higiene del sueño y restricción del tiempo en cama"
+      ]
+    },
+    "T_HORARIO": {
+      "fuentes": [
+        "SRC-01",
+        "SRC-14"
+      ],
+      "busqueda": [
+        "sleep diary, regular sleep schedule, sleep hygiene and sleep restriction",
+        "diario de sueño, horarios regulares, higiene del sueño y restricción del tiempo en cama"
+      ]
+    },
+    "T_COMBINADO": {
+      "fuentes": [
+        "SRC-01",
+        "SRC-02",
+        "SRC-03",
+        "SRC-14"
+      ],
+      "busqueda": [
+        "insomnia comorbid with obstructive sleep apnea: assess and treat both conditions",
+        "clinical evaluation of suspected obstructive sleep apnea: home sleep apnea test or polysomnography",
+        "insomnio y apnea del sueño coexistentes"
+      ]
+    },
+    "T_RESPIRACION": {
+      "fuentes": [
+        "SRC-02",
+        "SRC-03"
+      ],
+      "busqueda": [
+        "clinical evaluation of suspected obstructive sleep apnea: home sleep apnea test or polysomnography"
+      ]
+    },
+    "T_PSG": {
+      "fuentes": [
+        "SRC-02",
+        "SRC-03",
+        "SRC-10"
+      ],
+      "busqueda": [
+        "indications for polysomnography; negative or inconclusive home sleep apnea test",
+        "clinical evaluation of suspected obstructive sleep apnea: home sleep apnea test or polysomnography"
+      ]
+    },
+    "T_NOCTURNO": {
+      "fuentes": [
+        "SRC-04",
+        "SRC-10"
+      ],
+      "busqueda": [
+        "violent or injurious behaviours during sleep, parasomnia or nocturnal seizures: referral and video polysomnography"
+      ]
+    },
+    "T_SOMNOLENCIA": {
+      "fuentes": [
+        "SRC-03",
+        "SRC-10"
+      ],
+      "busqueda": [
+        "excessive daytime sleepiness and driving: advice not to drive until assessed and treated"
+      ]
+    }
   }
 }

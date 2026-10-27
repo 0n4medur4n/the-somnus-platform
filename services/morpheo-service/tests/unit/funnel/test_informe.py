@@ -214,28 +214,23 @@ def test_the_switch_is_on_by_default_and_can_be_turned_off() -> None:
 # --- what the report service may search in its library ---
 
 
-def test_the_search_names_sources_and_uses_only_approved_sentences() -> None:
-    report, _, result = _run("FT-1")
+def test_the_search_names_sources_and_uses_only_the_artifacts_fixed_terms() -> None:
+    report, _, _ = _run("FT-1")
     assert report is not None and report.professional is not None
     grounding = report.professional.grounding
     assert grounding is not None
     assert grounding.source_ids == ("SRC-01", "SRC-14")
-    texts = dict(result.texts)
-    assert grounding.queries == report.headline + report.secondary
-    for query in grounding.queries:
-        assert any(query in text for text in texts.values())  # a sentence of an approved template
+    assert grounding.queries == tuple(RAW["pasajes"]["T_INSOMNIO"]["busqueda"])
 
 
 def test_nothing_about_the_person_goes_into_the_search() -> None:
+    terms = {t for k, v in RAW["pasajes"].items() if not k.startswith("_") for t in v["busqueda"]}
     for vignette_id in VIGNETTES:
-        report, iv, _ = _run(vignette_id)
+        report, _, _ = _run(vignette_id)
         if report is None or report.professional is None or report.professional.grounding is None:
             continue
-        sent = " ".join(report.professional.grounding.queries)
-        for key in ("Q01", "Q02", "Q06", "Q10"):
-            answer = iv.answer(key)
-            if answer is not None and answer.text:
-                assert answer.text not in sent
+        # Fixed strings from the clinical artifact, whatever the person said or answered.
+        assert set(report.professional.grounding.queries) <= terms
 
 
 def test_orientations_with_no_library_source_search_nothing() -> None:
@@ -250,6 +245,13 @@ def test_orientations_with_no_library_source_search_nothing() -> None:
 
 def test_the_loader_refuses_a_source_that_is_not_in_the_registry() -> None:
     raw = _tampered()
-    raw["pasajes"]["T_INSOMNIO"] = ["SRC-99"]
+    raw["pasajes"]["T_INSOMNIO"]["fuentes"] = ["SRC-99"]
     with pytest.raises(InformeError, match="SRC registry"):
+        parse(raw, A, C)
+
+
+def test_the_loader_refuses_an_orientation_with_no_search_terms() -> None:
+    raw = _tampered()
+    raw["pasajes"]["T_INSOMNIO"]["busqueda"] = []
+    with pytest.raises(InformeError, match="no search terms"):
         parse(raw, A, C)

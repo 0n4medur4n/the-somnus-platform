@@ -53,7 +53,10 @@ GROUNDING = FunnelReportGroundingDTO(
 )
 
 
-def _material(doc: str, score: float, text: str = "CBT-I is recommended.") -> GroundingMaterial:
+LONG = "CBT-I is recommended as the first-line treatment for chronic insomnia in adults. " * 3
+
+
+def _material(doc: str, score: float, text: str = LONG) -> GroundingMaterial:
     return GroundingMaterial(
         document_id=doc,
         title=f"Title {doc}",
@@ -85,7 +88,7 @@ def _finder(materials: list[GroundingMaterial] | Exception, min_score: float = 0
     return FunnelPassages(_Retriever(materials), min_score=min_score)  # type: ignore[arg-type]
 
 
-def test_it_searches_only_the_named_sources_with_the_approved_sentences() -> None:
+def test_it_searches_only_the_named_sources_with_the_given_terms() -> None:
     retriever = _Retriever([_material("a", 0.5)])
     FunnelPassages(retriever, min_score=0.3).find(GROUNDING)  # type: ignore[arg-type]
     request, queries = retriever.calls[0]
@@ -108,9 +111,9 @@ def test_the_best_match_comes_first_and_there_are_at_most_four() -> None:
 
 
 def test_the_text_is_the_librarys_own_with_only_whitespace_collapsed() -> None:
-    original = "CBT-I   is the\nfirst-line  treatment."
+    original = "CBT-I   is the\nfirst-line  treatment. " + "x" * 160
     (found,) = _finder([_material("a", 0.6, original)]).find(GROUNDING)
-    assert found.text == "CBT-I is the first-line treatment."
+    assert found.text == " ".join(original.split())
 
 
 def test_a_long_excerpt_is_cut_at_a_word_and_stays_a_prefix() -> None:
@@ -148,10 +151,10 @@ def _request() -> FunnelReportRequestDTO:
 
 
 def test_the_third_page_shows_each_excerpt_with_its_document_and_only_when_there_are_some() -> None:
-    found = _finder([_material("a", 0.6, "CBT-I <b>first</b>.")]).find(GROUNDING)
+    found = _finder([_material("a", 0.6, "CBT-I <b>first</b>. " + "x" * 160)]).find(GROUNDING)
     document = render_funnel_html(_request(), found)
     assert 'class="page-three"' in document
-    assert "«CBT-I &lt;b&gt;first&lt;/b&gt;.»" in document  # escaped, not interpreted
+    assert "«CBT-I &lt;b&gt;first&lt;/b&gt;. " in document  # escaped, not interpreted
     assert "Title a · Citation a" in document
     assert 'class="page-three"' not in render_funnel_html(_request())
 
@@ -167,7 +170,7 @@ def test_the_service_renders_the_pdf_even_when_the_search_fails() -> None:
 def test_the_service_hands_the_found_excerpts_to_the_page() -> None:
     fake = _FakePdf()
     FunnelReportService(fake, _finder([_material("a", 0.6)])).render_pdf(_request())
-    assert fake.html is not None and "CBT-I is recommended." in fake.html
+    assert fake.html is not None and "CBT-I is recommended as the first-line treatment" in fake.html
 
 
 def test_a_request_without_grounding_searches_nothing() -> None:
@@ -201,3 +204,10 @@ def test_the_excerpts_fit_one_extra_sheet_even_at_their_longest() -> None:
     found = _finder(longest).find(GROUNDING)
     assert len(found) == 4
     assert len(HTML(string=render_funnel_html(_request(), found)).render().pages) == 3
+
+
+def test_a_heading_is_not_a_passage() -> None:
+    found = _finder(
+        [_material("a", 0.7, "Home sleep apnea testing for the diagnosis of OSA")]
+    ).find(GROUNDING)
+    assert found == ()

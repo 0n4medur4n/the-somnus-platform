@@ -27,6 +27,8 @@ logger = logging.getLogger("report.funnel_passages")
 
 #: Excerpts on the page; it is read in a consultation, not browsed.
 MAX_PASSAGES = 4
+#: Shorter than this a chunk is a heading, not a passage (a title scored 0.67 in the probe).
+MIN_CHARS = 160
 #: The longest excerpt shown. A chunk is at most 1,200 characters; this keeps the
 #: page to one sheet and only ever cuts the end, so what is shown stays verbatim.
 MAX_EXCERPT = 1_000
@@ -68,7 +70,11 @@ class FunnelPassages:
         except Exception:
             logger.warning("funnel passages unavailable; the page renders without excerpts")
             return ()
-        kept = [m for m in materials if m.score >= self._min_score and m.text.strip()]
+        kept = [
+            m
+            for m in materials
+            if m.score >= self._min_score and len(" ".join(m.text.split())) >= MIN_CHARS
+        ]
         kept.sort(key=lambda m: (-m.score, m.document_id))
         return tuple(
             Passage(m.matched_scope_key, m.title, m.citation, excerpt(m.text), round(m.score, 3))
