@@ -59,5 +59,6 @@
   "proNarrative": "In their words",
   "proScales": "Questionnaires",
   "proUnknown": "What is not known is never counted as «No».",
-  "proHealth": "Health document: do not share it if you do not want to."
+  "proHealth": "Health document: do not share it if you do not want to.",
+  "proOriginNote": "No label: answered by the person. With a label: taken from the free account (confirmed or corrected by them) or a safety question asked at that moment."
 }

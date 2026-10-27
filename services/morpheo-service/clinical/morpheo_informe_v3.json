@@ -35,9 +35,9 @@
     }
   },
   "ayuda": {
-    "_nota": "Decisión 3 (la redacción es de Jesús). Hasta entonces, la frase aprobada de las acciones de seguridad (SEG-S1/S4) y los recursos de D-07.",
+    "_nota": "Decisión 3 (la redacción es de Jesús). Hasta entonces, la frase aprobada de las acciones de seguridad (SEG-S1/S4) y el recurso 024 de D-07 (el 112 ya va en la frase).",
     "frases": ["Si siente que el peligro es inmediato, llame al {EMERGENCIA}."],
-    "recursos": ["EMERGENCIA", "S4_extra"]
+    "recursos": ["S4_extra"]
   },
   "limites": {
     "_nota": "Decisión 3. Hasta entonces, la frase de la propia aplicación (funnel.intro, aprobada el 19/10/2026).",

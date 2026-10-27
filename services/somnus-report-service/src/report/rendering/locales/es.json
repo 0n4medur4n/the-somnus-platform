@@ -59,5 +59,6 @@
   "proNarrative": "Sus palabras",
   "proScales": "Cuestionarios",
   "proUnknown": "Lo que no se sabe nunca se cuenta como «No».",
-  "proHealth": "Documento de salud: no lo comparta si no quiere."
+  "proHealth": "Documento de salud: no lo comparta si no quiere.",
+  "proOriginNote": "Sin etiqueta: respondido por la persona. Con etiqueta: dato del relato libre (confirmado o corregido por ella) o pregunta de seguridad hecha en el momento."
 }

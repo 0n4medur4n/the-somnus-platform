@@ -59,5 +59,6 @@
   "proNarrative": "Les seves paraules",
   "proScales": "Qüestionaris",
   "proUnknown": "El que no se sap mai es compta com a «No».",
-  "proHealth": "Document de salut: no el comparteixi si no vol."
+  "proHealth": "Document de salut: no el comparteixi si no vol.",
+  "proOriginNote": "Sense etiqueta: respost per la persona. Amb etiqueta: dada del relat lliure (confirmada o corregida per ella) o pregunta de seguretat feta en el moment."
 }
