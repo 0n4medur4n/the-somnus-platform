@@ -1,4 +1,9 @@
-import type { AssessmentContentResponse, MeResponse, OwnAssessment } from "@somnus/api-contracts";
+import type {
+  AssessmentContentResponse,
+  FunnelOwnSession,
+  MeResponse,
+  OwnAssessment,
+} from "@somnus/api-contracts";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,6 +14,7 @@ import { Avatar } from "../components/Avatar.js";
 import { edge } from "../lib/edge.js";
 
 export const OWN_ASSESSMENTS_QUERY = ["own-assessments"] as const;
+export const OWN_FUNNEL_QUERY = ["own-funnel-sessions"] as const;
 export const ASSESSMENT_CONTENT_QUERY = ["assessment-content"] as const;
 
 const actionClass =
@@ -65,16 +71,16 @@ function ProfileCard({ me, view }: { me: MeResponse; view: AccountView }) {
   );
 }
 
-function Stats({ assessments, locale }: { assessments: OwnAssessment[]; locale: string }) {
+function Stats({ dates, locale }: { dates: string[]; locale: string }) {
   const { t } = useTranslation();
-  // Newest first, as morpheo returns them.
-  const latest = assessments[0];
-  const first = assessments[assessments.length - 1];
+  // Newest first.
+  const latest = dates[0];
+  const first = dates[dates.length - 1];
   if (!latest || !first) return null;
   const stats = [
-    { label: t("space.stats.first"), value: formatDate(first.createdAt, locale) },
-    { label: t("space.stats.last"), value: formatDate(latest.createdAt, locale) },
-    { label: t("space.stats.count"), value: String(assessments.length) },
+    { label: t("space.stats.first"), value: formatDate(first, locale) },
+    { label: t("space.stats.last"), value: formatDate(latest, locale) },
+    { label: t("space.stats.count"), value: String(dates.length) },
   ];
   return (
     <dl className="grid gap-4 sm:grid-cols-3">
@@ -88,12 +94,17 @@ function Stats({ assessments, locale }: { assessments: OwnAssessment[]; locale: 
   );
 }
 
+/** One row of the list: an evaluation of either flow (the questionnaire or the interview). */
+type Entry =
+  | { kind: "questionnaire"; createdAt: string; item: OwnAssessment }
+  | { kind: "interview"; createdAt: string; item: FunnelOwnSession };
+
 function History({
-  assessments,
+  entries,
   content,
   locale,
 }: {
-  assessments: OwnAssessment[];
+  entries: Entry[];
   content: AssessmentContentResponse | undefined;
   locale: string;
 }) {
@@ -107,8 +118,30 @@ function History({
         {t("space.history.title")}
       </h2>
       <ul className="flex flex-col gap-3">
-        {assessments.map((assessment) => {
-          const date = formatDate(assessment.createdAt, locale, true);
+        {entries.map((entry) => {
+          const date = formatDate(entry.createdAt, locale, true);
+          if (entry.kind === "interview") {
+            // The sentence of the report that says what to do: approved wording, as it is.
+            const headline = entry.item.headline.join(" ");
+            return (
+              <li key={entry.item.sessionId}>
+                <Card className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="font-medium">{date}</p>
+                    {headline ? <p className="text-sm">{headline}</p> : null}
+                  </div>
+                  <Link
+                    to={`/app/evaluations/${encodeURIComponent(entry.item.sessionId)}`}
+                    className={linkClass}
+                    aria-label={t("space.history.viewNamed", { date })}
+                  >
+                    {t("space.history.view")}
+                  </Link>
+                </Card>
+              </li>
+            );
+          }
+          const assessment = entry.item;
           const name = levelName(assessment.level);
           return (
             <li key={assessment.sessionId}>
@@ -155,6 +188,8 @@ export function MorpheoHome() {
   const { t, i18n } = useTranslation();
   const { state } = useAuth();
   const own = useQuery({ queryKey: OWN_ASSESSMENTS_QUERY, queryFn: edge.getOwnAssessments });
+  // The interview's results are saved to the account too; a failure here only hides them.
+  const funnel = useQuery({ queryKey: OWN_FUNNEL_QUERY, queryFn: edge.getOwnFunnelSessions });
   const content = useQuery({
     queryKey: ASSESSMENT_CONTENT_QUERY,
     queryFn: edge.getAssessmentContent,
@@ -166,7 +201,7 @@ export function MorpheoHome() {
   const locale = i18n.resolvedLanguage ?? "es";
   const firstName = me.individualProfile?.firstName;
 
-  if (own.isPending) {
+  if (own.isPending || funnel.isPending) {
     return <p role="status">{t("space.loading")}</p>;
   }
   if (own.isError) {
@@ -176,11 +211,28 @@ export function MorpheoHome() {
       </p>
     );
   }
-  if (own.data.assessments.length === 0) {
+  const entries: Entry[] = [
+    ...own.data.assessments.map(
+      (item): Entry => ({
+        kind: "questionnaire",
+        createdAt: item.createdAt,
+        item,
+      }),
+    ),
+    ...(funnel.data?.sessions ?? []).map(
+      (item): Entry => ({
+        kind: "interview",
+        createdAt: item.createdAt,
+        item,
+      }),
+    ),
+  ].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+
+  if (entries.length === 0) {
     // An empty list may be the stale one cached before the first result was
     // saved; redirecting on it would bounce the person straight back to the
     // questionnaire. Only a fresh empty answer sends them there.
-    if (own.isFetching) return <p role="status">{t("space.loading")}</p>;
+    if (own.isFetching || funnel.isFetching) return <p role="status">{t("space.loading")}</p>;
     return <Navigate to="/assessment" replace />;
   }
 
@@ -196,7 +248,7 @@ export function MorpheoHome() {
       </div>
 
       <ProfileCard me={me} view={view} />
-      <Stats assessments={own.data.assessments} locale={locale} />
+      <Stats dates={entries.map((entry) => entry.createdAt)} locale={locale} />
 
       <Card className="flex flex-col gap-3 border-somnus-primary/50 bg-somnus-primary/10">
         <h2 className="text-lg font-semibold">{t("space.newAssessment.title")}</h2>
@@ -212,7 +264,7 @@ export function MorpheoHome() {
         </div>
       </Card>
 
-      <History assessments={own.data.assessments} content={content.data} locale={locale} />
+      <History entries={entries} content={content.data} locale={locale} />
     </div>
   );
 }

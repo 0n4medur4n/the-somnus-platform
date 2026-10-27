@@ -201,3 +201,37 @@ def test_the_result_carries_the_report_by_default(client: TestClient) -> None:
     report = _play(client, "FT-1")["result"]["report"]
     assert report["layout"] == "standard"
     assert report["headline"] and report["limits"] and report["professional"]["mainAction"]
+
+
+def test_a_person_sees_their_own_finished_interviews_and_nobody_elses(
+    client: TestClient,
+) -> None:
+    mine, theirs = "11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"
+    done = _play(client, "FT-1", actor=mine)["sessionId"]
+    other = _play(client, "FT-2", actor=theirs)["sessionId"]
+    anonymous = _play(client, "FT-3")["sessionId"]
+    started = client.post(  # started, never finished
+        f"{BASE}/sessions", json={"consentGiven": True}, headers={"X-Somnus-Actor-Id": mine}
+    ).json()["sessionId"]
+
+    listed = client.get(f"{BASE}/sessions", headers={"X-Somnus-Actor-Id": mine}).json()["sessions"]
+    ids = [row["sessionId"] for row in listed]
+    assert done in ids and started not in ids
+    assert other not in ids and anonymous not in ids
+    row = next(r for r in listed if r["sessionId"] == done)
+    assert row["status"] == "finished" and row["mainAction"] and row["headline"]
+    assert row["createdAt"].endswith("+00:00")
+    # An interview that is listed opens for its owner, and only for them.
+    assert (
+        client.get(f"{BASE}/sessions/{done}", headers={"X-Somnus-Actor-Id": mine}).status_code
+        == 200
+    )
+    assert (
+        client.get(f"{BASE}/sessions/{done}", headers={"X-Somnus-Actor-Id": theirs}).status_code
+        == 404
+    )
+
+
+def test_nothing_is_listed_without_an_actor(client: TestClient) -> None:
+    _play(client, "FT-1", actor="33333333-3333-4333-8333-333333333333")
+    assert client.get(f"{BASE}/sessions").json() == {"sessions": []}

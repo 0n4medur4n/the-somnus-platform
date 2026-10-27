@@ -206,7 +206,8 @@
     "title": "Resultat de la teva avaluació",
     "savedOn": "Desada el {{date}}",
     "back": "Tornar al meu espai",
-    "error": "No hem pogut carregar aquest resultat."
+    "error": "No hem pogut carregar aquest resultat.",
+    "unfinished": "Aquesta avaluació encara no està acabada."
   },
   "legal": {
     "title": {

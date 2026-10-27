@@ -380,6 +380,36 @@ describe("FunnelProxyService", () => {
     expect(reportClient.requests).toHaveLength(1);
   });
 
+  it("lists the signed-in person's own interviews, asking morpheo as them", async () => {
+    const listed = {
+      sessions: [
+        {
+          sessionId: "f-1",
+          status: "finished",
+          mainAction: "TERAPIA",
+          headline: ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
+          createdAt: "2026-10-28T10:00:00+00:00",
+        },
+      ],
+    };
+    const morpheo = makeFakeIdentityClient((req) => {
+      expect(req.path).toBe("/internal/v1/funnel/sessions");
+      expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
+      return { status: 200, body: listed };
+    });
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const service = new FunnelProxyService(morpheo.client, identity.client, resolver, unusedReport);
+    expect(await service.listOwn(SESSION, "c1")).toEqual(listed);
+  });
+
+  it("gives no list to someone who is not signed in", async () => {
+    const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: { sessions: [] } }));
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const service = new FunnelProxyService(morpheo.client, identity.client, resolver, unusedReport);
+    await expect(service.listOwn(undefined, "c1")).rejects.toBeDefined();
+    expect(morpheo.requests).toHaveLength(0);
+  });
+
   it("sends no report block when morpheo built none", async () => {
     const finished: FunnelState = {
       ...state(),

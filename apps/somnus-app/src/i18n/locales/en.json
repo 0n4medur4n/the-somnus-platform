@@ -206,7 +206,8 @@
     "title": "Your assessment result",
     "savedOn": "Saved on {{date}}",
     "back": "Back to my space",
-    "error": "We could not load this result."
+    "error": "We could not load this result.",
+    "unfinished": "This evaluation is not finished yet."
   },
   "legal": {
     "title": {

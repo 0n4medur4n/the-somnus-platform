@@ -4,6 +4,8 @@ import {
   type FunnelConfigResponse,
   FunnelConfigResponseSchema,
   type FunnelCreateRequest,
+  type FunnelOwnSessions,
+  FunnelOwnSessionsSchema,
   type FunnelRewindRequest,
   type FunnelState,
   FunnelStateSchema,
@@ -75,6 +77,23 @@ export class FunnelProxyService {
     rawCorrelationId?: string,
   ): Promise<FunnelState> {
     return this.forward("POST", `${FUNNEL}/sessions`, session, panel, rawCorrelationId, body);
+  }
+
+  /** The signed-in person's own finished interviews, newest first (their list). */
+  async listOwn(
+    session: SessionRecord | undefined,
+    rawCorrelationId?: string,
+  ): Promise<FunnelOwnSessions> {
+    const correlationId = correlationOf(rawCorrelationId);
+    const actorId = await this.actorResolver.resolve(
+      requireSession(session, correlationId),
+      correlationId,
+    );
+    const response = await this.morpheo.get(`${FUNNEL}/sessions`, {
+      correlationId,
+      headers: { [ACTOR_ID_HEADER]: actorId },
+    });
+    return this.parse(FunnelOwnSessionsSchema, response.body, correlationId);
   }
 
   get(

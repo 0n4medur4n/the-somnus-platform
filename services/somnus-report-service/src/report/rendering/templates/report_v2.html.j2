@@ -13,6 +13,7 @@
       }
       body { font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #1e293b; line-height: 1.55; margin: 0; }
       .report-header { background: #090d1a; color: #e2e8f0; border-radius: 10pt; padding: 16pt 18pt 14pt; margin-bottom: 16pt; }
+      .logo { display: block; height: 24pt; width: auto; margin: 0 0 3pt; }
       .brand { font-size: 24pt; font-weight: bold; color: #ffffff; margin: 0; letter-spacing: 0.6pt; }
       .brand-dot { color: #437ef7; }
       .byline { margin: 1pt 0 10pt; color: #9fb0c3; font-size: 9.5pt; }
@@ -31,7 +32,7 @@
   </head>
   <body>
     <header class="report-header">
-      <p class="brand">{{ strings.brand }}<span class="brand-dot">.</span></p>
+      <img class="logo" src="{{ logo }}" alt="{{ strings.brand }}" />
       <p class="byline">{{ strings.byline }}</p>
       <h1>{{ strings.v2Title }}</h1>
       <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>

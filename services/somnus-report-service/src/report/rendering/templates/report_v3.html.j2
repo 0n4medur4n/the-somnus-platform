@@ -20,6 +20,7 @@
       body { font-family: "DejaVu Sans", sans-serif; font-size: 9.8pt; color: #1e293b; line-height: 1.45; margin: 0; }
       .page-two { page-break-before: always; }
       .report-header { background: #090d1a; color: #e2e8f0; border-radius: 10pt; padding: 10pt 16pt 8pt; margin-bottom: 8pt; }
+      .logo { display: block; height: 22pt; width: auto; margin: 0 0 3pt; }
       .brand { font-size: 22pt; font-weight: bold; color: #ffffff; margin: 0; letter-spacing: 0.6pt; }
       .brand-dot { color: #437ef7; }
       .byline { margin: 1pt 0 8pt; color: #9fb0c3; font-size: 9pt; }
@@ -49,7 +50,7 @@
       tr { page-break-inside: avoid; }
       .quote { font-style: italic; font-size: 8.5pt; }
       .page-two .report-header { padding: 8pt 14pt 7pt; margin-bottom: 6pt; }
-      .page-two .brand { font-size: 15pt; }
+      .page-two .logo { height: 15pt; margin: 0 0 2pt; }
       .page-two .byline { margin: 0 0 3pt; font-size: 7.5pt; }
       .page-two h1 { font-size: 11pt; }
       .page-two .report-date { margin: 1pt 0 0; font-size: 7.5pt; }
@@ -74,7 +75,7 @@
   </head>
   <body>
     <header class="report-header">
-      <p class="brand">{{ strings.brand }}<span class="brand-dot">.</span></p>
+      <img class="logo" src="{{ logo }}" alt="{{ strings.brand }}" />
       <p class="byline">{{ strings.byline }}</p>
       <h1>{{ strings.v2Title }}</h1>
       <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
@@ -152,7 +153,7 @@
     {% set pro = r.professional %}
     <div class="page-two">
       <header class="report-header">
-        <p class="brand">{{ strings.brand }}<span class="brand-dot">.</span></p>
+        <img class="logo" src="{{ logo }}" alt="{{ strings.brand }}" />
         <p class="byline">{{ strings.proByline }}</p>
         <h1>{{ strings.proTitle }}</h1>
         <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
@@ -205,7 +206,7 @@
     {% if passages %}
     <div class="page-three">
       <header class="report-header">
-        <p class="brand">{{ strings.brand }}<span class="brand-dot">.</span></p>
+        <img class="logo" src="{{ logo }}" alt="{{ strings.brand }}" />
         <p class="byline">{{ strings.proByline }}</p>
         <h1>{{ strings.passagesTitle }}</h1>
         <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>

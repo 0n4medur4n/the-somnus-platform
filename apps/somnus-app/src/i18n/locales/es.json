@@ -206,7 +206,8 @@
     "title": "Resultado de tu evaluación",
     "savedOn": "Guardada el {{date}}",
     "back": "Volver a mi espacio",
-    "error": "No hemos podido cargar este resultado."
+    "error": "No hemos podido cargar este resultado.",
+    "unfinished": "Esta evaluación aún no está terminada."
   },
   "legal": {
     "title": {
