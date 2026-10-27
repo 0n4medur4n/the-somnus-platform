@@ -24,6 +24,7 @@ from morpheo.api.health import router as health_router
 from morpheo.api.maintenance import router as maintenance_router
 from morpheo.api.sources import router as sources_router
 from morpheo.api.version import router as version_router
+from morpheo.funnel.informe import informe_artifact, require_approved
 from morpheo.infrastructure.correlation import CorrelationIdMiddleware
 from morpheo.infrastructure.db import create_engine_from_url
 from morpheo.infrastructure.errors import register_exception_handlers
@@ -61,6 +62,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # The AI of v0.2 p. 14, or None (flag off / no key): the interview then asks
     # every question.
     app.state.ai = build_extractor(settings)
+    # The one-page report: only with REPORT_V3_ENABLED, and only a signed one.
+    app.state.informe = require_approved(informe_artifact()) if settings.report_v3_enabled else None
 
     app.add_middleware(CorrelationIdMiddleware)
     register_exception_handlers(app)

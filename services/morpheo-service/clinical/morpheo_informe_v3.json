@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "id": "morpheo_informe_v3",
+    "version": "3.0-borrador",
+    "approved": false,
+    "status": "BORRADOR – pendiente de la firma de Jesús (propuesta aprobada el 27/10/2026; los textos de las decisiones 1-3 aún no)",
+    "note": "El informe del paciente de una página y la página para el profesional. Mientras 'approved' sea false, Morpheo no lo envía al paciente (REPORT_V3_ENABLED se niega a arrancar). Todo texto clínico de este archivo es una frase ya aprobada o una frase literal del v0.2; nada lo escribe un modelo."
+  },
+  "accion": {
+    "_nota": "Decisión 1: la frase de «Lo más importante» es la frase de la propia plantilla aprobada que dice qué hacer (índices de frase, desde 0). Una prueba comprueba que cada índice existe en cada caso.",
+    "T_INSOMNIO": [3],
+    "T_COMBINADO": [2],
+    "T_RESPIRACION": [2],
+    "T_PSG": [0],
+    "T_PIERNAS": [1],
+    "T_NOCTURNO": [0, 1],
+    "T_SOMNOLENCIA": [1],
+    "T_RECIENTE": [2],
+    "T_HABITOS": [1],
+    "T_HORARIO": [1],
+    "T_INCOMPLETO": [0, 1],
+    "T_SEGURIDAD": "todas"
+  },
+  "urgente": {
+    "_nota": "En una urgencia el informe es solo el mensaje urgente (sin resumen, pasos ni página del profesional).",
+    "categorias": ["EMERGENCIA"],
+    "plantillas": ["T_SEGURIDAD"]
+  },
+  "pasos": {
+    "_nota": "Decisión 2 (la redacción es de Jesús). Hasta entonces, solo la frase del v0.2 (H6, p. 8) para las orientaciones de apoyo, y el uso de la página 2 (texto de la interfaz, no clínico).",
+    "diario_y_revision": {
+      "texto": "Diario 7-14 días y revisión propuesta a las 2-4 semanas.",
+      "fuente": "v0.2 p. 8, H6",
+      "para_plantillas": ["T_INSOMNIO", "T_HABITOS", "T_HORARIO", "T_RECIENTE"]
+    }
+  },
+  "ayuda": {
+    "_nota": "Decisión 3 (la redacción es de Jesús). Hasta entonces, la frase aprobada de las acciones de seguridad (SEG-S1/S4) y los recursos de D-07.",
+    "frases": ["Si siente que el peligro es inmediato, llame al {EMERGENCIA}."],
+    "recursos": ["EMERGENCIA", "S4_extra"]
+  },
+  "limites": {
+    "_nota": "Decisión 3. Hasta entonces, la frase de la propia aplicación (funnel.intro, aprobada el 19/10/2026).",
+    "frases": ["No es un diagnóstico."]
+  },
+  "fuentes": {
+    "_nota": "Decisión 10 (nueva): qué fuentes de la p. 15 del v0.2 respaldan cada orientación. Es una propuesta derivada de lo que dice la p. 15 de cada fuente; Jesús la confirma. Números = ítems [n] de v0.2 p. 15.",
+    "T_INSOMNIO": [1, 2],
+    "T_COMBINADO": [1, 2, 3],
+    "T_RECIENTE": [1, 2],
+    "T_HABITOS": [2],
+    "T_HORARIO": [2],
+    "T_RESPIRACION": [3, 5],
+    "T_PSG": [3, 5],
+    "T_PIERNAS": [6],
+    "T_NOCTURNO": [5],
+    "T_SOMNOLENCIA": [5],
+    "ADAPTAR_TERAPIA": [4]
+  }
+}

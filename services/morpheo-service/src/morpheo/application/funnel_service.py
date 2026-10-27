@@ -22,6 +22,7 @@ from morpheo.funnel.ai_steps import CONFIRM_KIND, confirm_step
 from morpheo.funnel.artifact import FunnelArtifact, StepDef, funnel_artifact
 from morpheo.funnel.catalogue import Catalogue, funnel_catalogue
 from morpheo.funnel.display import answer_label
+from morpheo.funnel.informe import Informe, InformeArtifact, build
 from morpheo.funnel.instruments import InstrumentOutcome, intro_step, item_steps
 from morpheo.funnel.interview import (
     NO,
@@ -51,6 +52,13 @@ from morpheo.schemas.funnel import (
     FunnelOptionDTO,
     FunnelOrientationDTO,
     FunnelPhase,
+    FunnelReportAnswerDTO,
+    FunnelReportDTO,
+    FunnelReportFlagDTO,
+    FunnelReportHelpDTO,
+    FunnelReportProfessionalDTO,
+    FunnelReportResourceDTO,
+    FunnelReportSafetyDTO,
     FunnelResultDTO,
     FunnelResultPanelDTO,
     FunnelStateDTO,
@@ -87,10 +95,12 @@ class FunnelService:
         artifact: FunnelArtifact | None = None,
         catalogue: Catalogue | None = None,
         ai: AiExtractor | None = None,
+        informe: InformeArtifact | None = None,
     ) -> None:
         self._repo = FunnelRepository(session)
         self._registry = registry
         self._ai = ai
+        self._informe = informe
         self._a = artifact or funnel_artifact()
         self._c = catalogue or funnel_catalogue()
 
@@ -440,6 +450,7 @@ class FunnelService:
             instruments_note=result.instruments_note,
             content_version=self._a.content_version,
             rules_version=result.version_reglas,
+            report=self._report(result, answers),
             panel=FunnelResultPanelDTO(
                 rule_ids=list(result.rule_ids),
                 trace=list(result.trace),
@@ -455,6 +466,62 @@ class FunnelService:
                 ],
                 instruments=[self._instrument(o) for o in result.instruments],
                 ai=self._ai_panel(answers),
+            ),
+        )
+
+    def _report(self, result: FunnelResult, answers: dict[str, Answer]) -> FunnelReportDTO | None:
+        """The one-page report, when REPORT_V3_ENABLED (and the texts are signed)."""
+        if self._informe is None:
+            return None
+        built = build(self._a, self._c, self._informe, Interview(self._a, answers), result)
+        return None if built is None else self._report_dto(built)
+
+    @staticmethod
+    def _report_dto(report: Informe) -> FunnelReportDTO:
+        pro = report.professional
+        return FunnelReportDTO(
+            status="aprobado" if report.approved else "borrador",
+            layout="urgent" if report.layout == "urgent" else "standard",
+            headline=list(report.headline),
+            secondary=list(report.secondary),
+            summary=report.summary,
+            steps=list(report.steps),
+            help=FunnelReportHelpDTO(
+                sentences=list(report.help_sentences),
+                resources=[
+                    FunnelReportResourceDTO(code=r.code, text=r.text) for r in report.resources
+                ],
+            ),
+            limits=list(report.limits),
+            sources=list(report.sources),
+            professional=None
+            if pro is None
+            else FunnelReportProfessionalDTO(
+                main_action=pro.main_action,
+                associated_actions=list(pro.associated_actions),
+                templates=list(pro.templates),
+                rules=list(pro.rules),
+                flags=[FunnelReportFlagDTO(id=f.id, reasons=list(f.reasons)) for f in pro.flags],
+                alerts=list(pro.alerts),
+                pending_data=list(pro.pending_data),
+                safety=[
+                    FunnelReportSafetyDTO(
+                        question=s.question,
+                        answer=s.answer,
+                        when=s.when,
+                    )
+                    for s in pro.safety
+                ],
+                answers=[
+                    FunnelReportAnswerDTO(
+                        id=a.id,
+                        question=a.question,
+                        answer=a.answer,
+                        origin=a.origin,
+                    )
+                    for a in pro.answers
+                ],
+                narrative=pro.narrative,
             ),
         )
 

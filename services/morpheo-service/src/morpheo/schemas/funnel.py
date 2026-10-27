@@ -152,6 +152,60 @@ class FunnelResultPanelDTO(ContractModel):
     ai: list[FunnelAiPanelDTO]
 
 
+class FunnelReportResourceDTO(ContractModel):
+    code: str
+    text: str
+
+
+class FunnelReportHelpDTO(ContractModel):
+    sentences: list[str]
+    resources: list[FunnelReportResourceDTO]
+
+
+class FunnelReportFlagDTO(ContractModel):
+    id: str
+    reasons: list[str]
+
+
+class FunnelReportSafetyDTO(ContractModel):
+    question: str
+    answer: str
+    when: Literal["moment", "end", "confirmed"]
+
+
+class FunnelReportAnswerDTO(ContractModel):
+    id: str
+    question: str
+    answer: str
+    origin: Literal["answered", "narrative", "corrected"]
+
+
+class FunnelReportProfessionalDTO(ContractModel):
+    main_action: str | None
+    associated_actions: list[str]
+    templates: list[str]
+    rules: list[str]
+    flags: list[FunnelReportFlagDTO]
+    alerts: list[str]
+    pending_data: list[str]
+    safety: list[FunnelReportSafetyDTO]
+    answers: list[FunnelReportAnswerDTO]
+    narrative: str | None
+
+
+class FunnelReportDTO(ContractModel):
+    status: Literal["borrador", "aprobado"]
+    layout: Literal["urgent", "standard"]
+    headline: list[str]
+    secondary: list[str]
+    summary: str | None
+    steps: list[str]
+    help: FunnelReportHelpDTO
+    limits: list[str]
+    sources: list[str]
+    professional: FunnelReportProfessionalDTO | None
+
+
 class FunnelResultDTO(ContractModel):
     stopped_by: str | None
     alerts: list[str]
@@ -163,6 +217,7 @@ class FunnelResultDTO(ContractModel):
     instruments_note: str | None
     content_version: str
     rules_version: str
+    report: FunnelReportDTO | None = None
     panel: FunnelResultPanelDTO | None
 
 
