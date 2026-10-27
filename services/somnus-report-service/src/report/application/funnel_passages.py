@@ -17,6 +17,11 @@ always rendered.
 from __future__ import annotations
 
 import logging
+import threading
+import time
+from collections.abc import Callable
+from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass
 
 from report.corpus.retrieval import CorpusRetriever
@@ -24,6 +29,10 @@ from report.schemas.render import FunnelReportGroundingDTO
 from report.schemas.retrieval import GroundingRequest, RetrievalQuery
 
 logger = logging.getLogger("report.funnel_passages")
+
+#: The search is the same for every report of one orientation (fixed sources, fixed
+#: terms), and reading the library takes seconds, so a finished search is kept.
+CACHE_SECONDS = 30 * 60
 
 #: Excerpts on the page; it is read in a consultation, not browsed.
 MAX_PASSAGES = 4
@@ -53,23 +62,72 @@ def excerpt(text: str) -> str:
 
 
 class FunnelPassages:
-    def __init__(self, retriever: CorpusRetriever | None, *, min_score: float) -> None:
+    def __init__(
+        self,
+        retriever: CorpusRetriever | None,
+        *,
+        min_score: float,
+        timeout_seconds: float = 20.0,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         self._retriever = retriever
         self._min_score = min_score
+        self._timeout = timeout_seconds
+        self._clock = clock
+        self._lock = threading.Lock()
+        self._cache: dict[
+            tuple[tuple[str, ...], tuple[str, ...]], tuple[float, tuple[Passage, ...]]
+        ]
+        self._cache = {}
+        self._running: dict[
+            tuple[tuple[str, ...], tuple[str, ...]], Future[tuple[Passage, ...]]
+        ] = {}
+        self._pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="funnel-passages")
 
     def find(self, grounding: FunnelReportGroundingDTO | None) -> tuple[Passage, ...]:
+        """The excerpts for this grounding; empty on any failure or when too slow."""
         if self._retriever is None or grounding is None:
             return ()
+        key = (tuple(grounding.source_ids), tuple(grounding.queries))
+        with self._lock:
+            cached = self._cache.get(key)
+            if cached is not None and self._clock() - cached[0] < CACHE_SECONDS:
+                return cached[1]
+            future = self._running.get(key)
+            if future is None:
+                future = self._pool.submit(self._search, key, grounding)
+                self._running[key] = future
         try:
-            materials = self._retriever.retrieve(
-                # The locale is the loader's concern here: the sources are in the
-                # language they were written in, and the loader reads all of them.
-                GroundingRequest(locale="", source_ids=tuple(grounding.source_ids)),
-                tuple(RetrievalQuery("funnel", query) for query in grounding.queries),
-            )
+            return future.result(timeout=self._timeout)
+        except FutureTimeout:
+            # The search goes on in the background and fills the cache: the next
+            # report of this orientation has its excerpts at once.
+            logger.warning("funnel passages too slow; the page renders without excerpts")
+            return ()
         except Exception:
             logger.warning("funnel passages unavailable; the page renders without excerpts")
             return ()
+
+    def _search(
+        self, key: tuple[tuple[str, ...], tuple[str, ...]], grounding: FunnelReportGroundingDTO
+    ) -> tuple[Passage, ...]:
+        try:
+            found = self._retrieve(grounding)
+            with self._lock:
+                self._cache[key] = (self._clock(), found)
+            return found
+        finally:
+            with self._lock:
+                self._running.pop(key, None)
+
+    def _retrieve(self, grounding: FunnelReportGroundingDTO) -> tuple[Passage, ...]:
+        assert self._retriever is not None
+        materials = self._retriever.retrieve(
+            # The locale is the loader's concern here: the sources are in the
+            # language they were written in, and the loader reads all of them.
+            GroundingRequest(locale="", source_ids=tuple(grounding.source_ids)),
+            tuple(RetrievalQuery("funnel", query) for query in grounding.queries),
+        )
         kept = [
             m
             for m in materials

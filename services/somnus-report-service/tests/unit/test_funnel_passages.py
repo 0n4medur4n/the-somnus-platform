@@ -211,3 +211,44 @@ def test_a_heading_is_not_a_passage() -> None:
         [_material("a", 0.7, "Home sleep apnea testing for the diagnosis of OSA")]
     ).find(GROUNDING)
     assert found == ()
+
+
+def test_a_finished_search_is_kept_so_the_next_report_does_not_search_again() -> None:
+    retriever = _Retriever([_material("a", 0.6)])
+    finder = FunnelPassages(retriever, min_score=0.3)  # type: ignore[arg-type]
+    first = finder.find(GROUNDING)
+    again = finder.find(GROUNDING)
+    assert first == again and first != ()
+    assert len(retriever.calls) == 1
+
+
+def test_the_cache_expires_and_is_per_grounding() -> None:
+    now = [0.0]
+    retriever = _Retriever([_material("a", 0.6)])
+    finder = FunnelPassages(retriever, min_score=0.3, clock=lambda: now[0])  # type: ignore[arg-type]
+    finder.find(GROUNDING)
+    finder.find(FunnelReportGroundingDTO(source_ids=["SRC-02"], queries=["other"]))
+    assert len(retriever.calls) == 2
+    now[0] = 31 * 60
+    finder.find(GROUNDING)
+    assert len(retriever.calls) == 3
+
+
+def test_a_slow_search_does_not_hold_the_pdf_and_fills_the_cache_for_the_next() -> None:
+    import threading
+
+    release = threading.Event()
+
+    class _Slow(_Retriever):
+        def retrieve(
+            self, request: GroundingRequest, queries: tuple[RetrievalQuery, ...] = ()
+        ) -> list[GroundingMaterial]:
+            release.wait(5)
+            return super().retrieve(request, queries)
+
+    retriever = _Slow([_material("a", 0.6)])
+    finder = FunnelPassages(retriever, min_score=0.3, timeout_seconds=0.05)  # type: ignore[arg-type]
+    assert finder.find(GROUNDING) == ()  # too slow: the page goes without excerpts
+    release.set()
+    finder._pool.shutdown(wait=True)
+    assert finder.find(GROUNDING) != ()  # the background search finished and was kept

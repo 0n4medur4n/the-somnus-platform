@@ -300,6 +300,51 @@ describe("FunnelAssessment", () => {
     expect(screen.getByRole("link", { name: es("funnel.result.download") })).toBeVisible();
   });
 
+  it("shows the professional's summary and no question intro beside the report", async () => {
+    const user = userEvent.setup();
+    const report = {
+      layout: "standard" as const,
+      headline: ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
+      secondary: [],
+      summary: null,
+      steps: [],
+      help: { sentences: [], resources: [] },
+      limits: [],
+      sources: ["[1] Riemann et al. (2023). European Insomnia Guideline."],
+      professional: {
+        mainAction: "TERAPIA",
+        associatedActions: [],
+        templates: ["T_INSOMNIO"],
+        rules: ["R04 insomnio persistente"],
+        flags: [{ id: "ADAPTAR_TERAPIA", reasons: ["bipolaridad"] }],
+        alerts: [],
+        pendingData: [],
+        safety: [],
+        answers: [
+          {
+            id: "Q03",
+            question: "¿Desde cuándo le ocurre?",
+            answer: "6 meses",
+            origin: "narrative" as const,
+          },
+        ],
+        narrative: "Duermo mal desde hace seis meses.",
+      },
+    };
+    edgeMock.startFunnel.mockResolvedValue(
+      state({ status: "finished", step: null, result: { ...RESULT, report }, owned: false }),
+    );
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    const pro = await screen.findByTestId("funnel-report-professional");
+    expect(within(pro).getByText("R04 insomnio persistente")).toBeVisible();
+    expect(within(pro).getByText("ADAPTAR_TERAPIA: bipolaridad")).toBeVisible();
+    expect(within(pro).getByText("6 meses")).toBeVisible();
+    expect(within(pro).getByText(/Duermo mal desde hace seis meses/)).toBeVisible();
+    expect(within(pro).getByText(/Riemann et al/)).toBeVisible();
+    expect(screen.queryByText(es("funnel.intro"))).toBeNull();
+  });
+
   it("shows only the urgent message in an emergency", async () => {
     const user = userEvent.setup();
     const report = {
