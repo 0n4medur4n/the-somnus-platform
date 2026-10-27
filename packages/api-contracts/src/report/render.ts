@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { LocaleSchema } from "../locale.js";
 import { ModuleIdSchema, RoleIdSchema, SafetyLevelIdSchema } from "../morpheo/enums.js";
-import { FunnelInstrumentSchema, FunnelTextSchema } from "../morpheo/funnel.js";
+import { FunnelInstrumentSchema, FunnelReportSchema, FunnelTextSchema } from "../morpheo/funnel.js";
 
 /**
  * The report service boundary (build plan §5.6 / §20 Checkpoint 11.1). The
@@ -144,6 +144,8 @@ export const FunnelReportRequestSchema = z
     texts: z.array(FunnelTextSchema).min(1),
     instruments: z.array(FunnelInstrumentSchema),
     instrumentsNote: z.string().nullable(),
+    // The one-page report and the professional's page (REPORT_V3); absent: the v2 layout.
+    report: FunnelReportSchema.nullable().optional(),
   })
   .strict();
 export type FunnelReportRequest = z.infer<typeof FunnelReportRequestSchema>;
