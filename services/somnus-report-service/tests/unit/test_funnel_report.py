@@ -217,7 +217,8 @@ def test_the_professionals_page_shows_the_rules_the_origin_and_never_a_no_for_un
     document = render_funnel_html(_report_request())
     assert 'class="page-two"' in document
     assert "R04 insomnio persistente" in document and "bipolaridad" in document
-    assert "Del relato, confirmado" in document and "Respondido" in document
+    assert "Del relato, confirmado" in document  # a data point taken from the free account
+    assert "Respondido" not in document  # what the person answered carries no tag
     assert "No lo sé" in document
     assert "Me despierto mucho por la noche." in document
     assert "Lo que no se sabe nunca se cuenta como" in document
@@ -252,3 +253,39 @@ def test_weasyprint_renders_the_one_page_report() -> None:
     except OSError as exc:  # native Pango/Cairo libraries not installed (local dev)
         pytest.skip(f"weasyprint native libraries unavailable: {exc}")
     assert pdf.startswith(b"%PDF") and len(pdf) > 1000
+
+
+def test_a_heavy_report_still_fits_the_patients_page_and_the_professionals_page() -> None:
+    """A long case (36 answers, long headline): one page for the person, one to hand over."""
+    try:
+        from weasyprint import HTML
+    except OSError as exc:  # native Pango/Cairo libraries not installed (local dev)
+        pytest.skip(f"weasyprint native libraries unavailable: {exc}")
+    answers = [
+        {
+            "id": f"Q{i:02d}",
+            "question": "¿Hay alguna enfermedad cardiopulmonar, debilidad respiratoria o insomnio grave?",
+            "answer": "Ronca fuerte, se despierta con sensación de ahogo",
+            "origin": "answered" if i % 3 else "narrative",
+        }
+        for i in range(2, 38)
+    ]
+    heavy = {
+        **REPORT,
+        "headline": [
+            "Conviene estudiar su respiración y valorar a la vez una terapia para el insomnio."
+        ],
+        "secondary": ["Si le pasa conduciendo, no conduzca y busque ayuda médica con prioridad."],
+        "professional": {**REPORT["professional"], "answers": answers},
+    }
+    request = _request(
+        report=heavy,
+        texts=[
+            {
+                "template": "T_COMBINADO",
+                "text": "Ha contado dificultades persistentes para dormir. " * 6,
+            }
+        ],
+    )
+    pages = HTML(string=render_funnel_html(request)).render().pages
+    assert len(pages) == 2
