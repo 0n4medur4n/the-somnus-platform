@@ -23,6 +23,7 @@ from report.api.health import router as health_router
 from report.api.reports import router as reports_router
 from report.api.version import router as version_router
 from report.application.content_review import ContentReviewService
+from report.application.funnel_passages import FunnelPassages
 from report.application.funnel_report import FunnelReportService
 from report.application.narrative import NarrativeService
 from report.application.provenance import ProvenanceRecorder, ProvenanceResolver
@@ -231,7 +232,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.narrative_service = narrative_service
 
     # The v2 report: deterministic, no model, nothing stored.
-    app.state.funnel_reports = FunnelReportService(WeasyPrintPdfRenderer())
+    # Its professional page may carry verbatim excerpts from the library: Index B
+    # searched across the languages the sources were written in (they are cited
+    # as written), with the embedder only for ranking. No key: no excerpts.
+    def _all_locales_loader(_locale: str, scopes: Sequence[DocumentScope]) -> list[ScopedDocument]:
+        with corpus_session_factory() as session:
+            repository = CorpusRepository(session)
+            return [
+                document
+                for locale in ("es", "en")
+                for document in repository.scoped_documents(
+                    locale=locale, scopes=scopes, include_general=False
+                )
+            ]
+
+    app.state.funnel_reports = FunnelReportService(
+        WeasyPrintPdfRenderer(),
+        FunnelPassages(
+            CorpusRetriever(
+                _all_locales_loader,
+                embedder=OpenAiEmbeddingAdapter(settings.openai_api_key),
+                model=settings.embedding_model,
+                dimensions=settings.embedding_dimensions,
+                top_k=10,
+            )
+            if settings.openai_api_key
+            else None,
+            min_score=settings.funnel_passages_min_score,
+        ),
+    )
     app.state.render_service = RenderService(
         content_provider=content_provider,
         pdf_renderer=WeasyPrintPdfRenderer(),

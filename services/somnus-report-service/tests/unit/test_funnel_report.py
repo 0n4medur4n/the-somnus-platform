@@ -283,3 +283,13 @@ def test_a_heavy_report_still_fits_the_patients_page_and_the_professionals_page(
     )
     pages = HTML(string=render_funnel_html(request)).render().pages
     assert len(pages) == 2
+
+
+def test_the_request_with_a_grounding_block_conforms_to_the_contract() -> None:
+    schema = json.loads((SCHEMA / "FunnelReportRequest.json").read_text(encoding="utf-8"))
+    professional = {
+        **REPORT["professional"],
+        "grounding": {"sourceIds": ["SRC-01"], "queries": ["Le proponemos una terapia."]},
+    }
+    request = _request(report={**REPORT, "professional": professional})
+    jsonschema.validate(request.model_dump(by_alias=True, mode="json"), schema)

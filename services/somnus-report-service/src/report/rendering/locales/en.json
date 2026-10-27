@@ -59,5 +59,7 @@
   "proScales": "Questionnaires",
   "proUnknown": "What is not known is never counted as «No».",
   "proHealth": "Health document: do not share it if you do not want to.",
-  "proOriginNote": "No label: answered by the person. With a label: taken from the free account (confirmed or corrected by them) or a safety question asked at that moment."
+  "proOriginNote": "No label: answered by the person. With a label: taken from the free account (confirmed or corrected by them) or a safety question asked at that moment.",
+  "passagesTitle": "Backing in the sources",
+  "passagesNote": "Verbatim excerpts from The Somnus library, chosen by how closely they match the orientation. They back the orientation; they do not decide it. They may start or end mid-sentence and are in the language of the source."
 }

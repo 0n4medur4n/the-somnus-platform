@@ -63,6 +63,10 @@
       .page-two .cols { font-size: 6.9pt; line-height: 1.28; }
       .page-two .sources li { margin: 0 0 1pt; }
       .page-two .report-footer { margin-top: 5pt; padding-top: 3pt; }
+      .page-three { page-break-before: always; }
+      .passage { margin: 0 0 7pt; break-inside: avoid; }
+      .passage .excerpt { font-size: 8pt; line-height: 1.4; margin: 0 0 2pt; border-left: 2pt solid #cbd5e1; padding-left: 6pt; }
+      .passage .from { font-size: 7pt; color: #64748b; margin: 0; }
       .tag { font-size: 6.5pt; background: #e2e8f0; color: #334155; border-radius: 4pt; padding: 0 4pt; }
       .legend { font-size: 6.5pt; color: #64748b; }
       .report-footer { margin-top: 6pt; border-top: 1pt solid #e2e8f0; padding-top: 3pt; font-size: 7.5pt; color: #94a3b8; }
@@ -198,6 +202,23 @@
         {{ strings.proUnknown }} {{ strings.versions }}: {{ template_version }} / {{ request.rules_version }} / {{ request.content_version }}. {{ strings.proHealth }}
       </footer>
     </div>
+    {% if passages %}
+    <div class="page-three">
+      <header class="report-header">
+        <p class="brand">{{ strings.brand }}<span class="brand-dot">.</span></p>
+        <p class="byline">{{ strings.proByline }}</p>
+        <h1>{{ strings.passagesTitle }}</h1>
+        <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
+      </header>
+      <p class="note">{{ strings.passagesNote }}</p>
+      {% for passage in passages %}
+      <div class="passage" data-source="{{ passage.source_id }}">
+        <p class="excerpt">«{{ passage.text }}»</p>
+        <p class="from">{{ passage.title }} · {{ passage.citation }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
     {% endif %}
   </body>
 </html>

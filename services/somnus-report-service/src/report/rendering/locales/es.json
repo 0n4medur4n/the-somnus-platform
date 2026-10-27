@@ -59,5 +59,7 @@
   "proScales": "Cuestionarios",
   "proUnknown": "Lo que no se sabe nunca se cuenta como «No».",
   "proHealth": "Documento de salud: no lo comparta si no quiere.",
-  "proOriginNote": "Sin etiqueta: respondido por la persona. Con etiqueta: dato del relato libre (confirmado o corregido por ella) o pregunta de seguridad hecha en el momento."
+  "proOriginNote": "Sin etiqueta: respondido por la persona. Con etiqueta: dato del relato libre (confirmado o corregido por ella) o pregunta de seguridad hecha en el momento.",
+  "passagesTitle": "Respaldo en las fuentes",
+  "passagesNote": "Extractos literales de los documentos de la biblioteca de The Somnus, elegidos por su parecido con la orientación. Respaldan la orientación; no la deciden. Pueden empezar o acabar a mitad de frase y están en el idioma de la fuente."
 }
