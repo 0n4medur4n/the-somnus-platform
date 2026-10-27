@@ -66,6 +66,12 @@ class Settings(BaseSettings):
     # are configuration, never hardcoded at call sites (§5.6). The key is a
     # secret, injected in staging/production; empty locally (adapter is mocked).
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    # The professional page's excerpts from the library: the least similarity (cosine,
+    # 0-1) at which an excerpt is shown. Tuned against the real library; an excerpt
+    # below it is left out rather than shown as support it is not.
+    funnel_passages_min_score: float = Field(
+        default=0.30, ge=0.0, le=1.0, alias="FUNNEL_PASSAGES_MIN_SCORE"
+    )
     # GPT-6 Luna at the highest reasoning effort it accepts (owner decision
     # 2026-10-16, superseding GPT-5.6 in build plan §3.6). OpenAI answers 400 to
     # "max" for this model ("supported: none, low, medium, high, xhigh"), so the

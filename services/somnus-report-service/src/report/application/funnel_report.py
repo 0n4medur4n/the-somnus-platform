@@ -6,6 +6,7 @@ import base64
 from datetime import UTC, datetime
 from typing import Protocol
 
+from report.application.funnel_passages import FunnelPassages
 from report.rendering.funnel_renderer import render_funnel_html, template_version
 from report.schemas.render import FunnelReportRequestDTO, ReportPdfDTO
 
@@ -15,11 +16,14 @@ class PdfRenderer(Protocol):
 
 
 class FunnelReportService:
-    def __init__(self, pdf_renderer: PdfRenderer) -> None:
+    def __init__(self, pdf_renderer: PdfRenderer, passages: FunnelPassages | None = None) -> None:
         self._pdf = pdf_renderer
+        self._passages = passages
 
     def render_pdf(self, request: FunnelReportRequestDTO) -> ReportPdfDTO:
-        pdf_bytes = self._pdf.to_pdf(render_funnel_html(request))
+        pro = request.report.professional if request.report else None
+        found = self._passages.find(pro.grounding) if self._passages and pro else ()
+        pdf_bytes = self._pdf.to_pdf(render_funnel_html(request, found))
         return ReportPdfDTO(
             assessment_id=request.session_id,
             template_version=template_version(request),

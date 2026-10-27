@@ -59,5 +59,7 @@
   "proScales": "Questionnaires",
   "proUnknown": "Ce qui n'est pas connu n'est jamais compté comme « Non ».",
   "proHealth": "Document de santé : ne le partagez pas si vous ne le souhaitez pas.",
-  "proOriginNote": "Sans étiquette : répondu par la personne. Avec étiquette : donnée du récit libre (confirmée ou corrigée par elle) ou question de sécurité posée sur le moment."
+  "proOriginNote": "Sans étiquette : répondu par la personne. Avec étiquette : donnée du récit libre (confirmée ou corrigée par elle) ou question de sécurité posée sur le moment.",
+  "passagesTitle": "Appui dans les sources",
+  "passagesNote": "Extraits littéraux des documents de la bibliothèque de The Somnus, choisis pour leur proximité avec l'orientation. Ils appuient l'orientation ; ils ne la décident pas. Ils peuvent commencer ou finir au milieu d'une phrase et sont dans la langue de la source."
 }

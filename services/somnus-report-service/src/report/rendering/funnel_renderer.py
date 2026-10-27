@@ -11,6 +11,9 @@ headings), from the locale files.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
+from report.application.funnel_passages import Passage
 from report.rendering.dates import format_datetime
 from report.rendering.i18n import strings_for
 from report.rendering.renderer import _env
@@ -25,12 +28,13 @@ def template_version(request: FunnelReportRequestDTO) -> str:
     return TEMPLATE_VERSION_V2 if request.report is None else TEMPLATE_VERSION_V3
 
 
-def render_funnel_html(request: FunnelReportRequestDTO) -> str:
+def render_funnel_html(request: FunnelReportRequestDTO, passages: Sequence[Passage] = ()) -> str:
     version = template_version(request)
     template = _env.get_template(f"{version}.html.j2")
     return template.render(
         strings=strings_for(request.locale),
         request=request,
         template_version=version,
+        passages=passages,
         completed_display=format_datetime(request.completed_at, request.locale),
     )
