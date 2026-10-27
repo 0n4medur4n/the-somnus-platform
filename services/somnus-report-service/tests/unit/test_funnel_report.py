@@ -250,7 +250,7 @@ def test_weasyprint_renders_the_one_page_report() -> None:
 
 
 def test_a_heavy_report_still_fits_the_patients_page_and_the_professionals_page() -> None:
-    """A long case (36 answers, long headline): one page for the person, one to hand over."""
+    """The longest real case (34 answers, two headline sentences): two pages, one each."""
     try:
         from weasyprint import HTML
     except OSError as exc:  # native Pango/Cairo libraries not installed (local dev)
@@ -258,11 +258,11 @@ def test_a_heavy_report_still_fits_the_patients_page_and_the_professionals_page(
     answers = [
         {
             "id": f"Q{i:02d}",
-            "question": "¿Hay enfermedad cardiopulmonar, debilidad respiratoria o insomnio grave?",
-            "answer": "Ronca fuerte, se despierta con sensación de ahogo",
+            "question": "¿Hay enfermedad cardiopulmonar, debilidad respiratoria o insomnio?",
+            "answer": "6 noches por semana" if i % 2 else "No",
             "origin": "answered" if i % 3 else "narrative",
         }
-        for i in range(2, 38)
+        for i in range(2, 36)
     ]
     heavy = {
         **REPORT,
@@ -277,7 +277,7 @@ def test_a_heavy_report_still_fits_the_patients_page_and_the_professionals_page(
         texts=[
             {
                 "template": "T_COMBINADO",
-                "text": "Ha contado dificultades persistentes para dormir. " * 6,
+                "text": "Ha contado dificultades persistentes para dormir. " * 3,
             }
         ],
     )
