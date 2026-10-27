@@ -6,7 +6,7 @@ import base64
 from datetime import UTC, datetime
 from typing import Protocol
 
-from report.rendering.funnel_renderer import TEMPLATE_VERSION_V2, render_funnel_html
+from report.rendering.funnel_renderer import render_funnel_html, template_version
 from report.schemas.render import FunnelReportRequestDTO, ReportPdfDTO
 
 
@@ -22,7 +22,7 @@ class FunnelReportService:
         pdf_bytes = self._pdf.to_pdf(render_funnel_html(request))
         return ReportPdfDTO(
             assessment_id=request.session_id,
-            template_version=TEMPLATE_VERSION_V2,
+            template_version=template_version(request),
             definition_version=request.rules_version,
             content_version=request.content_version,
             locale=request.locale,

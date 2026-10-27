@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="{{ request.locale }}">
+  {% set r = request.report %}
+  {% set origins = {"answered": strings.originAnswered, "narrative": strings.originNarrative, "corrected": strings.originCorrected} %}
+  {% set whens = {"moment": strings.whenMoment, "end": strings.whenEnd, "confirmed": strings.whenConfirmed} %}
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ strings.brand }} · {{ strings.v2Title }}</title>
+    <style>
+      /* report_v3: the one-page report and the professional's page. Every clinical
+         sentence is morpheo's own (an approved template or catalogue phrase, or a
+         literal v0.2 phrase); the words around them are layout chrome. */
+      @page {
+        size: A4;
+        margin: 14mm 16mm 18mm;
+        @bottom-left { content: "{{ strings.brand }} · The Somnus"; font-size: 7.5pt; color: #64748b; }
+        @bottom-right { content: "{{ strings.page }} " counter(page) " / " counter(pages); font-size: 7.5pt; color: #64748b; }
+      }
+      * { box-sizing: border-box; }
+      body { font-family: "DejaVu Sans", sans-serif; font-size: 10pt; color: #1e293b; line-height: 1.5; margin: 0; }
+      .page-two { page-break-before: always; }
+      .report-header { background: #090d1a; color: #e2e8f0; border-radius: 10pt; padding: 14pt 18pt 12pt; margin-bottom: 12pt; }
+      .brand { font-size: 22pt; font-weight: bold; color: #ffffff; margin: 0; letter-spacing: 0.6pt; }
+      .brand-dot { color: #437ef7; }
+      .byline { margin: 1pt 0 8pt; color: #9fb0c3; font-size: 9pt; }
+      h1 { font-size: 13pt; margin: 0; color: #ffffff; font-weight: normal; }
+      .report-date { color: #9fb0c3; margin: 3pt 0 0; font-size: 8.5pt; }
+      h2 { font-size: 10.5pt; color: #2f6ae0; margin: 12pt 0 4pt; padding-left: 7pt; border-left: 3pt solid #437ef7; }
+      p { margin: 0 0 6pt; }
+      .draft { background: #fff3b0; border: 1pt dashed #b7950b; border-radius: 6pt; padding: 6pt 10pt; font-size: 8.5pt; margin-bottom: 10pt; }
+      .language-note { color: #475569; font-size: 9pt; margin: 0 0 8pt; }
+      .main { border: 1.5pt solid #437ef7; background: #eef4ff; border-radius: 8pt; padding: 9pt 12pt; }
+      .main p { font-size: 12pt; font-weight: bold; margin: 0 0 3pt; }
+      .main p:last-child { margin: 0; }
+      .note { font-size: 7.5pt; color: #64748b; }
+      ul { margin: 0 0 6pt; padding-left: 14pt; }
+      li { margin: 0 0 3pt; }
+      .help { border: 1.5pt solid #c0392b; background: #fdecec; border-radius: 8pt; padding: 8pt 12pt; margin-top: 10pt; page-break-inside: avoid; }
+      .help h2 { margin-top: 0; color: #922b21; border-left-color: #c0392b; }
+      .help p, .help ul { margin-bottom: 3pt; }
+      .urgent { border: 2pt solid #c0392b; background: #fdecec; border-radius: 8pt; padding: 12pt 14pt; }
+      .urgent p { font-size: 11.5pt; font-weight: bold; color: #7b1d14; }
+      .limits { font-size: 8.5pt; color: #475569; border-top: 1pt solid #e2e8f0; margin-top: 10pt; padding-top: 6pt; }
+      .instruments { page-break-inside: avoid; }
+      .instruments-note { color: #475569; font-size: 8.5pt; }
+      table { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 6pt; }
+      th, td { border: 0.5pt solid #cbd5e1; padding: 2pt 5pt; text-align: left; vertical-align: top; }
+      th { background: #e2e8f0; }
+      th.key { width: 30%; }
+      tr { page-break-inside: avoid; }
+      .quote { font-style: italic; }
+      .report-footer { margin-top: 10pt; border-top: 1pt solid #e2e8f0; padding-top: 5pt; font-size: 7.5pt; color: #94a3b8; }
+    </style>
+  </head>
+  <body>
+    <header class="report-header">
+      <p class="brand">{{ strings.brand }}<span class="brand-dot">.</span></p>
+      <p class="byline">{{ strings.byline }}</p>
+      <h1>{{ strings.v2Title }}</h1>
+      <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
+    </header>
+    {% if r.status == "borrador" %}
+    <p class="draft">{{ strings.draftBanner }}</p>
+    {% endif %}
+    {% if strings.clinicalLanguage %}
+    <p class="language-note">{{ strings.clinicalLanguage }}</p>
+    {% endif %}
+
+    {% if r.layout == "urgent" %}
+    <section class="urgent">
+      {% for paragraph in request.texts %}
+      <p class="paragraph" data-template="{{ paragraph.template }}">{{ paragraph.text }}</p>
+      {% endfor %}
+    </section>
+    {% else %}
+    <section class="most-important">
+      <h2>{{ strings.mostImportant }}</h2>
+      <div class="main">
+        {% for sentence in r.headline %}<p>{{ sentence }}</p>{% endfor %}
+        {% for sentence in r.secondary %}<p>{{ sentence }}</p>{% endfor %}
+      </div>
+    </section>
+    {% if r.summary %}
+    <section class="told">
+      <h2>{{ strings.whatYouTold }}</h2>
+      <p>{{ r.summary[0]|upper }}{{ r.summary[1:] }}</p>
+      <p class="note">{{ strings.whatYouToldNote }}</p>
+    </section>
+    {% endif %}
+    <section class="guidance">
+      <h2>{{ strings.whatItMeans }}</h2>
+      {% for paragraph in request.texts %}
+      <p class="paragraph" data-template="{{ paragraph.template }}">{{ paragraph.text }}</p>
+      {% endfor %}
+    </section>
+    <section class="next">
+      <h2>{{ strings.whatToDoNow }}</h2>
+      <ul>
+        {% for step in r.steps %}<li>{{ step }}</li>{% endfor %}
+        {% if r.professional %}<li>{{ strings.handPage2 }}</li>{% endif %}
+      </ul>
+    </section>
+    {% if request.instruments %}
+    <section class="instruments">
+      <h2>{{ strings.instruments }}</h2>
+      <ul>
+        {% for instrument in request.instruments %}
+        <li><strong>{{ instrument.name or instrument.code }}</strong>: {{ instrument.total }} {{ strings.points }}{% if instrument.band %} · {{ instrument.band }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% if request.instruments_note %}
+      <p class="instruments-note">{{ request.instruments_note }}</p>
+      {% endif %}
+    </section>
+    {% endif %}
+    <section class="help">
+      <h2>{{ strings.askForHelp }}</h2>
+      {% for sentence in r.help.sentences %}<p>{{ sentence }}</p>{% endfor %}
+      {% if r.help.resources %}
+      <ul>
+        {% for resource in r.help.resources %}<li>{{ resource.text }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if r.limits %}
+    <p class="limits"><strong>{{ strings.limits }}.</strong> {{ r.limits|join(" ") }}</p>
+    {% endif %}
+    <footer class="report-footer">
+      {{ strings.reference }}: {{ request.session_id }} · {{ strings.versions }}: {{ template_version }} / {{ request.rules_version }} / {{ request.content_version }}
+    </footer>
+
+    {% if r.professional %}
+    {% set pro = r.professional %}
+    <div class="page-two">
+      <header class="report-header">
+        <p class="brand">{{ strings.brand }}<span class="brand-dot">.</span></p>
+        <p class="byline">{{ strings.proByline }}</p>
+        <h1>{{ strings.proTitle }}</h1>
+        <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
+      </header>
+      {% if r.status == "borrador" %}
+      <p class="draft">{{ strings.draftBanner }}</p>
+      {% endif %}
+
+      <h2>{{ strings.proEngine }}</h2>
+      <table class="engine">
+        <tr><th class="key">{{ strings.proMainAction }}</th><td>{{ pro.main_action or strings.proNone }}</td></tr>
+        <tr><th class="key">{{ strings.proAssociated }}</th><td>{{ pro.associated_actions|join(" · ") or strings.proNone }}</td></tr>
+        <tr><th class="key">{{ strings.proTemplates }}</th><td>{{ pro.templates|join(" · ") }}</td></tr>
+        <tr><th class="key">{{ strings.proRules }}</th><td>{% for line in pro.rules %}{{ line }}{% if not loop.last %}<br />{% endif %}{% else %}{{ strings.proNone }}{% endfor %}</td></tr>
+        <tr><th class="key">{{ strings.proFlags }}</th><td>{% for flag in pro.flags %}<strong>{{ flag.id }}</strong>{% if flag.reasons %}: {{ flag.reasons|join(", ") }}{% endif %}{% if not loop.last %}<br />{% endif %}{% else %}{{ strings.proNone }}{% endfor %}</td></tr>
+        <tr><th class="key">{{ strings.proAlerts }}</th><td>{{ pro.alerts|join(" · ") or strings.proNone }}</td></tr>
+        <tr><th class="key">{{ strings.proPending }}</th><td>{{ pro.pending_data|join(" · ") or strings.proNone }}</td></tr>
+      </table>
+
+      {% if pro.safety %}
+      <h2>{{ strings.proSafety }}</h2>
+      <table class="safety">
+        <tr><th>{{ strings.proQuestion }}</th><th class="key">{{ strings.proAnswer }}</th><th class="key">{{ strings.proOrigin }}</th></tr>
+        {% for row in pro.safety %}
+        <tr><td>{{ row.question }}</td><td>{{ row.answer }}</td><td>{{ whens[row.when] }}</td></tr>
+        {% endfor %}
+      </table>
+      {% endif %}
+
+      <h2>{{ strings.proAnswers }}</h2>
+      <table class="answers">
+        <tr><th>{{ strings.proQuestion }}</th><th class="key">{{ strings.proAnswer }}</th><th class="key">{{ strings.proOrigin }}</th></tr>
+        {% for row in pro.answers %}
+        <tr><td>{{ row.question }}</td><td>{{ row.answer }}</td><td>{{ origins[row.origin] }}</td></tr>
+        {% endfor %}
+      </table>
+
+      {% if pro.narrative %}
+      <h2>{{ strings.proNarrative }}</h2>
+      <p class="quote narrative">«{{ pro.narrative }}»</p>
+      {% endif %}
+
+      {% if r.sources %}
+      <h2>{{ strings.sources }}</h2>
+      <ul class="sources">
+        {% for line in r.sources %}<li class="note">{{ line }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+
+      <footer class="report-footer">
+        {{ strings.proUnknown }} {{ strings.versions }}: {{ template_version }} / {{ request.rules_version }} / {{ request.content_version }}. {{ strings.proHealth }}
+      </footer>
+    </div>
+    {% endif %}
+  </body>
+</html>
