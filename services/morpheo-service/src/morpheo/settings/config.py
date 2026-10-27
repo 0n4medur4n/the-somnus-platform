@@ -58,10 +58,10 @@ class Settings(BaseSettings):
     # the flag off or no key the interview asks every question, as before.
     ai_extraction_enabled: bool = Field(default=True, alias="AI_EXTRACTION_ENABLED")
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
-    # The one-page report and the professional's page. Off: the result carries
-    # no report and nothing changes. On: the service refuses to start unless the
-    # clinical lead has signed the texts (clinical/morpheo_informe_v3.json).
-    report_v3_enabled: bool = Field(default=False, alias="REPORT_V3_ENABLED")
+    # The one-page report and the professional's page: on (owner decision
+    # 27/10/2026). The service refuses to start unless clinical/morpheo_informe_v3.json
+    # is marked approved. Off: the result carries no report, as before.
+    report_v3_enabled: bool = Field(default=True, alias="REPORT_V3_ENABLED")
     openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
     ai_model: str = Field(default="gpt-6-luna", min_length=1, alias="AI_EXTRACTION_MODEL")
     # Effort "none" so the low temperature applies (a reasoning model takes no

@@ -194,7 +194,6 @@ class FunnelReportProfessionalDTO(ContractModel):
 
 
 class FunnelReportDTO(ContractModel):
-    status: Literal["borrador", "aprobado"]
     layout: Literal["urgent", "standard"]
     headline: list[str]
     secondary: list[str]

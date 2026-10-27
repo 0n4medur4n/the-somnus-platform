@@ -130,13 +130,6 @@
         {
           "type": "object",
           "properties": {
-            "status": {
-              "type": "string",
-              "enum": [
-                "borrador",
-                "aprobado"
-              ]
-            },
             "layout": {
               "type": "string",
               "enum": [
@@ -384,7 +377,6 @@
             }
           },
           "required": [
-            "status",
             "layout",
             "headline",
             "secondary",

@@ -191,19 +191,13 @@ def test_narrative_mode_stores_the_ai_record_and_the_decisions_on_the_real_schem
     assert keys[1:4] == ["Q01", "Q01#ia", "Q01#confirmacion"]
 
 
-def test_the_result_carries_no_report_while_the_switch_is_off(client: TestClient) -> None:
+def test_the_result_carries_no_report_when_the_switch_is_off(client: TestClient) -> None:
+    client.app.state.informe = None  # type: ignore[attr-defined]
     state = _play(client, "FT-1")
     assert state["result"] is not None and state["result"]["report"] is None
 
 
-def test_the_result_carries_the_report_when_the_switch_is_on_with_a_signed_artifact(
-    client: TestClient,
-) -> None:
-    from morpheo.funnel.informe import InformeArtifact, informe_artifact
-
-    raw = informe_artifact().raw
-    signed = InformeArtifact({**raw, "meta": {**raw["meta"], "approved": True}})
-    client.app.state.informe = signed  # type: ignore[attr-defined]
+def test_the_result_carries_the_report_by_default(client: TestClient) -> None:
     report = _play(client, "FT-1")["result"]["report"]
-    assert report["status"] == "aprobado" and report["layout"] == "standard"
+    assert report["layout"] == "standard"
     assert report["headline"] and report["limits"] and report["professional"]["mainAction"]

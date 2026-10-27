@@ -511,7 +511,6 @@
       "signInHint": "Pour enregistrer l'orientation et télécharger le rapport, connectez-vous avant de commencer."
     },
     "report": {
-      "draft": "BROUILLON · Les textes de ce rapport attendent l'approbation clinique. Ce n'est pas un rapport définitif.",
       "mostImportant": "L'essentiel",
       "whatYouTold": "Ce que vous nous avez dit",
       "whatYouToldNote": "C'est le résumé que vous avez confirmé à l'écran précédent. Si quelque chose n'est pas correct, refaites l'orientation.",

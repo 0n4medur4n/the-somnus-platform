@@ -93,19 +93,6 @@ export function FunnelResultView({
 
 type Texts = FunnelResult["texts"];
 
-function DraftBanner({ report }: { report: FunnelReport }) {
-  const { t } = useTranslation();
-  return report.status === "borrador" ? (
-    <p
-      role="note"
-      className="rounded-md border border-dashed border-somnus-muted px-3 py-2 text-sm"
-      data-testid="funnel-report-draft"
-    >
-      {t("funnel.report.draft")}
-    </p>
-  ) : null;
-}
-
 function Limits({ report }: { report: FunnelReport }) {
   const { t } = useTranslation();
   return report.limits.length > 0 ? (
@@ -119,7 +106,6 @@ function Limits({ report }: { report: FunnelReport }) {
 function UrgentReport({ report, texts }: { report: FunnelReport; texts: Texts }) {
   return (
     <div className="flex flex-col gap-4" data-testid="funnel-report-urgent">
-      <DraftBanner report={report} />
       <div
         className="flex flex-col gap-3 rounded-xl border-2 border-somnus-danger/70 bg-somnus-danger/10 p-4 text-base font-semibold leading-relaxed"
         data-testid="funnel-final-text"
@@ -152,7 +138,6 @@ function StandardReport({
   const headline = [...report.headline, ...report.secondary];
   return (
     <div className="flex flex-col gap-5" data-testid="funnel-report">
-      <DraftBanner report={report} />
       {headline.length > 0 ? (
         <section aria-labelledby="funnel-report-main" className="flex flex-col gap-2">
           <h3 id="funnel-report-main" className="font-semibold">

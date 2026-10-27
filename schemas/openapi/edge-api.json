@@ -1997,6 +1997,227 @@
         ]
       }
     },
+    "/v1/funnel/config": {
+      "get": {
+        "operationId": "FunnelController_config",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Which assessment flow the app runs (v1 or v2).",
+        "tags": [
+          "funnel"
+        ]
+      }
+    },
+    "/v1/funnel/sessions": {
+      "post": {
+        "operationId": "FunnelController_create",
+        "parameters": [
+          {
+            "name": "panel",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FunnelCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Start an interview (health-data consent); returns the first step.",
+        "tags": [
+          "funnel"
+        ]
+      }
+    },
+    "/v1/funnel/sessions/{sessionId}": {
+      "get": {
+        "operationId": "FunnelController_get",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "panel",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The interview as it stands: the step to show, or the result.",
+        "tags": [
+          "funnel"
+        ]
+      }
+    },
+    "/v1/funnel/sessions/{sessionId}/answers": {
+      "post": {
+        "operationId": "FunnelController_answer",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "panel",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FunnelAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Answer the step being served; returns the next step or the result.",
+        "tags": [
+          "funnel"
+        ]
+      }
+    },
+    "/v1/funnel/sessions/{sessionId}/back": {
+      "post": {
+        "operationId": "FunnelController_back",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "panel",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Undo the last answer (the back button).",
+        "tags": [
+          "funnel"
+        ]
+      }
+    },
+    "/v1/funnel/sessions/{sessionId}/report.pdf": {
+      "get": {
+        "operationId": "FunnelController_reportPdf",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The signed-in person's own v2 report, as a PDF (not stored).",
+        "tags": [
+          "funnel"
+        ]
+      }
+    },
+    "/v1/funnel/sessions/{sessionId}/rewind": {
+      "post": {
+        "operationId": "FunnelController_rewind",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "panel",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FunnelRewindDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Go back to an answer to change it (Z1 correction).",
+        "tags": [
+          "funnel"
+        ]
+      }
+    },
     "/v1/registration": {
       "post": {
         "operationId": "RegistrationController_register",
@@ -2815,6 +3036,7 @@
               "open_access",
               "licensed",
               "citation_only",
+              "owner_authorised",
               null
             ],
             "nullable": true
@@ -2917,6 +3139,7 @@
               "open_access",
               "licensed",
               "citation_only",
+              "owner_authorised",
               null
             ],
             "nullable": true
@@ -5341,6 +5564,193 @@
             "maxLength": 500
           }
         },
+        "additionalProperties": false
+      },
+      "FunnelCreateDto": {
+        "type": "object",
+        "properties": {
+          "consentGiven": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "consentGiven"
+        ],
+        "additionalProperties": false
+      },
+      "FunnelAnswerDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 200
+              },
+              {
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number",
+                    "exclusiveMinimum": true,
+                    "maximum": 1000,
+                    "minimum": 0
+                  },
+                  "unit": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 16
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}$"
+                }
+              }
+            ],
+            "nullable": true
+          },
+          "absence": {
+            "type": "string",
+            "enum": [
+              "no_lo_se",
+              "prefiero_no_responder",
+              null
+            ],
+            "nullable": true
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "decisions": {
+            "maxItems": 60,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "decision": {
+                  "type": "string",
+                  "enum": [
+                    "confirmado",
+                    "corregido",
+                    "quitado"
+                  ]
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 200
+                    },
+                    {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "number",
+                          "exclusiveMinimum": true,
+                          "maximum": 1000,
+                          "minimum": 0
+                        },
+                        "unit": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 16
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "unit"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string",
+                        "pattern": "^\\d{2}:\\d{2}$"
+                      }
+                    }
+                  ],
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "decision"
+              ],
+              "additionalProperties": false
+            },
+            "nullable": true
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "additionalProperties": false
+      },
+      "FunnelRewindDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "key"
+        ],
         "additionalProperties": false
       },
       "RegistrationDto": {
