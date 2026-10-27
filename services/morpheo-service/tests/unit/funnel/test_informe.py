@@ -47,10 +47,10 @@ def _run(vignette_id: str) -> tuple[Any, Interview, Any]:
 VIGNETTES = [v["id"] for v in load_vignettes()]
 
 
-def test_the_artifact_is_a_draft_until_the_clinical_lead_signs_it() -> None:
-    assert I.approved is False
+def test_the_artifact_is_approved() -> None:
+    assert I.approved is True
     report, _, _ = _run("FT-1")
-    assert report is not None and report.approved is False
+    assert report is not None
 
 
 @pytest.mark.parametrize("vignette_id", VIGNETTES)
@@ -182,19 +182,30 @@ def test_the_loader_refuses_an_unknown_template() -> None:
 # --- the switch ---
 
 
-def test_the_switch_refuses_a_draft_artifact() -> None:
+def _unsigned() -> Any:
+    from morpheo.funnel.informe import InformeArtifact
+
+    return InformeArtifact({**RAW, "meta": {**RAW["meta"], "approved": False}})
+
+
+def test_the_switch_refuses_an_artifact_that_is_not_approved() -> None:
     from morpheo.funnel.informe import require_approved
 
-    with pytest.raises(InformeError, match="drafts"):
-        require_approved(I)
+    with pytest.raises(InformeError, match="not been signed"):
+        require_approved(_unsigned())
+    assert require_approved(I) is I
 
 
-def test_the_service_refuses_to_start_with_the_switch_on_and_a_draft() -> None:
-    from morpheo.main import create_app
+def test_the_service_refuses_to_start_with_the_switch_on_and_an_unsigned_artifact(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import morpheo.main as main
 
+    monkeypatch.setattr(main, "informe_artifact", _unsigned)
     with pytest.raises(InformeError):
-        create_app(Settings(_env_file=None, REPORT_V3_ENABLED=True))  # type: ignore[call-arg]
+        main.create_app(Settings(_env_file=None, REPORT_V3_ENABLED=True))  # type: ignore[call-arg]
 
 
-def test_the_switch_is_off_by_default() -> None:
-    assert Settings(_env_file=None).report_v3_enabled is False  # type: ignore[call-arg]
+def test_the_switch_is_on_by_default_and_can_be_turned_off() -> None:
+    assert Settings(_env_file=None).report_v3_enabled is True  # type: ignore[call-arg]
+    assert Settings(_env_file=None, REPORT_V3_ENABLED=False).report_v3_enabled is False  # type: ignore[call-arg]

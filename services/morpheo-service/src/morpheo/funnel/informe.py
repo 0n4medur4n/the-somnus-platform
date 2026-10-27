@@ -9,10 +9,10 @@ with where each came from.
 Nothing here is written by a model, and nothing is new clinical text that is not
 in `clinical/morpheo_informe_v3.json`: the headline is a sentence of an already
 approved template; the other texts are approved sentences or literal v0.2
-phrases, or the clinical lead's own (the artifact says which are still drafts).
+phrases, or the clinical lead's own.
 The loader fails loudly if a sentence it carries is not in the approved sources,
-and `REPORT_V3_ENABLED` refuses to start with a draft artifact, so a draft never
-reaches a patient.
+and `REPORT_V3_ENABLED` refuses to start with an artifact that is not marked
+approved.
 """
 
 from __future__ import annotations
@@ -90,7 +90,6 @@ class Professional:
 
 @dataclass(frozen=True)
 class Informe:
-    approved: bool
     layout: str  # "urgent" | "standard"
     headline: tuple[str, ...] = ()
     secondary: tuple[str, ...] = ()
@@ -182,7 +181,7 @@ def require_approved(informe: InformeArtifact) -> InformeArtifact:
     if not informe.approved:
         raise InformeError(
             "REPORT_V3_ENABLED needs an approved clinical/morpheo_informe_v3.json "
-            "(meta.approved is false: the texts are still drafts)"
+            "(meta.approved is false: the texts have not been signed)"
         )
     return informe
 
@@ -290,7 +289,6 @@ def build(
     templates = [t for t, _ in result.texts]
     if result.accion_principal in raw["urgente"]["categorias"]:
         return Informe(
-            approved=informe.approved,
             layout="urgent",
             limits=tuple(raw["limites"]["frases"]),
         )
@@ -317,7 +315,6 @@ def build(
     items = _v02_sources(artifact)
     first = iv.answer("Q01")
     return Informe(
-        approved=informe.approved,
         layout="standard",
         headline=headline,
         secondary=tuple(secondary[:3]),

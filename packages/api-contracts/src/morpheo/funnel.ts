@@ -238,14 +238,12 @@ export type FunnelResultPanel = z.infer<typeof FunnelResultPanelSchema>;
 
 /**
  * The patient's report (one page) and the professional's page, built by morpheo
- * from the engine's result -- never by a model. `status` says whether the clinical
- * lead has signed the texts: a "borrador" report is never sent to a patient.
+ * from the engine's result -- never by a model.
  * Everything the person reads is an already approved sentence or a literal v0.2
  * phrase; the headline is the sentence of the approved template that says what to do.
  */
 export const FunnelReportSchema = z
   .object({
-    status: z.enum(["borrador", "aprobado"]),
     /** "urgent": only the urgent message (the texts), nothing else. */
     layout: z.enum(["urgent", "standard"]),
     headline: z.array(z.string()),

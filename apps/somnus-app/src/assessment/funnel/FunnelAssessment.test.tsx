@@ -270,7 +270,6 @@ describe("FunnelAssessment", () => {
   it("lays the result out as the one-page report when morpheo built one", async () => {
     const user = userEvent.setup();
     const report = {
-      status: "aprobado" as const,
       layout: "standard" as const,
       headline: ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
       secondary: [],
@@ -298,36 +297,12 @@ describe("FunnelAssessment", () => {
     expect(
       within(screen.getByTestId("funnel-report")).getByText(/No es un diagnóstico\./),
     ).toBeVisible();
-    expect(screen.queryByTestId("funnel-report-draft")).toBeNull();
     expect(screen.getByRole("link", { name: es("funnel.result.download") })).toBeVisible();
-  });
-
-  it("says a draft report is a draft", async () => {
-    const user = userEvent.setup();
-    const report = {
-      status: "borrador" as const,
-      layout: "standard" as const,
-      headline: ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
-      secondary: [],
-      summary: null,
-      steps: [],
-      help: { sentences: [], resources: [] },
-      limits: [],
-      sources: [],
-      professional: null,
-    };
-    edgeMock.startFunnel.mockResolvedValue(
-      state({ status: "finished", step: null, result: { ...RESULT, report }, owned: false }),
-    );
-    renderWithProviders(<FunnelAssessment />);
-    await startInterview(user);
-    expect(await screen.findByTestId("funnel-report-draft")).toBeVisible();
   });
 
   it("shows only the urgent message in an emergency", async () => {
     const user = userEvent.setup();
     const report = {
-      status: "aprobado" as const,
       layout: "urgent" as const,
       headline: [],
       secondary: [],

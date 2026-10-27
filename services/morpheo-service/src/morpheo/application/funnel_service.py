@@ -480,7 +480,6 @@ class FunnelService:
     def _report_dto(report: Informe) -> FunnelReportDTO:
         pro = report.professional
         return FunnelReportDTO(
-            status="aprobado" if report.approved else "borrador",
             layout="urgent" if report.layout == "urgent" else "standard",
             headline=list(report.headline),
             secondary=list(report.secondary),

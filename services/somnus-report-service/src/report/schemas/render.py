@@ -177,7 +177,6 @@ class FunnelReportProfessionalDTO(ContractModel):
 class FunnelReportDTO(ContractModel):
     """morpheo's one-page report and the professional's page, as morpheo built them."""
 
-    status: Literal["borrador", "aprobado"]
     layout: Literal["urgent", "standard"]
     headline: list[str]
     secondary: list[str]

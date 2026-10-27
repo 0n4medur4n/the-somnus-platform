@@ -289,7 +289,6 @@ describe("FunnelProxyService", () => {
 
   it("hands the one-page report to the report service when morpheo built one", async () => {
     const report = {
-      status: "borrador" as const,
       layout: "standard" as const,
       headline: ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
       secondary: [],

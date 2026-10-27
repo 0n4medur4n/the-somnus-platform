@@ -131,7 +131,6 @@ def test_weasyprint_renders_the_v2_report() -> None:
 # --- the one-page report and the professional's page (report_v3) ---
 
 REPORT: dict[str, Any] = {
-    "status": "borrador",
     "layout": "standard",
     "headline": ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
     "secondary": [],
@@ -184,11 +183,6 @@ def test_the_one_page_report_has_its_blocks_in_order_and_morpheos_words() -> Non
     ):
         assert html.escape(sentence, quote=False) in document
     assert "Se despierta varias veces" in document  # the Z1 summary continues a sentence
-
-
-def test_a_draft_report_says_so_and_a_signed_one_does_not() -> None:
-    assert "BORRADOR" in render_funnel_html(_report_request())
-    assert "BORRADOR" not in render_funnel_html(_report_request(status="aprobado"))
 
 
 def test_an_urgent_report_is_only_the_urgent_message_and_the_limits() -> None:

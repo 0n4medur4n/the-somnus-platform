@@ -511,7 +511,6 @@
       "signInHint": "To save the guidance and download the report, sign in before starting."
     },
     "report": {
-      "draft": "DRAFT · The texts of this report are awaiting clinical approval. This is not a final report.",
       "mostImportant": "Most important",
       "whatYouTold": "What you told us",
       "whatYouToldNote": "This is the summary you confirmed on the last screen. If anything is not right, do the guidance again.",
