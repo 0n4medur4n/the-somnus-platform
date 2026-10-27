@@ -8,7 +8,7 @@ two independent places: nothing publishes without a rights declaration
 (`corpus.embedding_gate`). Either check alone would be enough on a good day; the
 point is that neither has to be.
 
-## The four statuses, and what counts as evidence
+## The five statuses, and what counts as evidence
 
 | status          | what it means                                | evidence required |
 | --------------- | -------------------------------------------- | ----------------- |
@@ -16,6 +16,12 @@ point is that neither has to be.
 | `open_access`   | publicly licensed                            | `licence` + `url` |
 | `licensed`      | institutional subscription or purchase       | `licence` + `holder` |
 | `citation_only` | citation and an abstract-length summary only | none              |
+| `owner_authorised` | the owner states it holds permission        | none (the owner's word) |
+
+`owner_authorised` (owner decision, 2026-10-27) is the owner's own declaration that
+The Somnus holds permission to use the document in full. It asks for no licence
+or holder: the statement is the evidence, and the accountable person is the owner.
+The three stricter statuses keep their evidence rules unchanged.
 
 `citation_only` requires no evidence because it is itself the most restrictive
 claim: it asserts the platform holds no full text at all. What it costs instead is
@@ -37,9 +43,16 @@ RIGHTS_OWN_DOCUMENT: Final = "own_document"
 RIGHTS_OPEN_ACCESS: Final = "open_access"
 RIGHTS_LICENSED: Final = "licensed"
 RIGHTS_CITATION_ONLY: Final = "citation_only"
+RIGHTS_OWNER_AUTHORISED: Final = "owner_authorised"
 
 RIGHTS_STATUSES: Final[frozenset[str]] = frozenset(
-    {RIGHTS_OWN_DOCUMENT, RIGHTS_OPEN_ACCESS, RIGHTS_LICENSED, RIGHTS_CITATION_ONLY}
+    {
+        RIGHTS_OWN_DOCUMENT,
+        RIGHTS_OPEN_ACCESS,
+        RIGHTS_LICENSED,
+        RIGHTS_CITATION_ONLY,
+        RIGHTS_OWNER_AUTHORISED,
+    }
 )
 
 #: The fields each status must be able to show, beyond the status itself.
@@ -48,6 +61,7 @@ REQUIRED_EVIDENCE: Final[dict[str, tuple[str, ...]]] = {
     RIGHTS_OPEN_ACCESS: ("licence", "url"),
     RIGHTS_LICENSED: ("licence", "holder"),
     RIGHTS_CITATION_ONLY: (),
+    RIGHTS_OWNER_AUTHORISED: (),
 }
 
 #: Statuses §B4 asks the console to warn about in plain language (Checkpoint 16.3).

@@ -42,7 +42,8 @@
                 "own_document",
                 "open_access",
                 "licensed",
-                "citation_only"
+                "citation_only",
+                "owner_authorised"
               ]
             },
             {

@@ -23,7 +23,9 @@ from typing import Literal
 from report.schemas.base import ContractModel
 
 CorpusDocumentStatus = Literal["draft", "published", "retired"]
-CorpusRightsStatus = Literal["own_document", "open_access", "licensed", "citation_only"]
+CorpusRightsStatus = Literal[
+    "own_document", "open_access", "licensed", "citation_only", "owner_authorised"
+]
 CorpusScopeType = Literal["module", "safety_rule", "clinical_source", "general"]
 CorpusOriginKind = Literal["file", "web_page"]
 

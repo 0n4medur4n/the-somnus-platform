@@ -361,13 +361,15 @@
       "own_document": "Documento propio",
       "open_access": "Acceso abierto",
       "licensed": "Con licencia",
-      "citation_only": "Solo cita"
+      "citation_only": "Solo cita",
+      "owner_authorised": "Autorizado por el titular"
     },
     "rightsMeaning": {
       "own_document": "Escrito por The Somnus. No requiere evidencia adicional.",
       "open_access": "Publicado con una licencia abierta. Indica la licencia y el enlace.",
       "licensed": "Cubierto por una suscripción o compra institucional. Indica la licencia y quién la posee.",
-      "citation_only": "Solo la cita y un resumen breve. La plataforma no guarda el texto completo."
+      "citation_only": "Solo la cita y un resumen breve. La plataforma no guarda el texto completo.",
+      "owner_authorised": "El titular de The Somnus declara que tiene permiso para usar este documento completo. No pide licencia ni titular."
     },
     "rightsWarning": {
       "licensed": "Ojo: declarar «con licencia» afirma que existe una suscripción o compra real que cubre este uso. Si no la hay, el texto acabará enviado a un proveedor externo sin derecho a ello.",

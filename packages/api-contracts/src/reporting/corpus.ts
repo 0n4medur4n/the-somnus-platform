@@ -24,12 +24,13 @@ export const CORPUS_DOCUMENT_STATUSES = ["draft", "published", "retired"] as con
 export const CorpusDocumentStatusSchema = z.enum(CORPUS_DOCUMENT_STATUSES);
 export type CorpusDocumentStatus = z.infer<typeof CorpusDocumentStatusSchema>;
 
-/** §B4's four, mirrored from `report.corpus.rights`. */
+/** §B4's five, mirrored from `report.corpus.rights`. */
 export const CORPUS_RIGHTS_STATUSES = [
   "own_document",
   "open_access",
   "licensed",
   "citation_only",
+  "owner_authorised",
 ] as const;
 export const CorpusRightsStatusSchema = z.enum(CORPUS_RIGHTS_STATUSES);
 export type CorpusRightsStatus = z.infer<typeof CorpusRightsStatusSchema>;

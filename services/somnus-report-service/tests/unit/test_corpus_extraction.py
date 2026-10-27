@@ -158,3 +158,43 @@ def test_a_pdf_with_too_many_pages_is_refused(monkeypatch: pytest.MonkeyPatch) -
 def test_a_broken_pdf_is_refused_not_crashed_on() -> None:
     with pytest.raises(ExtractionError):
         extract(b"%PDF-1.4\n" + b"\x00garbage" * 50)
+
+
+def _two_pages() -> bytes:
+    from pypdf import PdfReader
+
+    writer = PdfWriter()
+    for line in ("Primera pagina", "Segunda pagina"):
+        writer.append(PdfReader(io.BytesIO(_pdf(line))))
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    return buffer.getvalue()
+
+
+def test_one_damaged_page_does_not_lose_the_others(monkeypatch: pytest.MonkeyPatch) -> None:
+    from pypdf import PageObject
+    from pypdf.errors import PdfReadError
+
+    original = PageObject.extract_text
+
+    def flaky(self: PageObject, *args: object, **kwargs: object) -> str:
+        text = original(self, *args, **kwargs)  # type: ignore[arg-type]
+        if "Primera" in text:
+            raise PdfReadError("damaged page")
+        return text
+
+    monkeypatch.setattr(PageObject, "extract_text", flaky)
+    result = extract(_two_pages())
+    assert "Segunda pagina" in result.text and "Primera" not in result.text
+
+
+def test_a_pdf_whose_every_page_is_damaged_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    from pypdf import PageObject
+    from pypdf.errors import PdfReadError
+
+    def broken(self: PageObject, *args: object, **kwargs: object) -> str:
+        raise PdfReadError("damaged page")
+
+    monkeypatch.setattr(PageObject, "extract_text", broken)
+    with pytest.raises(ExtractionError, match="could not be read"):
+        extract(_two_pages())

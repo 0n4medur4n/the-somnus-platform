@@ -41,6 +41,7 @@ export const EVIDENCE_FIELDS: Record<CorpusRightsStatus, Array<keyof CorpusRight
   open_access: ["licence", "url"],
   licensed: ["licence", "holder"],
   citation_only: [],
+  owner_authorised: [],
 };
 
 /** The corpus is localized like everything else (build plan §3.3). */
