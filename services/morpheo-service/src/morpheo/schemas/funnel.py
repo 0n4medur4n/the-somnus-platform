@@ -232,6 +232,20 @@ class FunnelHistoryItemDTO(ContractModel):
     answer: str
 
 
+class FunnelOwnSessionDTO(ContractModel):
+    """One of the person's own finished interviews, for their list (no answers)."""
+
+    session_id: str
+    status: Literal["finished", "stopped", "paused"]
+    main_action: str | None
+    headline: list[str]
+    created_at: str
+
+
+class FunnelOwnSessionsDTO(ContractModel):
+    sessions: list[FunnelOwnSessionDTO]
+
+
 class FunnelStateDTO(ContractModel):
     session_id: str
     status: FunnelStatus

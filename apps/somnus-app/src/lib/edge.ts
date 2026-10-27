@@ -14,6 +14,7 @@ import type {
   CurrentLegalDocumentsResponse,
   FunnelAnswerRequest,
   FunnelConfigResponse,
+  FunnelOwnSessions,
   FunnelState,
   Invitation,
   InvitationAcceptRequest,
@@ -141,6 +142,9 @@ export const edge = {
     api.get<FunnelConfigResponse>("/v1/funnel/config"),
   startFunnel: (panel: boolean): Promise<FunnelState> =>
     api.post<FunnelState>(`/v1/funnel/sessions${panelQuery(panel)}`, { consentGiven: true }),
+  /** The signed-in person's own finished interviews (their list in Mi espacio). */
+  getOwnFunnelSessions: (): Promise<FunnelOwnSessions> =>
+    api.get<FunnelOwnSessions>("/v1/funnel/sessions"),
   getFunnel: (sessionId: string, panel: boolean): Promise<FunnelState> =>
     api.get<FunnelState>(
       `/v1/funnel/sessions/${encodeURIComponent(sessionId)}${panelQuery(panel)}`,

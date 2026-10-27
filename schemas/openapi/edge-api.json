@@ -2044,6 +2044,19 @@
         "tags": [
           "funnel"
         ]
+      },
+      "get": {
+        "operationId": "FunnelController_listOwn",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The signed-in person's own finished interviews, newest first.",
+        "tags": [
+          "funnel"
+        ]
       }
     },
     "/v1/funnel/sessions/{sessionId}": {

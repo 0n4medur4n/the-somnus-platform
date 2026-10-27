@@ -206,7 +206,8 @@
     "title": "Résultat de votre évaluation",
     "savedOn": "Enregistrée le {{date}}",
     "back": "Retour à mon espace",
-    "error": "Nous n'avons pas pu charger ce résultat."
+    "error": "Nous n'avons pas pu charger ce résultat.",
+    "unfinished": "Cette évaluation n'est pas encore terminée."
   },
   "legal": {
     "title": {

@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import {
   DEFAULT_LOCALE,
   type FunnelConfigResponse,
+  type FunnelOwnSessions,
   type FunnelState,
   isSupportedLocale,
 } from "@somnus/api-contracts";
@@ -44,6 +45,16 @@ export class FunnelController {
     @CorrelationId() correlationId?: string,
   ): Promise<FunnelState> {
     return this.funnel.create(session, body, wantsPanel(panel), correlationId);
+  }
+
+  @Get("sessions")
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: "The signed-in person's own finished interviews, newest first." })
+  listOwn(
+    @CurrentSession() session: SessionRecord | undefined,
+    @CorrelationId() correlationId?: string,
+  ): Promise<FunnelOwnSessions> {
+    return this.funnel.listOwn(session, correlationId);
   }
 
   @Get("sessions/:sessionId")

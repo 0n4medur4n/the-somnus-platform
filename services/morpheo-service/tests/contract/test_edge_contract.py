@@ -78,6 +78,7 @@ def test_all_schema_artifacts_are_present() -> None:
         "FunnelAnswerRequest",
         "FunnelRewindRequest",
         "FunnelConfigResponse",
+        "FunnelOwnSessions",
     }
     present = {path.stem for path in SCHEMA_DIR.glob("*.json")}
     assert expected <= present
@@ -414,3 +415,27 @@ def test_every_v2_state_of_an_interview_conforms() -> None:
                 answers[step.key] = answer
             jsonschema.validate(body, state_schema)
             assert body["result"]["texts"]
+
+
+def test_the_own_sessions_list_conforms() -> None:
+    from morpheo.schemas.funnel import FunnelOwnSessionDTO, FunnelOwnSessionsDTO
+
+    listed = FunnelOwnSessionsDTO(
+        sessions=[
+            FunnelOwnSessionDTO(
+                session_id="f-1",
+                status="finished",
+                main_action="TERAPIA",
+                headline=["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
+                created_at="2026-10-28T10:00:00+00:00",
+            ),
+            FunnelOwnSessionDTO(
+                session_id="f-2",
+                status="stopped",
+                main_action=None,
+                headline=[],
+                created_at="2026-10-28T11:00:00+00:00",
+            ),
+        ]
+    )
+    jsonschema.validate(_dump(listed), _schema("FunnelOwnSessions"))

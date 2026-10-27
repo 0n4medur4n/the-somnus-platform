@@ -411,7 +411,30 @@ export const FunnelConfigResponseSchema = z.object({ activeFlow: z.enum(["v1", "
 export type FunnelConfigResponse = z.infer<typeof FunnelConfigResponseSchema>;
 
 /** The schemas exported as JSON Schema artifacts for morpheo's DTOs. */
+/**
+ * One of the signed-in person's own finished interviews, for their list: when it
+ * ended and the sentence of the report that says what to do. No answers and no
+ * rule detail -- opening it is the owner-scoped session route.
+ */
+export const FunnelOwnSessionSchema = z
+  .object({
+    sessionId: z.string().min(1),
+    status: z.enum(["finished", "stopped", "paused"]),
+    mainAction: z.string().nullable(),
+    headline: z.array(z.string()),
+    /** When the interview was started (ISO 8601 with offset). */
+    createdAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+export type FunnelOwnSession = z.infer<typeof FunnelOwnSessionSchema>;
+
+export const FunnelOwnSessionsSchema = z
+  .object({ sessions: z.array(FunnelOwnSessionSchema) })
+  .strict();
+export type FunnelOwnSessions = z.infer<typeof FunnelOwnSessionsSchema>;
+
 export const FUNNEL_CONTRACT_SCHEMAS = {
+  FunnelOwnSessions: FunnelOwnSessionsSchema,
   FunnelState: FunnelStateSchema,
   FunnelCreateRequest: FunnelCreateRequestSchema,
   FunnelAnswerRequest: FunnelAnswerRequestSchema,

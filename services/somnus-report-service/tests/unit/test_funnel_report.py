@@ -293,3 +293,9 @@ def test_the_request_with_a_grounding_block_conforms_to_the_contract() -> None:
     }
     request = _request(report={**REPORT, "professional": professional})
     jsonschema.validate(request.model_dump(by_alias=True, mode="json"), schema)
+
+
+def test_both_layouts_carry_the_morpheo_wordmark_inline() -> None:
+    for document in (render_funnel_html(_request()), render_funnel_html(_report_request())):
+        assert 'class="logo" src="data:image/png;base64,iVBOR' in document
+        assert 'alt="Morpheo"' in document

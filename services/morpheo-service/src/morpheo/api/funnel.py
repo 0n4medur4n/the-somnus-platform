@@ -21,6 +21,7 @@ from morpheo.schemas.funnel import (
     FunnelAnswerRequestDTO,
     FunnelConfigResponseDTO,
     FunnelCreateRequestDTO,
+    FunnelOwnSessionsDTO,
     FunnelRewindRequestDTO,
     FunnelStateDTO,
 )
@@ -90,6 +91,17 @@ def create_session(
     body: FunnelCreateRequestDTO, service: FunnelServiceDep, actor_id: OptionalActorId = None
 ) -> FunnelStateDTO:
     return service.create(owner_id=actor_id)
+
+
+@router.get(
+    "/sessions",
+    response_model=FunnelOwnSessionsDTO,
+    summary="The caller's own finished interviews, newest first (nothing without an actor).",
+)
+def list_own_sessions(
+    service: FunnelServiceDep, actor_id: OptionalActorId = None
+) -> FunnelOwnSessionsDTO:
+    return service.own_sessions(actor_id)
 
 
 @router.get(

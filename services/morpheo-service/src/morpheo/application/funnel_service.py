@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import UTC
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -51,6 +52,8 @@ from morpheo.schemas.funnel import (
     FunnelInstrumentDTO,
     FunnelOptionDTO,
     FunnelOrientationDTO,
+    FunnelOwnSessionDTO,
+    FunnelOwnSessionsDTO,
     FunnelPhase,
     FunnelReportAnswerDTO,
     FunnelReportDTO,
@@ -112,6 +115,39 @@ class FunnelService:
         state = self.state(session_id, owner_id)
         assert state is not None
         return state
+
+    #: How many of a person's interviews their list shows.
+    OWN_LIST_LIMIT = 50
+
+    def own_sessions(self, actor_id: str | None) -> FunnelOwnSessionsDTO:
+        """The caller's finished interviews, newest first (none without an actor)."""
+        if actor_id is None:
+            return FunnelOwnSessionsDTO(sessions=[])
+        items: list[FunnelOwnSessionDTO] = []
+        for row in self._repo.owned_by(actor_id):
+            if row.status not in ("finished", "stopped", "paused"):
+                continue  # still being answered: nothing to read back yet
+            answers = self._answers(row.id)
+            result = evaluate(self._a, answers, self._registry)
+            report = self._report(result, answers)
+            if report is not None and report.headline:
+                headline = list(report.headline)
+            elif result.texts:
+                headline = [result.texts[0][1]]
+            else:
+                headline = []
+            items.append(
+                FunnelOwnSessionDTO(
+                    session_id=row.id,
+                    status=row.status,
+                    main_action=result.accion_principal,
+                    headline=headline,
+                    created_at=row.created_at.replace(tzinfo=UTC).isoformat(),
+                )
+            )
+            if len(items) == self.OWN_LIST_LIMIT:
+                break
+        return FunnelOwnSessionsDTO(sessions=items)
 
     def state(self, session_id: str, actor_id: str | None) -> FunnelStateDTO | None:
         session = self._session(session_id, actor_id)

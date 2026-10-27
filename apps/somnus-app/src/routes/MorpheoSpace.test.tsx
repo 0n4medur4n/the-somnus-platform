@@ -15,6 +15,7 @@ const edge = vi.hoisted(() => ({
   requestAssessmentClaimToken: vi.fn(),
   claimAssessment: vi.fn(),
   getOwnAssessments: vi.fn(),
+  getOwnFunnelSessions: vi.fn(),
   getAssessmentSnapshot: vi.fn(),
   photoUrl: vi.fn((version: string) => `/v1/me/photo?v=${version}`),
   assessmentReportUrl: vi.fn(
@@ -128,6 +129,7 @@ beforeEach(() => {
     consentedAt: "2026-10-15T10:00:00.000Z",
   });
   edge.getOwnAssessments.mockResolvedValue(HISTORY);
+  edge.getOwnFunnelSessions.mockResolvedValue({ sessions: [] });
   edge.getAssessmentSnapshot.mockResolvedValue({
     snapshotId: "snap",
     sessionId: "s-old",
@@ -330,6 +332,62 @@ describe("MorpheoHome (the user's own space)", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "saved, go to my space" }));
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(t("space.title"));
+  });
+
+  it("lists the interview's results beside the questionnaire's, newest first", async () => {
+    edge.getOwnFunnelSessions.mockResolvedValue({
+      sessions: [
+        {
+          sessionId: "f-new",
+          status: "finished",
+          mainAction: "TERAPIA",
+          headline: ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
+          createdAt: "2030-01-01T10:00:00+00:00",
+        },
+      ],
+    });
+    renderHome(authFor());
+    expect(
+      await screen.findByText(
+        "Le proponemos una terapia específica para el insomnio, llamada TCC-I.",
+      ),
+    ).toBeInTheDocument();
+    const links = screen
+      .getAllByRole("link", { name: /./ })
+      .map((link) => link.getAttribute("href"));
+    const interview = links.indexOf("/app/evaluations/f-new");
+    const questionnaire = links.findIndex((href) => href?.startsWith("/app/assessments/"));
+    expect(interview).toBeGreaterThanOrEqual(0);
+    expect(interview).toBeLessThan(questionnaire); // the newer one comes first
+  });
+
+  it("opens the space for someone who has only interview results", async () => {
+    edge.getOwnAssessments.mockResolvedValue({ assessments: [] });
+    edge.getOwnFunnelSessions.mockResolvedValue({
+      sessions: [
+        {
+          sessionId: "f-1",
+          status: "finished",
+          mainAction: "TERAPIA",
+          headline: ["Le proponemos una terapia."],
+          createdAt: "2026-10-28T10:00:00+00:00",
+        },
+      ],
+    });
+    renderHome(authFor());
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(t("space.title"));
+    expect(screen.queryByText("questionnaire")).toBeNull();
+    expect(screen.getByRole("link", { name: /Ver el resultado|View|Veure|Voir/ })).toHaveAttribute(
+      "href",
+      "/app/evaluations/f-1",
+    );
+  });
+
+  it("still shows the questionnaire results when the interview list cannot be loaded", async () => {
+    edge.getOwnFunnelSessions.mockRejectedValue(new Error("down"));
+    renderHome(authFor());
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(t("space.title"));
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("sends someone with no saved assessment to the questionnaire", async () => {

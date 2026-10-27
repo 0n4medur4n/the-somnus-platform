@@ -11,13 +11,20 @@ headings), from the locale files.
 
 from __future__ import annotations
 
+import base64
 from collections.abc import Sequence
+from pathlib import Path
 
 from report.application.funnel_passages import Passage
 from report.rendering.dates import format_datetime
 from report.rendering.i18n import strings_for
 from report.rendering.renderer import _env
 from report.schemas.render import FunnelReportRequestDTO
+
+# The brand wordmark (the same file the app shows), inlined so the PDF is self-contained and
+# needs no network or font at render time.
+LOGO_FILE = Path(__file__).parent / "assets" / "morpheo-wordmark.png"
+LOGO_DATA_URI = "data:image/png;base64," + base64.b64encode(LOGO_FILE.read_bytes()).decode("ascii")
 
 TEMPLATE_VERSION_V2 = "report_v2"
 TEMPLATE_VERSION_V3 = "report_v3"
@@ -36,5 +43,6 @@ def render_funnel_html(request: FunnelReportRequestDTO, passages: Sequence[Passa
         request=request,
         template_version=version,
         passages=passages,
+        logo=LOGO_DATA_URI,
         completed_display=format_datetime(request.completed_at, request.locale),
     )

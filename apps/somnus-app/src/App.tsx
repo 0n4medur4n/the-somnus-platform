@@ -8,6 +8,7 @@ import { AppHome } from "./routes/AppHome.js";
 import { AssessmentRoute } from "./routes/Assessment.js";
 import { AssessmentDetail } from "./routes/AssessmentDetail.js";
 import { AuthCallback } from "./routes/AuthCallback.js";
+import { EvaluationDetail } from "./routes/EvaluationDetail.js";
 import { InvitationAccept } from "./routes/InvitationAccept.js";
 import { Login } from "./routes/Login.js";
 import { MyConsents } from "./routes/MyConsents.js";
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
       { path: "/app", element: <AppHome /> },
       { path: "/app/profile", element: <Profile /> },
       { path: "/app/assessments/:sessionId", element: <AssessmentDetail /> },
+      { path: "/app/evaluations/:sessionId", element: <EvaluationDetail /> },
       { path: "/app/consents", element: <MyConsents /> },
       { path: "/app/security", element: <Security /> },
       { path: "/professional", element: <Professional /> },
