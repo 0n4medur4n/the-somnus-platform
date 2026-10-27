@@ -180,6 +180,11 @@ class FunnelReportAnswerDTO(ContractModel):
     origin: Literal["answered", "narrative", "corrected"]
 
 
+class FunnelReportGroundingDTO(ContractModel):
+    source_ids: list[str]
+    queries: list[str]
+
+
 class FunnelReportProfessionalDTO(ContractModel):
     main_action: str | None
     associated_actions: list[str]
@@ -191,6 +196,7 @@ class FunnelReportProfessionalDTO(ContractModel):
     safety: list[FunnelReportSafetyDTO]
     answers: list[FunnelReportAnswerDTO]
     narrative: str | None
+    grounding: FunnelReportGroundingDTO | None = None
 
 
 class FunnelReportDTO(ContractModel):
