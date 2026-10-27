@@ -267,6 +267,97 @@ describe("FunnelAssessment", () => {
     expect(screen.queryByTestId("team-panel")).toBeNull();
   });
 
+  it("lays the result out as the one-page report when morpheo built one", async () => {
+    const user = userEvent.setup();
+    const report = {
+      status: "aprobado" as const,
+      layout: "standard" as const,
+      headline: ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
+      secondary: [],
+      summary: "se despierta varias veces por la noche.",
+      steps: ["Diario 7-14 días y revisión propuesta a las 2-4 semanas."],
+      help: {
+        sentences: ["Si siente que el peligro es inmediato, llame al 112."],
+        resources: [{ code: "S4_extra", text: "024 (línea de atención a la conducta suicida)" }],
+      },
+      limits: ["No es un diagnóstico."],
+      sources: [],
+      professional: null,
+    };
+    edgeMock.startFunnel.mockResolvedValue(
+      state({ status: "finished", step: null, result: { ...RESULT, report }, owned: true }),
+    );
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    expect(await screen.findByText(report.headline[0] ?? "")).toBeVisible();
+    expect(screen.getByText("Se despierta varias veces por la noche.")).toBeVisible();
+    expect(screen.getByText(RESULT.texts[0]?.text ?? "")).toBeVisible();
+    expect(screen.getByText(report.steps[0] ?? "")).toBeVisible();
+    expect(screen.getByTestId("funnel-report-help")).toHaveTextContent("llame al 112");
+    expect(screen.getByTestId("funnel-report-help")).toHaveTextContent("024");
+    expect(
+      within(screen.getByTestId("funnel-report")).getByText(/No es un diagnóstico\./),
+    ).toBeVisible();
+    expect(screen.queryByTestId("funnel-report-draft")).toBeNull();
+    expect(screen.getByRole("link", { name: es("funnel.result.download") })).toBeVisible();
+  });
+
+  it("says a draft report is a draft", async () => {
+    const user = userEvent.setup();
+    const report = {
+      status: "borrador" as const,
+      layout: "standard" as const,
+      headline: ["Le proponemos una terapia específica para el insomnio, llamada TCC-I."],
+      secondary: [],
+      summary: null,
+      steps: [],
+      help: { sentences: [], resources: [] },
+      limits: [],
+      sources: [],
+      professional: null,
+    };
+    edgeMock.startFunnel.mockResolvedValue(
+      state({ status: "finished", step: null, result: { ...RESULT, report }, owned: false }),
+    );
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    expect(await screen.findByTestId("funnel-report-draft")).toBeVisible();
+  });
+
+  it("shows only the urgent message in an emergency", async () => {
+    const user = userEvent.setup();
+    const report = {
+      status: "aprobado" as const,
+      layout: "urgent" as const,
+      headline: [],
+      secondary: [],
+      summary: null,
+      steps: [],
+      help: { sentences: [], resources: [] },
+      limits: ["No es un diagnóstico."],
+      sources: [],
+      professional: null,
+    };
+    edgeMock.startFunnel.mockResolvedValue(
+      state({
+        status: "finished",
+        step: null,
+        result: {
+          ...RESULT,
+          mainAction: "EMERGENCIA",
+          texts: [{ template: "T_SEGURIDAD", text: "Llame ahora al 112." }],
+          report,
+        },
+        owned: false,
+      }),
+    );
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    expect(await screen.findByText("Llame ahora al 112.")).toBeVisible();
+    expect(screen.queryByTestId("funnel-report")).toBeNull();
+    expect(screen.queryByText(es("funnel.report.whatToDoNow"))).toBeNull();
+  });
+
   it("asks for the team panel only for staff, and shows it when it arrives", async () => {
     const user = userEvent.setup();
     const staff = {

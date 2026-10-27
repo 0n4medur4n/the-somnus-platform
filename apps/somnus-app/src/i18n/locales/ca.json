@@ -510,6 +510,17 @@
       "notSaved": "Aquesta orientació no està desada al seu compte.",
       "signInHint": "Per desar l'orientació i descarregar l'informe, iniciï la sessió abans de començar."
     },
+    "report": {
+      "draft": "ESBORRANY · Els textos d'aquest informe estan pendents de l'aprovació clínica. No és un informe definitiu.",
+      "mostImportant": "El més important",
+      "whatYouTold": "El que ens ha explicat",
+      "whatYouToldNote": "És el resum que va confirmar a l'última pantalla. Si alguna cosa no és correcta, torni a fer l'orientació.",
+      "whatItMeans": "El que això significa",
+      "whatToDoNow": "Què fer ara",
+      "handPage2": "Lliuri la pàgina 2 al seu metge o terapeuta: resumeix el que ens ha explicat.",
+      "askForHelp": "Quan demanar ajuda sense esperar",
+      "limits": "Límits"
+    },
     "progress": {
       "label": "Progrés de l'entrevista",
       "now_one": "{{part}} · {{count}} resposta",
