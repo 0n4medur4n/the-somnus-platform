@@ -264,7 +264,7 @@ def test_a_heavy_report_still_fits_the_patients_page_and_the_professionals_page(
     answers = [
         {
             "id": f"Q{i:02d}",
-            "question": "¿Hay alguna enfermedad cardiopulmonar, debilidad respiratoria o insomnio grave?",
+            "question": "¿Hay enfermedad cardiopulmonar, debilidad respiratoria o insomnio grave?",
             "answer": "Ronca fuerte, se despierta con sensación de ahogo",
             "origin": "answered" if i % 3 else "narrative",
         }
