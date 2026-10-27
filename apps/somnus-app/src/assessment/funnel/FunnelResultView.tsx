@@ -2,6 +2,7 @@ import type { FunnelReport, FunnelResult } from "@somnus/api-contracts";
 import { useTranslation } from "react-i18next";
 import { activeLocale } from "../../i18n/index.js";
 import { edge } from "../../lib/edge.js";
+import { ProfessionalSummary } from "./ProfessionalSummary.js";
 import { ResultPanel } from "./TeamPanel.js";
 
 /**
@@ -207,6 +208,7 @@ function StandardReport({
         ) : null}
       </section>
       <Limits report={report} />
+      {report.professional ? <ProfessionalSummary report={report} /> : null}
     </div>
   );
 }

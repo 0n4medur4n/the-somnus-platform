@@ -32,6 +32,13 @@ const FUNNEL = "/internal/v1/funnel";
  * goes on without it. The edge waits longer than that, plus a cold start.
  */
 const FUNNEL_ANSWER_TIMEOUT_MS = 25_000;
+/**
+ * The PDF waits for the report service, which may cold-start, search the library
+ * for the professional's excerpts (about 12 s the first time on an instance, with
+ * its own 20 s ceiling) and lay the pages out. The default 5 s was far too short
+ * (seen on an iPhone, 2026-10-27). Never re-sent: a retry would pay it twice.
+ */
+const FUNNEL_PDF_TIMEOUT_MS = 45_000;
 
 /**
  * Proxies the v2 interview (the embudo v0.2) to morpheo. The edge never runs
@@ -140,6 +147,8 @@ export class FunnelProxyService {
     }
     const rendered = await this.report.post("/internal/v1/reports/funnel/pdf", {
       correlationId,
+      timeoutMs: FUNNEL_PDF_TIMEOUT_MS,
+      skipRetry: true,
       body: {
         sessionId,
         locale,

@@ -70,6 +70,11 @@ class Settings(BaseSettings):
     # 0-1) at which an excerpt is shown. Set from a probe of the real library
     # (2026-10-27): relevant passages scored 0.57-0.73, the irrelevant one 0.475. An
     # excerpt below it is left out rather than shown as support it is not.
+    # How long a PDF waits for the excerpts before it renders without them; the search
+    # keeps running and fills the cache for the next one.
+    funnel_passages_timeout_seconds: float = Field(
+        default=20.0, gt=0.0, le=40.0, alias="FUNNEL_PASSAGES_TIMEOUT_SECONDS"
+    )
     funnel_passages_min_score: float = Field(
         default=0.55, ge=0.0, le=1.0, alias="FUNNEL_PASSAGES_MIN_SCORE"
     )

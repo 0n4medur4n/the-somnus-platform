@@ -183,6 +183,8 @@ export function FunnelAssessment({
 
   const Wrapper = embedded ? "section" : "main";
   const step = interview?.step ?? null;
+  // The report is the whole screen: the intro about questions has no place beside it.
+  const atResult = phase === "interview" && step === null && interview?.result != null;
 
   return (
     <Wrapper
@@ -211,7 +213,7 @@ export function FunnelAssessment({
         >
           {t("funnel.title")}
         </h1>
-        <p className="text-somnus-subtle">{t("funnel.intro")}</p>
+        {atResult ? null : <p className="text-somnus-subtle">{t("funnel.intro")}</p>}
         {locale !== "es" ? (
           <p className="text-sm text-somnus-subtle">{t("funnel.spanishOnly")}</p>
         ) : null}

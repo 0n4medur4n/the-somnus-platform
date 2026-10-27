@@ -347,6 +347,39 @@ describe("FunnelProxyService", () => {
     expect(withoutPanel(finished).result?.report).toEqual(report);
   });
 
+  it("does not re-send the PDF request when the report service fails (a retry would pay the search twice)", async () => {
+    const finished: FunnelState = {
+      ...state(),
+      status: "finished",
+      step: null,
+      owned: true,
+      result: {
+        stoppedBy: null,
+        alerts: [],
+        mainAction: "TERAPIA",
+        associatedActions: [],
+        testToConsider: null,
+        texts: [{ template: "T_INSOMNIO", text: "Nos ha contado que…" }],
+        instruments: [],
+        instrumentsNote: null,
+        contentVersion: "2.0",
+        rulesVersion: "2.0",
+        panel: null,
+      },
+    };
+    const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: finished }));
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const reportClient = makeFakeIdentityClient(() => ({ status: 503 }));
+    const service = new FunnelProxyService(
+      morpheo.client,
+      identity.client,
+      resolver,
+      reportClient.client,
+    );
+    await expect(service.reportPdf(SESSION, "f-1", "es", "c1")).rejects.toBeDefined();
+    expect(reportClient.requests).toHaveLength(1);
+  });
+
   it("sends no report block when morpheo built none", async () => {
     const finished: FunnelState = {
       ...state(),

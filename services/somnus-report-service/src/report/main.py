@@ -259,6 +259,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if settings.openai_api_key
             else None,
             min_score=settings.funnel_passages_min_score,
+            timeout_seconds=settings.funnel_passages_timeout_seconds,
         ),
     )
     app.state.render_service = RenderService(
