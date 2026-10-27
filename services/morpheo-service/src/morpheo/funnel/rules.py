@@ -59,6 +59,9 @@ class FunnelResult:
     instruments: tuple[InstrumentOutcome, ...] = field(default=())
     # v0.2 p. 14, shown with any score: no scale confirms apnoea.
     instruments_note: str | None = None
+    # Why a flag was raised (R07: what asks for the therapy to be adapted), for
+    # the professional's page; the person is not shown a flag.
+    flag_reasons: tuple[tuple[str, tuple[str, ...]], ...] = field(default=())
 
 
 def _labels(iv: Interview, step_id: str, chosen: Any) -> list[str]:
@@ -114,6 +117,7 @@ def _evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> Funnel
     orientations: list[Orientation] = []
     alerts: list[str] = []
     flags: list[str] = []
+    flag_reasons: list[tuple[str, tuple[str, ...]]] = []
     pending: list[str] = []
     rules: list[str] = []
 
@@ -276,6 +280,7 @@ def _evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> Funnel
         orient("TERAPIA", "T_INSOMNIO", "R04", "R04 completo (D-15)")
     if insomnia and adapt:
         flags.append("ADAPTAR_TERAPIA")
+        flag_reasons.append(("ADAPTAR_TERAPIA", tuple(adapt)))
         trace.append(f"R07: ADAPTAR_TERAPIA ({', '.join(adapt)}); sin restricción automática")
 
     # --- schedule and habits ---
@@ -295,7 +300,19 @@ def _evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> Funnel
     if pending:
         orient("INFORMACION_INSUFICIENTE", "T_INCOMPLETO", "R02", "falta: " + ", ".join(pending))
 
-    return _result(artifact, None, alerts, orientations, pending, flags, rules, trace, prueba, iv)
+    return _result(
+        artifact,
+        None,
+        alerts,
+        orientations,
+        pending,
+        flags,
+        rules,
+        trace,
+        prueba,
+        iv,
+        flag_reasons=tuple(flag_reasons),
+    )
 
 
 def _result(
@@ -309,6 +326,7 @@ def _result(
     trace: list[str],
     prueba: str | None = None,
     iv: Interview | None = None,
+    flag_reasons: tuple[tuple[str, tuple[str, ...]], ...] = (),
 ) -> FunnelResult:
     assert iv is not None
     order: list[str] = artifact.engine["priority_order"]["order"]
@@ -346,6 +364,7 @@ def _result(
         version_reglas=artifact.rules_version,
         trace=tuple(trace),
         phrase_ids=tuple(phrase_ids),
+        flag_reasons=flag_reasons,
     )
 
 

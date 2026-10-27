@@ -35,7 +35,10 @@ _NOT_FOUND = HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="interv
 
 def get_funnel_service(session: SessionDep, request: Request) -> FunnelService:
     return FunnelService(
-        session, registry=request.app.state.instruments, ai=getattr(request.app.state, "ai", None)
+        session,
+        registry=request.app.state.instruments,
+        ai=getattr(request.app.state, "ai", None),
+        informe=getattr(request.app.state, "informe", None),
     )
 
 
