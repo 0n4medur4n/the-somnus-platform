@@ -510,6 +510,17 @@
       "notSaved": "This guidance is not saved to your account.",
       "signInHint": "To save the guidance and download the report, sign in before starting."
     },
+    "report": {
+      "draft": "DRAFT · The texts of this report are awaiting clinical approval. This is not a final report.",
+      "mostImportant": "Most important",
+      "whatYouTold": "What you told us",
+      "whatYouToldNote": "This is the summary you confirmed on the last screen. If anything is not right, do the guidance again.",
+      "whatItMeans": "What this means",
+      "whatToDoNow": "What to do now",
+      "handPage2": "Give page 2 to your doctor or therapist: it sums up what you told us.",
+      "askForHelp": "When to ask for help without waiting",
+      "limits": "Limits"
+    },
     "progress": {
       "label": "Interview progress",
       "now_one": "{{part}} · {{count}} answer",

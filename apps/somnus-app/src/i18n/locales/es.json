@@ -510,6 +510,17 @@
       "notSaved": "Esta orientación no está guardada en su cuenta.",
       "signInHint": "Para guardar la orientación y descargar el informe, inicie sesión antes de empezar."
     },
+    "report": {
+      "draft": "BORRADOR · Los textos de este informe están pendientes de la aprobación clínica. No es un informe definitivo.",
+      "mostImportant": "Lo más importante",
+      "whatYouTold": "Lo que nos ha contado",
+      "whatYouToldNote": "Es el resumen que usted confirmó en la última pantalla. Si algo no es correcto, vuelva a hacer la orientación.",
+      "whatItMeans": "Lo que esto significa",
+      "whatToDoNow": "Qué hacer ahora",
+      "handPage2": "Entregue la página 2 a su médico o terapeuta: resume lo que nos ha contado.",
+      "askForHelp": "Cuándo pedir ayuda sin esperar",
+      "limits": "Límites"
+    },
     "progress": {
       "label": "Progreso de la entrevista",
       "now_one": "{{part}} · {{count}} respuesta",
