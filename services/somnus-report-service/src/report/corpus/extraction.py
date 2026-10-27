@@ -79,12 +79,21 @@ def _pdf_text(data: bytes) -> str:
             raise ExtractionError(f"the PDF has more than {MAX_PDF_PAGES} pages")
         parts: list[str] = []
         total = 0
-        for page in reader.pages:
-            page_text = page.extract_text() or ""
+        unreadable = 0
+        for index in range(len(reader.pages)):
+            # One damaged page (seen in a real guideline PDF with a broken xref)
+            # must not lose the other 81: skip it, and refuse only when nothing reads.
+            try:
+                page_text = reader.pages[index].extract_text() or ""
+            except (PdfReadError, ValueError, KeyError, TypeError, NotImplementedError):
+                unreadable += 1
+                continue
             total += len(page_text)
             if total > MAX_TEXT_CHARACTERS:
                 raise ExtractionError("the document holds more text than one corpus entry can")
             parts.append(page_text)
+        if unreadable and not parts:
+            raise ExtractionError("the PDF could not be read")
     except ExtractionError:
         raise
     except (PdfReadError, ValueError, KeyError, TypeError, OSError) as error:

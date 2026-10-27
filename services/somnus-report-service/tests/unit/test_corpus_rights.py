@@ -17,6 +17,7 @@ from report.corpus.rights import (
     RIGHTS_LICENSED,
     RIGHTS_OPEN_ACCESS,
     RIGHTS_OWN_DOCUMENT,
+    RIGHTS_OWNER_AUTHORISED,
     RIGHTS_STATUSES,
     RightsError,
     build_evidence,
@@ -31,11 +32,19 @@ SUFFICIENT = {
     RIGHTS_OPEN_ACCESS: build_evidence(licence="CC-BY-4.0", url="https://example.org/guide"),
     RIGHTS_LICENSED: build_evidence(licence="Elsevier institutional", holder="Hospital X"),
     RIGHTS_CITATION_ONLY: None,
+    RIGHTS_OWNER_AUTHORISED: None,
 }
 
 
-def test_the_four_statuses_are_exactly_what_b4_names() -> None:
-    assert {"own_document", "open_access", "licensed", "citation_only"} == RIGHTS_STATUSES
+def test_the_statuses_are_the_four_b4_names_and_the_owners_declaration() -> None:
+    """§B4's four, plus `owner_authorised` (owner decision 2026-10-27): the owner's word."""
+    assert {
+        "own_document",
+        "open_access",
+        "licensed",
+        "citation_only",
+        "owner_authorised",
+    } == RIGHTS_STATUSES
     assert set(REQUIRED_EVIDENCE) == RIGHTS_STATUSES
 
 
