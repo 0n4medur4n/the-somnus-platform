@@ -1,0 +1,64 @@
+{
+  "common": {
+    "appName": "Nox",
+    "loading": "Chargement…",
+    "signOut": "Fermer la session",
+    "skipToContent": "Aller au contenu",
+    "language": "Langue",
+    "theme": "Apparence",
+    "themes": {
+      "dark": "Sombre",
+      "light": "Clair",
+      "contrast": "Contraste élevé"
+    }
+  },
+  "login": {
+    "title": "Se connecter",
+    "subtitle": "Accès pour les professionnels. Sans mot de passe.",
+    "passwordless": "Sans mot de passe",
+    "intro": "Indiquez votre adresse et nous vous enverrons un lien d'accès.",
+    "emailLabel": "Adresse e-mail",
+    "emailHint": "À usage unique. Aucun mot de passe à retenir.",
+    "sendLink": "Envoyer le lien d'accès",
+    "sending": "Envoi du lien…",
+    "sendingSlow": "Un instant : nous préparons votre lien. Cela peut prendre quelques secondes.",
+    "linkSent": "Nous avons envoyé un lien d'accès à {{email}}. Consultez votre courrier.",
+    "tryAnotherEmail": "Utiliser une autre adresse",
+    "error": "Nous n'avons pas pu envoyer le lien. Réessayez."
+  },
+  "callback": {
+    "title": "Finalisation de l'accès",
+    "verifying": "Vérification de votre lien d'accès…",
+    "error": "Le lien n'est pas valable ou a expiré. Demandez-en un nouveau.",
+    "errorGeneric": "Nous n'avons pas pu finaliser l'accès. Réessayez dans un instant.",
+    "emailTitle": "Confirmez votre adresse",
+    "emailIntro": "Vous avez ouvert le lien dans un autre navigateur ou un autre onglet : nous avons besoin de l'adresse à laquelle nous l'avons envoyé.",
+    "emailHint": "La même adresse que celle qui a reçu le lien.",
+    "emailSubmit": "Continuer",
+    "emailMismatch": "Cette adresse ne correspond pas au lien. Vérifiez-la et réessayez."
+  },
+  "errors": {
+    "required": "Ce champ est obligatoire.",
+    "invalidEmail": "Indiquez une adresse valide.",
+    "generic": "Un problème est survenu. Réessayez.",
+    "summaryTitle": "Vérifiez ce qui suit"
+  },
+  "denied": {
+    "title": "Vous ne pouvez pas entrer dans Nox",
+    "body": "Ce compte n'a pas d'accès."
+  },
+  "dashboard": {
+    "title": "Nox",
+    "intro": "Outils"
+  },
+  "modules": {
+    "assistant": {
+      "title": "Assistant",
+      "status": "Pas encore disponible"
+    },
+    "evidence": {
+      "title": "Recherche de preuves",
+      "status": "Pas encore disponible"
+    }
+  }
+}

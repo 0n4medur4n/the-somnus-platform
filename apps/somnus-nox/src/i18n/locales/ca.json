@@ -1,0 +1,64 @@
+{
+  "common": {
+    "appName": "Nox",
+    "loading": "S'està carregant…",
+    "signOut": "Tanca la sessió",
+    "skipToContent": "Ves al contingut",
+    "language": "Idioma",
+    "theme": "Aparença",
+    "themes": {
+      "dark": "Fosc",
+      "light": "Clar",
+      "contrast": "Contrast alt"
+    }
+  },
+  "login": {
+    "title": "Inicia la sessió",
+    "subtitle": "Accés per a professionals. Sense contrasenyes.",
+    "passwordless": "Sense contrasenyes",
+    "intro": "Introdueix el correu i t'enviarem un enllaç d'accés.",
+    "emailLabel": "Correu electrònic",
+    "emailHint": "D'un sol ús. No cal contrasenya.",
+    "sendLink": "Envia l'enllaç d'accés",
+    "sending": "S'està enviant l'enllaç…",
+    "sendingSlow": "Un moment: estem preparant l'enllaç. Pot trigar uns segons.",
+    "linkSent": "Hem enviat un enllaç d'accés a {{email}}. Revisa el correu.",
+    "tryAnotherEmail": "Fes servir un altre correu",
+    "error": "No hem pogut enviar l'enllaç. Torna-ho a provar."
+  },
+  "callback": {
+    "title": "S'està completant l'accés",
+    "verifying": "S'està verificant l'enllaç d'accés…",
+    "error": "L'enllaç no és vàlid o ha caducat. Demana'n un de nou.",
+    "errorGeneric": "No hem pogut completar l'accés. Torna-ho a provar d'aquí a una estona.",
+    "emailTitle": "Confirma el correu",
+    "emailIntro": "Has obert l'enllaç en un altre navegador o pestanya, així que necessitem l'adreça on l'hem enviat.",
+    "emailHint": "La mateixa adreça on ha arribat l'enllaç.",
+    "emailSubmit": "Continua",
+    "emailMismatch": "Aquesta adreça no coincideix amb l'enllaç. Revisa-la i torna-ho a provar."
+  },
+  "errors": {
+    "required": "Aquest camp és obligatori.",
+    "invalidEmail": "Introdueix un correu vàlid.",
+    "generic": "Alguna cosa no ha anat bé. Torna-ho a provar.",
+    "summaryTitle": "Revisa el següent"
+  },
+  "denied": {
+    "title": "No pots entrar a Nox",
+    "body": "Aquest compte no té accés."
+  },
+  "dashboard": {
+    "title": "Nox",
+    "intro": "Eines"
+  },
+  "modules": {
+    "assistant": {
+      "title": "Assistent",
+      "status": "Encara no disponible"
+    },
+    "evidence": {
+      "title": "Cercador d'evidència",
+      "status": "Encara no disponible"
+    }
+  }
+}

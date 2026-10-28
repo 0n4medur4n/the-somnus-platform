@@ -10,18 +10,15 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["tests/**/*.test.ts", "packages/*/src/**/*.test.ts", "apps/*/src/**/*.test.ts"],
-    // The two frontend apps each have their own vitest config and CI job;
-    // the node-environment root runner must not sweep their tests
-    // (somnus-app is jsdom; somnus-marketing runs astro check + its own
-    // suite, and its source is intentionally not touched by the root gate).
-    // Each frontend runs its own suite with its own jsdom config; picking their
-    // tests up here would run them in the node environment and fail.
+    // Each frontend has its own vitest config. This runner is node and must
+    // not sweep those suites (jsdom for the SPAs; Astro for marketing).
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
       "apps/somnus-app/**",
       "apps/somnus-admin/**",
       "apps/somnus-marketing/**",
+      "apps/somnus-nox/**",
     ],
     coverage: {
       provider: "v8",
