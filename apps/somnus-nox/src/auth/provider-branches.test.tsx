@@ -67,16 +67,19 @@ describe("session listener and refresh", () => {
     expect(await screen.findByText("granted")).toBeInTheDocument();
   });
 
-  it("refresh denies when there is a Firebase user but no grant", async () => {
+  it("refresh denies when the signed-in reader is not an explicit grant", async () => {
     const user = userEvent.setup();
-    authState.currentUser = { uid: "person" };
     render(
-      <NoxAuthProvider reader={async () => ({ verifiedProfessional: false, noxAccess: true })}>
+      <NoxAuthProvider
+        session="signed-in"
+        reader={async () => ({ verifiedProfessional: false, noxAccess: true })}
+      >
         <Probe />
       </NoxAuthProvider>,
     );
-    await user.click(screen.getByRole("button", { name: "refresh" }));
     expect(await screen.findByText("denied")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "refresh" }));
+    expect(screen.getByText("denied")).toBeInTheDocument();
   });
 
   it("refresh without a Firebase user returns to the login state", async () => {
