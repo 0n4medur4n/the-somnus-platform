@@ -1,15 +1,20 @@
 /**
- * TEMPORARY dev/test stand-in for GET /nox/v1/me.
- * Vite aliases @nox-me-source to this file except when mode is production.
- * NOX_DEV_MOCK_SENTINEL must appear in this module's executable body so a
- * production bundle that accidentally includes it fails the build test.
+ * TEMPORARY stand-in for GET /nox/v1/me.
+ * Aliased only when Vite's mode is development or test.
+ * NOX_DEV_MOCK_SENTINEL and the ?preview= bypass must stay in this file's
+ * executable body so a bundle that includes the mock fails the build test.
  */
 
 export const NOX_DEV_MOCK_SENTINEL = "NOX_DEV_MOCK_SENTINEL";
 
+/** Query bypass. The bundle test searches for this exact string. */
+const PREVIEW_BYPASS = "?preview=";
+
 export function devPreview(): "dashboard" | "denied" | null {
   if (typeof window === "undefined") return null;
-  const value = new URLSearchParams(window.location.search).get("preview");
+  const search = window.location.search;
+  if (!search.includes(PREVIEW_BYPASS.slice(1))) return null;
+  const value = new URLSearchParams(search).get(PREVIEW_BYPASS.slice(1, -1));
   if (value === "dashboard" || value === "denied") return value;
   return null;
 }

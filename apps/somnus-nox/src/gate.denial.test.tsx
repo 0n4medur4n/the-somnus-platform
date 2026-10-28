@@ -33,7 +33,7 @@ describe("without an explicit grant the app renders only the denial screen", () 
     ["both flags false", { verifiedProfessional: false, noxAccess: false }],
     ["stringly true", { verifiedProfessional: "true", noxAccess: true }],
     ["missing noxAccess", { verifiedProfessional: true }],
-    ["extra field", { verifiedProfessional: true, noxAccess: true, role: "professional" }],
+    ["unknown grant value", { verifiedProfessional: true, noxAccess: "unknown" }],
     ["empty object", {}],
     ["null body", null],
     ["array body", []],
@@ -55,6 +55,12 @@ describe("without an explicit grant the app renders only the denial screen", () 
     renderGate(() => new Promise(() => undefined), 20);
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expectDenialOnly();
+  });
+
+  it("an unknown field does not deny when both grant flags are literal true", async () => {
+    renderGate(async () => ({ ...GRANT, role: "professional" }));
+    expect(await screen.findByTestId("nox-module-list")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: t("denied.title") })).toBeNull();
   });
 
   it("an explicit grant is the only path that shows the tools", async () => {

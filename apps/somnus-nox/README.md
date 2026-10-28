@@ -13,16 +13,28 @@ Firebase magic link, same project variables as the patient SPA
 user exists, the shell calls **only** `GET /nox/v1/me`.
 
 The response type in `src/api/nox-me.temporary.ts` is marked **TEMPORARY**
-until `packages/api-contracts` owns it. An explicit grant is both
-`verifiedProfessional: true` and `noxAccess: true`, with no other fields.
-Every other body, HTTP error, timeout, or unknown state renders the denial
-screen and nothing else. Signed-out visitors see the login screen.
+until `packages/api-contracts` owns it. An explicit grant requires
+`verifiedProfessional: true` and `noxAccess: true`. Unknown keys are
+ignored. A missing field, a value that is not literal true, an HTTP error,
+a timeout, or a non-object body renders the denial screen and nothing
+else. Signed-out visitors see the login screen.
 
-Dev and tests resolve that call to `src/api/nox-me.mock.ts`. A production
-`vite build` (`mode === "production"`) resolves `src/api/nox-me.live.ts`
-instead. `?preview=dashboard` and `?preview=denied` exist only on the mock.
+The mock (`src/api/nox-me.mock.ts`) and the `?preview=` bypass are opt-in.
+Vite aliases them only when the mode is `development` or `test`. Every
+other mode, including `production`, `staging`, and a `vite build` with no
+`--mode`, resolves `src/api/nox-me.live.ts`.
 
 Ports: dev `5175`, preview `4175` (app is 5173, admin is 5174).
+
+## NOT FOR DEPLOY
+
+Do not deploy this app. Login sends the magic link with Firebase's own
+`sendSignInLinkToEmail`. The patient SPA (`apps/somnus-app`) does not do
+that on the deployed site: `hosting.dev.json` sets `VITE_SIGN_IN_EMAIL` to
+`somnus`, and the link is requested from the edge
+(`edge.requestSignInLink`). Nox must not be deployed until its login goes
+through the edge the same way. There is no Hosting target, no workflow,
+and no Terraform for this app in this change.
 
 ## Not in this change
 

@@ -66,7 +66,7 @@ describe("without an explicit grant the shell is only the denial screen", () => 
     ["null", null],
     ["string", "granted"],
     ["stringly true", { verifiedProfessional: "true", noxAccess: true }],
-    ["unknown extra field", { verifiedProfessional: true, noxAccess: true, extra: true }],
+    ["unknown grant value", { verifiedProfessional: true, noxAccess: "unknown" }],
   ])("%s", async (_label, body) => {
     renderSignedIn(async () => body);
     await expectDenialOnly();
@@ -87,6 +87,16 @@ describe("the shell when access is explicit", () => {
   beforeEach(() => {
     firebaseSignOut.mockReset();
     firebaseSignOut.mockResolvedValue(undefined);
+  });
+
+  it("shows the tools when unknown fields accompany an explicit grant", async () => {
+    renderSignedIn(async () => ({
+      verifiedProfessional: true,
+      noxAccess: true,
+      extra: true,
+    }));
+    expect(await screen.findByTestId("nox-module-list")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: t("denied.title") })).toBeNull();
   });
 
   it("shows the two placeholder tools and they are not links or buttons", async () => {

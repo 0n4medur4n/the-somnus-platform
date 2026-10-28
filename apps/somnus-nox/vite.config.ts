@@ -2,15 +2,16 @@ import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { usesDevMock } from "./src/api/nox-me-mode.js";
 
 /**
- * Dev and tests resolve the /nox/v1/me client to the local mock.
- * A production build resolves it to the live fetch. The mock file is
- * not part of that module graph; src/production-bundle.test.ts checks
- * the built files for the mock sentinel.
+ * The mock is opt-in: only Vite's development server and the test runner.
+ * Every other mode (production, staging, an unset mode) resolves the live
+ * GET /nox/v1/me. src/production-bundle.test.ts builds staging and a build
+ * with no --mode and checks the bundles for the mock and the preview bypass.
  */
 function noxMeSource(mode: string): string {
-  const file = mode === "production" ? "nox-me.live.ts" : "nox-me.mock.ts";
+  const file = usesDevMock(mode) ? "nox-me.mock.ts" : "nox-me.live.ts";
   return fileURLToPath(new URL(`./src/api/${file}`, import.meta.url));
 }
 

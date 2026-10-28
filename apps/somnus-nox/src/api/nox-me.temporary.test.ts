@@ -11,8 +11,21 @@ describe("explicit Nox grant", () => {
     expect(source).toContain("packages/api-contracts");
   });
 
-  it("accepts only both flags literal true and nothing else", () => {
+  it("accepts both flags literal true", () => {
     expect(isExplicitNoxGrant({ verifiedProfessional: true, noxAccess: true })).toBe(true);
+  });
+
+  it("ignores unknown fields when every grant field is literal true", () => {
+    expect(
+      isExplicitNoxGrant({
+        verifiedProfessional: true,
+        noxAccess: true,
+        role: "professional",
+      }),
+    ).toBe(true);
+    expect(isExplicitNoxGrant({ verifiedProfessional: true, noxAccess: true, extra: 1 })).toBe(
+      true,
+    );
   });
 
   it.each([
@@ -25,7 +38,7 @@ describe("explicit Nox grant", () => {
     null,
     "granted",
     { verifiedProfessional: "true", noxAccess: true },
-    { verifiedProfessional: true, noxAccess: true, role: "professional" },
+    { verifiedProfessional: true, noxAccess: "unknown" },
   ])("denies %j", (body) => {
     expect(isExplicitNoxGrant(body)).toBe(false);
   });

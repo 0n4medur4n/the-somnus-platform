@@ -1,14 +1,20 @@
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
+import { usesDevMock } from "./src/api/nox-me-mode.js";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   resolve: {
     alias: [
       {
         find: "@nox-me-source",
-        replacement: fileURLToPath(new URL("./src/api/nox-me.mock.ts", import.meta.url)),
+        replacement: fileURLToPath(
+          new URL(
+            usesDevMock(mode) ? "./src/api/nox-me.mock.ts" : "./src/api/nox-me.live.ts",
+            import.meta.url,
+          ),
+        ),
       },
     ],
   },
@@ -23,6 +29,7 @@ export default defineConfig({
       reporter: ["text", "json-summary"],
       include: [
         "src/api/nox-me.temporary.ts",
+        "src/api/nox-me-mode.ts",
         "src/api/nox-me.live.ts",
         "src/api/load-nox-me.ts",
         "src/auth/auth-failure.ts",
@@ -36,4 +43,4 @@ export default defineConfig({
       thresholds: { lines: 80, functions: 80, statements: 80, branches: 70 },
     },
   },
-});
+}));

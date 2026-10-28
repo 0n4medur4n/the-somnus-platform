@@ -45,7 +45,7 @@
   },
   "denied": {
     "title": "You can't enter Nox",
-    "body": "This account does not have access."
+    "body": "Nox is only for verified health professionals who have been invited."
   },
   "dashboard": {
     "title": "Nox",
