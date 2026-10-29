@@ -119,12 +119,17 @@ The spike (Prompt 11, run separately) decides between:
   connection stays under 55 s and the browser reconnects with `Last-Event-ID`.
 - **Plan B**, only if the spike shows that Hosting buffers the stream: a dedicated
   stream host on a custom domain of the same site, with a single-use, short-lived
-  stream ticket issued by the same-origin API, so no cross-site cookies are needed
-  (ADR 0016). It needs a custom domain mapping or a load balancer (~18–20 USD/month
-  in ADR 0016); their cost and region availability are **no confirmado**.
+  stream ticket issued by the same-origin API, so no cross-site cookies are needed.
+  The session cookie is first-party only on the SPA's own origin, through the
+  Hosting rewrite (ADR 0017, which supersedes ADR 0016); a dedicated stream host
+  is cross-origin, so it cannot rely on that cookie, and that is why plan B uses a
+  ticket and remains valid. It needs a custom domain mapping or a load balancer;
+  their cost and region availability are **no confirmado**. For reference only,
+  the superseded ADR 0016 recorded on 2026-10-05 a load balancer at ~18–20
+  USD/month and Cloud Run domain mapping as unavailable in `europe-west3`.
 
 A direct `*.run.app` URL with the session cookie is not an option: it makes the
-cookie cross-site again (ADR 0016).
+cookie cross-site again (ADR 0017, which supersedes ADR 0016).
 
 ### 2.12 Events
 
@@ -159,6 +164,14 @@ grants the gap lists are not added; and the Pub/Sub adapter that replaces
 it today (`services/somnus-worker/src/modules/audit/audit.controller.ts:18-20`,
 "Ingest an audit event (Pub/Sub push target)").
 
+Python services (owner, 2026-10-29, option A): `nox-assistant-service`,
+`nox-knowledge-service` and the Job `nox-ingest` each have their own event port
+with a logging adapter that fulfils the same `EventEnvelope` contract, validated
+against the JSON Schema generated from the Nox contracts.
+
+Until Pub/Sub exists (gap #3), Nox events live only in the logs, so Nox is not
+opened to real clinicians or real cases before there is a queryable audit trail.
+
 ### 2.13 AI
 
 Models are configuration behind the provider layer; `store: false`;
@@ -177,7 +190,7 @@ shared cluster nor the Nox instances are ever a test target.
 
 ### 2.15 Amendments
 
-This ADR amends three statements and, through them, ADR 0010:
+This ADR amends four statements and, through them, ADR 0010:
 
 - `CLAUDE.md` lines 20–23, the same text as `AGENTS.md` lines 14–17: "Deployable
   map: 2 static frontends on Firebase Hosting (...) + 5 Cloud Run services (...).
@@ -191,6 +204,11 @@ This ADR amends three statements and, through them, ADR 0010:
 - `THE_SOMNUS_PLATFORM_BUILD_PLAN.md` §3.9, line 190: "For the MVP, one physical
   cluster contains multiple logical databases" no longer holds: Nox uses two
   separate TiDB Starter instances.
+- `CLAUDE.md` lines 24–25, the same text as `AGENTS.md` lines 18–19: "Minimum
+  instances = 0 everywhere. Never add warm-up mechanisms beyond the ones
+  pre-approved in build plan §2." admits, for Nox only, one non-blocking warm-up
+  call per Nox login (`GET /nox/v1/me`), with no scheduled pings and no change to
+  the minimum instances.
 
 ### 2.16 Resilience
 
@@ -205,11 +223,11 @@ This ADR amends three statements and, through them, ADR 0010:
   stream sends heartbeats, so a dropped stream resumes (decision 11).
 - **Ingest:** idempotent and checkpointed; it switches the current corpus version
   atomically, only when the new version is complete and validated.
-- **Warm-up:** a call on `GET /nox/v1/me` warms the Nox services; minimum
-  instances stay 0. Build plan §2 (line 81) lets nothing else fight cold starts
-  "without a new decision"; this ADR is that decision for Nox. `CLAUDE.md` lines
-  24–25 ("Never add warm-up mechanisms beyond the ones pre-approved in build plan
-  §2") do not mention it yet.
+- **Warm-up:** `GET /nox/v1/me` makes one non-blocking warm-up call to the Nox
+  services per Nox login; no scheduled pings; minimum instances unchanged. Build
+  plan §2 (line 81) lets nothing else fight cold starts "without a new decision";
+  this ADR is that decision for Nox, and the fourth amendment (section 2.15)
+  carries it into `CLAUDE.md` and `AGENTS.md`.
 - **Service-level objectives and alerts** for first-token latency, error rate,
   citation validation and quota use.
 
@@ -220,6 +238,10 @@ conversations database or to Morpheo. What remains: an ingest that exhausts the
 knowledge instance's quota degrades search for that period. Mitigations:
 throttled, bounded batches; `nox-ingest` scheduled outside clinic hours and
 disabled by default; a spend limit with an email alert.
+
+Until Pub/Sub exists (gap #3), Nox events live only in the logs, so Nox is not
+opened to real clinicians or real cases before there is a queryable audit trail
+(section 2.12).
 
 ## 4. Open questions
 

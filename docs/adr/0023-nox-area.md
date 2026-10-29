@@ -9,12 +9,10 @@
 
 1. **Deployables.** SPA `apps/somnus-nox`; private services `nox-assistant-service`
    and `nox-knowledge-service`; Cloud Run Job `nox-ingest` (notes 2.1).
-2. **Access.** Only via edge-api `/nox/v1/*`: organisation entitlement (off by
-   default) + Nox permission, checked with identity on every request (notes 2.2).
+2. **Access.** Only via `/nox/v1/*`: organisation entitlement (default off) + Nox permission (notes 2.2).
 3. **Modules.** The assistant and `GET /nox/v1/evidence/search`, one engine (notes 2.3).
-4. **Instances.** `somnus_nox` and `somnus_nox_knowledge` each on its own new TiDB
-   Starter instance (eu-central-1), created by hand only after this ADR is approved
-   and merged; the shared cluster is untouched (notes 2.4).
+4. **Instances.** `somnus_nox` and `somnus_nox_knowledge` each on a new TiDB Starter
+   instance (eu-central-1), created by hand only after this ADR is merged (notes 2.4).
 5. **Store.** Native `VECTOR(n)` + HNSW replaces report-service's stores (notes 2.5).
 6. **Population filtering is structural.** Adult and paediatric chunks live in separate
    vector tables, each with its own HNSW index; a chunk marked for both populations is
@@ -47,23 +45,25 @@
 10. **Encryption.** Per-organisation KMS keys; 30 days (DEFAULT – Jesús puede cambiarlo) (notes 2.10).
 11. **Streaming is a requirement; no polling.** A: resumable SSE via the Hosting rewrite;
     B, only if it buffers: a same-site stream host with a single-use ticket (notes 2.11).
-12. **Events** (owner, 2026-10-29). Six `nox.*` events with no free text, emitted through
-    the existing `EventPublisher` port and its logging adapter; the console Nox tab
-    is built when Pub/Sub exists (production-readiness gap #3) (notes 2.12).
+12. **Events.** Six `nox.*` events, no free text, through an `EventPublisher` port with a
+    logging adapter in each service; the console Nox tab waits for Pub/Sub (notes 2.12).
 13. **AI.** Provider layer, `store: false`, pseudonymised; no real case yet (notes 2.13).
 14. **CI.** Loopback TiDB on push; HNSW only on a disposable instance (notes 2.14).
 15. **Amendments** (a separate change; notes 2.15): `CLAUDE.md` 20–23, `AGENTS.md` 14–17,
-    build plan §1 line 10, §2 line 73; and §3.9 line 190, "For the MVP, one physical
-    cluster contains multiple logical databases", no longer holds (two Nox instances).
-16. **Resilience.** Fault isolation per service and per database; fail closed (no
-    answer without sources, no automatic provider switch); timeouts, bounded retries,
-    circuit breakers and limits; resumable idempotent turns; atomic corpus versions; a
-    warm-up on `GET /nox/v1/me`; SLOs and alerts (notes 2.16).
+    build plan §1 line 10, §2 line 73; §3.9 line 190, "For the MVP, one physical
+    cluster contains multiple logical databases", no longer holds (two Nox instances);
+    `CLAUDE.md` 24–25 and `AGENTS.md` 18–19 admit one non-blocking warm-up call per
+    Nox login, with no scheduled pings and no change to the minimum instances.
+16. **Resilience.** Isolation per service and per database; fail closed (no answer without
+    sources, no automatic provider switch); timeouts, bounded retries, circuit breakers,
+    limits; resumable idempotent turns; atomic corpus versions; SLOs and alerts (notes 2.16).
 
 ## Accepted risk
 
 An ingest that exhausts the knowledge instance's quota degrades search for that period
-only; mitigated by bounded, off-hours ingest and a spend limit with an alert (notes 3).
+only (bounded, off-hours ingest; a spend limit with an alert). Until Pub/Sub exists, Nox
+events live only in the logs, so Nox is not opened to real clinicians or real cases
+before there is a queryable audit trail (notes 3).
 
 ## Open questions
 
