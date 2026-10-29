@@ -322,3 +322,83 @@ describe("limits", () => {
     expect((await ana.readFile(folder, item)).length).toBe(0);
   });
 });
+
+describe("colour and emoji (owner decision 2026-10-29)", () => {
+  it("are sealed with the name, survive a rename and a new revision, and reach other members", async () => {
+    const server = new FakeDriveServer();
+    const ana = await join(server, "ana");
+    await join(server, "ben");
+    await ana.createShare("Protocolos");
+    let folder = await folderNamed(ana, "Protocolos");
+    await ana.writeFile(folder, {
+      parentId: folder.rootId,
+      name: "Guía",
+      mime: "text/plain",
+      bytes: utf8("v1"),
+      note: true,
+    });
+    folder = await ana.openShare(folder.shareId);
+    let note = folder.items.find((i) => i.meta?.name === "Guía");
+    if (!note) throw new Error("no note");
+    await ana.setAppearance(folder, note, { color: "teal", emoji: "🩺" });
+    await ana.setShareAppearance(folder, { color: "purple", emoji: "🧠" });
+
+    folder = await ana.openShare(folder.shareId);
+    note = folder.items.find((i) => i.node.id === note?.node.id);
+    expect(note?.meta).toMatchObject({ color: "teal", emoji: "🩺" });
+    expect(folder.appearance).toEqual({ color: "purple", emoji: "🧠" });
+    expect((await ana.listShares())[0]?.appearance).toEqual({ color: "purple", emoji: "🧠" });
+
+    // A rename and a new revision keep the look.
+    if (!note) throw new Error("no note");
+    await ana.rename(folder, note, "Guía v2");
+    folder = await ana.openShare(folder.shareId);
+    note = folder.items.find((i) => i.node.id === note?.node.id);
+    if (!note) throw new Error("no note");
+    await ana.writeFile(folder, {
+      parentId: folder.rootId,
+      existing: note,
+      name: "Guía v2",
+      mime: "text/plain",
+      bytes: utf8("v2"),
+      note: true,
+    });
+    folder = await ana.openShare(folder.shareId);
+    expect(folder.items.find((i) => i.node.id === note?.node.id)?.meta).toMatchObject({
+      name: "Guía v2",
+      color: "teal",
+      emoji: "🩺",
+    });
+
+    // Clearing goes back to the default look.
+    const current = folder.items.find((i) => i.node.id === note?.node.id);
+    if (!current) throw new Error("no note");
+    await ana.setAppearance(folder, current, {});
+    folder = await ana.openShare(folder.shareId);
+    const cleared = folder.items.find((i) => i.node.id === note?.node.id)?.meta;
+    expect(cleared?.color).toBeUndefined();
+    expect(cleared?.emoji).toBeUndefined();
+
+    // Never in the clear on the wire.
+    expect(server.received.join(" ")).not.toContain("🩺");
+    expect(server.received.join(" ")).not.toContain("teal");
+  });
+
+  it("drops a colour or an emoji the console does not offer, even if a member wrote one", async () => {
+    const server = new FakeDriveServer();
+    const ana = await join(server, "ana");
+    await ana.createShare("Carpeta");
+    let folder = await folderNamed(ana, "Carpeta");
+    await ana.createFolder(folder, folder.rootId, "Sub");
+    folder = await ana.openShare(folder.shareId);
+    const sub = folder.items[0];
+    if (!sub) throw new Error("no folder");
+    await ana.setAppearance(folder, sub, {
+      color: "javascript:alert(1)" as never,
+      emoji: "<img src=x>",
+    });
+    folder = await ana.openShare(folder.shareId);
+    expect(folder.items[0]?.meta?.color).toBeUndefined();
+    expect(folder.items[0]?.meta?.emoji).toBeUndefined();
+  });
+});

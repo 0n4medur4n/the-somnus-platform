@@ -83,6 +83,9 @@ const PATHS = {
   external: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
   arrowLeft: "M19 12H5m6-6l-6 6 6 6",
   save: "M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6",
+  // Drive appearance and links (owner decision 2026-10-29).
+  palette:
+    "M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.6-1.6 0-.5-.2-.9-.5-1.2-.3-.4-.5-.8-.5-1.3 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.6 17 3 12 3zM7.5 12.5h.01M9.5 8h.01M14.5 8h.01M17 11.5h.01",
 } as const;
 
 export type IconName = keyof typeof PATHS;

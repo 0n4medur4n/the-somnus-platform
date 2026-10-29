@@ -20,6 +20,7 @@ export function DriveMembers({
   onChanged,
   onLeft,
   onRename,
+  onAppearance,
 }: {
   session: DriveSession;
   view: DriveFolderView;
@@ -27,6 +28,8 @@ export function DriveMembers({
   onLeft: () => void;
   /** Owners rename the shared folder in a dialog the workspace owns. */
   onRename: () => void;
+  /** Owners choose the shared folder's colour and emoji (owner decision 2026-10-29). */
+  onAppearance?: () => void;
 }) {
   const { t } = useTranslation();
   const task = useDriveTask();
@@ -246,6 +249,15 @@ export function DriveMembers({
             <Button className="px-3 py-1.5 text-sm" variant="secondary" onClick={onRename}>
               {t("drive.members.renameFolder")}
             </Button>
+            {onAppearance ? (
+              <Button
+                className="ml-2 px-3 py-1.5 text-sm"
+                variant="secondary"
+                onClick={onAppearance}
+              >
+                {t("drive.appearance.menu")}
+              </Button>
+            ) : null}
           </div>
           <form
             className="flex flex-col gap-2"

@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import somnusWordmark from "../assets/brand/somnus-wordmark.png";
 import { useAdminAuth } from "../auth/useAdminAuth.js";
 import { FullPageStatus } from "../components/FullPageStatus.js";
 import { Icon } from "../components/ui/Icon.js";
 import { DriveScreen } from "../drive/ui/DriveScreen.js";
+import { rememberReturnTo } from "../lib/return-to.js";
 import { Denied } from "./Denied.js";
 import { Invited } from "./Invited.js";
 import { Login } from "./Login.js";
@@ -18,6 +20,13 @@ import { Login } from "./Login.js";
 export function DriveApp() {
   const { t } = useTranslation();
   const { state, logout } = useAdminAuth();
+
+  // A Drive link opened while signed out: come back to it after signing in.
+  useEffect(() => {
+    if (state.status === "unauthenticated") {
+      rememberReturnTo(`${window.location.pathname}${window.location.search}`);
+    }
+  }, [state.status]);
 
   if (state.status === "loading") return <FullPageStatus message={t("common.loading")} />;
   if (state.status === "unauthenticated") return <Login />;

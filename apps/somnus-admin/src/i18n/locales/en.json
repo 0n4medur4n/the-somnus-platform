@@ -741,6 +741,39 @@
         "deleteColumn": "− Column",
         "deleteTable": "Remove table"
       }
+    },
+    "link": {
+      "copy": "Copy link",
+      "copyHere": "Copy link to this folder",
+      "copied": "Link copied. Only people with access to this folder can open it.",
+      "copyFailed": "Could not copy. Link: {{link}}",
+      "missing": "The item in the link no longer exists or is in the trash.",
+      "unavailable": "You do not have access to that link's folder, or it no longer exists. Ask its owner to share it with you."
+    },
+    "appearance": {
+      "menu": "Colour & icon",
+      "title": "Colour & icon of '{{name}}'",
+      "color": "Colour",
+      "noColor": "No colour",
+      "emoji": "Icon",
+      "noEmoji": "No icon",
+      "typeEmoji": "Or type or paste an emoji",
+      "useEmoji": "Use",
+      "notAnEmoji": "Type a single emoji.",
+      "encrypted": "Colour and icon are stored encrypted, like the name: the server cannot see them.",
+      "save": "Save",
+      "colors": {
+        "red": "Red",
+        "orange": "Orange",
+        "amber": "Amber",
+        "green": "Green",
+        "teal": "Teal",
+        "blue": "Blue",
+        "indigo": "Indigo",
+        "purple": "Purple",
+        "pink": "Pink",
+        "gray": "Grey"
+      }
     }
   },
   "charts": {
@@ -814,7 +847,10 @@
   },
   "staff": {
     "recipient": "Recipient",
-    "recipientMode": { "email": "Invite by email", "existing": "Choose a registered person" },
+    "recipientMode": {
+      "email": "Invite by email",
+      "existing": "Choose a registered person"
+    },
     "title": "The Somnus staff",
     "subtitle": "Invite someone on the team with their role. They'll get an email to sign in to the console and accept.",
     "add": "Add a person",

@@ -12,6 +12,7 @@ import {
   type DriveSealed,
   type DriveStateSealed,
 } from "@somnus/api-contracts";
+import { cleanAppearance, type DriveColor } from "./appearance.js";
 
 /**
  * The staff Drive's cryptography (ADR 0019). Everything here runs in the
@@ -682,6 +683,9 @@ export type NodeMeta = {
   size?: number;
   /** A note written in the console (usage instructions, protocols) rather than an uploaded file. */
   note?: boolean;
+  /** How it looks in the Drive (owner decision 2026-10-29): see `appearance.ts`. */
+  color?: DriveColor;
+  emoji?: string;
   modifiedAt: string;
 };
 
@@ -715,7 +719,9 @@ export async function openMeta(input: {
   if (typeof parsed.name !== "string" || typeof parsed.modifiedAt !== "string") {
     throw new DriveCryptoError("tampered");
   }
-  return parsed as NodeMeta;
+  // Signed by a member, but still only displayed if it is one of ours.
+  const { color: _color, emoji: _emoji, ...rest } = parsed;
+  return { ...(rest as NodeMeta), ...cleanAppearance(parsed) };
 }
 
 /** One block: a fresh 12-byte IV, then the AES-GCM ciphertext and tag. */
