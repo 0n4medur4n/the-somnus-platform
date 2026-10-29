@@ -72,9 +72,9 @@ The Nox data is separated for resilience (owner, 2026-10-29). `somnus_nox`
 one**, both in AWS eu-central-1 (Frankfurt). The shared cluster of Morpheo,
 identity, report and audit is untouched, so nothing in Nox can exhaust the quota
 those services depend on. Each database has its own user; never a root user. Both
-instances are **created by hand with a runbook**, and their credentials reach
-Terraform through secrets referenced by data sources; the TiDB Cloud Terraform
-provider is deferred.
+instances are **created by hand with a runbook**, and **not before this ADR is
+approved and merged**; their credentials reach Terraform through secrets
+referenced by data sources; the TiDB Cloud Terraform provider is deferred.
 
 Dependencies: evidence search depends only on the knowledge instance; the
 assistant depends on knowledge, conversations and the model provider.
@@ -101,8 +101,8 @@ by the model.
 
 The conversations instance holds **conversation text written by physicians**; the
 knowledge instance holds public literature. Because customer-managed keys are not
-available on Starter, conversation text is encrypted by the application with per-organisation envelope
-encryption: one data key per organisation, wrapped by a Cloud KMS key in
+available on Starter, conversation text is encrypted by the application with
+per-organisation envelope encryption: one data key per organisation, wrapped by a Cloud KMS key in
 `europe-west3`, unwrappable only by the assistant's service account.
 Conversations are kept **30 days by default (DEFAULT – Jesús puede cambiarlo)**,
 then deleted by a scheduled job; destroying an organisation's key makes all its
@@ -130,7 +130,34 @@ cookie cross-site again (ADR 0016).
 
 `nox.session.started.v1`, `nox.turn.completed.v1`, `nox.instrument.suggested.v1`,
 `nox.feedback.submitted.v1`, `nox.ingest.completed.v1`, `nox.error.v1`: no free
-text, names or case content in any field. Their transport is open (section 4.1).
+text, names or case content in any field.
+
+Transport (owner, 2026-10-29, option C): Nox emits these events through the
+existing `EventPublisher` port and its logging adapter, which logs the envelope
+through the service's redaction pipeline
+(`services/somnus-edge-api/src/infrastructure/events/logging-event-publisher.ts:5-13`).
+The console Nox tab is built when Pub/Sub exists. That is production-readiness
+gap #3, platform work that does not depend on Nox. This follows the reasoning of
+the port (`services/somnus-edge-api/src/infrastructure/events/event-publisher.ts:6-16`):
+
+> That module's ingest endpoint is documented as a **Pub/Sub push target**, and
+> no Pub/Sub topic exists yet (production-readiness gap #3). Calling the worker
+> over HTTP instead would invent a transport the build plan does not describe
+> and add an edge -> worker dependency the deployable map does not have.
+
+> the port fixes the event shape and the call sites now, and
+> `LoggingEventPublisher` is swapped for a Pub/Sub adapter when gap #3 closes --
+> with no controller, guard or interceptor changing.
+
+Pub/Sub work that remains (production-readiness gap #3,
+`docs/runbooks/production-readiness.md:52-58`): the Pub/Sub topics for domain
+events are not declared in any environment (the module
+`infrastructure/terraform/modules/pubsub-topic/` exists but nothing calls it), so
+no push subscription reaches the worker's ingest route; the scoped service-account
+grants the gap lists are not added; and the Pub/Sub adapter that replaces
+`LoggingEventPublisher` is not written. The worker route exists and nothing calls
+it today (`services/somnus-worker/src/modules/audit/audit.controller.ts:18-20`,
+"Ingest an audit event (Pub/Sub push target)").
 
 ### 2.13 AI
 
@@ -196,56 +223,20 @@ disabled by default; a spend limit with an email alert.
 
 ## 4. Open questions
 
-### 4.1 Event transport (not decided by the owner)
-
-The `EventPublisher` port argues against a direct edge-to-worker call
-(`services/somnus-edge-api/src/infrastructure/events/event-publisher.ts:6-16`):
-
-> That module's ingest endpoint is documented as a **Pub/Sub push target**, and
-> no Pub/Sub topic exists yet (production-readiness gap #3). Calling the worker
-> over HTTP instead would invent a transport the build plan does not describe
-> and add an edge -> worker dependency the deployable map does not have.
-
-> the port fixes the event shape and the call sites now, and
-> `LoggingEventPublisher` is swapped for a Pub/Sub adapter when gap #3 closes --
-> with no controller, guard or interceptor changing.
-
-Pub/Sub work that remains (production-readiness gap #3,
-`docs/runbooks/production-readiness.md:52-58`): the Pub/Sub topics for domain
-events are not declared in any environment (the module
-`infrastructure/terraform/modules/pubsub-topic/` exists but nothing calls it), so
-no push subscription reaches the worker's ingest route; the scoped service-account
-grants the gap lists are not added; and the Pub/Sub adapter that replaces
-`LoggingEventPublisher` is not written. The worker route exists and nothing calls it today
-(`services/somnus-worker/src/modules/audit/audit.controller.ts:18-20`, "Ingest an
-audit event (Pub/Sub push target)").
-
-Options:
-
-- A) edge-api and the assistant send `nox.*` events by authenticated HTTP (OIDC)
-  to the worker route above, and the console reads them from `somnus_audit`. This
-  supersedes the reasoning quoted above.
-- B) Pub/Sub: close gap #3 and write the Pub/Sub adapter behind the port.
-- C) Keep the `EventPublisher` port with the logging adapter now, and build the
-  console's Nox tab when Pub/Sub exists.
-
-Technical recommendation, **not a decision**: C now, B later. The owner has not
-decided.
-
-### 4.2 Nox access details
+### 4.1 Nox access details
 
 The specialties allowed and whether a second factor is required.
 
-### 4.3 Vector index maturity
+### 4.2 Vector index maturity
 
 Public preview on Starter; availability in eu-central-1 and the maximum
 indexable dimension are not stated in the docs.
 
-### 4.4 Regulatory classification and intended-use wording
+### 4.3 Regulatory classification and intended-use wording
 
 Clinical lead and legal counsel.
 
-### 4.5 Minimum instances of the Nox services in production
+### 4.4 Minimum instances of the Nox services in production
 
 0 (cost) or 1 (latency), decided after the spike measures the cold starts of
 Cloud Run and of Starter. Choosing 1 would also need an amendment: build plan §2
@@ -270,6 +261,14 @@ and `CLAUDE.md` line 24 repeats it.
   Rejected (owner, 2026-10-29).
 - **An automatic switch to a second model provider** — it would need its own EU
   residency and DPA. Rejected (section 2.16).
+- **Events by authenticated HTTP to the worker** (option A) — edge-api and the
+  assistant would send `nox.*` events by OIDC to
+  `services/somnus-worker/src/modules/audit/audit.controller.ts:18-20` and the
+  console would read them from `somnus_audit`; it adds the edge -> worker
+  transport the port rejects (section 2.12). Not chosen (owner, 2026-10-29).
+- **Pub/Sub for events now** (option B) — needs gap #3 closed first, platform work
+  that does not depend on Nox. Not chosen now; the port takes a Pub/Sub adapter
+  when gap #3 closes (section 2.12).
 - **The TiDB Cloud Terraform provider now** — a new provider; deferred.
 - **A separate vector database** — §3.6b and a new dependency. Rejected.
 - **A post-filter for population** — can starve paediatric results. Rejected.

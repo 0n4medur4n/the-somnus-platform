@@ -13,7 +13,8 @@
    default) + Nox permission, checked with identity on every request (notes 2.2).
 3. **Modules.** The assistant and `GET /nox/v1/evidence/search`, one engine (notes 2.3).
 4. **Instances.** `somnus_nox` and `somnus_nox_knowledge` each on its own new TiDB
-   Starter instance (eu-central-1), created by hand; shared cluster untouched (notes 2.4).
+   Starter instance (eu-central-1), created by hand only after this ADR is approved
+   and merged; the shared cluster is untouched (notes 2.4).
 5. **Store.** Native `VECTOR(n)` + HNSW replaces report-service's stores (notes 2.5).
 6. **Population filtering is structural.** Adult and paediatric chunks live in separate
    vector tables, each with its own HNSW index; a chunk marked for both populations is
@@ -46,7 +47,9 @@
 10. **Encryption.** Per-organisation KMS keys; 30 days (DEFAULT – Jesús puede cambiarlo) (notes 2.10).
 11. **Streaming is a requirement; no polling.** A: resumable SSE via the Hosting rewrite;
     B, only if it buffers: a same-site stream host with a single-use ticket (notes 2.11).
-12. **Events.** Six `nox.*` events with no free text; transport open (question 1).
+12. **Events** (owner, 2026-10-29). Six `nox.*` events with no free text, emitted through
+    the existing `EventPublisher` port and its logging adapter; the console Nox tab
+    is built when Pub/Sub exists (production-readiness gap #3) (notes 2.12).
 13. **AI.** Provider layer, `store: false`, pseudonymised; no real case yet (notes 2.13).
 14. **CI.** Loopback TiDB on push; HNSW only on a disposable instance (notes 2.14).
 15. **Amendments** (a separate change; notes 2.15): `CLAUDE.md` 20–23, `AGENTS.md` 14–17,
@@ -64,11 +67,8 @@ only; mitigated by bounded, off-hours ingest and a spend limit with an alert (no
 
 ## Open questions
 
-1. **Event transport, not decided by the owner** (notes 4.1): A) authenticated HTTP to
-   the worker route; B) Pub/Sub; C) the port's logging adapter now, the console Nox tab
-   once Pub/Sub exists. Technical recommendation, not a decision: C now, B later.
-2. Specialties and second factor. 3. Vector-index maturity. 4. Regulatory class.
-5. Minimum instances of the Nox services in production, 0 or 1, after the spike (notes 4).
+1. Specialties and second factor. 2. Vector-index maturity. 3. Regulatory class.
+4. Minimum instances of the Nox services in production, 0 or 1, after the spike (notes 4).
 
 ## Consequences
 
