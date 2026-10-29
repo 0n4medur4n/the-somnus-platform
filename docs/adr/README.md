@@ -29,11 +29,13 @@ the consequences.
 
 | 0021 | Morpheo invitations and administrative user detail | Accepted | Addendum A, 15.2 |
 | 0022 | The one-page patient report, and sources authorised by the owner | Accepted | §14, §15, Addendum B §B4 |
+| 0023 | Nox: a professionals-only area with its own SPA, services and TiDB instances | Accepted | §1, §2, §3.6b, §3.9 |
 
 ## Convention
 
 - File name: `NNNN-kebab-case-title.md`.
-- One page maximum.
+- One page maximum. A long rationale may live in a companion notes file,
+  `NNNN-kebab-case-title-notes.md`, linked from the ADR.
 - Status values: `Proposed`, `Accepted`, `Superseded by ADR NNNN`.
 - A new decision that contradicts an Accepted ADR must either
   supersede it (preserve history) or live alongside it as a
