@@ -105,7 +105,8 @@ raised later).
   unlock their own Drive; anyone else sees "no access". Public links for people outside The Somnus were
   explicitly not chosen -- they would break the staff-only rule and need a separate security review. A
   link opened while signed out survives sign-in (the `/drive` path only, 30 minutes, ids only).
-- **Colour and emoji** for folders, shared folders, notes, documents and files: stored in the node's sealed
+- **Colour and icon** for folders, shared folders, notes, documents and files: stored in the node's sealed
   metadata next to its name, so the server never sees them; kept across renames and new revisions. Only
-  the palette's ten colours and a single pictographic emoji are ever displayed -- anything else a member
-  might have sealed is dropped on read.
+  the palette's ten colours and the 37 console line icons (`DRIVE_ICONS`) are ever displayed -- anything
+  else a member might have sealed is dropped on read. Emoji were tried first and replaced the same day at
+  the owner's request ("los emojis se ven poco serios"); an emoji stored meanwhile is no longer shown.

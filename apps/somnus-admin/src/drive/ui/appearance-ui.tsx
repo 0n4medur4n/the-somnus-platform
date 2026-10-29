@@ -5,24 +5,23 @@ import { Icon, type IconName } from "../../components/ui/Icon.js";
 import { Modal } from "../../components/ui/ui.js";
 import {
   type Appearance,
-  cleanEmoji,
   colorHex,
   DRIVE_COLORS,
+  DRIVE_ICONS,
   type DriveColor,
-  EMOJI_SUGGESTIONS,
+  type DriveIcon,
 } from "../appearance.js";
 
 /**
- * A folder's, note's or file's mark in the Drive: its emoji when it has one,
- * otherwise its kind's icon in its colour. Decorative -- the name beside it is
- * what is read out.
+ * A folder's, note's or file's mark in the Drive: its chosen icon (or its
+ * kind's icon) in its chosen colour. Decorative -- the name beside it is what
+ * is read out.
  */
 export function ItemGlyph({
   icon,
   appearance,
   className,
   fallbackClass,
-  emojiClass = "text-lg",
 }: {
   icon: IconName;
   appearance: Appearance | undefined;
@@ -30,19 +29,7 @@ export function ItemGlyph({
   className: string;
   /** Classes for the icon when no colour was chosen. */
   fallbackClass?: string;
-  /** Font size for an emoji, e.g. "text-4xl" on a grid card. */
-  emojiClass?: string;
 }) {
-  if (appearance?.emoji) {
-    return (
-      <span
-        aria-hidden="true"
-        className={`inline-flex shrink-0 items-center justify-center leading-none ${className} ${emojiClass}`}
-      >
-        {appearance.emoji}
-      </span>
-    );
-  }
   const hex = colorHex(appearance?.color);
   return (
     <span
@@ -50,18 +37,18 @@ export function ItemGlyph({
       className={`inline-flex shrink-0 ${hex ? "" : (fallbackClass ?? "")}`}
       style={hex ? { color: hex } : undefined}
     >
-      <Icon name={icon} className={className} />
+      <Icon name={appearance?.icon ?? icon} className={className} />
     </span>
   );
 }
 
-/** A colour swatch behind a note card or a shared folder tile, faint enough to keep text readable. */
+/** A colour swatch behind a card or a shared folder tile, faint enough to keep text readable. */
 export function tint(appearance: Appearance | undefined): { backgroundColor: string } | undefined {
   const hex = colorHex(appearance?.color);
   return hex ? { backgroundColor: `${hex}1f` } : undefined;
 }
 
-/** Choose a colour and an emoji for one item. Empty means the default look. */
+/** Choose a colour and an icon for one item. Nothing chosen means the default look. */
 export function AppearanceDialog({
   name,
   icon,
@@ -71,6 +58,7 @@ export function AppearanceDialog({
   onClose,
 }: {
   name: string;
+  /** The item's kind icon, used when no icon is chosen. */
   icon: IconName;
   initial: Appearance;
   busy: boolean;
@@ -79,22 +67,25 @@ export function AppearanceDialog({
 }) {
   const { t } = useTranslation();
   const [color, setColor] = useState<DriveColor | undefined>(initial.color);
-  const [emoji, setEmoji] = useState<string | undefined>(initial.emoji);
-  const [typed, setTyped] = useState("");
-  const typedOk = typed.trim() === "" || cleanEmoji(typed) !== undefined;
-  const next: Appearance = { ...(color ? { color } : {}), ...(emoji ? { emoji } : {}) };
+  const [chosen, setChosen] = useState<DriveIcon | undefined>(initial.icon);
+  const next: Appearance = { ...(color ? { color } : {}), ...(chosen ? { icon: chosen } : {}) };
+  const hex = colorHex(color);
 
   return (
     <Modal title={t("drive.appearance.title", { name })} onClose={onClose}>
       <div className="flex flex-col gap-5">
         <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-somnus-background/60 p-3">
-          <ItemGlyph
-            icon={icon}
-            appearance={next}
-            className="h-7 w-7"
-            emojiClass="text-2xl"
-            fallbackClass="text-somnus-primary"
-          />
+          <span
+            className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.04]"
+            style={tint(next)}
+          >
+            <ItemGlyph
+              icon={icon}
+              appearance={next}
+              className="h-6 w-6"
+              fallbackClass="text-somnus-primary"
+            />
+          </span>
           <span className="min-w-0 truncate font-medium text-somnus-text">{name}</span>
         </div>
 
@@ -107,7 +98,6 @@ export function AppearanceDialog({
               type="button"
               aria-pressed={color === undefined}
               onClick={() => setColor(undefined)}
-              title={t("drive.appearance.noColor")}
               className={`flex h-8 items-center rounded-full border px-3 text-xs ${
                 color === undefined
                   ? "border-somnus-primary text-somnus-text"
@@ -135,69 +125,43 @@ export function AppearanceDialog({
 
         <fieldset>
           <legend className="mb-2 text-sm font-medium text-somnus-text">
-            {t("drive.appearance.emoji")}
+            {t("drive.appearance.icon")}
           </legend>
-          <div className="flex flex-wrap gap-1">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-1">
             <button
               type="button"
-              aria-pressed={emoji === undefined}
-              onClick={() => setEmoji(undefined)}
-              className={`flex h-9 items-center rounded-lg border px-3 text-xs ${
-                emoji === undefined
-                  ? "border-somnus-primary text-somnus-text"
-                  : "border-white/15 text-somnus-subtle hover:bg-white/5"
+              aria-pressed={chosen === undefined}
+              aria-label={t("drive.appearance.defaultIcon")}
+              title={t("drive.appearance.defaultIcon")}
+              onClick={() => setChosen(undefined)}
+              className={`flex h-10 items-center justify-center rounded-lg border ${
+                chosen === undefined
+                  ? "border-somnus-primary bg-somnus-primary/15"
+                  : "border-white/10 hover:bg-white/10"
               }`}
+              style={hex ? { color: hex } : undefined}
             >
-              {t("drive.appearance.noEmoji")}
+              <Icon name={icon} className="h-5 w-5" />
             </button>
-            {EMOJI_SUGGESTIONS.map((e) => (
+            {DRIVE_ICONS.map((key) => (
               <button
-                key={e}
+                key={key}
                 type="button"
-                aria-label={e}
-                aria-pressed={emoji === e}
-                onClick={() => setEmoji(e)}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg border text-lg ${
-                  emoji === e
+                aria-pressed={chosen === key}
+                aria-label={t(`drive.appearance.icons.${key}`)}
+                title={t(`drive.appearance.icons.${key}`)}
+                onClick={() => setChosen(key)}
+                className={`flex h-10 items-center justify-center rounded-lg border ${
+                  chosen === key
                     ? "border-somnus-primary bg-somnus-primary/15"
-                    : "border-transparent hover:bg-white/10"
+                    : "border-transparent text-somnus-subtle hover:bg-white/10 hover:text-somnus-text"
                 }`}
+                style={hex && chosen === key ? { color: hex } : undefined}
               >
-                {e}
+                <Icon name={key} className="h-5 w-5" />
               </button>
             ))}
           </div>
-          <label className="mt-3 flex flex-col gap-1 text-sm text-somnus-subtle">
-            {t("drive.appearance.typeEmoji")}
-            <span className="flex gap-2">
-              <input
-                value={typed}
-                maxLength={16}
-                onChange={(event) => setTyped(event.target.value)}
-                placeholder="🙂"
-                className="w-24 rounded-md border border-white/15 bg-somnus-background px-3 py-1.5 text-lg text-somnus-text"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!typedOk || typed.trim() === ""}
-                onClick={() => {
-                  const value = cleanEmoji(typed);
-                  if (value) {
-                    setEmoji(value);
-                    setTyped("");
-                  }
-                }}
-              >
-                {t("drive.appearance.useEmoji")}
-              </Button>
-            </span>
-            {!typedOk ? (
-              <span role="alert" className="text-xs text-somnus-danger">
-                {t("drive.appearance.notAnEmoji")}
-              </span>
-            ) : null}
-          </label>
         </fieldset>
 
         <p className="text-xs text-somnus-subtle">{t("drive.appearance.encrypted")}</p>

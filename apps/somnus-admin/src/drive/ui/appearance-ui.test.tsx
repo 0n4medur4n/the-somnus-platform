@@ -7,7 +7,7 @@ import { AppearanceDialog } from "./appearance-ui.js";
 const t = i18n.t.bind(i18n);
 
 describe("AppearanceDialog", () => {
-  it("saves the colour and the emoji chosen", async () => {
+  it("saves the colour and the icon chosen", async () => {
     const onSave = vi.fn();
     renderWithProviders(
       <AppearanceDialog
@@ -20,31 +20,42 @@ describe("AppearanceDialog", () => {
       />,
     );
     await userEvent.click(screen.getByRole("button", { name: t("drive.appearance.colors.teal") }));
-    await userEvent.click(screen.getByRole("button", { name: "🩺" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: t("drive.appearance.icons.stethoscope") }),
+    );
     await userEvent.click(screen.getByRole("button", { name: t("drive.appearance.save") }));
-    expect(onSave).toHaveBeenCalledWith({ color: "teal", emoji: "🩺" });
+    expect(onSave).toHaveBeenCalledWith({ color: "teal", icon: "stethoscope" });
   });
 
-  it("takes a typed emoji, refuses text, and can go back to the default look", async () => {
+  it("can go back to the default colour and icon", async () => {
     const onSave = vi.fn();
     renderWithProviders(
       <AppearanceDialog
         name="Nota"
         icon="note"
-        initial={{ color: "red", emoji: "📌" }}
+        initial={{ color: "red", icon: "pin" }}
         busy={false}
         onSave={onSave}
         onClose={vi.fn()}
       />,
     );
-    const field = screen.getByLabelText(t("drive.appearance.typeEmoji"));
-    await userEvent.type(field, "hola");
-    expect(screen.getByRole("alert")).toHaveTextContent(t("drive.appearance.notAnEmoji"));
-    await userEvent.clear(field);
-    await userEvent.type(field, "🌙");
-    await userEvent.click(screen.getByRole("button", { name: t("drive.appearance.useEmoji") }));
     await userEvent.click(screen.getByRole("button", { name: t("drive.appearance.noColor") }));
+    await userEvent.click(screen.getByRole("button", { name: t("drive.appearance.defaultIcon") }));
     await userEvent.click(screen.getByRole("button", { name: t("drive.appearance.save") }));
-    expect(onSave).toHaveBeenCalledWith({ emoji: "🌙" });
+    expect(onSave).toHaveBeenCalledWith({});
+  });
+
+  it("offers no emoji at all", () => {
+    renderWithProviders(
+      <AppearanceDialog
+        name="Nota"
+        icon="note"
+        initial={{}}
+        busy={false}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(document.body.textContent ?? "").not.toMatch(/\p{Extended_Pictographic}/u);
   });
 });

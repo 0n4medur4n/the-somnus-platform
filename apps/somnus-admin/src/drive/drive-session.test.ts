@@ -323,7 +323,7 @@ describe("limits", () => {
   });
 });
 
-describe("colour and emoji (owner decision 2026-10-29)", () => {
+describe("colour and icon (owner decision 2026-10-29)", () => {
   it("are sealed with the name, survive a rename and a new revision, and reach other members", async () => {
     const server = new FakeDriveServer();
     const ana = await join(server, "ana");
@@ -340,14 +340,14 @@ describe("colour and emoji (owner decision 2026-10-29)", () => {
     folder = await ana.openShare(folder.shareId);
     let note = folder.items.find((i) => i.meta?.name === "Guía");
     if (!note) throw new Error("no note");
-    await ana.setAppearance(folder, note, { color: "teal", emoji: "🩺" });
-    await ana.setShareAppearance(folder, { color: "purple", emoji: "🧠" });
+    await ana.setAppearance(folder, note, { color: "teal", icon: "stethoscope" });
+    await ana.setShareAppearance(folder, { color: "purple", icon: "brain" });
 
     folder = await ana.openShare(folder.shareId);
     note = folder.items.find((i) => i.node.id === note?.node.id);
-    expect(note?.meta).toMatchObject({ color: "teal", emoji: "🩺" });
-    expect(folder.appearance).toEqual({ color: "purple", emoji: "🧠" });
-    expect((await ana.listShares())[0]?.appearance).toEqual({ color: "purple", emoji: "🧠" });
+    expect(note?.meta).toMatchObject({ color: "teal", icon: "stethoscope" });
+    expect(folder.appearance).toEqual({ color: "purple", icon: "brain" });
+    expect((await ana.listShares())[0]?.appearance).toEqual({ color: "purple", icon: "brain" });
 
     // A rename and a new revision keep the look.
     if (!note) throw new Error("no note");
@@ -367,7 +367,7 @@ describe("colour and emoji (owner decision 2026-10-29)", () => {
     expect(folder.items.find((i) => i.node.id === note?.node.id)?.meta).toMatchObject({
       name: "Guía v2",
       color: "teal",
-      emoji: "🩺",
+      icon: "stethoscope",
     });
 
     // Clearing goes back to the default look.
@@ -377,14 +377,14 @@ describe("colour and emoji (owner decision 2026-10-29)", () => {
     folder = await ana.openShare(folder.shareId);
     const cleared = folder.items.find((i) => i.node.id === note?.node.id)?.meta;
     expect(cleared?.color).toBeUndefined();
-    expect(cleared?.emoji).toBeUndefined();
+    expect(cleared?.icon).toBeUndefined();
 
     // Never in the clear on the wire.
-    expect(server.received.join(" ")).not.toContain("🩺");
+    expect(server.received.join(" ")).not.toContain("stethoscope");
     expect(server.received.join(" ")).not.toContain("teal");
   });
 
-  it("drops a colour or an emoji the console does not offer, even if a member wrote one", async () => {
+  it("drops a colour or an icon the console does not offer, even if a member wrote one", async () => {
     const server = new FakeDriveServer();
     const ana = await join(server, "ana");
     await ana.createShare("Carpeta");
@@ -395,10 +395,10 @@ describe("colour and emoji (owner decision 2026-10-29)", () => {
     if (!sub) throw new Error("no folder");
     await ana.setAppearance(folder, sub, {
       color: "javascript:alert(1)" as never,
-      emoji: "<img src=x>",
+      icon: "<img src=x>" as never,
     });
     folder = await ana.openShare(folder.shareId);
     expect(folder.items[0]?.meta?.color).toBeUndefined();
-    expect(folder.items[0]?.meta?.emoji).toBeUndefined();
+    expect(folder.items[0]?.meta?.icon).toBeUndefined();
   });
 });

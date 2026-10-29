@@ -1,8 +1,12 @@
+import type { IconName } from "../components/ui/Icon.js";
+
 /**
- * How a folder, shared folder, note or file looks in the Drive (owner decision
- * 2026-10-29): a colour from a fixed palette and, optionally, an emoji. Both
- * live in the node's sealed metadata next to its name, so the server sees
- * neither, and both survive renames and new revisions.
+ * How a folder, shared folder, note or file looks in the Drive (owner
+ * decisions 2026-10-29): a colour from a fixed palette and, optionally, one of
+ * the console's own line icons -- not emoji, which read as unserious in a
+ * clinical team's workspace. Both live in the node's sealed metadata next to
+ * its name, so the server sees neither, and both survive renames and new
+ * revisions.
  */
 
 export const DRIVE_COLORS = [
@@ -20,67 +24,71 @@ export const DRIVE_COLORS = [
 
 export type DriveColor = (typeof DRIVE_COLORS)[number]["key"];
 
-export type Appearance = { color?: DriveColor; emoji?: string };
+/** The icons an item may wear, in the order the picker shows them. */
+export const DRIVE_ICONS = [
+  "folder",
+  "star",
+  "flag",
+  "pin",
+  "bookmark",
+  "alert",
+  "checkCircle",
+  "lock",
+  "key",
+  "verify",
+  "clipboard",
+  "document",
+  "book",
+  "chart",
+  "flask",
+  "stethoscope",
+  "pill",
+  "brain",
+  "moon",
+  "bed",
+  "clock",
+  "calendar",
+  "lightbulb",
+  "target",
+  "users",
+  "building",
+  "scale",
+  "euro",
+  "wrench",
+  "rocket",
+  "heart",
+  "tag",
+  "archive",
+  "mail",
+  "globe",
+  "home",
+  "briefcase",
+] as const satisfies ReadonlyArray<IconName>;
+
+export type DriveIcon = (typeof DRIVE_ICONS)[number];
+
+export type Appearance = { color?: DriveColor; icon?: DriveIcon };
 
 const COLOR_KEYS: ReadonlySet<string> = new Set(DRIVE_COLORS.map((c) => c.key));
+const ICON_KEYS: ReadonlySet<string> = new Set(DRIVE_ICONS);
 
 export function colorHex(color: DriveColor | undefined): string | undefined {
   return DRIVE_COLORS.find((c) => c.key === color)?.hex;
 }
 
-/** A few to pick from at a glance; any single emoji can also be typed. */
-export const EMOJI_SUGGESTIONS = [
-  "📁",
-  "📂",
-  "🗂️",
-  "📋",
-  "📌",
-  "⭐",
-  "🔒",
-  "⚠️",
-  "✅",
-  "📄",
-  "📝",
-  "📑",
-  "📊",
-  "📈",
-  "🧪",
-  "🩺",
-  "💊",
-  "🧠",
-  "😴",
-  "🌙",
-  "🛏️",
-  "⏰",
-  "💡",
-  "🎯",
-  "👥",
-  "🤝",
-  "🏥",
-  "⚖️",
-  "💶",
-  "🛠️",
-  "🚀",
-  "❤️",
-] as const;
-
-/** One emoji (a single grapheme, which may be several code points), or nothing. */
-export function cleanEmoji(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  if (!trimmed || trimmed.length > 16) return undefined;
-  const segments = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(trimmed)];
-  if (segments.length !== 1) return undefined;
-  // Pictographs only: no letters, digits or punctuation passed off as an icon.
-  return /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(trimmed) ? trimmed : undefined;
-}
-
-/** What may be stored and shown: an unknown colour or a non-emoji is dropped, never trusted. */
-export function cleanAppearance(value: { color?: unknown; emoji?: unknown }): Appearance {
+/**
+ * What may be stored and shown: a colour or an icon outside the lists is
+ * dropped, never trusted. An `emoji` written by the earlier version is simply
+ * not read any more.
+ */
+export function cleanAppearance(value: { color?: unknown; icon?: unknown }): Appearance {
   const color =
     typeof value.color === "string" && COLOR_KEYS.has(value.color)
       ? (value.color as DriveColor)
       : undefined;
-  const emoji = cleanEmoji(value.emoji);
-  return { ...(color ? { color } : {}), ...(emoji ? { emoji } : {}) };
+  const icon =
+    typeof value.icon === "string" && ICON_KEYS.has(value.icon)
+      ? (value.icon as DriveIcon)
+      : undefined;
+  return { ...(color ? { color } : {}), ...(icon ? { icon } : {}) };
 }
