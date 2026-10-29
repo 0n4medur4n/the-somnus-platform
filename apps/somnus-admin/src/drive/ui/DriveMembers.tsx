@@ -28,7 +28,7 @@ export function DriveMembers({
   onLeft: () => void;
   /** Owners rename the shared folder in a dialog the workspace owns. */
   onRename: () => void;
-  /** Owners choose the shared folder's colour and emoji (owner decision 2026-10-29). */
+  /** Owners choose the shared folder's colour and icon (owner decision 2026-10-29). */
   onAppearance?: () => void;
 }) {
   const { t } = useTranslation();

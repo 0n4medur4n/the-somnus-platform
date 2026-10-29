@@ -12,7 +12,7 @@ import {
   type DriveSealed,
   type DriveStateSealed,
 } from "@somnus/api-contracts";
-import { cleanAppearance, type DriveColor } from "./appearance.js";
+import { cleanAppearance, type DriveColor, type DriveIcon } from "./appearance.js";
 
 /**
  * The staff Drive's cryptography (ADR 0019). Everything here runs in the
@@ -685,7 +685,7 @@ export type NodeMeta = {
   note?: boolean;
   /** How it looks in the Drive (owner decision 2026-10-29): see `appearance.ts`. */
   color?: DriveColor;
-  emoji?: string;
+  icon?: DriveIcon;
   modifiedAt: string;
 };
 
@@ -720,7 +720,15 @@ export async function openMeta(input: {
     throw new DriveCryptoError("tampered");
   }
   // Signed by a member, but still only displayed if it is one of ours.
-  const { color: _color, emoji: _emoji, ...rest } = parsed;
+  // The earlier version's `emoji` is dropped with anything else not ours.
+  const {
+    color: _color,
+    icon: _icon,
+    emoji: _emoji,
+    ...rest
+  } = parsed as Partial<NodeMeta> & {
+    emoji?: unknown;
+  };
   return { ...(rest as NodeMeta), ...cleanAppearance(parsed) };
 }
 

@@ -960,7 +960,6 @@ export function DriveWorkspace({
                             icon={KIND_ICON[kind]}
                             appearance={item.meta ?? undefined}
                             className="h-10 w-10"
-                            emojiClass="text-4xl"
                             fallbackClass="text-somnus-primary"
                           />
                         </button>
@@ -1129,7 +1128,7 @@ export function DriveWorkspace({
           icon={KIND_ICON[kindOf(dialog.item)]}
           initial={{
             ...(dialog.item.meta.color ? { color: dialog.item.meta.color } : {}),
-            ...(dialog.item.meta.emoji ? { emoji: dialog.item.meta.emoji } : {}),
+            ...(dialog.item.meta.icon ? { icon: dialog.item.meta.icon } : {}),
           }}
           busy={task.busy}
           onClose={() => setDialog({ kind: "none" })}
@@ -1347,7 +1346,6 @@ function SideLink({
         icon={icon}
         appearance={appearance}
         className="h-[18px] w-[18px]"
-        emojiClass="text-base"
         fallbackClass={current ? "text-somnus-primary" : ""}
       />
       <span className="min-w-0 flex-1 truncate">{label}</span>
@@ -1501,12 +1499,7 @@ function ShareGrid({
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-somnus-primary/10 text-somnus-primary"
                 style={tint(share.appearance)}
               >
-                <ItemGlyph
-                  icon="folderShared"
-                  appearance={share.appearance}
-                  className="h-6 w-6"
-                  emojiClass="text-2xl"
-                />
+                <ItemGlyph icon="folderShared" appearance={share.appearance} className="h-6 w-6" />
               </span>
               <span className="min-w-0">
                 <span className="block truncate font-medium text-somnus-text">

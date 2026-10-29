@@ -68,7 +68,7 @@ export type DriveFolderView = {
   role: DriveRole;
   keyGeneration: number;
   name: string;
-  /** The shared folder's own colour and emoji (owner decision 2026-10-29). */
+  /** The shared folder's own colour and icon (owner decision 2026-10-29). */
   appearance: Appearance;
   rootId: string;
   /** Every node except the root, trashed ones included. */
@@ -586,14 +586,21 @@ export class DriveSession {
     await this.resealMeta(view, item, { ...item.meta, name });
   }
 
-  /** A colour and/or an emoji for a folder, note or file; empty clears both. */
+  /** A colour and/or an icon for a folder, note or file; empty clears both. */
   async setAppearance(
     view: DriveFolderView,
     item: DriveItem,
     appearance: Appearance,
   ): Promise<void> {
     if (!item.meta) throw new DriveCryptoError(item.problem ?? "tampered");
-    const { color: _color, emoji: _emoji, ...rest } = item.meta;
+    const {
+      color: _color,
+      icon: _icon,
+      emoji: _emoji,
+      ...rest
+    } = item.meta as typeof item.meta & {
+      emoji?: unknown;
+    };
     await this.resealMeta(view, item, { ...rest, ...cleanAppearance(appearance) });
   }
 
