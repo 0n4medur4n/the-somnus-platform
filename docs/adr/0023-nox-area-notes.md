@@ -89,7 +89,8 @@ setting (default 3072) that the column and the index follow. From report-service
 Nox reuses the **patterns**, not its tables or its code: provider adapter, rights
 gate before embedding, text-hash reuse, all-or-nothing writes, append-only
 versions, a configuration-consistency test. Existing sources reach Nox by export,
-never by reading report-service's databases (ADR 0003).
+never by reading report-service's databases (ADR 0003). The native store is for
+Nox only: report-service and Morpheo keep their stores unchanged.
 
 ### 2.9 Citations are the system's
 
@@ -127,6 +128,8 @@ The spike (Prompt 11, run separately) decides between:
   their cost and region availability are **no confirmado**. For reference only,
   the superseded ADR 0016 recorded on 2026-10-05 a load balancer at ~18–20
   USD/month and Cloud Run domain mapping as unavailable in `europe-west3`.
+  Plan B also exposes a second public endpoint (the stream host), so it would need
+  its own exception to ADR 0008, decided only if the spike shows that plan A fails.
 
 A direct `*.run.app` URL with the session cookie is not an option: it makes the
 cookie cross-site again (ADR 0017, which supersedes ADR 0016).
@@ -175,10 +178,11 @@ opened to real clinicians or real cases before there is a queryable audit trail.
 ### 2.13 AI
 
 Models are configuration behind the provider layer; `store: false`;
-pseudonymisation before any model call and before embedding any query. No real
-patient case, even pseudonymised, until EU residency and a DPA with the provider,
-a production environment separate from dev, an updated DPIA and a closed
-regulatory assessment.
+pseudonymisation before any model call and before embedding any query. Nox is
+likely a medical device (MDSW, section 1). No real patient case, even
+pseudonymised, before all of these hold: a closed regulatory assessment, EU
+residency and a DPA with the model provider, a production environment separate
+from dev, an updated DPIA, and a queryable audit trail (section 2.12).
 
 ### 2.14 CI
 
