@@ -64,15 +64,23 @@ entitlement + the permission. Identity remains the only place that decides (§5.
 The clinical assistant and an evidence search, `GET /nox/v1/evidence/search`, both
 served by the same search engine in `nox-knowledge-service`.
 
-### 2.4 A separate TiDB instance
+### 2.4 Two separate TiDB instances
 
-`somnus_nox` (conversations, feedback) **and** `somnus_nox_knowledge` (documents,
-chunks, vectors, licences) both live on a **new TiDB Cloud Starter instance in AWS
-eu-central-1 (Frankfurt)**, not in the shared cluster, so nothing in Nox can
-exhaust the quota that Morpheo and identity depend on. Each database has its own
-user; never a root user. The instance is **created by hand with a runbook** and
-its credentials reach Terraform through secrets referenced by data sources; the
-TiDB Cloud Terraform provider is deferred.
+The Nox data is separated for resilience (owner, 2026-10-29). `somnus_nox`
+(conversations, feedback) lives on **its own new TiDB Cloud Starter instance**, and
+`somnus_nox_knowledge` (documents, chunks, vectors, licences) on **another new
+one**, both in AWS eu-central-1 (Frankfurt). The shared cluster of Morpheo,
+identity, report and audit is untouched, so nothing in Nox can exhaust the quota
+those services depend on. Each database has its own user; never a root user. Both
+instances are **created by hand with a runbook**, and their credentials reach
+Terraform through secrets referenced by data sources; the TiDB Cloud Terraform
+provider is deferred.
+
+Dependencies: evidence search depends only on the knowledge instance; the
+assistant depends on knowledge, conversations and the model provider.
+
+**No confirmado**, to verify before creating them: the Starter limit of instances
+per organisation, the spend limits, and the cost.
 
 ### 2.5 The knowledge store replaces, it does not extend
 
@@ -91,9 +99,9 @@ by the model.
 
 ### 2.10 Encryption and retention
 
-The Nox instance holds public literature **and conversation text written by
-physicians**. Because customer-managed keys are not available on Starter,
-conversation text is encrypted by the application with per-organisation envelope
+The conversations instance holds **conversation text written by physicians**; the
+knowledge instance holds public literature. Because customer-managed keys are not
+available on Starter, conversation text is encrypted by the application with per-organisation envelope
 encryption: one data key per organisation, wrapped by a Cloud KMS key in
 `europe-west3`, unwrappable only by the assistant's service account.
 Conversations are kept **30 days by default (DEFAULT – Jesús puede cambiarlo)**,
@@ -104,11 +112,19 @@ encryption at rest).
 
 ### 2.11 Streaming
 
-A spike comes first. If SSE passes through Hosting unbuffered, the target design
-is a **resumable stream**: each connection stays under 55 s and the browser
-reconnects with `Last-Event-ID`. Short polling is the fallback; a load balancer
-(~18–20 USD/month, rejected for cost in ADR 0016) is the last resort. A direct
-`*.run.app` URL is not an option: it makes the cookie cross-site again (ADR 0016).
+Streaming is a requirement (owner, 2026-10-29); polling is no longer a fallback.
+The spike (Prompt 11, run separately) decides between:
+
+- **Plan A:** a **resumable SSE stream through the Hosting rewrite**: each
+  connection stays under 55 s and the browser reconnects with `Last-Event-ID`.
+- **Plan B**, only if the spike shows that Hosting buffers the stream: a dedicated
+  stream host on a custom domain of the same site, with a single-use, short-lived
+  stream ticket issued by the same-origin API, so no cross-site cookies are needed
+  (ADR 0016). It needs a custom domain mapping or a load balancer (~18–20 USD/month
+  in ADR 0016); their cost and region availability are **no confirmado**.
+
+A direct `*.run.app` URL with the session cookie is not an option: it makes the
+cookie cross-site again (ADR 0016).
 
 ### 2.12 Events
 
@@ -130,7 +146,7 @@ An ephemeral TiDB container on loopback runs the knowledge service's vector SQL
 (the `VECTOR` type and exact search) in the push path. HNSW is exercised only by
 a manual `workflow_dispatch` job against a disposable Starter instance. The
 destructive-setup rule of §3.9 holds: both targets die with the run; neither the
-shared cluster nor the Nox instance is ever a test target.
+shared cluster nor the Nox instances are ever a test target.
 
 ### 2.15 Amendments
 
@@ -146,15 +162,37 @@ This ADR amends three statements and, through them, ADR 0010:
   ..." no longer lists Nox. §2, line 73: "Five Cloud Run services total." is read
   together with this ADR, which adds two Nox services and one Job.
 - `THE_SOMNUS_PLATFORM_BUILD_PLAN.md` §3.9, line 190: "For the MVP, one physical
-  cluster contains multiple logical databases" no longer holds: Nox uses a
-  second, separate TiDB Starter instance.
+  cluster contains multiple logical databases" no longer holds: Nox uses two
+  separate TiDB Starter instances.
+
+### 2.16 Resilience
+
+- **Fault isolation** per service and per database (decision 4): a failure of
+  one Nox service or instance does not take down the others or the platform.
+- **Fail closed:** never answer without sources; never switch model provider
+  automatically, because a second provider would need its own EU residency and
+  DPA (decision 13).
+- **Calls:** timeouts, bounded retries with backoff and jitter, circuit breakers,
+  and per-physician and per-organisation limits.
+- **Turns:** idempotent with an `Idempotency-Key`; turn state is persisted and the
+  stream sends heartbeats, so a dropped stream resumes (decision 11).
+- **Ingest:** idempotent and checkpointed; it switches the current corpus version
+  atomically, only when the new version is complete and validated.
+- **Warm-up:** a call on `GET /nox/v1/me` warms the Nox services; minimum
+  instances stay 0. Build plan §2 (line 81) lets nothing else fight cold starts
+  "without a new decision"; this ADR is that decision for Nox. `CLAUDE.md` lines
+  24–25 ("Never add warm-up mechanisms beyond the ones pre-approved in build plan
+  §2") do not mention it yet.
+- **Service-level objectives and alerts** for first-token latency, error rate,
+  citation validation and quota use.
 
 ## 3. Accepted risk
 
-An ingest can exhaust the Nox instance's quota and deny new connections to the
-assistant too. Mitigations: throttled, bounded batches; `nox-ingest` scheduled
-outside clinic hours and disabled by default; a spend limit with an email alert;
-revisit a separate instance for conversations if the load grows.
+With separate instances, an ingest can no longer deny connections to the
+conversations database or to Morpheo. What remains: an ingest that exhausts the
+knowledge instance's quota degrades search for that period. Mitigations:
+throttled, bounded batches; `nox-ingest` scheduled outside clinic hours and
+disabled by default; a spend limit with an email alert.
 
 ## 4. Open questions
 
@@ -191,6 +229,9 @@ Options:
 - C) Keep the `EventPublisher` port with the logging adapter now, and build the
   console's Nox tab when Pub/Sub exists.
 
+Technical recommendation, **not a decision**: C now, B later. The owner has not
+decided.
+
 ### 4.2 Nox access details
 
 The specialties allowed and whether a second factor is required.
@@ -204,6 +245,13 @@ indexable dimension are not stated in the docs.
 
 Clinical lead and legal counsel.
 
+### 4.5 Minimum instances of the Nox services in production
+
+0 (cost) or 1 (latency), decided after the spike measures the cold starts of
+Cloud Run and of Starter. Choosing 1 would also need an amendment: build plan §2
+(line 79) sets minimum instances 0 "in every environment, including production",
+and `CLAUDE.md` line 24 repeats it.
+
 ## 5. Alternatives considered
 
 - **Extend report-service's tables** — JSON vectors, ranking in Python, and the
@@ -215,8 +263,13 @@ Clinical lead and legal counsel.
   differently; ingest is batch. Rejected.
 - **Nox databases in the shared cluster** — one quota for everything. Rejected
   (decision 4).
-- **A third instance for conversations now** — kept as the escalation of the
-  accepted risk.
+- **One Nox instance for both databases** (the draft of 2026-10-28) — an ingest
+  could deny connections to the conversations. Rejected for resilience (owner,
+  2026-10-29).
+- **Short polling as the streaming fallback** — streaming is a requirement.
+  Rejected (owner, 2026-10-29).
+- **An automatic switch to a second model provider** — it would need its own EU
+  residency and DPA. Rejected (section 2.16).
 - **The TiDB Cloud Terraform provider now** — a new provider; deferred.
 - **A separate vector database** — §3.6b and a new dependency. Rejected.
 - **A post-filter for population** — can starve paediatric results. Rejected.
@@ -229,7 +282,7 @@ Clinical lead and legal counsel.
 
 - The map grows from three Hosting sites and five Cloud Run services to four
   sites, seven services and one Cloud Run Job, each independently buildable and
-  deployable; and from one TiDB cluster to two.
+  deployable; and from one TiDB cluster to three.
 - Report-service and Morpheo do not change.
 - The deployable rule now lives in this ADR: adding anything else still needs
   its own ADR.

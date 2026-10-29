@@ -29,7 +29,7 @@ the consequences.
 
 | 0021 | Morpheo invitations and administrative user detail | Accepted | Addendum A, 15.2 |
 | 0022 | The one-page patient report, and sources authorised by the owner | Accepted | §14, §15, Addendum B §B4 |
-| 0023 | Nox: a professionals-only area with its own SPA, services and TiDB instance | Proposed | §1, §2, §3.6b, §3.9 |
+| 0023 | Nox: a professionals-only area with its own SPA, services and TiDB instances | Proposed | §1, §2, §3.6b, §3.9 |
 
 ## Convention
 
