@@ -10,6 +10,7 @@ import {
   opaqueId,
 } from "@somnus/api-contracts";
 import type { DriveEdge } from "../lib/edge.js";
+import { type Appearance, cleanAppearance } from "./appearance.js";
 import {
   type Bytes,
   concat,
@@ -67,6 +68,8 @@ export type DriveFolderView = {
   role: DriveRole;
   keyGeneration: number;
   name: string;
+  /** The shared folder's own colour and emoji (owner decision 2026-10-29). */
+  appearance: Appearance;
   rootId: string;
   /** Every node except the root, trashed ones included. */
   items: DriveItem[];
@@ -78,6 +81,7 @@ export type DriveShareEntry = {
   role: DriveRole;
   memberCount: number;
   name: string | null;
+  appearance: Appearance;
   problem: DriveCryptoFailure | null;
 };
 
@@ -94,6 +98,10 @@ export class DriveSessionError extends Error {
     super(`drive session: ${reason}`);
     this.name = "DriveSessionError";
   }
+}
+
+function appearanceOf(meta: NodeMeta): Appearance {
+  return cleanAppearance(meta);
 }
 
 function blocksOf(bytes: Uint8Array): Uint8Array[] {
@@ -254,9 +262,9 @@ export class DriveSession {
         revision: summary.root.revision,
         sealed: summary.root.meta,
       });
-      return { ...base, name: meta.name, problem: null };
+      return { ...base, name: meta.name, appearance: appearanceOf(meta), problem: null };
     } catch (error) {
-      return { ...base, name: null, problem: failureOf(error) };
+      return { ...base, name: null, appearance: {}, problem: failureOf(error) };
     }
   }
 
@@ -346,6 +354,7 @@ export class DriveSession {
       role: detail.share.role,
       keyGeneration: detail.share.keyGeneration,
       name: root.meta?.name ?? "",
+      appearance: root.meta ? appearanceOf(root.meta) : {},
       rootId: rootNode.id,
       items,
       members: detail.members.map((m) => ({ ...m, trust: this.trustOf(m.userId) })),
@@ -493,6 +502,8 @@ export class DriveSession {
         mime: input.mime,
         size: input.bytes.length,
         ...(input.note ? { note: true } : {}),
+        // A new revision keeps how the file looked.
+        ...(existing?.meta ? appearanceOf(existing.meta) : {}),
         modifiedAt: new Date().toISOString(),
       },
     });
@@ -572,6 +583,32 @@ export class DriveSession {
 
   async rename(view: DriveFolderView, item: DriveItem, name: string): Promise<void> {
     if (!item.meta) throw new DriveCryptoError(item.problem ?? "tampered");
+    await this.resealMeta(view, item, { ...item.meta, name });
+  }
+
+  /** A colour and/or an emoji for a folder, note or file; empty clears both. */
+  async setAppearance(
+    view: DriveFolderView,
+    item: DriveItem,
+    appearance: Appearance,
+  ): Promise<void> {
+    if (!item.meta) throw new DriveCryptoError(item.problem ?? "tampered");
+    const { color: _color, emoji: _emoji, ...rest } = item.meta;
+    await this.resealMeta(view, item, { ...rest, ...cleanAppearance(appearance) });
+  }
+
+  async setShareAppearance(view: DriveFolderView, appearance: Appearance): Promise<void> {
+    const detail = await this.edge.share(view.shareId);
+    const shareKey = this.requireShareKey(view);
+    await this.setAppearance(
+      view,
+      await this.describeNode(shareKey, detail.share.root),
+      appearance,
+    );
+  }
+
+  /** Seals new metadata on the node's current revision and signs it, as a rename does. */
+  private async resealMeta(view: DriveFolderView, item: DriveItem, next: NodeMeta): Promise<void> {
     const node = item.node;
     const nodeKey = await this.nodeKey(this.requireShareKey(view), node);
     const meta = await sealMeta({
@@ -579,7 +616,7 @@ export class DriveSession {
       shareId: view.shareId,
       nodeId: node.id,
       revision: node.revision,
-      meta: { ...item.meta, name },
+      meta: next,
     });
     const signature = await signNode(this.me, {
       shareId: view.shareId,

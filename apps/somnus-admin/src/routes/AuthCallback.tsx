@@ -12,6 +12,7 @@ import { Field } from "../components/Field.js";
 import { FullPageStatus } from "../components/FullPageStatus.js";
 import { ConsoleLayout } from "../layouts/ConsoleLayout.js";
 import { edge } from "../lib/edge.js";
+import { takeReturnTo } from "../lib/return-to.js";
 
 /**
  * Completes the magic link and exchanges it for a session, then hands over to
@@ -112,7 +113,7 @@ export function AuthCallback() {
   useEffect(() => {
     // Both outcomes live at the root: the gate decides which one renders.
     if (state.status === "authorized" || state.status === "denied" || state.status === "invited") {
-      navigate("/", { replace: true });
+      navigate(takeReturnTo() ?? "/", { replace: true });
       return;
     }
     // The link was spent and a session created, yet the console could not read

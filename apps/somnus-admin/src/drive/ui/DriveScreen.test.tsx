@@ -186,6 +186,56 @@ describe("DriveScreen", () => {
     expect(server.received.join(" ")).not.toContain("Protocolo de guardia");
   }, 60_000);
 
+  it("copies a link to a note, and the link opens it straight after unlocking", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const first = renderWithProviders(<DriveScreen />);
+    await user.type(await screen.findByLabelText(i18n.t("drive.setup.passphrase")), PASSPHRASE);
+    await user.type(screen.getByLabelText(i18n.t("drive.setup.confirm")), PASSPHRASE);
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.setup.create") }));
+    await screen.findByTestId("recovery-code", {}, { timeout: 15_000 });
+    await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Protocolos");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
+    await user.click(
+      (await screen.findAllByRole("button", { name: /Protocolos/ }))[0] as HTMLElement,
+    );
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(await screen.findByRole("menuitem", { name: i18n.t("drive.folder.newNote") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.note.title")), "Turno de noche");
+    await user.type(screen.getByLabelText(i18n.t("drive.note.body")), "Revisar alarmas a las 3.");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.note.save") }));
+
+    await user.click(
+      await screen.findByRole(
+        "button",
+        { name: i18n.t("drive.actionsFor", { name: "Turno de noche" }) },
+        { timeout: 15_000 },
+      ),
+    );
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.link.copy") }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const link = new URL(writeText.mock.calls[0]?.[0] as string);
+    expect(link.pathname).toBe("/drive");
+    expect(link.searchParams.get("share")).toBeTruthy();
+    expect(link.searchParams.get("file")).toBeTruthy();
+    // The link carries ids only: never the note's name or text.
+    expect(link.toString()).not.toContain("Turno");
+    first.unmount();
+
+    // Someone with access opens the link: after unlocking, the note is open.
+    renderWithProviders(<DriveScreen />, { route: `${link.pathname}${link.search}` });
+    await user.type(await screen.findByLabelText(i18n.t("drive.unlock.passphrase")), PASSPHRASE);
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.unlock.open") }));
+    expect(
+      await screen.findByText("Revisar alarmas a las 3.", {}, { timeout: 15_000 }),
+    ).toBeInTheDocument();
+  }, 90_000);
+
   it("never writes anything to browser storage", async () => {
     const user = userEvent.setup();
     const setItem = vi.spyOn(Storage.prototype, "setItem");

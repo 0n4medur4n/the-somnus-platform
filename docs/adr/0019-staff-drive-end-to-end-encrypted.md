@@ -97,3 +97,15 @@ raised later).
   Exports to Word, PDF, HTML, Markdown and plain text are made in the browser (docx, pdfmake loaded
   only on export; the PDF writer may fetch nothing). A `.docx` can be turned into a document.
 - The server learns nothing new: no format conversion, preview or export ever leaves the browser.
+
+## Addendum -- links, colours and icons (owner decision 2026-10-29)
+
+- **Internal links only.** "Copy link" gives a `/drive?share=…&folder=…&file|doc=…` address: opaque ids,
+  never a name or a key. It opens the item for someone who already has access to that folder, after they
+  unlock their own Drive; anyone else sees "no access". Public links for people outside The Somnus were
+  explicitly not chosen -- they would break the staff-only rule and need a separate security review. A
+  link opened while signed out survives sign-in (the `/drive` path only, 30 minutes, ids only).
+- **Colour and emoji** for folders, shared folders, notes, documents and files: stored in the node's sealed
+  metadata next to its name, so the server never sees them; kept across renames and new revisions. Only
+  the palette's ten colours and a single pictographic emoji are ever displayed -- anything else a member
+  might have sealed is dropped on read.

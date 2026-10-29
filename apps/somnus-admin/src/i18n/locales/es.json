@@ -741,6 +741,39 @@
         "deleteColumn": "− Columna",
         "deleteTable": "Quitar tabla"
       }
+    },
+    "link": {
+      "copy": "Copiar enlace",
+      "copyHere": "Copiar enlace a esta carpeta",
+      "copied": "Enlace copiado. Solo lo podrán abrir quienes tengan acceso a esta carpeta.",
+      "copyFailed": "No se ha podido copiar. Enlace: {{link}}",
+      "missing": "El elemento del enlace ya no existe o está en la papelera.",
+      "unavailable": "No tienes acceso a la carpeta de ese enlace, o ya no existe. Pide a su propietaria que la comparta contigo."
+    },
+    "appearance": {
+      "menu": "Color e icono",
+      "title": "Color e icono de «{{name}}»",
+      "color": "Color",
+      "noColor": "Sin color",
+      "emoji": "Icono",
+      "noEmoji": "Sin icono",
+      "typeEmoji": "O escribe o pega un emoji",
+      "useEmoji": "Usar",
+      "notAnEmoji": "Escribe un solo emoji.",
+      "encrypted": "El color y el icono se guardan cifrados, como el nombre: el servidor no los ve.",
+      "save": "Guardar",
+      "colors": {
+        "red": "Rojo",
+        "orange": "Naranja",
+        "amber": "Ámbar",
+        "green": "Verde",
+        "teal": "Verde azulado",
+        "blue": "Azul",
+        "indigo": "Índigo",
+        "purple": "Morado",
+        "pink": "Rosa",
+        "gray": "Gris"
+      }
     }
   },
   "charts": {

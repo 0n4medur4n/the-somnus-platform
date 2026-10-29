@@ -23,6 +23,7 @@ import {
   Modal,
 } from "../../components/ui/ui.js";
 import { ApiRequestError } from "../../lib/api.js";
+import type { Appearance } from "../appearance.js";
 import { type Bytes, fromUtf8, utf8 } from "../crypto.js";
 import { DocumentEditor, type SaveOutcome } from "../documents/DocumentEditor.js";
 import { DOCUMENT_MIME, decodeDocument, encodeDocument } from "../documents/doc-format.js";
@@ -33,6 +34,7 @@ import type {
   DriveSession,
   DriveShareEntry,
 } from "../drive-session.js";
+import { AppearanceDialog, ItemGlyph, tint } from "./appearance-ui.js";
 import { ChangePassphrase, OwnFingerprint } from "./DriveAccess.js";
 import { DriveGuideContent } from "./DriveGuide.js";
 import { DriveMembers } from "./DriveMembers.js";
@@ -79,6 +81,8 @@ type Dialog =
   | { kind: "editNote"; item: DriveItem; body: string }
   | { kind: "readNote"; item: DriveItem; body: string }
   | { kind: "rename"; item: DriveItem }
+  | { kind: "appearance"; item: DriveItem }
+  | { kind: "shareAppearance" }
   | { kind: "renameShare" }
   | { kind: "move"; item: DriveItem }
   | { kind: "purge"; item: DriveItem }
@@ -122,9 +126,18 @@ export function DriveWorkspace({
   const folderId = params.get("folder");
   const trash = params.get("trash") === "1";
   const docParam = params.get("doc");
+  // A file or note named in the link (owner decision 2026-10-29): it opens as
+  // soon as its folder does, for anyone who has access to that folder.
+  const fileParam = params.get("file");
   const go = useCallback(
     (
-      next: { share?: string | null; folder?: string | null; trash?: boolean; doc?: string | null },
+      next: {
+        share?: string | null;
+        folder?: string | null;
+        trash?: boolean;
+        doc?: string | null;
+        file?: string | null;
+      },
       replace = false,
     ) => {
       const p = new URLSearchParams();
@@ -132,6 +145,7 @@ export function DriveWorkspace({
       if (next.share && next.folder) p.set("folder", next.folder);
       if (next.share && next.trash) p.set("trash", "1");
       if (next.share && next.doc) p.set("doc", next.doc);
+      if (next.share && next.file) p.set("file", next.file);
       setParams(p, { replace });
     },
     [setParams],
@@ -151,6 +165,8 @@ export function DriveWorkspace({
   const [side, setSide] = useState<Side>({ kind: "none" });
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [linkProblem, setLinkProblem] = useState(false);
+  const shownFile = useRef<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -180,8 +196,11 @@ export function DriveWorkspace({
       if (cancelled) return;
       if (!opened) {
         go({}, true);
+        setNotice(null);
+        setLinkProblem(true);
         return;
       }
+      setLinkProblem(false);
       setView(opened);
       setQuery("");
       setSide({ kind: "none" });
@@ -304,12 +323,68 @@ export function DriveWorkspace({
       go({ share: view.shareId, folder: current, doc: item.node.id });
       return;
     }
+    go({ share: view.shareId, folder: item.node.parentId ?? current, file: item.node.id });
+  }
+
+  async function show(item: DriveItem) {
+    if (!view) return;
     const bytes = await run(() => session.readFile(view, item));
     if (!bytes) return;
-    if (kind === "note") {
+    if (kindOf(item) === "note") {
       setDialog({ kind: "readNote", item, body: fromUtf8(bytes) });
     } else {
       setViewer({ item, bytes });
+    }
+  }
+
+  /** Closing a file takes it out of the URL, so a reload does not reopen it. */
+  function closeFile() {
+    shownFile.current = null;
+    setViewer(null);
+    if (fileParam && view) go({ share: view.shareId, folder: current }, true);
+  }
+
+  // The file in the URL, once its folder is open: shown once, not on every reload.
+  useEffect(() => {
+    if (!fileParam) {
+      shownFile.current = null;
+      return;
+    }
+    if (!view || shownFile.current === fileParam) return;
+    const item = view.items.find((i) => i.node.id === fileParam);
+    shownFile.current = fileParam;
+    if (!item || item.node.trashedAt || !item.meta) {
+      setNotice(t("drive.link.missing"));
+      go({ share: view.shareId, folder: current }, true);
+      return;
+    }
+    void show(item);
+  }, [fileParam, view]);
+
+  /** The address of a folder, file, note or document in this Drive. */
+  function linkTo(item?: DriveItem): string {
+    const p = new URLSearchParams();
+    if (!view) return `${window.location.origin}/drive`;
+    p.set("share", view.shareId);
+    if (!item) {
+      if (current && current !== view.rootId) p.set("folder", current);
+    } else if (item.node.kind === "folder") {
+      p.set("folder", item.node.id);
+    } else {
+      if (item.node.parentId && item.node.parentId !== view.rootId) {
+        p.set("folder", item.node.parentId);
+      }
+      p.set(kindOf(item) === "document" ? "doc" : "file", item.node.id);
+    }
+    return `${window.location.origin}/drive?${p.toString()}`;
+  }
+
+  async function copyLink(item?: DriveItem) {
+    try {
+      await navigator.clipboard.writeText(linkTo(item));
+      setNotice(t("drive.link.copied"));
+    } catch {
+      setNotice(t("drive.link.copyFailed", { link: linkTo(item) }));
     }
   }
 
@@ -434,6 +509,7 @@ export function DriveWorkspace({
     }
     return [
       { label: t("drive.folder.open"), icon: "chevronRight", onSelect: () => void open(item) },
+      { label: t("drive.link.copy"), icon: "link", onSelect: () => void copyLink(item) },
       ...(kind !== "folder"
         ? [
             {
@@ -449,6 +525,11 @@ export function DriveWorkspace({
               label: t("drive.folder.rename"),
               icon: "pencil" as const,
               onSelect: () => setDialog({ kind: "rename", item }),
+            },
+            {
+              label: t("drive.appearance.menu"),
+              icon: "palette" as const,
+              onSelect: () => setDialog({ kind: "appearance", item }),
             },
             {
               label: t("drive.folder.move"),
@@ -550,7 +631,7 @@ export function DriveWorkspace({
           onDownload={() =>
             saveBytes(viewer.bytes, viewer.item.meta?.name ?? t("drive.folder.kind.file"))
           }
-          onClose={() => setViewer(null)}
+          onClose={closeFile}
         />
       ) : null}
       <div
@@ -600,6 +681,7 @@ export function DriveWorkspace({
               shares.map((s) => (
                 <SideLink
                   key={s.shareId}
+                  appearance={s.appearance}
                   icon="folderShared"
                   label={s.name ?? t("drive.shares.unreadable")}
                   current={view?.shareId === s.shareId && !trash}
@@ -734,6 +816,13 @@ export function DriveWorkspace({
                 active={layout === "grid"}
                 onClick={() => setLayout("grid")}
               />
+              {view && !trash ? (
+                <IconButton
+                  icon="link"
+                  label={t("drive.link.copyHere")}
+                  onClick={() => void copyLink()}
+                />
+              ) : null}
               {view ? (
                 <button
                   type="button"
@@ -751,6 +840,11 @@ export function DriveWorkspace({
             </div>
           </div>
 
+          {linkProblem && !view ? (
+            <div className="px-4 pt-3">
+              <Notice tone="danger">{t("drive.link.unavailable")}</Notice>
+            </div>
+          ) : null}
           {task.error ? (
             <div className="px-4 pt-3">
               <Notice tone="danger">{task.error}</Notice>
@@ -860,8 +954,15 @@ export function DriveWorkspace({
                           onClick={() => void open(item)}
                           aria-label={`${t(`drive.folder.kind.${kind === "image" ? "file" : kind}`)}: ${item.meta?.name ?? t("drive.folder.unreadable")}`}
                           className="flex h-24 items-center justify-center bg-white/[0.02] text-somnus-primary"
+                          style={tint(item.meta ?? undefined)}
                         >
-                          <Icon name={KIND_ICON[kind]} className="h-10 w-10" />
+                          <ItemGlyph
+                            icon={KIND_ICON[kind]}
+                            appearance={item.meta ?? undefined}
+                            className="h-10 w-10"
+                            emojiClass="text-4xl"
+                            fallbackClass="text-somnus-primary"
+                          />
                         </button>
                         <div className="flex items-center gap-1 p-2">
                           <span className="min-w-0 flex-1 truncate text-sm text-somnus-text">
@@ -900,6 +1001,7 @@ export function DriveWorkspace({
                     onChanged={() => void reload()}
                     onLeft={goHome}
                     onRename={() => setDialog({ kind: "renameShare" })}
+                    onAppearance={() => setDialog({ kind: "shareAppearance" })}
                   />
                 ) : (
                   <Details item={side.item} authorLabel={authorOf(side.item)} />
@@ -929,6 +1031,7 @@ export function DriveWorkspace({
               onChanged={() => void reload()}
               onLeft={goHome}
               onRename={() => setDialog({ kind: "renameShare" })}
+              onAppearance={() => setDialog({ kind: "shareAppearance" })}
             />
           </Modal>
         </div>
@@ -1016,6 +1119,38 @@ export function DriveWorkspace({
           onSubmit={async (name) => {
             if (await act(() => session.createFolder(view, current, name))) {
               setDialog({ kind: "none" });
+            }
+          }}
+        />
+      ) : null}
+      {dialog.kind === "appearance" && view && dialog.item.meta ? (
+        <AppearanceDialog
+          name={dialog.item.meta.name}
+          icon={KIND_ICON[kindOf(dialog.item)]}
+          initial={{
+            ...(dialog.item.meta.color ? { color: dialog.item.meta.color } : {}),
+            ...(dialog.item.meta.emoji ? { emoji: dialog.item.meta.emoji } : {}),
+          }}
+          busy={task.busy}
+          onClose={() => setDialog({ kind: "none" })}
+          onSave={async (appearance) => {
+            if (await act(() => session.setAppearance(view, dialog.item, appearance))) {
+              setDialog({ kind: "none" });
+            }
+          }}
+        />
+      ) : null}
+      {dialog.kind === "shareAppearance" && view ? (
+        <AppearanceDialog
+          name={view.name}
+          icon="folderShared"
+          initial={view.appearance}
+          busy={task.busy}
+          onClose={() => setDialog({ kind: "none" })}
+          onSave={async (appearance) => {
+            if (await act(() => session.setShareAppearance(view, appearance))) {
+              setDialog({ kind: "none" });
+              void refreshShares();
             }
           }}
         />
@@ -1121,7 +1256,10 @@ export function DriveWorkspace({
       {dialog.kind === "readNote" ? (
         <Modal
           title={dialog.item.meta?.name ?? ""}
-          onClose={() => setDialog({ kind: "none" })}
+          onClose={() => {
+            setDialog({ kind: "none" });
+            closeFile();
+          }}
           wide
         >
           <article className="whitespace-pre-wrap break-words leading-relaxed text-somnus-text">
@@ -1178,6 +1316,7 @@ function Crumb() {
 
 function SideLink({
   icon,
+  appearance,
   label,
   current,
   count,
@@ -1185,6 +1324,7 @@ function SideLink({
   onClick,
 }: {
   icon: IconName;
+  appearance?: Appearance;
   label: string;
   current?: boolean;
   count?: number;
@@ -1203,9 +1343,12 @@ function SideLink({
           : "text-somnus-subtle hover:bg-white/[0.04] hover:text-somnus-text"
       }`}
     >
-      <Icon
-        name={icon}
-        className={`h-[18px] w-[18px] shrink-0 ${current ? "text-somnus-primary" : ""}`}
+      <ItemGlyph
+        icon={icon}
+        appearance={appearance}
+        className="h-[18px] w-[18px]"
+        emojiClass="text-base"
+        fallbackClass={current ? "text-somnus-primary" : ""}
       />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {count ? <span className="text-xs tabular-nums text-somnus-subtle">{count}</span> : null}
@@ -1230,9 +1373,11 @@ function ItemName({
   const name = item.meta?.name;
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <Icon
-        name={KIND_ICON[kind]}
-        className={`h-5 w-5 shrink-0 ${kind === "folder" ? "text-somnus-primary" : "text-somnus-subtle"}`}
+      <ItemGlyph
+        icon={KIND_ICON[kind]}
+        appearance={item.meta ?? undefined}
+        className="h-5 w-5"
+        fallbackClass={kind === "folder" ? "text-somnus-primary" : "text-somnus-subtle"}
       />
       <div className="min-w-0">
         {name ? (
@@ -1352,8 +1497,16 @@ function ShareGrid({
               onClick={() => onOpen(share.shareId)}
               className="flex w-full items-center gap-4 rounded-xl border border-white/[0.06] bg-somnus-background/40 p-4 text-left transition hover:border-somnus-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-somnus-primary/10 text-somnus-primary">
-                <Icon name="folderShared" className="h-6 w-6" />
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-somnus-primary/10 text-somnus-primary"
+                style={tint(share.appearance)}
+              >
+                <ItemGlyph
+                  icon="folderShared"
+                  appearance={share.appearance}
+                  className="h-6 w-6"
+                  emojiClass="text-2xl"
+                />
               </span>
               <span className="min-w-0">
                 <span className="block truncate font-medium text-somnus-text">
