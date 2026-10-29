@@ -34,7 +34,8 @@ the consequences.
 ## Convention
 
 - File name: `NNNN-kebab-case-title.md`.
-- One page maximum.
+- One page maximum. A long rationale may live in a companion notes file,
+  `NNNN-kebab-case-title-notes.md`, linked from the ADR.
 - Status values: `Proposed`, `Accepted`, `Superseded by ADR NNNN`.
 - A new decision that contradicts an Accepted ADR must either
   supersede it (preserve history) or live alongside it as a
