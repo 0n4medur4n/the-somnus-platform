@@ -87,7 +87,7 @@ def test_v02_is_the_active_flow_content_2_0() -> None:
     # Owner and clinical lead, 19/10/2026: the active flow until Jesús says otherwise.
     artifact = funnel_artifact()
     assert artifact.raw["meta"]["active"] is True
-    assert artifact.content_version == artifact.rules_version == "2.0"
+    assert artifact.content_version == artifact.rules_version == "2.1"
     # D-07, approved by the clinical lead on 18/10/2026.
     assert artifact.engine["resources"]["EMERGENCIA"] == "112"
     # Texts v0.2 does not give are drafts in the phrase catalogue, not here.

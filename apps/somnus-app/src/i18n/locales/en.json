@@ -509,6 +509,7 @@
       "saved": "This guidance is saved to your account.",
       "download": "Download report (PDF)",
       "notSaved": "This guidance is not saved to your account.",
+      "noReport": "This guidance has no report to download.",
       "signInHint": "To save the guidance and download the report, sign in before starting."
     },
     "report": {

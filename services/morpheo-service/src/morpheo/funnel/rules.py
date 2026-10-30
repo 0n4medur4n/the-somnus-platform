@@ -300,6 +300,11 @@ def _evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> Funnel
     if pending:
         orient("INFORMACION_INSUFICIENTE", "T_INCOMPLETO", "R02", "falta: " + ", ".join(pending))
 
+    # --- no rule orients: never an empty result (owner decision, 30/10/2026) ---
+    # v0.2 has no outcome for it; the text says nothing is ruled out.
+    if not orientations:
+        orient("SIN_ORIENTACION", "T_SIN_ORIENTACION", "SIN_REGLA", "ninguna regla orienta")
+
     return _result(
         artifact,
         None,

@@ -10,6 +10,7 @@ import pytest
 from morpheo.funnel.artifact import FunnelArtifactError, funnel_artifact
 from morpheo.funnel.catalogue import (
     APPROVED_STATUS,
+    OWNER_APPROVED,
     Selector,
     funnel_catalogue,
     parse_catalogue,
@@ -141,9 +142,25 @@ def test_the_z1_summary_joins_with_semicolons_and_has_a_fallback() -> None:
 
 
 def test_the_new_texts_are_approved_too() -> None:
-    assert set(C.drafts) == {"S2_aviso", "S2_seguro", "S2_pausa", "T_RECIENTE"}
-    assert all(d.status == APPROVED_STATUS for d in C.drafts.values())
+    lead = {"S2_aviso", "S2_seguro", "S2_pausa", "T_RECIENTE"}
+    assert set(C.drafts) == lead | {"T_SIN_ORIENTACION"}
+    assert all(C.drafts[d].status == APPROVED_STATUS for d in lead)
+    assert C.drafts["T_SIN_ORIENTACION"].status == OWNER_APPROVED["T_SIN_ORIENTACION"]
     assert C.lists["accion_seguridad"].status == APPROVED_STATUS
+
+
+def test_the_owner_approval_counts_for_its_own_text_only() -> None:
+    raw = _raw()
+    raw["drafts"]["S2_aviso"]["status"] = OWNER_APPROVED["T_SIN_ORIENTACION"]
+    with pytest.raises(FunnelArtifactError, match="not approved"):
+        parse_catalogue(raw, A)
+
+
+def test_the_no_orientation_text_cannot_lose_its_approval() -> None:
+    raw = _raw()
+    raw["drafts"]["T_SIN_ORIENTACION"]["status"] = "BORRADOR"
+    with pytest.raises(FunnelArtifactError, match="not approved"):
+        parse_catalogue(raw, A)
 
 
 def test_an_unapproved_text_is_refused() -> None:

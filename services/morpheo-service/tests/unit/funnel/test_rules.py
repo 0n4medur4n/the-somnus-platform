@@ -30,10 +30,20 @@ def _templates(answers: dict[str, Answer]) -> set[str]:
     return {t for t, _ in evaluate(A, answers).texts}
 
 
-def test_nothing_reported_gives_no_orientation() -> None:
+def test_nothing_reported_still_says_something() -> None:
+    # Owner decision, 30/10/2026: no rule orients → the approved «sin orientación»
+    # text, never an empty result (it used to give no text, no report and a 404).
     result = evaluate(A, CALM)
-    assert result.accion_principal is None
-    assert result.texts == ()
+    assert result.accion_principal == "SIN_ORIENTACION"
+    assert [t for t, _ in result.texts] == ["T_SIN_ORIENTACION"]
+    assert "no descarta" in dict(result.texts)["T_SIN_ORIENTACION"]
+    assert result.rule_ids == ("SIN_REGLA",)
+
+
+def test_the_fallback_never_joins_a_real_orientation() -> None:
+    result = evaluate(A, CALM | {"H4": YES})
+    assert result.accion_principal == "HABITOS"
+    assert "T_SIN_ORIENTACION" not in {t for t, _ in result.texts}
 
 
 def test_an_unanswered_safety_question_is_pending_not_no() -> None:

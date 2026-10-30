@@ -509,6 +509,7 @@
       "saved": "Aquesta orientació està desada al seu compte.",
       "download": "Descarregar l'informe (PDF)",
       "notSaved": "Aquesta orientació no està desada al seu compte.",
+      "noReport": "Aquesta orientació no té cap informe per baixar.",
       "signInHint": "Per desar l'orientació i descarregar l'informe, iniciï la sessió abans de començar."
     },
     "report": {

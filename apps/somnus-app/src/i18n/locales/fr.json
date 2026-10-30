@@ -509,6 +509,7 @@
       "saved": "Cette orientation est enregistrée dans votre compte.",
       "download": "Télécharger le rapport (PDF)",
       "notSaved": "Cette orientation n'est pas enregistrée dans votre compte.",
+      "noReport": "Cette orientation n'a pas de rapport à télécharger.",
       "signInHint": "Pour enregistrer l'orientation et télécharger le rapport, connectez-vous avant de commencer."
     },
     "report": {
