@@ -23,6 +23,9 @@ export function FunnelResultView({
   signedIn: boolean;
 }) {
   const { t } = useTranslation();
+  // Only an interview stopped at the age has no text (out of scope): never an
+  // empty page, and no download link to a report that cannot exist.
+  const hasText = result.texts.length > 0;
   return (
     <section
       aria-labelledby="funnel-result-heading"
@@ -48,6 +51,13 @@ export function FunnelResultView({
               {paragraph.text}
             </p>
           ))}
+          {hasText ? null : (
+            <p data-testid="funnel-no-text">
+              {result.stoppedBy === "AGE_MENOR"
+                ? t("register.adultIntro")
+                : t("funnel.result.noReport")}
+            </p>
+          )}
         </div>
       )}
       {result.instruments.length > 0 && result.report?.layout !== "urgent" ? (
@@ -71,15 +81,17 @@ export function FunnelResultView({
         {owned ? (
           <>
             <p className="text-sm text-somnus-subtle">{t("funnel.result.saved")}</p>
-            <div>
-              <a
-                href={edge.funnelReportUrl(sessionId, activeLocale())}
-                download
-                className="inline-flex items-center justify-center rounded-md border border-somnus-subtle/50 px-4 py-2 font-medium text-somnus-text hover:bg-somnus-surface"
-              >
-                {t("funnel.result.download")}
-              </a>
-            </div>
+            {hasText ? (
+              <div>
+                <a
+                  href={edge.funnelReportUrl(sessionId, activeLocale())}
+                  download
+                  className="inline-flex items-center justify-center rounded-md border border-somnus-subtle/50 px-4 py-2 font-medium text-somnus-text hover:bg-somnus-surface"
+                >
+                  {t("funnel.result.download")}
+                </a>
+              </div>
+            ) : null}
           </>
         ) : (
           <p className="text-sm text-somnus-subtle">

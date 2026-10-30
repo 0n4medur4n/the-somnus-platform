@@ -267,6 +267,39 @@ describe("FunnelAssessment", () => {
     expect(screen.queryByTestId("team-panel")).toBeNull();
   });
 
+  it("never shows an empty result or a PDF link when there is no text (a minor)", async () => {
+    const user = userEvent.setup();
+    const minor = {
+      ...RESULT,
+      stoppedBy: "AGE_MENOR",
+      alerts: ["RUTA_PEDIATRICA"],
+      mainAction: null,
+      texts: [],
+    };
+    edgeMock.startFunnel.mockResolvedValue(
+      state({ status: "stopped", step: null, result: minor, owned: true }),
+    );
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    expect(await screen.findByTestId("funnel-no-text")).toHaveTextContent(
+      es("register.adultIntro"),
+    );
+    expect(screen.queryByRole("link", { name: es("funnel.result.download") })).toBeNull();
+  });
+
+  it("says there is no report, rather than nothing, for any other result without text", async () => {
+    const user = userEvent.setup();
+    edgeMock.startFunnel.mockResolvedValue(
+      state({ status: "finished", step: null, result: { ...RESULT, texts: [] }, owned: true }),
+    );
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    expect(await screen.findByTestId("funnel-no-text")).toHaveTextContent(
+      es("funnel.result.noReport"),
+    );
+    expect(screen.queryByRole("link", { name: es("funnel.result.download") })).toBeNull();
+  });
+
   it("lays the result out as the one-page report when morpheo built one", async () => {
     const user = userEvent.setup();
     const report = {

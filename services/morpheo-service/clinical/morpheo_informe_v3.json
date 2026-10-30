@@ -43,7 +43,11 @@
       0,
       1
     ],
-    "T_SEGURIDAD": "todas"
+    "T_SEGURIDAD": "todas",
+    "T_SIN_ORIENTACION": [
+      0,
+      1
+    ]
   },
   "urgente": {
     "_nota": "En una urgencia el informe es solo el mensaje urgente (sin resumen, pasos ni página del profesional).",

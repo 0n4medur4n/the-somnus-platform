@@ -144,6 +144,30 @@ def test_no_report_without_a_text_to_show() -> None:
     assert build(A, C, I, Interview(A, answers), result) is None
 
 
+def test_an_interview_no_rule_orients_still_gets_a_report() -> None:
+    # Owner decision, 30/10/2026: it used to have no report and the PDF was a 404.
+    answers = {
+        "AGE": Answer(value=40),
+        "S1@start": Answer(value="no"),
+        "S4@start": Answer(value="no"),
+        "S2@end": Answer(value="no"),
+        "S3@end": Answer(value="no"),
+        "Q08": Answer(value=[]),
+        "Q15": Answer(value=[]),
+        "Q13": Answer(value="si"),
+    }
+    result = evaluate(A, answers, REGISTRY)
+    report = build(A, C, I, Interview(A, answers), result)
+    assert report is not None and report.layout == "standard"
+    text = C.drafts["T_SIN_ORIENTACION"].text
+    assert report.headline == tuple(sentences(text)[:2])
+    assert report.limits == ("No es un diagnóstico.",)
+    assert report.professional is not None
+    assert report.professional.main_action == "SIN_ORIENTACION"
+    # No library source backs it: nothing to search.
+    assert report.professional.grounding is None
+
+
 # --- the loader refuses what the approved sources do not say ---
 
 

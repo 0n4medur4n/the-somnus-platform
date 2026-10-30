@@ -509,6 +509,7 @@
       "saved": "Esta orientación está guardada en su cuenta.",
       "download": "Descargar informe (PDF)",
       "notSaved": "Esta orientación no está guardada en su cuenta.",
+      "noReport": "Esta orientación no tiene un informe para descargar.",
       "signInHint": "Para guardar la orientación y descargar el informe, inicie sesión antes de empezar."
     },
     "report": {

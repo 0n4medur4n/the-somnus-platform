@@ -4,6 +4,23 @@ Content-version bumps to the versioned artifacts (build plan §14a). The rule/
 spec `workflow_version` changes only when rules, levels, or priorities change;
 content-only additions bump `content_version` (reviewed by the Safety Committee).
 
+## content_version 2.1 — 2026-10-30 (rules 2.1): an interview no rule orients still says something
+
+- Live test, 30/10/2026 (case FT-3): a finished interview in which no rule
+  R01-R08 orients ended with no text, no report, an empty result page and a
+  download link that answered 404. v0.2 has no outcome for that case.
+- Owner decision, 30/10/2026: such an interview gets the new category
+  `SIN_ORIENTACION` (last in the priority order, only when nothing else
+  orients) and the text `T_SIN_ORIENTACION` in `morpheo_textos_v2.json`:
+  it says no concrete orientation was found, that nothing is ruled out, and to
+  consult a professional if sleep keeps affecting them. Status «APROBADO –
+  decisión del titular, 30/10/2026; revisión de Jesús pendiente»; the loader
+  accepts that status for this text only. Its report headline is its first two
+  sentences (`morpheo_informe_v3.json`); no library source backs it.
+- Only an interview stopped at the age (under 18, out of scope) still ends
+  without text; the app shows its existing «only for adults» line and no
+  download link instead of an empty page.
+
 ## content_version 2.0 — 2026-10-19 (rules 2.0): the embudo v0.2 is the active flow
 
 - Owner and clinical lead, 19/10/2026: the v2 flow (`morpheo_embudo_v2.json`,

@@ -9,7 +9,10 @@ enter a template -- only the numbers they gave (nights per week, duration).
 It also holds the full patient-facing texts v0.2 gives only as an instruction
 or not at all (the safety actions, the S2 warning, safe-place question and
 pause, recent insomnia with high impact). The clinical lead approved the
-catalogue and these texts as they are on 19/10/2026.
+catalogue and these texts as they are on 19/10/2026. One text came later: what
+an interview no rule orients says (T_SIN_ORIENTACION), approved by the owner on
+30/10/2026 with the clinical lead's review pending; that status is accepted for
+that text only.
 
 The loader fails loudly if a template placeholder has no list, if a condition
 names a question or option the artifact does not have, if a phrase is not a
@@ -31,7 +34,13 @@ from morpheo.funnel.interview import Interview
 
 CATALOGUE_FILE = Path(__file__).resolve().parents[3] / "clinical" / "morpheo_textos_v2.json"
 APPROVED_STATUS = "APROBADO \N{EN DASH} Jesús, 19/10/2026"
-REQUIRED_DRAFTS = ("S2_aviso", "S2_seguro", "S2_pausa", "T_RECIENTE")
+REQUIRED_DRAFTS = ("S2_aviso", "S2_seguro", "S2_pausa", "T_RECIENTE", "T_SIN_ORIENTACION")
+# Texts approved by someone other than the clinical lead, each with its own status.
+OWNER_APPROVED = {
+    "T_SIN_ORIENTACION": (
+        "APROBADO \N{EN DASH} decisión del titular, 30/10/2026; revisión de Jesús pendiente"
+    ),
+}
 MAX_PHRASE_LENGTH = 160
 MAX_DRAFT_LENGTH = 600
 _PLACEHOLDER = re.compile(r"\[([^\]]+)\]")
@@ -213,7 +222,7 @@ def parse_catalogue(raw: dict[str, Any], artifact: FunnelArtifact) -> Catalogue:
         raise FunnelArtifactError(f"placeholders without a phrase list: {sorted(missing)}")
     drafts: dict[str, Draft] = {}
     for draft_id, spec in raw.get("drafts", {}).items():
-        if spec["status"] != APPROVED_STATUS:
+        if spec["status"] != OWNER_APPROVED.get(draft_id, APPROVED_STATUS):
             raise FunnelArtifactError(f"text {draft_id}: not approved ({spec['status']!r})")
         _validate_text(spec["text"], MAX_DRAFT_LENGTH, f"draft {draft_id}")
         drafts[draft_id] = Draft(draft_id, spec["describes"], spec["text"], spec["status"])

@@ -212,6 +212,11 @@
       "describes": "Cuadro reciente con mucho impacto (I1 e I2 = Sí, menos de 3 meses). v0.2 p. 5: «Un cuadro reciente con mucho impacto también merece ayuda clínica, sin esperar tres meses», pero no da plantilla.",
       "status": "APROBADO – Jesús, 19/10/2026",
       "text": "Nos ha contado que desde hace poco le cuesta dormir y que esto le está afectando mucho en su día a día. Cuando el problema es reciente, muchas veces mejora en unas semanas. Aun así, como le afecta tanto, no hace falta esperar: conviene que lo comente con un profesional, que puede ayudarle ya. Mientras tanto, puede seguir aquí y anotar cómo duerme para revisarlo juntos."
+    },
+    "T_SIN_ORIENTACION": {
+      "describes": "Entrevista terminada en la que ninguna regla (R01-R08) da una orientación. v0.2 no prevé este caso y el resultado quedaba vacío, sin informe (prueba del 30/10/2026). No descarta nada: dice que no hay una orientación concreta e invita a consultar si sigue afectando. La última frase es la de T_RECIENTE, ya aprobada.",
+      "status": "APROBADO – decisión del titular, 30/10/2026; revisión de Jesús pendiente",
+      "text": "Con lo que nos ha contado, no encontramos una orientación concreta que proponerle. Esto no descarta un problema de sueño: si le sigue afectando, coméntelo con un profesional. Mientras tanto, puede seguir aquí y anotar cómo duerme para revisarlo juntos."
     }
   }
 }

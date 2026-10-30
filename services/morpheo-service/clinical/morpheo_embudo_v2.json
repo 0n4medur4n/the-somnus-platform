@@ -1347,8 +1347,8 @@
     }
   },
   "engine": {
-    "content_version": "2.0",
-    "rules_version": "2.0",
+    "content_version": "2.1",
+    "rules_version": "2.1",
     "status": "active_2026-10-19",
     "note": "Construido sobre la transcripción verificada de v0.2. Los DEFAULT (D-xx) son los del registro docs/clinical/morpheo_embudo_v02_resoluciones.md; Jesús puede cambiarlos.",
     "steps": [
@@ -1969,7 +1969,7 @@
       ]
     },
     "priority_order": {
-      "default": "R08 (p. 13) + D-06 + D-38",
+      "default": "R08 (p. 13) + D-06 + D-38; SIN_ORIENTACION: decisión del titular, 30/10/2026 (solo cuando ninguna regla orienta)",
       "order": [
         "EMERGENCIA",
         "ATENCION_MISMO_DIA",
@@ -1977,7 +1977,8 @@
         "CONSULTA_ESTUDIO",
         "INFORMACION_INSUFICIENTE",
         "TERAPIA",
-        "HABITOS"
+        "HABITOS",
+        "SIN_ORIENTACION"
       ]
     },
     "resources": {
