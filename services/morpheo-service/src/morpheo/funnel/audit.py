@@ -219,7 +219,7 @@ INCOHERENCES = (
             proposal="Aclarar qué parte falla: tiempo, lugar o ambos"),
     Finding("K09", "Ninguna dificultad nocturna (Q08 vacío) y duerme 5 h o menos (Q09)",
             lambda iv: iv.value("Q08") == [] and (h := _hours(iv)) is not None and h <= 5,
-            proposal="Abrir H o preguntar H4 (como C-01)"),
+            handled_by="C-01 o la rama H preguntan H4"),
 )  # fmt: skip
 
 SIGNALS = (
