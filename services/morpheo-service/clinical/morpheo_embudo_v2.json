@@ -1969,7 +1969,7 @@
       ]
     },
     "coherence": {
-      "default": "PROPUESTA – 31/10/2026, prueba en vivo del caso 3; pendiente de Jesús. Cuando dos respuestas no encajan, se vuelve a preguntar antes del cierre (morpheo.funnel.coherence).",
+      "default": "ACTIVO – decisión del titular, 31/10/2026 (prueba en vivo del caso 3); revisión de Jesús pendiente. Cuando dos respuestas no encajan, se vuelve a preguntar antes del cierre (morpheo.funnel.coherence).",
       "C-01": {
         "max_hours": 6,
         "describes": "Duerme 6 horas o menos (Q09), dice tener tiempo y lugar adecuados (Q13 = Sí) y ninguna regla orienta: se pregunta H4. Sin esta última condición saltaría en casi todo insomnio."

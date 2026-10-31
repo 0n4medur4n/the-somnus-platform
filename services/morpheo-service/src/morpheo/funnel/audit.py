@@ -309,7 +309,7 @@ def report(before: Tally, after: Tally) -> str:
         "relación con las demás. Los porcentajes dicen qué caminos existen en el motor, **no** "
         "con qué frecuencia ocurrirá en personas reales: un recuento alto no es un problema "
         "frecuente, y K07 mide horarios al azar. Un 0 sí significa que el diseño lo impide. "
-        "«Sin» es el motor en producción; «Con» añade las comprobaciones C-01 y C-02. Una "
+        "«Sin» es el motor sin comprobaciones; «Con» añade C-01 y C-02. Una "
         "incoherencia sigue contando con las comprobaciones: la comprobación vuelve a preguntar, "
         "no borra la respuesta. Las propuestas son para que decida el responsable clínico.",
         "",

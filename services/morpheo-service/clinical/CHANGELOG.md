@@ -6,7 +6,8 @@ content-only additions bump `content_version` (reviewed by the Safety Committee)
 
 ## content_version 2.2 — 2026-10-31 (rules 2.2): answers that do not fit are asked again
 
-PENDING the clinical lead: the checks and the 6-hour limit are a proposal.
+Switched on by the owner, 31/10/2026; the clinical lead's review of the checks
+and of the 6-hour limit is pending.
 
 - Live test, 30/10/2026 (case 3, session read with a one-off Job, codes only):
   the person sleeps 5 hours (Q09, from the AI) yet said they have enough time and
