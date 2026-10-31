@@ -11,8 +11,8 @@ tiredness. No rule oriented that interview.
 Each check names one question to ask again, as `<id>@coherencia`; that answer
 then counts over the first one (`Interview.answer`). The checks run just before
 the closing questions, in the order below, each at most once. Thresholds live in
-the artifact (`engine.coherence`): a proposal of 31/10/2026, pending the
-clinical lead. Pure and deterministic, like the rules.
+the artifact (`engine.coherence`): switched on by the owner on 31/10/2026, the
+clinical lead's review pending. Pure and deterministic, like the rules.
 """
 
 from __future__ import annotations
