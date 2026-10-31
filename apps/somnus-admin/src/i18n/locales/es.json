@@ -487,7 +487,7 @@
     },
     "reset": {
       "heading": "Restablecer el Drive",
-      "warning": "Se crearán claves nuevas. Perderás el acceso a todas tus carpetas. Las que solo tú tenías se borrarán, porque ya nadie podrá abrirlas. Tus colegas podrán volver a compartirte las demás.",
+      "warning": "Se crearán claves nuevas. Saldrás de todas tus carpetas. Las que solo tú tenías se borrarán, porque ya nadie podrá abrirlas. Tu huella cambiará: para volver a las demás, un colega tendrá que confirmar tu huella nueva y añadirte otra vez. Si solo has olvidado tu frase y tienes el código de recuperación, usa el código: así no pierdes nada.",
       "confirmLabel": "Escribe RESTABLECER para confirmar",
       "confirmWord": "RESTABLECER",
       "submit": "Restablecer y crear claves nuevas"
@@ -508,7 +508,11 @@
       "create": "Crear carpeta",
       "members_one": "{{count}} persona",
       "members_other": "{{count}} personas",
-      "unreadable": "No se puede abrir esta carpeta"
+      "unreadable": "No se puede abrir esta carpeta",
+      "delete": "Eliminar carpeta",
+      "deleteWarning": "Se eliminará para todas las personas que tienen acceso, con todo su contenido. No se puede deshacer.",
+      "deleteType": "Escribe «{{value}}» para confirmar",
+      "deleteWord": "ELIMINAR"
     },
     "role": {
       "owner": "Propietaria",
@@ -606,7 +610,7 @@
       "unknown": "Sin Drive configurado"
     },
     "trustHelp": {
-      "changed": "La clave de esta persona no es la que conocías. Puede que haya restablecido su Drive, o que alguien intente suplantarla. Confírmalo con ella antes de aceptar la clave nueva."
+      "changed": "La clave de esta persona no es la que conocías. Puede que haya restablecido su Drive, o que alguien intente suplantarla. Confirma con ella su huella nueva antes de añadirla."
     },
     "problem": {
       "wrong_secret": "La frase o el código no son correctos.",

@@ -97,6 +97,7 @@ type Dialog =
   | { kind: "renameShare" }
   | { kind: "move"; item: DriveItem }
   | { kind: "purge"; item: DriveItem }
+  | { kind: "deleteShare"; share: DriveShareEntry }
   | { kind: "guide" }
   | { kind: "security" };
 
@@ -937,6 +938,7 @@ export function DriveWorkspace({
                   shares={shares}
                   onOpen={(id) => void openShare(id)}
                   onCreate={() => setDialog({ kind: "newShare" })}
+                  onDelete={(share) => setDialog({ kind: "deleteShare", share })}
                 />
               ) : visible.length === 0 ? (
                 trash ? (
@@ -1275,6 +1277,20 @@ export function DriveWorkspace({
           }}
         />
       ) : null}
+      {dialog.kind === "deleteShare" ? (
+        <DeleteShareDialog
+          share={dialog.share}
+          busy={task.busy}
+          error={task.error}
+          onClose={() => setDialog({ kind: "none" })}
+          onDelete={async () => {
+            const ok = await run(() => session.deleteShare(dialog.share.shareId));
+            if (ok === null) return;
+            setDialog({ kind: "none" });
+            await refreshShares();
+          }}
+        />
+      ) : null}
       {dialog.kind === "purge" && view ? (
         <Modal title={t("drive.trash.purge")} onClose={() => setDialog({ kind: "none" })}>
           <p className="text-somnus-text">
@@ -1539,10 +1555,12 @@ function ShareGrid({
   shares,
   onOpen,
   onCreate,
+  onDelete,
 }: {
   shares: DriveShareEntry[] | null;
   onOpen: (shareId: string) => void;
   onCreate: () => void;
+  onDelete: (share: DriveShareEntry) => void;
 }) {
   const { t } = useTranslation();
   if (shares === null) return <p className="text-sm text-somnus-subtle">{t("drive.loading")}</p>;
@@ -1562,12 +1580,12 @@ function ShareGrid({
       </h2>
       <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {shares.map((share) => (
-          <li key={share.shareId}>
+          <li key={share.shareId} className="relative">
             <button
               type="button"
               disabled={share.name === null}
               onClick={() => onOpen(share.shareId)}
-              className="flex w-full items-center gap-4 rounded-xl border border-white/[0.06] bg-somnus-background/40 p-4 text-left transition hover:border-somnus-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center gap-4 rounded-xl border border-white/[0.06] bg-somnus-background/40 p-4 pr-12 text-left transition hover:border-somnus-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-somnus-primary/10 text-somnus-primary"
@@ -1591,10 +1609,85 @@ function ShareGrid({
                 )}
               </span>
             </button>
+            {/* Beside the card, not inside it: an owner can still delete a folder
+                that no longer opens. */}
+            {share.role === "owner" ? (
+              // No transform here: it would trap the open menu under the next row.
+              <div className="absolute right-2 top-5">
+                <Menu
+                  label={t("drive.actionsFor", {
+                    name: share.name ?? t("drive.shares.unreadable"),
+                  })}
+                  items={[
+                    {
+                      label: t("drive.shares.delete"),
+                      icon: "trash",
+                      danger: true,
+                      onSelect: () => onDelete(share),
+                    },
+                  ]}
+                />
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+/**
+ * Deleting a shared folder takes it from everyone, with everything in it, and
+ * cannot be undone: it asks for the folder's name, or for a word when the name
+ * cannot be read.
+ */
+function DeleteShareDialog({
+  share,
+  busy,
+  error,
+  onClose,
+  onDelete,
+}: {
+  share: DriveShareEntry;
+  busy: boolean;
+  error: string | null;
+  onClose: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useTranslation();
+  const [typed, setTyped] = useState("");
+  const expected = share.name ?? t("drive.shares.deleteWord");
+  return (
+    <Modal title={t("drive.shares.delete")} onClose={onClose}>
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (typed === expected) onDelete();
+        }}
+      >
+        <Notice tone="danger">{t("drive.shares.deleteWarning")}</Notice>
+        <Field
+          label={t("drive.shares.deleteType", { value: expected })}
+          value={typed}
+          autoComplete="off"
+          onChange={(event) => setTyped(event.target.value)}
+        />
+        {error ? <Notice tone="danger">{error}</Notice> : null}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t("drive.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            className="bg-somnus-danger text-somnus-background"
+            disabled={busy || typed !== expected}
+          >
+            {busy ? t("drive.working") : t("drive.members.deleteSubmit")}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

@@ -186,6 +186,40 @@ describe("DriveScreen", () => {
     expect(server.received.join(" ")).not.toContain("Protocolo de guardia");
   }, 60_000);
 
+  it("deletes a shared folder from its card, once its name is typed", async () => {
+    const user = userEvent.setup();
+    await setUp(user);
+    await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Borrador");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
+
+    await user.click(
+      await screen.findByRole(
+        "button",
+        { name: i18n.t("drive.actionsFor", { name: "Borrador" }) },
+        { timeout: 15_000 },
+      ),
+    );
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.delete") }));
+
+    const submit = screen.getByRole("button", { name: i18n.t("drive.members.deleteSubmit") });
+    expect(submit).toBeDisabled();
+    const field = screen.getByLabelText(i18n.t("drive.shares.deleteType", { value: "Borrador" }));
+    await user.type(field, "Borrado");
+    expect(submit).toBeDisabled();
+    await user.clear(field);
+    await user.type(field, "Borrador");
+    await user.click(submit);
+
+    expect(
+      await screen.findByText(i18n.t("drive.shares.empty"), {}, { timeout: 15_000 }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Borrador")).toBeNull();
+  }, 60_000);
+
   it("creates a spreadsheet from New, and it opens again from the folder", async () => {
     const user = userEvent.setup();
     await setUp(user);

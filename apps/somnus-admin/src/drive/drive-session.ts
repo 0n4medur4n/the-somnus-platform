@@ -658,17 +658,19 @@ export class DriveSession {
     return this.edge.purgeNode(view.shareId, item.node.id);
   }
 
-  async deleteShare(view: DriveFolderView): Promise<void> {
-    await this.edge.purgeShare(view.shareId);
-    this.shareKeys.delete(view.shareId);
+  async deleteShare(shareId: string): Promise<void> {
+    await this.edge.purgeShare(shareId);
+    this.shareKeys.delete(shareId);
   }
 
   // --- members ---
 
   /** Shares the folder with a colleague whose key I have not seen change. */
   async addMember(view: DriveFolderView, userId: string, role: DriveRole): Promise<void> {
-    // A colleague who set up the Drive after I opened it is not in my copy yet.
-    if (!this.directory.has(userId)) await this.refreshDirectory();
+    // Always the latest: a colleague may have joined, or reset their keys,
+    // since I opened the Drive. A folder key wrapped for a key they no longer
+    // hold would give them a folder they cannot open.
+    await this.refreshDirectory();
     const entry = this.directory.get(userId);
     if (!entry) throw new DriveSessionError("recipient_unknown");
     if (this.trustOf(userId) === "changed") throw new DriveSessionError("key_changed");
@@ -701,6 +703,7 @@ export class DriveSession {
    * key rewrapped under it. The removed person's old key opens nothing new.
    */
   async removeMember(view: DriveFolderView, userId: string): Promise<void> {
+    await this.refreshDirectory();
     const keyGeneration = view.keyGeneration + 1;
     const shareKey = await newSymmetricKey();
     const remaining = view.members.filter((m) => m.userId !== userId);

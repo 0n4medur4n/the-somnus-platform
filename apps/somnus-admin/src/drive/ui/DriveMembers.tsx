@@ -1,5 +1,5 @@
 import { DRIVE_ROLES, type DriveRole } from "@somnus/api-contracts";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Field } from "../../components/Field.js";
@@ -40,7 +40,19 @@ export function DriveMembers({
   const [role, setRole] = useState<DriveRole>("viewer");
   const [deleteName, setDeleteName] = useState("");
   const [checked, setChecked] = useState(false);
+  const [, setDirectoryRead] = useState(0);
   const candidate = candidates.find((c) => c.userId === chosen);
+
+  // Colleagues join and reset their keys while a Drive stays open: the people
+  // and fingerprints offered here are read again each time the panel opens.
+  const readDirectory = useCallback(async () => {
+    await session.refreshDirectory();
+    setDirectoryRead((n) => n + 1);
+  }, [session]);
+
+  useEffect(() => {
+    readDirectory().catch(() => undefined);
+  }, [readDirectory]);
 
   async function share(event: FormEvent) {
     event.preventDefault();
@@ -55,7 +67,12 @@ export function DriveMembers({
       setChosen("");
       setChecked(false);
       onChanged();
+      return;
     }
+    // Refused: their key may have changed just now, so show the one on record
+    // and make the person confirm that one, not the one they had in front of them.
+    setChecked(false);
+    await readDirectory().catch(() => undefined);
   }
 
   async function act(operation: () => Promise<unknown>) {
@@ -218,7 +235,7 @@ export function DriveMembers({
                   {candidate.trust === "changed" ? (
                     <Notice tone="danger">{t("drive.trustHelp.changed")}</Notice>
                   ) : null}
-                  {candidate.trust === "known" ? (
+                  {candidate.trust === "known" || candidate.trust === "changed" ? (
                     <label className="mt-1 flex items-start gap-2 text-somnus-text">
                       <input
                         type="checkbox"
@@ -234,7 +251,7 @@ export function DriveMembers({
               <Button
                 className="px-3 py-1.5 text-sm"
                 type="submit"
-                disabled={task.busy || !candidate || candidate.trust === "changed"}
+                disabled={task.busy || !candidate || (candidate.trust === "changed" && !checked)}
               >
                 {task.busy ? t("drive.working") : t("drive.members.addSubmit")}
               </Button>
@@ -265,7 +282,7 @@ export function DriveMembers({
               e.preventDefault();
               if (deleteName !== view.name) return;
               void task
-                .run(() => session.deleteShare(view))
+                .run(() => session.deleteShare(view.shareId))
                 .then((ok) => {
                   if (ok !== null) onLeft();
                 });

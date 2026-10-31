@@ -141,3 +141,18 @@ raised later).
 - The engine is a single script of about 3 MB fetched only when a spreadsheet opens. `vite dev` serves it in
   pieces the frame cannot load, so spreadsheets need a built console (`vite build`, `vite preview`).
 - The server learns nothing new.
+
+## Addendum -- resets and deleting a shared folder (owner report 2026-11-01)
+
+- **A reset is a new identity, and it has a way back.** Changing the passphrase, with the current one or the
+  recovery code, re-wraps the same keys: nothing changes for anyone else. A reset makes new keys and takes the
+  person out of every folder, so "accept their new key", offered only on a folder's member list, could never be
+  reached: the owner saw them flagged as changed with no way to add them. The add form now accepts the new key
+  itself, behind the same confirmation of the fingerprint with the person. Trust is still never silent.
+- **The directory is read when it matters.** It used to be read once, when the Drive opened, so in a long-lived
+  tab a colleague who joined stayed invisible and one who reset was offered with their old key. It is read again
+  when the people panel opens, and always before wrapping a folder key (adding a member, rotating on removal). A
+  key that changed unseen is refused rather than wrapped.
+- **Owners delete a shared folder from its card**, as well as from the bottom of the people panel: the folder's
+  name must be typed, or a word when the name cannot be read, so an owner can also delete a folder that no longer
+  opens.
