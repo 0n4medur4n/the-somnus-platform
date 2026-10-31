@@ -1,0 +1,64 @@
+{
+  "common": {
+    "appName": "Nox",
+    "loading": "Loading…",
+    "signOut": "Sign out",
+    "skipToContent": "Skip to content",
+    "language": "Language",
+    "theme": "Appearance",
+    "themes": {
+      "dark": "Dark",
+      "light": "Light",
+      "contrast": "High contrast"
+    }
+  },
+  "login": {
+    "title": "Sign in",
+    "subtitle": "Access for professionals. No passwords.",
+    "passwordless": "No passwords",
+    "intro": "Enter your email and we will send you an access link.",
+    "emailLabel": "Email",
+    "emailHint": "Single use. No password to create or remember.",
+    "sendLink": "Send access link",
+    "sending": "Sending link…",
+    "sendingSlow": "One moment: we are preparing your link. It can take a few seconds.",
+    "linkSent": "We sent an access link to {{email}}. Check your inbox.",
+    "tryAnotherEmail": "Use another email",
+    "error": "We could not send the link. Try again."
+  },
+  "callback": {
+    "title": "Completing access",
+    "verifying": "Checking your access link…",
+    "error": "The link is invalid or has expired. Request a new one.",
+    "errorGeneric": "We could not complete access. Try again in a moment.",
+    "emailTitle": "Confirm your email",
+    "emailIntro": "You opened the link in another browser or tab, so we need the address we sent it to.",
+    "emailHint": "The same address that received the link.",
+    "emailSubmit": "Continue",
+    "emailMismatch": "That address does not match the link. Check it and try again."
+  },
+  "errors": {
+    "required": "This field is required.",
+    "invalidEmail": "Enter a valid email.",
+    "generic": "Something went wrong. Try again.",
+    "summaryTitle": "Check the following"
+  },
+  "denied": {
+    "title": "You can't enter Nox",
+    "body": "Nox is only for verified health professionals who have been invited."
+  },
+  "dashboard": {
+    "title": "Nox",
+    "intro": "Tools"
+  },
+  "modules": {
+    "assistant": {
+      "title": "Assistant",
+      "status": "Not available yet"
+    },
+    "evidence": {
+      "title": "Evidence search",
+      "status": "Not available yet"
+    }
+  }
+}

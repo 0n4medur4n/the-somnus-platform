@@ -1,0 +1,19 @@
+{
+  "extends": "@somnus/tsconfig/base.json",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client", "node"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "paths": {
+      "@nox-me-source": ["./src/api/nox-me.live.ts"]
+    }
+  },
+  "include": ["src", "vite-env.d.ts"]
+}
