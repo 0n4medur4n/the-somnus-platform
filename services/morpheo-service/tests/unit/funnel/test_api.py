@@ -88,6 +88,15 @@ def test_every_vignette_ends_with_the_runners_final_text(
     assert state["status"] in ("finished", "stopped")
 
 
+def test_a_question_asked_again_for_coherence_goes_through_the_api(client: TestClient) -> None:
+    # Sleeps 5 hours but "has enough time": branch H stays closed, H4 is asked anyway.
+    case = next(v for v in VIGNETTES if v["id"] == "FT-3")
+    case = case | {"answers": case["answers"] | {"Q13": "si", "Q18": "no"}}
+    state = _play(client, case)
+    assert "H4@coherencia" in [item["key"] for item in state["history"]]
+    assert state["result"]["mainAction"] == "HABITOS"
+
+
 def test_the_first_step_is_the_age(client: TestClient) -> None:
     state = _start(client)
     step = state["step"]
