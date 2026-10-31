@@ -119,8 +119,13 @@ class Interview:
     # --- reading answers ---
 
     def answer(self, step_id: str) -> Answer | None:
-        """The effective answer to a non-safety step: its clarification wins."""
-        return self.answers.get(f"{step_id}@aclarar") or self.answers.get(step_id)
+        """The effective answer to a non-safety step: asked again for coherence
+        (`morpheo.funnel.coherence`), else its clarification, else the answer."""
+        return (
+            self.answers.get(f"{step_id}@coherencia")
+            or self.answers.get(f"{step_id}@aclarar")
+            or self.answers.get(step_id)
+        )
 
     def value(self, step_id: str) -> Any:
         given = self.answer(step_id)
@@ -301,7 +306,10 @@ def next_step(
                     return Step(ask, artifact.step(question, "end"), "ask", reason)
 
     # 2. The fixed order; an instrument due at the end of its branch comes
-    # before the first step of a later stage.
+    # before the first step of a later stage, and answers that do not fit are
+    # asked again before the closing questions.
+    from morpheo.funnel import coherence  # local: coherence reads this module's types
+
     stage_order = ["start", "core", *artifact.engine["branch_order"], "end"]
     for definition in artifact.steps:
         due = next_instrument_step(instruments, iv, definition.stage, stage_order)
@@ -309,6 +317,10 @@ def next_step(
             instrument_step, reason = due
             kind = "instrument_intro" if instrument_step.id.endswith("#intro") else "ask"
             return Step(instrument_step.id, instrument_step, kind, reason)
+        if definition.stage == "end":
+            again = coherence.pending(iv)
+            if again is not None:
+                return again
         step = _pending(iv, definition)
         if step is not None:
             return step

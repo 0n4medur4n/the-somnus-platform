@@ -1347,8 +1347,8 @@
     }
   },
   "engine": {
-    "content_version": "2.1",
-    "rules_version": "2.1",
+    "content_version": "2.2",
+    "rules_version": "2.2",
     "status": "active_2026-10-19",
     "note": "Construido sobre la transcripción verificada de v0.2. Los DEFAULT (D-xx) son los del registro docs/clinical/morpheo_embudo_v02_resoluciones.md; Jesús puede cambiarlos.",
     "steps": [
@@ -1967,6 +1967,16 @@
         "taxista",
         "conductor"
       ]
+    },
+    "coherence": {
+      "default": "PROPUESTA – 31/10/2026, prueba en vivo del caso 3; pendiente de Jesús. Cuando dos respuestas no encajan, se vuelve a preguntar antes del cierre (morpheo.funnel.coherence).",
+      "C-01": {
+        "max_hours": 6,
+        "describes": "Duerme 6 horas o menos (Q09), dice tener tiempo y lugar adecuados (Q13 = Sí) y ninguna regla orienta: se pregunta H4. Sin esta última condición saltaría en casi todo insomnio."
+      },
+      "C-02": {
+        "describes": "La IA propuso «No» a I2 y la persona refiere síntomas diurnos (Q11) o siestas (Q12 = Sí): se pregunta I2."
+      }
     },
     "priority_order": {
       "default": "R08 (p. 13) + D-06 + D-38; SIN_ORIENTACION: decisión del titular, 30/10/2026 (solo cuando ninguna regla orienta)",

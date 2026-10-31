@@ -4,6 +4,26 @@ Content-version bumps to the versioned artifacts (build plan §14a). The rule/
 spec `workflow_version` changes only when rules, levels, or priorities change;
 content-only additions bump `content_version` (reviewed by the Safety Committee).
 
+## content_version 2.2 — 2026-10-31 (rules 2.2): answers that do not fit are asked again
+
+PENDING the clinical lead: the checks and the 6-hour limit are a proposal.
+
+- Live test, 30/10/2026 (case 3, session read with a one-off Job, codes only):
+  the person sleeps 5 hours (Q09, from the AI) yet said they have enough time and
+  place to sleep (Q13 = Sí), and Q18 = No, so branch H never opened and H4 was
+  never asked; and the AI proposed "No" to I2 for someone tired by day. No rule
+  oriented the interview.
+- `morpheo.funnel.coherence`: before the closing questions, a question whose
+  answers do not fit is asked again as `<id>@coherencia`, once; that answer counts
+  over the first one. C-01: 6 hours or less (Q09), Q13 = Sí and no rule orients → H4 (without
+  that last condition it fired on 7 of the 12 vignettes: short sleep with enough
+  time is what insomnia looks like). C-02: an AI
+  "No" to I2 with Q11 answered or Q12 = Sí → I2. The person's own "No" is
+  never second-guessed. Limits in `engine.coherence`.
+- `morpheo.funnel.audit`: thousands of simulated interviews (five kinds of person)
+  with and without the checks, reporting incoherent pairs and signals that end in
+  no orientation. No model and no person's data.
+
 ## content_version 2.1 — 2026-10-30 (rules 2.1): an interview no rule orients still says something
 
 - Live test, 30/10/2026 (case FT-3): a finished interview in which no rule
