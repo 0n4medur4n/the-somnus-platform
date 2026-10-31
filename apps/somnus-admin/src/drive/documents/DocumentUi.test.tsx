@@ -26,6 +26,8 @@ describe("FileViewer", () => {
         bytes={bytes}
         canEditAsDocument
         onEditAsDocument={vi.fn()}
+        canEditAsSheet
+        onEditAsSheet={vi.fn()}
         onDownload={vi.fn()}
         onClose={vi.fn()}
       />,

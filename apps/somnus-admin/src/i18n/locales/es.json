@@ -549,7 +549,8 @@
         "folder": "Carpeta",
         "note": "Nota",
         "file": "Archivo",
-        "document": "Documento"
+        "document": "Documento",
+        "sheet": "Hoja de cálculo"
       }
     },
     "note": {
@@ -682,10 +683,11 @@
       "toConsole": "Consola"
     },
     "viewer": {
-      "editAsDocument": "Editar como documento"
+      "editAsDocument": "Editar como documento",
+      "editAsSheet": "Editar como hoja de cálculo"
     },
     "doc": {
-      "new": "Documento",
+      "new": "Documento de texto",
       "untitled": "Documento sin título",
       "title": "Título del documento",
       "body": "Contenido del documento",
@@ -740,6 +742,18 @@
         "deleteRow": "− Fila",
         "deleteColumn": "− Columna",
         "deleteTable": "Quitar tabla"
+      }
+    },
+    "sheet": {
+      "new": "Hoja de cálculo",
+      "untitled": "Hoja de cálculo sin título",
+      "firstSheet": "Hoja 1",
+      "sheetLabel": "Hoja",
+      "title": "Título de la hoja de cálculo",
+      "failed": "No se ha podido cargar la hoja de cálculo. Recarga la página.",
+      "export": {
+        "xlsx": "Excel (.xlsx)",
+        "csv": "CSV (.csv), hoja actual"
       }
     },
     "link": {

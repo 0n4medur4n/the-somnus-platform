@@ -186,6 +186,43 @@ describe("DriveScreen", () => {
     expect(server.received.join(" ")).not.toContain("Protocolo de guardia");
   }, 60_000);
 
+  it("creates a spreadsheet from New, and it opens again from the folder", async () => {
+    const user = userEvent.setup();
+    await setUp(user);
+    await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Protocolos");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
+    await user.click(
+      (await screen.findAllByRole("button", { name: /Protocolos/ }))[0] as HTMLElement,
+    );
+
+    // "New" offers both, and the spreadsheet opens straight away, in its frame.
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    expect(await screen.findByRole("menuitem", { name: i18n.t("drive.doc.new") })).toBeTruthy();
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.sheet.new") }));
+    const untitled = i18n.t("drive.sheet.untitled");
+    await screen.findByLabelText(i18n.t("drive.sheet.title"), {}, { timeout: 15_000 });
+    const frame = await screen.findByTitle(untitled, {}, { timeout: 15_000 });
+    expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
+
+    // Back in the folder, it is a spreadsheet, and it opens again in the editor.
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.doc.back") }));
+    const listed = await screen.findByRole(
+      "button",
+      { name: `${i18n.t("drive.folder.kind.sheet")}: ${untitled}` },
+      { timeout: 15_000 },
+    );
+    await user.click(listed);
+    expect(await screen.findByTitle(untitled, {}, { timeout: 15_000 })).toBeTruthy();
+
+    // Nothing readable reached the server.
+    expect(server.received.join(" ")).not.toContain(untitled);
+    expect(server.received.join(" ")).not.toContain("somnus-spreadsheet");
+  }, 60_000);
+
   it("copies a link to a note, and the link opens it straight after unlocking", async () => {
     const user = userEvent.setup();
     const writeText = vi.fn().mockResolvedValue(undefined);

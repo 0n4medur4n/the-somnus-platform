@@ -4,6 +4,10 @@ import { Icon } from "../../components/ui/Icon.js";
 import { EmptyState } from "../../components/ui/ui.js";
 import { fromUtf8 } from "../crypto.js";
 import { docxToHtml, isDocx, previewPage } from "../documents/import-docx.js";
+import { isMarkdown, markdownPage, markdownToHtml } from "../documents/markdown.js";
+import { csvToSheets, isSheetFile, isXlsx, xlsxToSheets } from "../sheets/convert.js";
+import { SheetFrame } from "../sheets/SheetFrame.js";
+import type { StoredSheet } from "../sheets/sheet-format.js";
 import { isTextual, PREVIEWABLE_IMAGES } from "./drive-ui.js";
 
 type Preview =
@@ -11,6 +15,8 @@ type Preview =
   | { kind: "pdf"; url: string }
   | { kind: "image"; url: string }
   | { kind: "html"; page: string }
+  | { kind: "markdown"; page: string }
+  | { kind: "sheet"; sheets: StoredSheet[] }
   | { kind: "text"; text: string }
   | { kind: "none" };
 
@@ -22,7 +28,8 @@ function isPdf(mime: string | undefined, name: string | undefined): boolean {
  * A file opened full screen, like a drive's viewer. The bytes were decrypted in
  * this browser; the preview never leaves it. A PDF goes to the browser's own
  * viewer through a blob URL; a Word file is converted here to plain HTML and
- * shown in a sandboxed frame that may run nothing at all.
+ * shown in a sandboxed frame that may run nothing at all. Markdown takes the
+ * same road, and a spreadsheet opens read-only in its own isolated frame.
  */
 export function FileViewer({
   name,
@@ -30,6 +37,8 @@ export function FileViewer({
   bytes,
   canEditAsDocument,
   onEditAsDocument,
+  canEditAsSheet,
+  onEditAsSheet,
   onDownload,
   onClose,
 }: {
@@ -38,12 +47,15 @@ export function FileViewer({
   bytes: Uint8Array;
   canEditAsDocument: boolean;
   onEditAsDocument: () => void;
+  canEditAsSheet: boolean;
+  onEditAsSheet: () => void;
   onDownload: () => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
   const [preview, setPreview] = useState<Preview>({ kind: "loading" });
   const docx = isDocx(mime, name);
+  const sheet = isSheetFile(mime, name);
 
   useEffect(() => {
     let url: string | null = null;
@@ -63,6 +75,25 @@ export function FileViewer({
         .catch(() => {
           if (!cancelled) setPreview({ kind: "none" });
         });
+    } else if (isMarkdown(mime, name)) {
+      markdownToHtml(fromUtf8(bytes))
+        .then((html) => {
+          if (!cancelled) setPreview({ kind: "markdown", page: markdownPage(html) });
+        })
+        .catch(() => {
+          if (!cancelled) setPreview({ kind: "text", text: fromUtf8(bytes) });
+        });
+    } else if (sheet) {
+      (isXlsx(mime, name)
+        ? xlsxToSheets(bytes)
+        : Promise.resolve(csvToSheets(fromUtf8(bytes), name))
+      )
+        .then((sheets) => {
+          if (!cancelled) setPreview({ kind: "sheet", sheets });
+        })
+        .catch(() => {
+          if (!cancelled) setPreview({ kind: "none" });
+        });
     } else if (isTextual(mime)) {
       setPreview({ kind: "text", text: fromUtf8(bytes) });
     } else {
@@ -72,7 +103,7 @@ export function FileViewer({
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [bytes, mime, name, docx]);
+  }, [bytes, mime, name, docx, sheet]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -98,7 +129,10 @@ export function FileViewer({
         >
           <Icon name="arrowLeft" />
         </button>
-        <Icon name={docx ? "document" : "file"} className="h-5 w-5 shrink-0 text-somnus-primary" />
+        <Icon
+          name={sheet ? "table" : docx ? "document" : "file"}
+          className="h-5 w-5 shrink-0 text-somnus-primary"
+        />
         <h2 className="min-w-0 flex-1 truncate font-medium text-somnus-text">{name}</h2>
         {docx && canEditAsDocument ? (
           <button
@@ -108,6 +142,16 @@ export function FileViewer({
           >
             <Icon name="pencil" className="h-4 w-4" />
             {t("drive.viewer.editAsDocument")}
+          </button>
+        ) : null}
+        {sheet && canEditAsSheet ? (
+          <button
+            type="button"
+            onClick={onEditAsSheet}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-sm text-somnus-text hover:bg-white/5"
+          >
+            <Icon name="pencil" className="h-4 w-4" />
+            {t("drive.viewer.editAsSheet")}
           </button>
         ) : null}
         <button
@@ -139,6 +183,24 @@ export function FileViewer({
             sandbox=""
             srcDoc={preview.page}
             className="mx-auto block h-full w-full max-w-4xl border-0 bg-white"
+          />
+        ) : null}
+        {preview.kind === "markdown" ? (
+          <iframe
+            title={name}
+            // It can still run nothing; the one addition is that a link may
+            // open in a new tab, and only http, https and mail links survive.
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
+            srcDoc={preview.page}
+            className="block h-full w-full border-0 bg-white"
+          />
+        ) : null}
+        {preview.kind === "sheet" ? (
+          <SheetFrame
+            title={name}
+            sheets={preview.sheets}
+            readOnly
+            onFailed={() => setPreview({ kind: "none" })}
           />
         ) : null}
         {preview.kind === "text" ? (
