@@ -110,3 +110,34 @@ raised later).
   the palette's ten colours and the 37 console line icons (`DRIVE_ICONS`) are ever displayed -- anything
   else a member might have sealed is dropped on read. Emoji were tried first and replaced the same day at
   the owner's request ("los emojis se ven poco serios"); an emoji stored meanwhile is no longer shown.
+
+## Addendum -- Markdown preview and spreadsheets (owner decision 2026-10-31)
+
+- **Markdown files open formatted**, in GitHub's dialect (bold, tables, task lists, code), converted in the
+  browser (`marked`) and shown in the same `default-src 'none'` frame as a Word preview. Raw HTML in the source
+  is shown as text (a `<br>` survives, tables need it), an image becomes its description (fetching it would tell
+  an outside server the file was opened), and only http, https and mailto links stay links. This frame alone
+  adds `allow-popups allow-popups-to-escape-sandbox`, so a link can open in a new tab; it still runs nothing.
+- **Spreadsheets** are a second kind of thing to create, beside documents: a workbook with tabs, formulas,
+  formatting, filters and frozen panes (FortuneSheet, MIT). Stored as an ordinary Drive file of type
+  `application/vnd.somnus.spreadsheet+json`, same per-file key, block encryption and signatures; every save is a
+  new revision and a stale one is refused as a conflict. Export to `.xlsx` (ExcelJS) and CSV happens in the
+  browser, loaded only when used. A `.xlsx` or `.csv` previews read-only and can be turned into a Drive
+  spreadsheet; the source file stays as it was.
+- **The spreadsheet engine never runs in the console's page.** We read its source before adopting it: it writes
+  cell text into the page through `innerHTML` with only `<script>` filtered, so a cell holding
+  `<img onerror=...>` would run in the tab that holds the Drive's keys, and the console has no CSP. So the engine
+  lives in a `sandbox="allow-scripts"` frame: an opaque origin with no cookies, no storage, no reach into the
+  parent. Its own policy is `default-src 'none'`, one bootstrap script by hash (no `unsafe-inline`, so injected
+  handlers cannot run) and `unsafe-eval`, which the engine needs for row operations and to load itself; no
+  connection, no remote image or font. A real-browser test confirmed the policy is what stops it: the engine did
+  write the payload into the page, and Chromium refused to run it.
+- **What the frame gets and gives back.** It receives one workbook and returns only that workbook, which the
+  console checks for shape and treats as data. Only `frame-entry.tsx` may import the engine, and a test enforces
+  it. Neither the frame nor the console opens anything on a workbook's say-so: cell hyperlinks, inserted images
+  and sheet screenshots are not offered, because they need a way out of the frame.
+- `xlsx` parsing runs in the console's page, as Word conversion does: ExcelJS yields plain values and styles,
+  which go only to the frame. The legacy binary `.xls` is not read; it can still be downloaded.
+- The engine is a single script of about 3 MB fetched only when a spreadsheet opens. `vite dev` serves it in
+  pieces the frame cannot load, so spreadsheets need a built console (`vite build`, `vite preview`).
+- The server learns nothing new.

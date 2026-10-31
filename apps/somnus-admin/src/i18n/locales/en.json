@@ -549,7 +549,8 @@
         "folder": "Folder",
         "note": "Note",
         "file": "File",
-        "document": "Document"
+        "document": "Document",
+        "sheet": "Spreadsheet"
       }
     },
     "note": {
@@ -682,10 +683,11 @@
       "toConsole": "Console"
     },
     "viewer": {
-      "editAsDocument": "Edit as document"
+      "editAsDocument": "Edit as document",
+      "editAsSheet": "Edit as spreadsheet"
     },
     "doc": {
-      "new": "Document",
+      "new": "Text document",
       "untitled": "Untitled document",
       "title": "Document title",
       "body": "Document content",
@@ -740,6 +742,18 @@
         "deleteRow": "− Row",
         "deleteColumn": "− Column",
         "deleteTable": "Remove table"
+      }
+    },
+    "sheet": {
+      "new": "Spreadsheet",
+      "untitled": "Untitled spreadsheet",
+      "firstSheet": "Sheet 1",
+      "sheetLabel": "Sheet",
+      "title": "Spreadsheet title",
+      "failed": "The spreadsheet could not be loaded. Reload the page.",
+      "export": {
+        "xlsx": "Excel (.xlsx)",
+        "csv": "CSV (.csv), current sheet"
       }
     },
     "link": {

@@ -13,7 +13,7 @@ type Status = "saved" | "dirty" | "saving" | "error" | "conflict";
 /** Quiet time after the last keystroke before the document saves itself. */
 const AUTOSAVE_MS = 2500;
 
-function saveBlob(blob: Blob, name: string) {
+export function saveBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const link = Object.assign(document.createElement("a"), { href: url, download: name });
   document.body.append(link);
