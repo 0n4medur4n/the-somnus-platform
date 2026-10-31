@@ -39,8 +39,10 @@ resource "google_cloud_run_v2_service" "this" {
           cpu    = var.cpu
           memory = var.memory
         }
-        # No CPU throttling outside requests would defeat scale-to-zero
-        # cost policy (build plan §2); keep the default (throttled).
+        # Stated, never left out: with `limits` declared, omitting it gives CPU
+        # always allocated, not throttled, which is how every service ran until
+        # 2026-10-31. See var.cpu_idle.
+        cpu_idle = var.cpu_idle
       }
 
       ports {

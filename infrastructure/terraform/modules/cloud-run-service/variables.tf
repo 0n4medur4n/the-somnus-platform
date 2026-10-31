@@ -87,6 +87,18 @@ variable "memory" {
   default = "512Mi"
 }
 
+variable "cpu_idle" {
+  description = <<-EOT
+    True: CPU and memory are billed only while a request is in flight or the
+    instance is starting. False: every second the instance is alive is billed,
+    idle time included, so min instances 0 stops protecting the budget (build
+    plan §2): the edge-api warm ping alone keeps one instance billed 17 h a day.
+    Code here must not rely on CPU after the response is sent.
+  EOT
+  type        = bool
+  default     = true
+}
+
 variable "port" {
   description = "Container port. Build plan behavioral rule: services read PORT from the environment, default 8080."
   type        = number

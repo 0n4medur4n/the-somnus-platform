@@ -163,6 +163,7 @@ module "run_edge_api" {
   service_name          = "somnus-edge-api"
   service_account_email = module.sa_edge_api.email
   public                = true
+  cpu_idle              = false # Staged rollout: worker first, this line goes next.
   env_vars = {
     LOG_LEVEL          = "info"
     LOG_FORMAT         = "json"
@@ -215,6 +216,7 @@ module "run_identity" {
   service_name          = "somnus-identity-service"
   service_account_email = module.sa_identity.email
   public                = false
+  cpu_idle              = false # Staged rollout: worker first, this line goes last.
   # ADR 0008 wants this service private, and it is not, deliberately and
   # temporarily. `INTERNAL_ONLY` would block somnus-edge-api, which reaches this
   # service over its run.app URL with no VPC routing: Cloud Run is not a source
@@ -255,6 +257,7 @@ module "run_morpheo" {
   service_name          = "morpheo-service"
   service_account_email = module.sa_morpheo.email
   public                = false
+  cpu_idle              = false # Staged rollout: worker first, this line goes next.
   # ADR 0008 wants this service private, and it is not, deliberately and
   # temporarily. `INTERNAL_ONLY` would block somnus-edge-api, which reaches this
   # service over its run.app URL with no VPC routing: Cloud Run is not a source
@@ -302,6 +305,7 @@ module "run_report" {
   service_name          = "somnus-report-service"
   service_account_email = module.sa_report.email
   public                = false
+  cpu_idle              = false # Staged rollout: worker first, this line goes next.
   # ADR 0008 wants this service private, and it is not, deliberately and
   # temporarily. `INTERNAL_ONLY` would block somnus-edge-api, which reaches this
   # service over its run.app URL with no VPC routing: Cloud Run is not a source
