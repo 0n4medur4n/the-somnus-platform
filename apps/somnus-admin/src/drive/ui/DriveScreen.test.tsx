@@ -1,5 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useNavigate } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "../../lib/api.js";
 import type { DriveEdge } from "../../lib/edge.js";
@@ -184,6 +185,138 @@ describe("DriveScreen", () => {
 
     // Nothing readable reached the server.
     expect(server.received.join(" ")).not.toContain("Protocolo de guardia");
+  }, 60_000);
+
+  it("closes an open file with the browser's back button, and forward reopens it", async () => {
+    const user = userEvent.setup();
+    function History() {
+      const navigate = useNavigate();
+      return (
+        <>
+          <button type="button" onClick={() => void navigate(-1)}>
+            navegador-atras
+          </button>
+          <button type="button" onClick={() => void navigate(1)}>
+            navegador-adelante
+          </button>
+        </>
+      );
+    }
+    renderWithProviders(
+      <>
+        <DriveScreen />
+        <History />
+      </>,
+    );
+    await user.type(await screen.findByLabelText(i18n.t("drive.setup.passphrase")), PASSPHRASE);
+    await user.type(screen.getByLabelText(i18n.t("drive.setup.confirm")), PASSPHRASE);
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.setup.create") }));
+    await screen.findByTestId("recovery-code", {}, { timeout: 15_000 });
+    await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Historial");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
+    await user.click(
+      (await screen.findAllByRole("button", { name: /Historial/ }))[0] as HTMLElement,
+    );
+    await screen.findByRole("button", { name: i18n.t("drive.new") });
+
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+    await user.upload(
+      input as HTMLInputElement,
+      new File(["hola"], "guia.txt", { type: "text/plain" }),
+    );
+    await user.click(
+      await screen.findByRole(
+        "button",
+        { name: `${i18n.t("drive.folder.kind.file")}: guia.txt` },
+        { timeout: 15_000 },
+      ),
+    );
+    expect(
+      await screen.findByRole("dialog", { name: "guia.txt" }, { timeout: 15_000 }),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "navegador-atras" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "guia.txt" })).toBeNull());
+
+    await user.click(screen.getByRole("button", { name: "navegador-adelante" }));
+    expect(
+      await screen.findByRole("dialog", { name: "guia.txt" }, { timeout: 15_000 }),
+    ).toBeTruthy();
+  }, 60_000);
+
+  it("deletes a shared folder from its card, once its name is typed", async () => {
+    const user = userEvent.setup();
+    await setUp(user);
+    await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Borrador");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
+
+    await user.click(
+      await screen.findByRole(
+        "button",
+        { name: i18n.t("drive.actionsFor", { name: "Borrador" }) },
+        { timeout: 15_000 },
+      ),
+    );
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.delete") }));
+
+    const submit = screen.getByRole("button", { name: i18n.t("drive.members.deleteSubmit") });
+    expect(submit).toBeDisabled();
+    const field = screen.getByLabelText(i18n.t("drive.shares.deleteType", { value: "Borrador" }));
+    await user.type(field, "Borrado");
+    expect(submit).toBeDisabled();
+    await user.clear(field);
+    await user.type(field, "Borrador");
+    await user.click(submit);
+
+    expect(
+      await screen.findByText(i18n.t("drive.shares.empty"), {}, { timeout: 15_000 }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Borrador")).toBeNull();
+  }, 60_000);
+
+  it("creates a spreadsheet from New, and it opens again from the folder", async () => {
+    const user = userEvent.setup();
+    await setUp(user);
+    await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Protocolos");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
+    await user.click(
+      (await screen.findAllByRole("button", { name: /Protocolos/ }))[0] as HTMLElement,
+    );
+
+    // "New" offers both, and the spreadsheet opens straight away, in its frame.
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    expect(await screen.findByRole("menuitem", { name: i18n.t("drive.doc.new") })).toBeTruthy();
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.sheet.new") }));
+    const untitled = i18n.t("drive.sheet.untitled");
+    await screen.findByLabelText(i18n.t("drive.sheet.title"), {}, { timeout: 15_000 });
+    const frame = await screen.findByTitle(untitled, {}, { timeout: 15_000 });
+    expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
+
+    // Back in the folder, it is a spreadsheet, and it opens again in the editor.
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.doc.back") }));
+    const listed = await screen.findByRole(
+      "button",
+      { name: `${i18n.t("drive.folder.kind.sheet")}: ${untitled}` },
+      { timeout: 15_000 },
+    );
+    await user.click(listed);
+    expect(await screen.findByTitle(untitled, {}, { timeout: 15_000 })).toBeTruthy();
+
+    // Nothing readable reached the server.
+    expect(server.received.join(" ")).not.toContain(untitled);
+    expect(server.received.join(" ")).not.toContain("somnus-spreadsheet");
   }, 60_000);
 
   it("copies a link to a note, and the link opens it straight after unlocking", async () => {

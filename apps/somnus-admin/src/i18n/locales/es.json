@@ -487,7 +487,7 @@
     },
     "reset": {
       "heading": "Restablecer el Drive",
-      "warning": "Se crearán claves nuevas. Perderás el acceso a todas tus carpetas. Las que solo tú tenías se borrarán, porque ya nadie podrá abrirlas. Tus colegas podrán volver a compartirte las demás.",
+      "warning": "Se crearán claves nuevas. Saldrás de todas tus carpetas. Las que solo tú tenías se borrarán, porque ya nadie podrá abrirlas. Tu huella cambiará: para volver a las demás, un colega tendrá que confirmar tu huella nueva y añadirte otra vez. Si solo has olvidado tu frase y tienes el código de recuperación, usa el código: así no pierdes nada.",
       "confirmLabel": "Escribe RESTABLECER para confirmar",
       "confirmWord": "RESTABLECER",
       "submit": "Restablecer y crear claves nuevas"
@@ -508,7 +508,11 @@
       "create": "Crear carpeta",
       "members_one": "{{count}} persona",
       "members_other": "{{count}} personas",
-      "unreadable": "No se puede abrir esta carpeta"
+      "unreadable": "No se puede abrir esta carpeta",
+      "delete": "Eliminar carpeta",
+      "deleteWarning": "Se eliminará para todas las personas que tienen acceso, con todo su contenido. No se puede deshacer.",
+      "deleteType": "Escribe «{{value}}» para confirmar",
+      "deleteWord": "ELIMINAR"
     },
     "role": {
       "owner": "Propietaria",
@@ -549,7 +553,8 @@
         "folder": "Carpeta",
         "note": "Nota",
         "file": "Archivo",
-        "document": "Documento"
+        "document": "Documento",
+        "sheet": "Hoja de cálculo"
       }
     },
     "note": {
@@ -605,7 +610,7 @@
       "unknown": "Sin Drive configurado"
     },
     "trustHelp": {
-      "changed": "La clave de esta persona no es la que conocías. Puede que haya restablecido su Drive, o que alguien intente suplantarla. Confírmalo con ella antes de aceptar la clave nueva."
+      "changed": "La clave de esta persona no es la que conocías. Puede que haya restablecido su Drive, o que alguien intente suplantarla. Confirma con ella su huella nueva antes de añadirla."
     },
     "problem": {
       "wrong_secret": "La frase o el código no son correctos.",
@@ -682,10 +687,12 @@
       "toConsole": "Consola"
     },
     "viewer": {
-      "editAsDocument": "Editar como documento"
+      "editAsDocument": "Editar como documento",
+      "editAsSheet": "Editar como hoja de cálculo",
+      "openInTab": "Abrir en una pestaña nueva"
     },
     "doc": {
-      "new": "Documento",
+      "new": "Documento de texto",
       "untitled": "Documento sin título",
       "title": "Título del documento",
       "body": "Contenido del documento",
@@ -740,6 +747,18 @@
         "deleteRow": "− Fila",
         "deleteColumn": "− Columna",
         "deleteTable": "Quitar tabla"
+      }
+    },
+    "sheet": {
+      "new": "Hoja de cálculo",
+      "untitled": "Hoja de cálculo sin título",
+      "firstSheet": "Hoja 1",
+      "sheetLabel": "Hoja",
+      "title": "Título de la hoja de cálculo",
+      "failed": "No se ha podido cargar la hoja de cálculo. Recarga la página.",
+      "export": {
+        "xlsx": "Excel (.xlsx)",
+        "csv": "CSV (.csv), hoja actual"
       }
     },
     "link": {
@@ -810,6 +829,26 @@
         "home": "Inicio",
         "briefcase": "Negocio"
       }
+    },
+    "notes": {
+      "title": "Notas del archivo",
+      "heading_one": "{{count}} nota",
+      "heading_other": "{{count}} notas",
+      "close": "Cerrar las notas",
+      "add": "Añadir nota",
+      "addHere": "+ Nota",
+      "write": "Escribe una nota…",
+      "done": "Resuelta",
+      "delete": "Eliminar la nota",
+      "goTo": "Ir a esta nota en el archivo",
+      "page": "Página",
+      "onPage": "Página {{page}}",
+      "lostPlace": "Ya no está en el texto: «{{quote}}»",
+      "empty": "Sin notas. Pasa el ratón por un párrafo o una pregunta y pulsa «+ Nota».",
+      "emptyPdf": "Sin notas. Escribe una abajo e indica la página.",
+      "emptyRead": "Sin notas.",
+      "pickPlace": "Se añadirá como nota general. Elige un párrafo para colocarla en él.",
+      "clearPlace": "Quitar el lugar de la nota"
     }
   },
   "charts": {

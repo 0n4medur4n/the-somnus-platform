@@ -487,7 +487,7 @@
     },
     "reset": {
       "heading": "Reset the Drive",
-      "warning": "New keys will be created. You will lose access to all your folders. Folders only you had are deleted, because nobody can open them any more. Colleagues can share the others with you again.",
+      "warning": "New keys will be created. You will leave all your folders. Those only you had will be deleted, because nobody can open them any more. Your fingerprint will change: to get back into the others, a colleague must confirm your new fingerprint and add you again. If you only forgot your passphrase and have your recovery code, use the code: you lose nothing that way.",
       "confirmLabel": "Type RESET to confirm",
       "confirmWord": "RESET",
       "submit": "Reset and create new keys"
@@ -508,7 +508,11 @@
       "create": "Create folder",
       "members_one": "{{count}} person",
       "members_other": "{{count}} people",
-      "unreadable": "This folder cannot be opened"
+      "unreadable": "This folder cannot be opened",
+      "delete": "Delete folder",
+      "deleteWarning": "It will be deleted for everyone with access, with everything in it. This cannot be undone.",
+      "deleteType": "Type “{{value}}” to confirm",
+      "deleteWord": "DELETE"
     },
     "role": {
       "owner": "Owner",
@@ -549,7 +553,8 @@
         "folder": "Folder",
         "note": "Note",
         "file": "File",
-        "document": "Document"
+        "document": "Document",
+        "sheet": "Spreadsheet"
       }
     },
     "note": {
@@ -605,7 +610,7 @@
       "unknown": "No Drive set up"
     },
     "trustHelp": {
-      "changed": "This person's key is not the one you knew. They may have reset their Drive, or someone may be impersonating them. Confirm with them before accepting the new key."
+      "changed": "This person's key is not the one you knew. They may have reset their Drive, or someone may be trying to impersonate them. Confirm their new fingerprint with them before adding them."
     },
     "problem": {
       "wrong_secret": "The passphrase or code is not right.",
@@ -682,10 +687,12 @@
       "toConsole": "Console"
     },
     "viewer": {
-      "editAsDocument": "Edit as document"
+      "editAsDocument": "Edit as document",
+      "editAsSheet": "Edit as spreadsheet",
+      "openInTab": "Open in a new tab"
     },
     "doc": {
-      "new": "Document",
+      "new": "Text document",
       "untitled": "Untitled document",
       "title": "Document title",
       "body": "Document content",
@@ -740,6 +747,18 @@
         "deleteRow": "− Row",
         "deleteColumn": "− Column",
         "deleteTable": "Remove table"
+      }
+    },
+    "sheet": {
+      "new": "Spreadsheet",
+      "untitled": "Untitled spreadsheet",
+      "firstSheet": "Sheet 1",
+      "sheetLabel": "Sheet",
+      "title": "Spreadsheet title",
+      "failed": "The spreadsheet could not be loaded. Reload the page.",
+      "export": {
+        "xlsx": "Excel (.xlsx)",
+        "csv": "CSV (.csv), current sheet"
       }
     },
     "link": {
@@ -810,6 +829,26 @@
         "home": "Home",
         "briefcase": "Business"
       }
+    },
+    "notes": {
+      "title": "Notes on this file",
+      "heading_one": "{{count}} note",
+      "heading_other": "{{count}} notes",
+      "close": "Close the notes",
+      "add": "Add note",
+      "addHere": "+ Note",
+      "write": "Write a note…",
+      "done": "Resolved",
+      "delete": "Delete the note",
+      "goTo": "Go to this note in the file",
+      "page": "Page",
+      "onPage": "Page {{page}}",
+      "lostPlace": "No longer in the text: “{{quote}}”",
+      "empty": "No notes. Hover over a paragraph or a question and press “+ Note”.",
+      "emptyPdf": "No notes. Write one below and give its page.",
+      "emptyRead": "No notes.",
+      "pickPlace": "It will be added as a general note. Choose a paragraph to place it there.",
+      "clearPlace": "Remove the note's place"
     }
   },
   "charts": {

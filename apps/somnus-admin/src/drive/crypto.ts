@@ -683,6 +683,8 @@ export type NodeMeta = {
   size?: number;
   /** A note written in the console (usage instructions, protocols) rather than an uploaded file. */
   note?: boolean;
+  /** The notes on another node, not a file of its own: see `notes-format.ts`. */
+  notesFor?: string;
   /** How it looks in the Drive (owner decision 2026-10-29): see `appearance.ts`. */
   color?: DriveColor;
   icon?: DriveIcon;

@@ -34,6 +34,16 @@ import type {
   DriveSession,
   DriveShareEntry,
 } from "../drive-session.js";
+import { useNotes } from "../notes/use-notes.js";
+import { csvToSheets, isSheetFile, isXlsx, xlsxToSheets } from "../sheets/convert.js";
+import { SheetEditor } from "../sheets/SheetEditor.js";
+import {
+  decodeSheets,
+  emptySheets,
+  encodeSheets,
+  SHEET_MIME,
+  type StoredSheet,
+} from "../sheets/sheet-format.js";
 import { AppearanceDialog, ItemGlyph, tint } from "./appearance-ui.js";
 import { ChangePassphrase, OwnFingerprint } from "./DriveAccess.js";
 import { DriveGuideContent } from "./DriveGuide.js";
@@ -50,12 +60,13 @@ import {
 } from "./drive-ui.js";
 import { FileViewer } from "./FileViewer.js";
 
-type Kind = "folder" | "note" | "document" | "image" | "file";
+type Kind = "folder" | "note" | "document" | "sheet" | "image" | "file";
 
 function kindOf(item: DriveItem): Kind {
   if (item.node.kind === "folder") return "folder";
   if (item.meta?.note) return "note";
   if (item.meta?.mime === DOCUMENT_MIME) return "document";
+  if (item.meta?.mime === SHEET_MIME) return "sheet";
   if (item.meta?.mime && PREVIEWABLE_IMAGES.has(item.meta.mime)) return "image";
   return "file";
 }
@@ -64,6 +75,7 @@ const KIND_ICON: Record<Kind, IconName> = {
   folder: "folder",
   note: "note",
   document: "document",
+  sheet: "table",
   image: "image",
   file: "file",
 };
@@ -86,6 +98,7 @@ type Dialog =
   | { kind: "renameShare" }
   | { kind: "move"; item: DriveItem }
   | { kind: "purge"; item: DriveItem }
+  | { kind: "deleteShare"; share: DriveShareEntry }
   | { kind: "guide" }
   | { kind: "security" };
 
@@ -154,11 +167,11 @@ export function DriveWorkspace({
   const setTrash = (on: boolean) =>
     go({ share: view?.shareId ?? shareParam, ...(on ? { trash: true } : {}) });
   const [viewer, setViewer] = useState<{ item: DriveItem; bytes: Bytes } | null>(null);
-  const [doc, setDoc] = useState<{
-    id: string;
-    title: string;
-    content: JSONContent;
-  } | null>(null);
+  const [doc, setDoc] = useState<
+    | { kind: "document"; id: string; title: string; content: JSONContent }
+    | { kind: "sheet"; id: string; title: string; sheets: StoredSheet[] }
+    | null
+  >(null);
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState<Dialog>({ kind: "none" });
@@ -248,6 +261,13 @@ export function DriveWorkspace({
   }
 
   const canEdit = view !== null && view.role !== "viewer";
+  const openDocument = doc?.kind === "document" ? doc.id : null;
+  const notes = useNotes(
+    session,
+    view?.shareId ?? null,
+    viewer?.item ?? view?.items.find((i) => i.node.id === openDocument) ?? null,
+    canEdit,
+  );
   const isOwner = view?.role === "owner";
   const byId = new Map(view?.items.map((i) => [i.node.id, i]) ?? []);
   const current = folderId ?? view?.rootId ?? null;
@@ -319,7 +339,7 @@ export function DriveWorkspace({
       setQuery("");
       return;
     }
-    if (kind === "document") {
+    if (kind === "document" || kind === "sheet") {
       go({ share: view.shareId, folder: current, doc: item.node.id });
       return;
     }
@@ -329,7 +349,8 @@ export function DriveWorkspace({
   async function show(item: DriveItem) {
     if (!view) return;
     const bytes = await run(() => session.readFile(view, item));
-    if (!bytes) return;
+    // The person may have gone back while it was decrypting.
+    if (!bytes || shownFile.current !== item.node.id) return;
     if (kindOf(item) === "note") {
       setDialog({ kind: "readNote", item, body: fromUtf8(bytes) });
     } else {
@@ -346,8 +367,11 @@ export function DriveWorkspace({
 
   // The file in the URL, once its folder is open: shown once, not on every reload.
   useEffect(() => {
+    // No file in the URL: the browser's back button closes it, like our own arrow.
     if (!fileParam) {
       shownFile.current = null;
+      setViewer(null);
+      setDialog((d) => (d.kind === "readNote" ? { kind: "none" } : d));
       return;
     }
     if (!view || shownFile.current === fileParam) return;
@@ -374,7 +398,8 @@ export function DriveWorkspace({
       if (item.node.parentId && item.node.parentId !== view.rootId) {
         p.set("folder", item.node.parentId);
       }
-      p.set(kindOf(item) === "document" ? "doc" : "file", item.node.id);
+      const kind = kindOf(item);
+      p.set(kind === "document" || kind === "sheet" ? "doc" : "file", item.node.id);
     }
     return `${window.location.origin}/drive?${p.toString()}`;
   }
@@ -405,6 +430,21 @@ export function DriveWorkspace({
     go({ share: view.shareId, folder: current, doc: id });
   }
 
+  async function createSheet(sheets: StoredSheet[], title: string) {
+    if (!view || !current) return;
+    const id = await run(() =>
+      session.writeFile(view, {
+        parentId: current,
+        name: title,
+        mime: SHEET_MIME,
+        bytes: encodeSheets(sheets),
+      }),
+    );
+    if (!id) return;
+    await reload();
+    go({ share: view.shareId, folder: current, doc: id });
+  }
+
   async function editAsDocument(item: DriveItem, bytes: Uint8Array) {
     const content = await run(() => docxToDocument(bytes));
     if (!content) return;
@@ -412,7 +452,17 @@ export function DriveWorkspace({
     await createDocument(content, (item.meta?.name ?? "").replace(/\.docx$/i, ""));
   }
 
-  // The document in the URL, decrypted, once its folder is open.
+  async function editAsSheet(item: DriveItem, bytes: Uint8Array) {
+    const name = item.meta?.name ?? "";
+    const sheets = await run(async () =>
+      isXlsx(item.meta?.mime, name) ? xlsxToSheets(bytes) : csvToSheets(fromUtf8(bytes), name),
+    );
+    if (!sheets) return;
+    setViewer(null);
+    await createSheet(sheets, name.replace(/\.(xlsx|csv)$/i, ""));
+  }
+
+  // The document or spreadsheet in the URL, decrypted, once its folder is open.
   useEffect(() => {
     if (!docParam || !view) {
       setDoc(null);
@@ -420,7 +470,8 @@ export function DriveWorkspace({
     }
     if (doc?.id === docParam) return;
     const item = view.items.find((i) => i.node.id === docParam);
-    if (!item || item.node.trashedAt || kindOf(item) !== "document") {
+    const kind = item ? kindOf(item) : null;
+    if (!item || item.node.trashedAt || (kind !== "document" && kind !== "sheet")) {
       go({ share: view.shareId, folder: current }, true);
       return;
     }
@@ -428,18 +479,28 @@ export function DriveWorkspace({
     void (async () => {
       const bytes = await run(() => session.readFile(view, item));
       if (cancelled || !bytes) return;
-      setDoc({
-        id: item.node.id,
-        title: item.meta?.name ?? "",
-        content: decodeDocument(bytes).content,
-      });
+      const title = item.meta?.name ?? "";
+      setDoc(
+        kind === "sheet"
+          ? {
+              kind,
+              id: item.node.id,
+              title,
+              sheets: decodeSheets(bytes) ?? emptySheets(t("drive.sheet.firstSheet")),
+            }
+          : { kind: "document", id: item.node.id, title, content: decodeDocument(bytes).content },
+      );
     })();
     return () => {
       cancelled = true;
     };
   }, [docParam, view?.shareId]);
 
-  async function saveDocument(title: string, content: JSONContent): Promise<SaveOutcome> {
+  async function saveRevision(
+    title: string,
+    mime: string,
+    bytes: Uint8Array,
+  ): Promise<SaveOutcome> {
     if (!view || !doc) return "error";
     const fresh = await session.openShare(view.shareId).catch(() => null);
     const item = fresh?.items.find((i) => i.node.id === doc.id);
@@ -449,8 +510,8 @@ export function DriveWorkspace({
         parentId: item.node.parentId ?? fresh.rootId,
         existing: item,
         name: title,
-        mime: DOCUMENT_MIME,
-        bytes: encodeDocument(content),
+        mime,
+        bytes,
       });
     } catch (error) {
       return error instanceof ApiRequestError && error.status === 409 ? "conflict" : "error";
@@ -458,6 +519,12 @@ export function DriveWorkspace({
     await reload();
     return "saved";
   }
+
+  const saveDocument = (title: string, content: JSONContent) =>
+    saveRevision(title, DOCUMENT_MIME, encodeDocument(content));
+
+  const saveSheet = (title: string, sheets: StoredSheet[]) =>
+    saveRevision(title, SHEET_MIME, encodeSheets(sheets));
 
   async function download(item: DriveItem) {
     if (!view) return;
@@ -576,6 +643,12 @@ export function DriveWorkspace({
               void createDocument({ type: "doc", content: [] }, t("drive.doc.untitled")),
           },
           {
+            label: t("drive.sheet.new"),
+            icon: "table" as const,
+            onSelect: () =>
+              void createSheet(emptySheets(t("drive.sheet.firstSheet")), t("drive.sheet.untitled")),
+          },
+          {
             label: t("drive.folder.newNote"),
             icon: "note" as const,
             onSelect: () => setDialog({ kind: "newNote" }),
@@ -603,7 +676,19 @@ export function DriveWorkspace({
       : (item.author.email ?? t("drive.folder.unknownAuthor"));
 
   if (docParam) {
-    return doc && view ? (
+    if (doc?.kind === "sheet" && view) {
+      return (
+        <SheetEditor
+          key={doc.id}
+          initialTitle={doc.title}
+          initialSheets={doc.sheets}
+          readOnly={!canEdit}
+          onSave={saveSheet}
+          onClose={() => go({ share: view.shareId, folder: current })}
+        />
+      );
+    }
+    return doc?.kind === "document" && view ? (
       <DocumentEditor
         key={doc.id}
         initialTitle={doc.title}
@@ -611,6 +696,7 @@ export function DriveWorkspace({
         readOnly={!canEdit}
         onSave={saveDocument}
         onClose={() => go({ share: view.shareId, folder: current })}
+        notes={notes}
       />
     ) : (
       <p className="p-8 text-center text-somnus-subtle">
@@ -628,10 +714,13 @@ export function DriveWorkspace({
           bytes={viewer.bytes}
           canEditAsDocument={canEdit && isDocx(viewer.item.meta?.mime, viewer.item.meta?.name)}
           onEditAsDocument={() => void editAsDocument(viewer.item, viewer.bytes)}
+          canEditAsSheet={canEdit && isSheetFile(viewer.item.meta?.mime, viewer.item.meta?.name)}
+          onEditAsSheet={() => void editAsSheet(viewer.item, viewer.bytes)}
           onDownload={() =>
             saveBytes(viewer.bytes, viewer.item.meta?.name ?? t("drive.folder.kind.file"))
           }
           onClose={closeFile}
+          notes={notes}
         />
       ) : null}
       <div
@@ -863,6 +952,7 @@ export function DriveWorkspace({
                   shares={shares}
                   onOpen={(id) => void openShare(id)}
                   onCreate={() => setDialog({ kind: "newShare" })}
+                  onDelete={(share) => setDialog({ kind: "deleteShare", share })}
                 />
               ) : visible.length === 0 ? (
                 trash ? (
@@ -1201,6 +1291,20 @@ export function DriveWorkspace({
           }}
         />
       ) : null}
+      {dialog.kind === "deleteShare" ? (
+        <DeleteShareDialog
+          share={dialog.share}
+          busy={task.busy}
+          error={task.error}
+          onClose={() => setDialog({ kind: "none" })}
+          onDelete={async () => {
+            const ok = await run(() => session.deleteShare(dialog.share.shareId));
+            if (ok === null) return;
+            setDialog({ kind: "none" });
+            await refreshShares();
+          }}
+        />
+      ) : null}
       {dialog.kind === "purge" && view ? (
         <Modal title={t("drive.trash.purge")} onClose={() => setDialog({ kind: "none" })}>
           <p className="text-somnus-text">
@@ -1465,10 +1569,12 @@ function ShareGrid({
   shares,
   onOpen,
   onCreate,
+  onDelete,
 }: {
   shares: DriveShareEntry[] | null;
   onOpen: (shareId: string) => void;
   onCreate: () => void;
+  onDelete: (share: DriveShareEntry) => void;
 }) {
   const { t } = useTranslation();
   if (shares === null) return <p className="text-sm text-somnus-subtle">{t("drive.loading")}</p>;
@@ -1488,12 +1594,12 @@ function ShareGrid({
       </h2>
       <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {shares.map((share) => (
-          <li key={share.shareId}>
+          <li key={share.shareId} className="relative">
             <button
               type="button"
               disabled={share.name === null}
               onClick={() => onOpen(share.shareId)}
-              className="flex w-full items-center gap-4 rounded-xl border border-white/[0.06] bg-somnus-background/40 p-4 text-left transition hover:border-somnus-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center gap-4 rounded-xl border border-white/[0.06] bg-somnus-background/40 p-4 pr-12 text-left transition hover:border-somnus-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-somnus-primary/10 text-somnus-primary"
@@ -1517,10 +1623,85 @@ function ShareGrid({
                 )}
               </span>
             </button>
+            {/* Beside the card, not inside it: an owner can still delete a folder
+                that no longer opens. */}
+            {share.role === "owner" ? (
+              // No transform here: it would trap the open menu under the next row.
+              <div className="absolute right-2 top-5">
+                <Menu
+                  label={t("drive.actionsFor", {
+                    name: share.name ?? t("drive.shares.unreadable"),
+                  })}
+                  items={[
+                    {
+                      label: t("drive.shares.delete"),
+                      icon: "trash",
+                      danger: true,
+                      onSelect: () => onDelete(share),
+                    },
+                  ]}
+                />
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+/**
+ * Deleting a shared folder takes it from everyone, with everything in it, and
+ * cannot be undone: it asks for the folder's name, or for a word when the name
+ * cannot be read.
+ */
+function DeleteShareDialog({
+  share,
+  busy,
+  error,
+  onClose,
+  onDelete,
+}: {
+  share: DriveShareEntry;
+  busy: boolean;
+  error: string | null;
+  onClose: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useTranslation();
+  const [typed, setTyped] = useState("");
+  const expected = share.name ?? t("drive.shares.deleteWord");
+  return (
+    <Modal title={t("drive.shares.delete")} onClose={onClose}>
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (typed === expected) onDelete();
+        }}
+      >
+        <Notice tone="danger">{t("drive.shares.deleteWarning")}</Notice>
+        <Field
+          label={t("drive.shares.deleteType", { value: expected })}
+          value={typed}
+          autoComplete="off"
+          onChange={(event) => setTyped(event.target.value)}
+        />
+        {error ? <Notice tone="danger">{error}</Notice> : null}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t("drive.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            className="bg-somnus-danger text-somnus-background"
+            disabled={busy || typed !== expected}
+          >
+            {busy ? t("drive.working") : t("drive.members.deleteSubmit")}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

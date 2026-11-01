@@ -14,6 +14,8 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@fortune-sheet/core": "1.0.4",
+    "@fortune-sheet/react": "1.0.4",
     "@hookform/resolvers": "5.7.1",
     "@somnus/api-contracts": "workspace:*",
     "@tanstack/react-query": "5.101.4",
@@ -38,9 +40,11 @@
     "@tiptap/pm": "3.31.4",
     "@tiptap/react": "3.31.4",
     "docx": "9.8.1",
+    "exceljs": "4.4.0",
     "firebase": "12.17.0",
     "i18next": "26.3.6",
     "mammoth": "1.13.0",
+    "marked": "18.1.2",
     "pdfmake": "0.3.11",
     "react": "19.2.8",
     "react-dom": "19.2.8",

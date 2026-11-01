@@ -110,3 +110,93 @@ raised later).
   the palette's ten colours and the 37 console line icons (`DRIVE_ICONS`) are ever displayed -- anything
   else a member might have sealed is dropped on read. Emoji were tried first and replaced the same day at
   the owner's request ("los emojis se ven poco serios"); an emoji stored meanwhile is no longer shown.
+
+## Addendum -- Markdown preview and spreadsheets (owner decision 2026-10-31)
+
+- **Markdown files open formatted**, in GitHub's dialect (bold, tables, task lists, code), converted in the
+  browser (`marked`) and shown in the same `default-src 'none'` frame as a Word preview. Raw HTML in the source
+  is shown as text (a `<br>` survives, tables need it), an image becomes its description (fetching it would tell
+  an outside server the file was opened), and only http, https and mailto links stay links. This frame alone
+  adds `allow-popups allow-popups-to-escape-sandbox`, so a link can open in a new tab; it still runs nothing.
+- **Spreadsheets** are a second kind of thing to create, beside documents: a workbook with tabs, formulas,
+  formatting, filters and frozen panes (FortuneSheet, MIT). Stored as an ordinary Drive file of type
+  `application/vnd.somnus.spreadsheet+json`, same per-file key, block encryption and signatures; every save is a
+  new revision and a stale one is refused as a conflict. Export to `.xlsx` (ExcelJS) and CSV happens in the
+  browser, loaded only when used. A `.xlsx` or `.csv` previews read-only and can be turned into a Drive
+  spreadsheet; the source file stays as it was.
+- **The spreadsheet engine never runs in the console's page.** We read its source before adopting it: it writes
+  cell text into the page through `innerHTML` with only `<script>` filtered, so a cell holding
+  `<img onerror=...>` would run in the tab that holds the Drive's keys, and the console has no CSP. So the engine
+  lives in a `sandbox="allow-scripts"` frame: an opaque origin with no cookies, no storage, no reach into the
+  parent. Its own policy is `default-src 'none'`, one bootstrap script by hash (no `unsafe-inline`, so injected
+  handlers cannot run) and `unsafe-eval`, which the engine needs for row operations and to load itself; no
+  connection, no remote image or font. A real-browser test confirmed the policy is what stops it: the engine did
+  write the payload into the page, and Chromium refused to run it.
+- **What the frame gets and gives back.** It receives one workbook and returns only that workbook, which the
+  console checks for shape and treats as data. Only `frame-entry.tsx` may import the engine, and a test enforces
+  it. Neither the frame nor the console opens anything on a workbook's say-so: cell hyperlinks, inserted images
+  and sheet screenshots are not offered, because they need a way out of the frame.
+- `xlsx` parsing runs in the console's page, as Word conversion does: ExcelJS yields plain values and styles,
+  which go only to the frame. The legacy binary `.xls` is not read; it can still be downloaded.
+- The engine is a single script of about 3 MB fetched only when a spreadsheet opens. `vite dev` serves it in
+  pieces the frame cannot load, so spreadsheets need a built console (`vite build`, `vite preview`).
+- The server learns nothing new.
+
+## Addendum -- resets and deleting a shared folder (owner report 2026-11-01)
+
+- **A reset is a new identity, and it has a way back.** Changing the passphrase, with the current one or the
+  recovery code, re-wraps the same keys: nothing changes for anyone else. A reset makes new keys and takes the
+  person out of every folder, so "accept their new key", offered only on a folder's member list, could never be
+  reached: the owner saw them flagged as changed with no way to add them. The add form now accepts the new key
+  itself, behind the same confirmation of the fingerprint with the person. Trust is still never silent.
+- **The directory is read when it matters.** It used to be read once, when the Drive opened, so in a long-lived
+  tab a colleague who joined stayed invisible and one who reset was offered with their old key. It is read again
+  when the people panel opens, and always before wrapping a folder key (adding a member, rotating on removal). A
+  key that changed unseen is refused rather than wrapped.
+- **Owners delete a shared folder from its card**, as well as from the bottom of the people panel: the folder's
+  name must be typed, or a word when the name cannot be read, so an owner can also delete a folder that no longer
+  opens.
+
+## Addendum -- HTML files (owner decision 2026-11-01)
+
+- **An HTML file runs, but never as the console.** A page often is its scripts (the Morpheo engine explainer is a
+  self-contained app), so previews that strip them are useless; but opened directly, or from a blob URL, it would
+  run in the console's origin, next to the sign-in. It runs instead in a `sandbox="allow-scripts"` frame: an opaque
+  origin with no cookies, storage or reach into any other page, in the viewer and in the tab "Open in a new tab"
+  gives, which is a script-free holder page plus that frame. It may write to the clipboard, so a page's own copy
+  button works, and never read it.
+- **Nothing comes in or goes out.** The holder's policy is `default-src 'none'` with inline scripts and styles,
+  `unsafe-eval`, and `data:`/`blob:` images and fonts. The frame inherits it from its `srcdoc` parent, so the file
+  is not edited and cannot run before the policy is in force. Navigating the frame away is refused too, by the
+  policy, which falls back to `default-src` for frames. A hostile file tried in Chromium (remote script, style and
+  image, fetch, beacon, WebSocket, form, popup, navigating itself and the top page, reading cookies, storage and
+  the parent) reached a listening server zero times.
+- **The price:** a page that needs a CDN, a web font, a remote image or an API shows without it, its outbound links
+  do nothing, and `localStorage` throws. Download it to use it fully. The tab is a decrypted copy held by a blob URL:
+  it is revoked when the file is closed in the Drive, so reloading the tab then fails, though a tab already open
+  keeps showing the page after the Drive locks.
+
+## Addendum -- notes on files, and the back button (owner decision 2026-11-01)
+
+- **Notes** go on PDFs, Markdown, Word previews and Drive documents, for the team's working questions. They are
+  shared with everyone who can open the folder; anyone who can edit it can write them, and a viewer only reads.
+- **The server sees one more file.** Notes live in a companion Drive file (`application/vnd.somnus.notes+json`,
+  marked `notesFor` in its sealed metadata) beside the annotated file: same folder key, block encryption and
+  signatures, no server change. The session keeps it out of `view.items`, so no listing, search or trash shows it,
+  and moves and purges it with its file. A stale revision (two people writing at once) re-reads and reapplies the
+  change. The companion is signed as a whole by whoever wrote last, so a note's author is a label among colleagues,
+  not proof against a member rewriting the file.
+- **Where a note sits.** A PDF note has a page: the browser's own viewer cannot be marked or read from outside, so
+  the number is typed, and choosing the note reopens the viewer at that page. Other notes hold their block's first
+  words and position; if the text moves the note follows it, and if the text is gone the note says so and stays
+  listed rather than attaching itself elsewhere. In a Drive document the highlight is an editor decoration: it is
+  not saved, marks nothing as changed, and no export carries it. No export carries notes at all.
+- **The preview frame.** A file with no notes keeps the frame that may run nothing. Once it has notes, or the panel
+  is opened, the frame also runs one script, named in its policy by hash (no `unsafe-inline`, no `unsafe-eval`), to
+  find blocks and draw marks; the frame stays an opaque origin with no connection. The file's content still runs
+  nothing: in Chromium a `<script>`, inline handlers, a `javascript:` link, a form and remote images in a preview
+  were all refused, and a server listening outside received nothing. What the frame sends back is only a block
+  number, checked against the blocks it reported, and their text, used as the note's quote.
+- **Back and forward.** An open file is in the URL, but going back only cleared the URL and left the viewer on top.
+  Going back now closes the file, or an open note, and forward reopens it.
+

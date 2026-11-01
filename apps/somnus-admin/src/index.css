@@ -104,6 +104,39 @@ body {
     min-height: 70vh;
   }
 }
+/* A block with notes, in a document: the same yellow as the note beside it. */
+.somnus-doc .somnus-noted {
+  position: relative;
+  padding-left: 0.6rem;
+  padding-right: 2.2rem;
+  background: #fff3bf;
+  box-shadow: inset 4px 0 #e0a800;
+  border-radius: 4px;
+}
+.somnus-doc .somnus-noted::after {
+  content: attr(data-somnus-count);
+  position: absolute;
+  right: 0.35rem;
+  top: 0.2rem;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.2rem;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: #e0a800;
+  color: #1f2328;
+  font:
+    700 0.75rem / 1.4rem Arial,
+    sans-serif;
+  text-align: center;
+}
+.somnus-doc .somnus-done {
+  background: #eef1f4;
+  box-shadow: inset 4px 0 #afb8c1;
+}
+.somnus-doc .somnus-done::after {
+  background: #afb8c1;
+}
 .somnus-doc {
   min-height: calc(297mm - 50.8mm);
   font-family: Arial, Helvetica, sans-serif;
