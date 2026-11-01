@@ -19,8 +19,8 @@ class, and its AI likely high-risk under the EU AI Act.
   in Python (Prompt 0 audit: ~2.3–3.4 GB read per query at 50,000 chunks × 3072
   dimensions, on a 512 MiB service).
 - The SPAs reach `somnus-edge-api` through a Firebase Hosting rewrite of `/v1/**`
-  on their own origin (ADR 0017). Hosting caps a rewritten request at 60 seconds;
-  whether it buffers a streamed response is not documented.
+  on their own origin (ADR 0017). Hosting caps a rewritten request at 60 seconds
+  and buffers the whole response (measured, section 2.11).
 - Identity has organisation invitations (the only door into a Nox organisation,
   Addendum A Checkpoint 14.2), professional verification and roles, but no Nox
   permission and no per-organisation Nox entitlement.
@@ -113,26 +113,43 @@ encryption at rest).
 
 ### 2.11 Streaming
 
-Streaming is a requirement (owner, 2026-10-29); polling is no longer a fallback.
-The spike (Prompt 11, run separately) decides between:
+Streaming is a requirement (owner, 2026-10-29); polling is not an option. The
+spike (Prompt 11) measured the options on 2026-10-29
+(`spikes/nox-sse/RESULTS.md` on branch `spike/nox-sse`, which is never merged):
 
-- **Plan A:** a **resumable SSE stream through the Hosting rewrite**: each
-  connection stays under 55 s and the browser reconnects with `Last-Event-ID`.
-- **Plan B**, only if the spike shows that Hosting buffers the stream: a dedicated
-  stream host on a custom domain of the same site, with a single-use, short-lived
-  stream ticket issued by the same-origin API, so no cross-site cookies are needed.
-  The session cookie is first-party only on the SPA's own origin, through the
-  Hosting rewrite (ADR 0017, which supersedes ADR 0016); a dedicated stream host
-  is cross-origin, so it cannot rely on that cookie, and that is why plan B uses a
-  ticket and remains valid. It needs a custom domain mapping or a load balancer;
-  their cost and region availability are **no confirmado**. For reference only,
-  the superseded ADR 0016 recorded on 2026-10-05 a load balancer at ~18–20
-  USD/month and Cloud Run domain mapping as unavailable in `europe-west3`.
-  Plan B also exposes a second public endpoint (the stream host), so it would need
-  its own exception to ADR 0008, decided only if the spike shows that plan A fails.
+- **Firebase Hosting** buffers the whole response, delivers it only when it ends
+  and cuts at 60 seconds. POST gets 502 at 60.1 s; GET gets 503 first byte timeout
+  at 186 s; a resumable 55-second stream arrives in three blocks.
+- **Cloud Run directly** streams one event per second without buffering, in GET
+  and POST, in Chrome.
 
-A direct `*.run.app` URL with the session cookie is not an option: it makes the
-cookie cross-site again (ADR 0017, which supersedes ADR 0016).
+**Plan A (SSE through the Hosting rewrite) is rejected by measurement.**
+
+**Plan B1** is the design: the stream runs on the edge-api's own direct Cloud Run
+URL. It adds no new public service and no exception to ADR 0008, because the
+edge-api is already the only public service.
+
+- **Ticket:** a same-origin call issues a single-use ticket of 256 bits and about
+  30 seconds, bound to user, session, turn and origin, consumed atomically in
+  Firestore.
+- **Stream request:** it carries the ticket in an `Authorization` header with fetch
+  and ReadableStream, never cookies. The session cookie is first-party only on the
+  SPA's own origin, through the Hosting rewrite (ADR 0017, which supersedes ADR
+  0016); on a direct `*.run.app` URL it would be cross-site again, so it is not an
+  option.
+- **CORS** allows the exact Nox origin only.
+- **Reconnection:** a dropped stream gets a new ticket and reconnects with
+  `Last-Event-ID`.
+- **Configurable URL:** the stream URL stays configurable so it can move to a
+  custom domain later. Domain mapping in `europe-west3` and the load balancer price
+  are **no confirmado**. For reference only, the superseded ADR 0016 recorded on
+  2026-10-05 a load balancer at ~18–20 USD/month and domain mapping as unavailable
+  in `europe-west3`.
+
+**Gate:** Safari on iPhone, a cross-origin request with a preflight and a
+280-second stream are being verified in an extended spike. They must pass before
+Phase 3 (assistant streaming). If they fail, domain mapping or a load balancer
+come back to the table.
 
 ### 2.12 Events
 
@@ -247,6 +264,14 @@ Until Pub/Sub exists (gap #3), Nox events live only in the logs, so Nox is not
 opened to real clinicians or real cases before there is a queryable audit trail
 (section 2.12).
 
+Streaming and latency risks:
+
+- Clinics may block `*.run.app` on their networks, hence the configurable stream
+  URL (section 2.11).
+- Any call through the Hosting rewrite that lasts more than 60 seconds fails, and
+  a cold start of TiDB Starter can take up to a minute, which is why the warm-up
+  on `GET /nox/v1/me` matters more (section 2.16).
+
 ## 4. Open questions
 
 ### 4.1 Nox access details
@@ -285,6 +310,11 @@ and `CLAUDE.md` line 24 repeats it.
   2026-10-29).
 - **Short polling as the streaming fallback** — streaming is a requirement.
   Rejected (owner, 2026-10-29).
+- **SSE through the Hosting rewrite (plan A)** — Hosting buffers the whole response
+  and cuts at 60 seconds. Rejected by measurement (section 2.11).
+- **A custom domain for the stream now (domain mapping or a load balancer)** —
+  availability and price are no confirmado; it comes back only if the gate of
+  section 2.11 fails.
 - **An automatic switch to a second model provider** — it would need its own EU
   residency and DPA. Rejected (section 2.16).
 - **Events by authenticated HTTP to the worker** (option A) — edge-api and the

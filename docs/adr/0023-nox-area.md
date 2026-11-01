@@ -12,8 +12,7 @@
 2. **Access.** Verified professional, active member of an organisation with the Nox
    entitlement on (default off), Nox permission; identity checks every `/nox/v1/*` request.
 3. **Modules.** The assistant and `GET /nox/v1/evidence/search`, one engine (notes 2.3).
-4. **Instances.** `somnus_nox` and `somnus_nox_knowledge` on one new TiDB Starter instance
-   each (eu-central-1), created by hand only after this ADR is merged (notes 2.4).
+4. **Instances.** `somnus_nox`, `somnus_nox_knowledge`: a new TiDB Starter each, after merge (notes 2.4).
 5. **Store.** Native `VECTOR(n)` + HNSW for Nox; report and Morpheo stores unchanged (notes 2.5).
 6. **Population filtering is structural.** Adult and paediatric chunks live in separate vector
    tables, each with its own HNSW index; a chunk marked for both populations is written to
@@ -44,11 +43,12 @@
 10. **Encryption.** No customer-managed keys on Starter: the application encrypts conversation
     text with per-organisation envelope keys wrapped by Cloud KMS (`europe-west3`); 30 days
     (DEFAULT – Jesús puede cambiarlo); destroying an organisation key crypto-shreds them.
-11. **Streaming, no polling.** A: resumable SSE via the Hosting rewrite. B: a same-site stream
-    host with a single-use ticket, a second public endpoint needing its own ADR 0008
-    exception, decided only if the spike shows that A fails (notes 2.11).
-12. **Events.** Six `nox.*` events, no free text, via a logging `EventPublisher` port in each
-    service; the console Nox tab waits for Pub/Sub (notes 2.12).
+11. **Streaming, no polling.** Measured: Hosting buffers and cuts at 60 s, so plan A is rejected.
+    Plan B1: the edge-api's own direct Cloud Run URL (configurable); no new public service, no
+    exception to ADR 0008. A same-origin call issues a single-use ticket, sent in `Authorization`
+    with fetch, never cookies; CORS: the exact Nox origin only; after a drop, a new ticket and
+    `Last-Event-ID`. Gate before Phase 3: Safari on iPhone, preflight, 280 s (notes 2.11).
+12. **Events.** Six `nox.*`, no free text, logging port per service; console tab after Pub/Sub (notes 2.12).
 13. **AI.** Provider layer, `store: false`, pseudonymised. Likely a medical device (MDSW): no
     real case before a closed regulatory assessment, EU residency and a DPA with the model
     provider, production apart from dev, an updated DPIA, a queryable audit trail.
