@@ -688,7 +688,8 @@
     },
     "viewer": {
       "editAsDocument": "Edit as document",
-      "editAsSheet": "Edit as spreadsheet"
+      "editAsSheet": "Edit as spreadsheet",
+      "openInTab": "Open in a new tab"
     },
     "doc": {
       "new": "Text document",

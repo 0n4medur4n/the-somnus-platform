@@ -156,3 +156,22 @@ raised later).
 - **Owners delete a shared folder from its card**, as well as from the bottom of the people panel: the folder's
   name must be typed, or a word when the name cannot be read, so an owner can also delete a folder that no longer
   opens.
+
+## Addendum -- HTML files (owner decision 2026-11-01)
+
+- **An HTML file runs, but never as the console.** A page often is its scripts (the Morpheo engine explainer is a
+  self-contained app), so previews that strip them are useless; but opened directly, or from a blob URL, it would
+  run in the console's origin, next to the sign-in. It runs instead in a `sandbox="allow-scripts"` frame: an opaque
+  origin with no cookies, storage or reach into any other page, in the viewer and in the tab "Open in a new tab"
+  gives, which is a script-free holder page plus that frame. It may write to the clipboard, so a page's own copy
+  button works, and never read it.
+- **Nothing comes in or goes out.** The holder's policy is `default-src 'none'` with inline scripts and styles,
+  `unsafe-eval`, and `data:`/`blob:` images and fonts. The frame inherits it from its `srcdoc` parent, so the file
+  is not edited and cannot run before the policy is in force. Navigating the frame away is refused too, by the
+  policy, which falls back to `default-src` for frames. A hostile file tried in Chromium (remote script, style and
+  image, fetch, beacon, WebSocket, form, popup, navigating itself and the top page, reading cookies, storage and
+  the parent) reached a listening server zero times.
+- **The price:** a page that needs a CDN, a web font, a remote image or an API shows without it, its outbound links
+  do nothing, and `localStorage` throws. Download it to use it fully. The tab is a decrypted copy held by a blob URL:
+  it is revoked when the file is closed in the Drive, so reloading the tab then fails, though a tab already open
+  keeps showing the page after the Drive locks.

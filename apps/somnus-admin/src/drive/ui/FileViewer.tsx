@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/ui/Icon.js";
 import { EmptyState } from "../../components/ui/ui.js";
 import { fromUtf8 } from "../crypto.js";
+import { htmlViewerPage, isHtml } from "../documents/html-view.js";
 import { docxToHtml, isDocx, previewPage } from "../documents/import-docx.js";
 import { isMarkdown, markdownPage, markdownToHtml } from "../documents/markdown.js";
 import { csvToSheets, isSheetFile, isXlsx, xlsxToSheets } from "../sheets/convert.js";
@@ -16,6 +17,7 @@ type Preview =
   | { kind: "image"; url: string }
   | { kind: "html"; page: string }
   | { kind: "markdown"; page: string }
+  | { kind: "webpage"; page: string }
   | { kind: "sheet"; sheets: StoredSheet[] }
   | { kind: "text"; text: string }
   | { kind: "none" };
@@ -29,7 +31,8 @@ function isPdf(mime: string | undefined, name: string | undefined): boolean {
  * this browser; the preview never leaves it. A PDF goes to the browser's own
  * viewer through a blob URL; a Word file is converted here to plain HTML and
  * shown in a sandboxed frame that may run nothing at all. Markdown takes the
- * same road, and a spreadsheet opens read-only in its own isolated frame.
+ * same road, a spreadsheet opens read-only in its own isolated frame, and an HTML
+ * file runs in one too, here or in a tab of its own (see `htmlViewerPage`).
  */
 export function FileViewer({
   name,
@@ -56,6 +59,7 @@ export function FileViewer({
   const [preview, setPreview] = useState<Preview>({ kind: "loading" });
   const docx = isDocx(mime, name);
   const sheet = isSheetFile(mime, name);
+  const tabUrl = useRef<string | null>(null);
 
   useEffect(() => {
     let url: string | null = null;
@@ -67,6 +71,8 @@ export function FileViewer({
     } else if (mime && PREVIEWABLE_IMAGES.has(mime)) {
       url = URL.createObjectURL(blobOf(mime));
       setPreview({ kind: "image", url });
+    } else if (isHtml(mime, name)) {
+      setPreview({ kind: "webpage", page: htmlViewerPage(name ?? "", fromUtf8(bytes)) });
     } else if (docx) {
       docxToHtml(bytes)
         .then((html) => {
@@ -102,6 +108,9 @@ export function FileViewer({
     return () => {
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
+      // Closing the file takes back the decrypted copy a tab could reload from.
+      if (tabUrl.current) URL.revokeObjectURL(tabUrl.current);
+      tabUrl.current = null;
     };
   }, [bytes, mime, name, docx, sheet]);
 
@@ -112,6 +121,11 @@ export function FileViewer({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  function openInTab(page: string) {
+    tabUrl.current ??= URL.createObjectURL(new Blob([page], { type: "text/html;charset=utf-8" }));
+    window.open(tabUrl.current, "_blank", "noopener");
+  }
 
   return (
     <div
@@ -134,6 +148,16 @@ export function FileViewer({
           className="h-5 w-5 shrink-0 text-somnus-primary"
         />
         <h2 className="min-w-0 flex-1 truncate font-medium text-somnus-text">{name}</h2>
+        {preview.kind === "webpage" ? (
+          <button
+            type="button"
+            onClick={() => openInTab(preview.page)}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-sm text-somnus-text hover:bg-white/5"
+          >
+            <Icon name="external" className="h-4 w-4" />
+            {t("drive.viewer.openInTab")}
+          </button>
+        ) : null}
         {docx && canEditAsDocument ? (
           <button
             type="button"
@@ -183,6 +207,15 @@ export function FileViewer({
             sandbox=""
             srcDoc={preview.page}
             className="mx-auto block h-full w-full max-w-4xl border-0 bg-white"
+          />
+        ) : null}
+        {preview.kind === "webpage" ? (
+          <iframe
+            title={name}
+            sandbox="allow-scripts"
+            allow="clipboard-write"
+            srcDoc={preview.page}
+            className="block h-full w-full border-0 bg-white"
           />
         ) : null}
         {preview.kind === "markdown" ? (
