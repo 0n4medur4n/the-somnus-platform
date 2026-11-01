@@ -9,6 +9,7 @@ import {
   type DriveShareSummary,
   opaqueId,
 } from "@somnus/api-contracts";
+import { ApiRequestError } from "../lib/api.js";
 import type { DriveEdge } from "../lib/edge.js";
 import { type Appearance, cleanAppearance } from "./appearance.js";
 import {
@@ -39,6 +40,10 @@ import {
   wrapNodeKey,
   wrapShareKeyFor,
 } from "./crypto.js";
+import { type DriveNote, decodeNotes, encodeNotes, NOTES_MIME } from "./notes/notes-format.js";
+
+/** How many times a note is retried against a colleague writing at the same moment. */
+const NOTES_ATTEMPTS = 4;
 
 /**
  * How far a colleague's key is trusted, as the person sees it:
@@ -71,8 +76,10 @@ export type DriveFolderView = {
   /** The shared folder's own colour and icon (owner decision 2026-10-29). */
   appearance: Appearance;
   rootId: string;
-  /** Every node except the root, trashed ones included. */
+  /** Every node except the root, trashed ones included, notes files excepted. */
   items: DriveItem[];
+  /** The notes file of each annotated node, by that node's id. */
+  notes: ReadonlyMap<string, DriveItem>;
   members: Array<DriveMember & { trust: Trust }>;
 };
 
@@ -345,9 +352,21 @@ export class DriveSession {
     const detail = await this.edge.share(shareId);
     const shareKey = await this.shareKeyFor(detail.share);
     const rootNode = detail.share.root;
-    const items = await Promise.all(
+    const described = await Promise.all(
       detail.nodes.filter((n) => n.id !== rootNode.id).map((n) => this.describeNode(shareKey, n)),
     );
+    const items: DriveItem[] = [];
+    const notes = new Map<string, DriveItem>();
+    for (const item of described) {
+      const target = item.meta?.notesFor;
+      if (typeof target !== "string") {
+        items.push(item);
+        continue;
+      }
+      // The lowest id, so everyone settles on the same file if two were ever created.
+      const other = notes.get(target);
+      if (!other || item.node.id < other.node.id) notes.set(target, item);
+    }
     const root = await this.describeNode(shareKey, rootNode);
     const view: DriveFolderView = {
       shareId,
@@ -357,6 +376,7 @@ export class DriveSession {
       appearance: root.meta ? appearanceOf(root.meta) : {},
       rootId: rootNode.id,
       items,
+      notes,
       members: detail.members.map((m) => ({ ...m, trust: this.trustOf(m.userId) })),
     };
     await this.flushState();
@@ -471,6 +491,7 @@ export class DriveSession {
       mime: string;
       bytes: Uint8Array;
       note?: boolean;
+      notesFor?: string;
       onProgress?: (done: number, total: number) => void;
     },
   ): Promise<string> {
@@ -502,6 +523,7 @@ export class DriveSession {
         mime: input.mime,
         size: input.bytes.length,
         ...(input.note ? { note: true } : {}),
+        ...(input.notesFor ? { notesFor: input.notesFor } : {}),
         // A new revision keeps how the file looked.
         ...(existing?.meta ? appearanceOf(existing.meta) : {}),
         modifiedAt: new Date().toISOString(),
@@ -642,8 +664,12 @@ export class DriveSession {
     await this.rename(view, await this.describeNode(shareKey, detail.share.root), name);
   }
 
-  move(view: DriveFolderView, item: DriveItem, parentId: string): Promise<unknown> {
-    return this.edge.move(view.shareId, item.node.id, { parentId });
+  async move(view: DriveFolderView, item: DriveItem, parentId: string): Promise<void> {
+    await this.edge.move(view.shareId, item.node.id, { parentId });
+    // Its notes go with it, so deleting the old folder does not delete them.
+    const { notes } = await this.openShare(view.shareId);
+    const file = notes.get(item.node.id);
+    if (file) await this.edge.move(view.shareId, file.node.id, { parentId });
   }
 
   trash(view: DriveFolderView, item: DriveItem): Promise<unknown> {
@@ -654,8 +680,55 @@ export class DriveSession {
     return this.edge.restore(view.shareId, item.node.id);
   }
 
-  purge(view: DriveFolderView, item: DriveItem): Promise<unknown> {
-    return this.edge.purgeNode(view.shareId, item.node.id);
+  async purge(view: DriveFolderView, item: DriveItem): Promise<void> {
+    const { notes } = await this.openShare(view.shareId);
+    await this.edge.purgeNode(view.shareId, item.node.id);
+    const file = notes.get(item.node.id);
+    if (!file) return;
+    await this.edge.trash(view.shareId, file.node.id);
+    await this.edge.purgeNode(view.shareId, file.node.id);
+  }
+
+  // --- notes on a file (owner decision 2026-11-01) ---
+
+  /** The notes on a node as they stand now: a colleague may have just added one. */
+  async readNotes(shareId: string, nodeId: string): Promise<DriveNote[]> {
+    const view = await this.openShare(shareId);
+    const file = view.notes.get(nodeId);
+    return file ? decodeNotes(await this.readFile(view, file)) : [];
+  }
+
+  /**
+   * Changes the notes on a node, always on the latest copy: two people can write
+   * at once, and a stale revision is refused, so the change is applied again to
+   * what the other one saved rather than overwriting it.
+   */
+  async changeNotes(
+    shareId: string,
+    nodeId: string,
+    change: (notes: DriveNote[]) => DriveNote[],
+  ): Promise<DriveNote[]> {
+    for (let attempt = 1; ; attempt += 1) {
+      const view = await this.openShare(shareId);
+      const target = view.items.find((i) => i.node.id === nodeId);
+      if (!target) throw new DriveSessionError("not_open");
+      const file = view.notes.get(nodeId);
+      const notes = change(file ? decodeNotes(await this.readFile(view, file)) : []);
+      try {
+        await this.writeFile(view, {
+          parentId: file?.node.parentId ?? target.node.parentId ?? view.rootId,
+          ...(file ? { existing: file } : {}),
+          name: "notes",
+          mime: NOTES_MIME,
+          bytes: encodeNotes(notes),
+          notesFor: nodeId,
+        });
+        return notes;
+      } catch (error) {
+        const stale = error instanceof ApiRequestError && error.status === 409;
+        if (!stale || attempt >= NOTES_ATTEMPTS) throw error;
+      }
+    }
   }
 
   async deleteShare(shareId: string): Promise<void> {

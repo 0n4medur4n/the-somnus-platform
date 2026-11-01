@@ -175,3 +175,28 @@ raised later).
   do nothing, and `localStorage` throws. Download it to use it fully. The tab is a decrypted copy held by a blob URL:
   it is revoked when the file is closed in the Drive, so reloading the tab then fails, though a tab already open
   keeps showing the page after the Drive locks.
+
+## Addendum -- notes on files, and the back button (owner decision 2026-11-01)
+
+- **Notes** go on PDFs, Markdown, Word previews and Drive documents, for the team's working questions. They are
+  shared with everyone who can open the folder; anyone who can edit it can write them, and a viewer only reads.
+- **The server sees one more file.** Notes live in a companion Drive file (`application/vnd.somnus.notes+json`,
+  marked `notesFor` in its sealed metadata) beside the annotated file: same folder key, block encryption and
+  signatures, no server change. The session keeps it out of `view.items`, so no listing, search or trash shows it,
+  and moves and purges it with its file. A stale revision (two people writing at once) re-reads and reapplies the
+  change. The companion is signed as a whole by whoever wrote last, so a note's author is a label among colleagues,
+  not proof against a member rewriting the file.
+- **Where a note sits.** A PDF note has a page: the browser's own viewer cannot be marked or read from outside, so
+  the number is typed, and choosing the note reopens the viewer at that page. Other notes hold their block's first
+  words and position; if the text moves the note follows it, and if the text is gone the note says so and stays
+  listed rather than attaching itself elsewhere. In a Drive document the highlight is an editor decoration: it is
+  not saved, marks nothing as changed, and no export carries it. No export carries notes at all.
+- **The preview frame.** A file with no notes keeps the frame that may run nothing. Once it has notes, or the panel
+  is opened, the frame also runs one script, named in its policy by hash (no `unsafe-inline`, no `unsafe-eval`), to
+  find blocks and draw marks; the frame stays an opaque origin with no connection. The file's content still runs
+  nothing: in Chromium a `<script>`, inline handlers, a `javascript:` link, a form and remote images in a preview
+  were all refused, and a server listening outside received nothing. What the frame sends back is only a block
+  number, checked against the blocks it reported, and their text, used as the note's quote.
+- **Back and forward.** An open file is in the URL, but going back only cleared the URL and left the viewer on top.
+  Going back now closes the file, or an open note, and forward reopens it.
+

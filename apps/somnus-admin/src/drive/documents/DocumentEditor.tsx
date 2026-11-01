@@ -4,6 +4,10 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "../../components/ui/Icon.js";
 import { Menu, type MenuItem } from "../../components/ui/ui.js";
+import { NotesPanel } from "../notes/NotesPanel.js";
+import { docBlocks, NoteMarks, noteMarksKey } from "../notes/note-marks.js";
+import { blockOf, type DriveNote, type NoteAnchor } from "../notes/notes-format.js";
+import type { NotesBinding } from "../notes/use-notes.js";
 import { documentExtensions, fileNameFor } from "./doc-format.js";
 import { EXPORT_FORMATS, type ExportFormat, exportDocument } from "./export.js";
 
@@ -34,15 +38,25 @@ export function DocumentEditor({
   readOnly,
   onSave,
   onClose,
+  notes,
 }: {
   initialTitle: string;
   initialContent: JSONContent;
   readOnly: boolean;
   onSave: (title: string, content: JSONContent) => Promise<SaveOutcome>;
   onClose: () => void;
+  notes?: NotesBinding | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const [title, setTitle] = useState(initialTitle);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [draft, setDraft] = useState<NoteAnchor | null>(null);
+  const [focusedBlock, setFocusedBlock] = useState<number | null>(null);
+  const [blocks, setBlocks] = useState<string[]>([]);
+  const openNotesAt = useRef((index: number) => {
+    setPanelOpen(true);
+    setFocusedBlock(index);
+  });
   const [status, setStatus] = useState<Status>("saved");
   const [exporting, setExporting] = useState(false);
   const titleRef = useRef(title);
@@ -51,7 +65,10 @@ export function DocumentEditor({
   const saving = useRef(false);
 
   const editor = useEditor({
-    extensions: documentExtensions(),
+    extensions: [
+      ...documentExtensions(),
+      NoteMarks.configure({ onClickBlock: (index) => openNotesAt.current(index) }),
+    ],
     content: initialContent,
     editable: !readOnly,
     immediatelyRender: true,
@@ -61,8 +78,54 @@ export function DocumentEditor({
         "aria-label": t("drive.doc.body"),
       },
     },
-    onUpdate: () => setStatus((s) => (s === "conflict" ? s : "dirty")),
+    onUpdate: ({ editor: e }) => {
+      setStatus((s) => (s === "conflict" ? s : "dirty"));
+      setBlocks(docBlocks(e.state.doc).map((block) => block.text));
+    },
+    // The note about to be written goes on the block the caret is in.
+    onSelectionUpdate: ({ editor: e }) => {
+      const { pos } = e.state.selection.$from;
+      const found = docBlocks(e.state.doc);
+      const index = found.findIndex((b) => pos >= b.pos && pos < b.pos + b.size);
+      const block = found[index];
+      setDraft(block ? { kind: "block", quote: block.text, index } : null);
+    },
   });
+
+  const noteList = notes?.list;
+  const hasNotes = (noteList?.length ?? 0) > 0;
+
+  useEffect(() => {
+    if (!editor) return;
+    setBlocks(docBlocks(editor.state.doc).map((block) => block.text));
+  }, [editor]);
+
+  // A document that has notes opens with them showing.
+  useEffect(() => {
+    if (hasNotes) setPanelOpen(true);
+  }, [hasNotes]);
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.view.dispatch(editor.state.tr.setMeta(noteMarksKey, noteList ?? []));
+  }, [editor, noteList]);
+
+  function selectNote(note: DriveNote) {
+    if (!editor) return;
+    const found = docBlocks(editor.state.doc);
+    const index = blockOf(
+      note,
+      found.map((block) => block.text),
+    );
+    const block = index === null ? undefined : found[index];
+    if (index === null || !block) return;
+    setFocusedBlock(index);
+    editor
+      .chain()
+      .setTextSelection(block.pos + 1)
+      .scrollIntoView()
+      .run();
+  }
 
   const save = useCallback(async () => {
     if (!editor || readOnly || saving.current) return;
@@ -158,6 +221,19 @@ export function DocumentEditor({
           <span role="status" aria-live="polite" className="text-sm text-somnus-subtle">
             {readOnly ? t("drive.doc.readOnly") : t(`drive.doc.status.${status}`)}
           </span>
+          {notes ? (
+            <button
+              type="button"
+              onClick={() => setPanelOpen((open) => !open)}
+              aria-pressed={panelOpen}
+              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm text-somnus-text hover:bg-white/5 ${
+                panelOpen ? "border-amber-300/60 bg-amber-300/10" : "border-white/15"
+              }`}
+            >
+              <Icon name="note" className="h-4 w-4" />
+              {t("drive.notes.heading", { count: notes.list.length })}
+            </button>
+          ) : null}
           <Menu
             label={t("drive.doc.export.title")}
             items={exportItems}
@@ -207,13 +283,28 @@ export function DocumentEditor({
         </p>
       ) : null}
 
-      <main className="flex-1 overflow-x-auto px-4 py-8">
-        {/* An A4 sheet with Google Docs' 2.54 cm margins; it grows a page at a
+      <div className="flex flex-1">
+        <main className="min-w-0 flex-1 overflow-x-auto px-4 py-8">
+          {/* An A4 sheet with Google Docs' 2.54 cm margins; it grows a page at a
             time, and a faint line marks where each printed page ends. */}
-        <div className="somnus-page mx-auto text-[#202124] shadow-[0_1px_3px_rgba(0,0,0,0.35)]">
-          <EditorContent editor={editor} />
-        </div>
-      </main>
+          <div className="somnus-page mx-auto text-[#202124] shadow-[0_1px_3px_rgba(0,0,0,0.35)]">
+            <EditorContent editor={editor} />
+          </div>
+        </main>
+        {notes && panelOpen ? (
+          <NotesPanel
+            notes={notes}
+            blocks={blocks}
+            pages={false}
+            draft={draft}
+            focusedBlock={focusedBlock}
+            onClearDraft={() => setDraft(null)}
+            onSelect={selectNote}
+            onClose={() => setPanelOpen(false)}
+            className="sticky top-[6.5rem] h-[calc(100vh-6.5rem)] self-start"
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

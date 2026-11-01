@@ -1,8 +1,10 @@
 import { DRIVE_FILE_MAX_BYTES } from "@somnus/api-contracts";
 import { describe, expect, it, vi } from "vitest";
+import { ApiRequestError } from "../lib/api.js";
 import { changePassphrase, createAccount, fromUtf8, randomBytes, toB64, utf8 } from "./crypto.js";
 import { type DriveFolderView, DriveSession } from "./drive-session.js";
 import { FakeDriveServer } from "./fake-drive-server.js";
+import type { DriveNote } from "./notes/notes-format.js";
 
 /**
  * The Drive end to end in the browser half: real cryptography, a fake server
@@ -368,6 +370,159 @@ describe("when a colleague changes their passphrase or resets their Drive", () =
 
     await expect(ana.removeMember(folder, IDS.eva)).rejects.toMatchObject({
       reason: "key_changed",
+    });
+  });
+});
+
+describe("notes on a file", () => {
+  const note = (id: string, text: string): DriveNote => ({
+    id,
+    authorId: IDS.ana,
+    text,
+    createdAt: "2026-11-01T10:00:00.000Z",
+    done: false,
+    anchor: { kind: "general" },
+  });
+
+  async function fileIn(session: DriveSession, folderName = "Protocolos") {
+    await session.createShare(folderName);
+    const folder = await folderNamed(session, folderName);
+    const id = await session.writeFile(folder, {
+      parentId: folder.rootId,
+      name: "guia.md",
+      mime: "text/markdown",
+      bytes: utf8("# Guía"),
+    });
+    return { shareId: folder.shareId, id };
+  }
+
+  it("are never shown as a file of their own, and never reach the server readable", async () => {
+    const server = new FakeDriveServer();
+    const ana = await join(server, "ana");
+    const { shareId, id } = await fileIn(ana);
+
+    await ana.changeNotes(shareId, id, (notes) => [...notes, note("a", "Duda confidencial")]);
+
+    const folder = await ana.openShare(shareId);
+    expect(folder.items.map((i) => i.meta?.name)).toEqual(["guia.md"]);
+    expect(folder.notes.has(id)).toBe(true);
+    expect(server.received.join(" ")).not.toContain("Duda confidencial");
+    expect((await ana.readNotes(shareId, id)).map((n) => n.text)).toEqual(["Duda confidencial"]);
+  });
+
+  it("are read by colleagues in the folder, whatever their role", async () => {
+    const server = new FakeDriveServer();
+    const ana = await join(server, "ana");
+    const ben = await join(server, "ben");
+    const { shareId, id } = await fileIn(ana);
+    await ana.addMember(await ana.openShare(shareId), IDS.ben, "viewer");
+    await ana.changeNotes(shareId, id, (notes) => [...notes, note("a", "Para Ben")]);
+
+    await ben.listShares();
+    expect((await ben.readNotes(shareId, id)).map((n) => n.text)).toEqual(["Para Ben"]);
+  });
+
+  it("are empty for a file with none", async () => {
+    const server = new FakeDriveServer();
+    const ana = await join(server, "ana");
+    const { shareId, id } = await fileIn(ana);
+    expect(await ana.readNotes(shareId, id)).toEqual([]);
+  });
+
+  it("build on what is there, in the same file", async () => {
+    const server = new FakeDriveServer();
+    const ana = await join(server, "ana");
+    const { shareId, id } = await fileIn(ana);
+    await ana.changeNotes(shareId, id, (notes) => [...notes, note("a", "Una")]);
+    await ana.changeNotes(shareId, id, (notes) => [...notes, note("b", "Dos")]);
+    const folder = await ana.openShare(shareId);
+    expect(folder.notes.get(id)?.node.revision).toBe(2);
+    expect((await ana.readNotes(shareId, id)).map((n) => n.text)).toEqual(["Una", "Dos"]);
+  });
+
+  it("survive a colleague writing at the same moment: the change is applied to their copy", async () => {
+    const server = new FakeDriveServer();
+    const edge = server.edgeFor(IDS.ana, "ana@thesomnus.com");
+    const created = await createAccount("la frase de ana es larga", FAST);
+    const account = await edge.enroll(created.request);
+    const ana = await DriveSession.open(edge, account, await created.unlock(account));
+    const { shareId, id } = await fileIn(ana);
+    await ana.changeNotes(shareId, id, (notes) => [...notes, note("a", "Primera")]);
+
+    const startUpload = edge.startUpload.bind(edge);
+    let raced = false;
+    vi.spyOn(edge, "startUpload").mockImplementation(async (share, body) => {
+      if (raced) return startUpload(share, body);
+      raced = true;
+      await ana.changeNotes(shareId, id, (notes) => [...notes, note("b", "De un colega")]);
+      throw new ApiRequestError(409, "CONFLICT", "drive_stale_revision");
+    });
+
+    await ana.changeNotes(shareId, id, (notes) => [...notes, note("c", "Mía")]);
+    expect((await ana.readNotes(shareId, id)).map((n) => n.text)).toEqual([
+      "Primera",
+      "De un colega",
+      "Mía",
+    ]);
+  });
+
+  it("do not retry anything that is not a stale revision", async () => {
+    const server = new FakeDriveServer();
+    const edge = server.edgeFor(IDS.ana, "ana@thesomnus.com");
+    const created = await createAccount("la frase de ana es larga", FAST);
+    const account = await edge.enroll(created.request);
+    const ana = await DriveSession.open(edge, account, await created.unlock(account));
+    const { shareId, id } = await fileIn(ana);
+    const failing = vi
+      .spyOn(edge, "startUpload")
+      .mockRejectedValue(new ApiRequestError(403, "FORBIDDEN", "drive_role_insufficient"));
+    await expect(ana.changeNotes(shareId, id, (notes) => notes)).rejects.toBeInstanceOf(
+      ApiRequestError,
+    );
+    expect(failing).toHaveBeenCalledTimes(1);
+  });
+
+  it("move with their file", async () => {
+    const server = new FakeDriveServer();
+    const ana = await join(server, "ana");
+    const { shareId, id } = await fileIn(ana);
+    await ana.changeNotes(shareId, id, (notes) => [...notes, note("a", "Una")]);
+    let folder = await ana.openShare(shareId);
+    await ana.createFolder(folder, folder.rootId, "Destino");
+    folder = await ana.openShare(shareId);
+    const target = folder.items.find((i) => i.meta?.name === "Destino");
+    const file = folder.items.find((i) => i.node.id === id);
+    if (!target || !file) throw new Error("missing");
+
+    await ana.move(folder, file, target.node.id);
+
+    folder = await ana.openShare(shareId);
+    expect(folder.notes.get(id)?.node.parentId).toBe(target.node.id);
+  });
+
+  it("are deleted for good with their file", async () => {
+    const server = new FakeDriveServer();
+    const ana = await join(server, "ana");
+    const { shareId, id } = await fileIn(ana);
+    await ana.changeNotes(shareId, id, (notes) => [...notes, note("a", "Una")]);
+    let folder = await ana.openShare(shareId);
+    const file = folder.items.find((i) => i.node.id === id);
+    if (!file) throw new Error("missing");
+
+    await ana.trash(folder, file);
+    await ana.purge(folder, file);
+
+    folder = await ana.openShare(shareId);
+    expect(folder.items).toEqual([]);
+    expect(folder.notes.size).toBe(0);
+  });
+
+  it("refuse a node that is not in the folder", async () => {
+    const server = new FakeDriveServer();
+    const ana = await join(server, "ana");
+    const { shareId } = await fileIn(ana);
+    await expect(ana.changeNotes(shareId, "no-existe", (notes) => notes)).rejects.toMatchObject({
+      reason: "not_open",
     });
   });
 });

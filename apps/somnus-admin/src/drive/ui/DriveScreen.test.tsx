@@ -1,5 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useNavigate } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "../../lib/api.js";
 import type { DriveEdge } from "../../lib/edge.js";
@@ -184,6 +185,67 @@ describe("DriveScreen", () => {
 
     // Nothing readable reached the server.
     expect(server.received.join(" ")).not.toContain("Protocolo de guardia");
+  }, 60_000);
+
+  it("closes an open file with the browser's back button, and forward reopens it", async () => {
+    const user = userEvent.setup();
+    function History() {
+      const navigate = useNavigate();
+      return (
+        <>
+          <button type="button" onClick={() => void navigate(-1)}>
+            navegador-atras
+          </button>
+          <button type="button" onClick={() => void navigate(1)}>
+            navegador-adelante
+          </button>
+        </>
+      );
+    }
+    renderWithProviders(
+      <>
+        <DriveScreen />
+        <History />
+      </>,
+    );
+    await user.type(await screen.findByLabelText(i18n.t("drive.setup.passphrase")), PASSPHRASE);
+    await user.type(screen.getByLabelText(i18n.t("drive.setup.confirm")), PASSPHRASE);
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.setup.create") }));
+    await screen.findByTestId("recovery-code", {}, { timeout: 15_000 });
+    await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Historial");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
+    await user.click(
+      (await screen.findAllByRole("button", { name: /Historial/ }))[0] as HTMLElement,
+    );
+    await screen.findByRole("button", { name: i18n.t("drive.new") });
+
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+    await user.upload(
+      input as HTMLInputElement,
+      new File(["hola"], "guia.txt", { type: "text/plain" }),
+    );
+    await user.click(
+      await screen.findByRole(
+        "button",
+        { name: `${i18n.t("drive.folder.kind.file")}: guia.txt` },
+        { timeout: 15_000 },
+      ),
+    );
+    expect(
+      await screen.findByRole("dialog", { name: "guia.txt" }, { timeout: 15_000 }),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "navegador-atras" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "guia.txt" })).toBeNull());
+
+    await user.click(screen.getByRole("button", { name: "navegador-adelante" }));
+    expect(
+      await screen.findByRole("dialog", { name: "guia.txt" }, { timeout: 15_000 }),
+    ).toBeTruthy();
   }, 60_000);
 
   it("deletes a shared folder from its card, once its name is typed", async () => {

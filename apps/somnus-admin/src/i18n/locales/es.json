@@ -829,6 +829,26 @@
         "home": "Inicio",
         "briefcase": "Negocio"
       }
+    },
+    "notes": {
+      "title": "Notas del archivo",
+      "heading_one": "{{count}} nota",
+      "heading_other": "{{count}} notas",
+      "close": "Cerrar las notas",
+      "add": "Añadir nota",
+      "addHere": "+ Nota",
+      "write": "Escribe una nota…",
+      "done": "Resuelta",
+      "delete": "Eliminar la nota",
+      "goTo": "Ir a esta nota en el archivo",
+      "page": "Página",
+      "onPage": "Página {{page}}",
+      "lostPlace": "Ya no está en el texto: «{{quote}}»",
+      "empty": "Sin notas. Pasa el ratón por un párrafo o una pregunta y pulsa «+ Nota».",
+      "emptyPdf": "Sin notas. Escribe una abajo e indica la página.",
+      "emptyRead": "Sin notas.",
+      "pickPlace": "Se añadirá como nota general. Elige un párrafo para colocarla en él.",
+      "clearPlace": "Quitar el lugar de la nota"
     }
   },
   "charts": {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/ui/Icon.js";
 import { EmptyState } from "../../components/ui/ui.js";
@@ -6,6 +6,16 @@ import { fromUtf8 } from "../crypto.js";
 import { htmlViewerPage, isHtml } from "../documents/html-view.js";
 import { docxToHtml, isDocx, previewPage } from "../documents/import-docx.js";
 import { isMarkdown, markdownPage, markdownToHtml } from "../documents/markdown.js";
+import { AnnotatedFrame } from "../notes/AnnotatedFrame.js";
+import { NotesPanel } from "../notes/NotesPanel.js";
+import {
+  blockOf,
+  type DriveNote,
+  marksFor,
+  type NoteAnchor,
+  normalizeQuote,
+} from "../notes/notes-format.js";
+import type { NotesBinding } from "../notes/use-notes.js";
 import { csvToSheets, isSheetFile, isXlsx, xlsxToSheets } from "../sheets/convert.js";
 import { SheetFrame } from "../sheets/SheetFrame.js";
 import type { StoredSheet } from "../sheets/sheet-format.js";
@@ -33,6 +43,10 @@ function isPdf(mime: string | undefined, name: string | undefined): boolean {
  * shown in a sandboxed frame that may run nothing at all. Markdown takes the
  * same road, a spreadsheet opens read-only in its own isolated frame, and an HTML
  * file runs in one too, here or in a tab of its own (see `htmlViewerPage`).
+ *
+ * A PDF, a Word file or Markdown can carry notes. Until a file has one, or the
+ * panel is opened, it stays in the frame that may run nothing; from then on the
+ * frame also runs the note script, and only that (see `annotatedPage`).
  */
 export function FileViewer({
   name,
@@ -44,6 +58,7 @@ export function FileViewer({
   onEditAsSheet,
   onDownload,
   onClose,
+  notes,
 }: {
   name: string;
   mime: string | undefined;
@@ -54,12 +69,20 @@ export function FileViewer({
   onEditAsSheet: () => void;
   onDownload: () => void;
   onClose: () => void;
+  notes?: NotesBinding | undefined;
 }) {
   const { t } = useTranslation();
   const [preview, setPreview] = useState<Preview>({ kind: "loading" });
   const docx = isDocx(mime, name);
   const sheet = isSheetFile(mime, name);
   const tabUrl = useRef<string | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [annotating, setAnnotating] = useState(false);
+  const [blocks, setBlocks] = useState<string[]>([]);
+  const [draft, setDraft] = useState<NoteAnchor | null>(null);
+  const [focusedBlock, setFocusedBlock] = useState<number | null>(null);
+  const [goTo, setGoTo] = useState<{ index: number; nonce: number } | null>(null);
+  const [pdfPage, setPdfPage] = useState<number | null>(null);
 
   useEffect(() => {
     let url: string | null = null;
@@ -122,6 +145,61 @@ export function FileViewer({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const notable = preview.kind === "pdf" || preview.kind === "markdown" || preview.kind === "html";
+  const hasNotes = (notes?.list.length ?? 0) > 0;
+
+  // A file that has notes opens with them showing.
+  useEffect(() => {
+    if (hasNotes) {
+      setAnnotating(true);
+      setPanelOpen(true);
+    }
+  }, [hasNotes]);
+
+  const marks = useMemo(() => marksFor(notes?.list ?? [], blocks), [notes?.list, blocks]);
+
+  function togglePanel() {
+    setAnnotating(true);
+    setPanelOpen((open) => !open);
+  }
+
+  function addAt(index: number) {
+    const text = blocks[index];
+    if (text === undefined) return;
+    setPanelOpen(true);
+    setDraft({ kind: "block", quote: normalizeQuote(text), index });
+  }
+
+  function selectNote(note: DriveNote) {
+    if (note.anchor.kind === "page") setPdfPage(note.anchor.page);
+    const index = blockOf(note, blocks);
+    if (index === null) return;
+    setFocusedBlock(index);
+    setGoTo({ index, nonce: Date.now() });
+  }
+
+  function frameFor(page: string, sandbox: string, className: string) {
+    return (
+      <AnnotatedFrame
+        title={name}
+        page={page}
+        sandbox={sandbox}
+        className={className}
+        marks={marks}
+        canAdd={notes?.canEdit ?? false}
+        addLabel={t("drive.notes.addHere")}
+        goTo={goTo}
+        onBlocks={setBlocks}
+        onAdd={addAt}
+        onFocus={(index) => {
+          setPanelOpen(true);
+          setFocusedBlock(index);
+        }}
+        onFailed={() => setPreview({ kind: "none" })}
+      />
+    );
+  }
+
   function openInTab(page: string) {
     tabUrl.current ??= URL.createObjectURL(new Blob([page], { type: "text/html;charset=utf-8" }));
     window.open(tabUrl.current, "_blank", "noopener");
@@ -148,6 +226,19 @@ export function FileViewer({
           className="h-5 w-5 shrink-0 text-somnus-primary"
         />
         <h2 className="min-w-0 flex-1 truncate font-medium text-somnus-text">{name}</h2>
+        {notes && notable ? (
+          <button
+            type="button"
+            onClick={togglePanel}
+            aria-pressed={panelOpen}
+            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm text-somnus-text hover:bg-white/5 ${
+              panelOpen ? "border-amber-300/60 bg-amber-300/10" : "border-white/15"
+            }`}
+          >
+            <Icon name="note" className="h-4 w-4" />
+            {t("drive.notes.heading", { count: notes.list.length })}
+          </button>
+        ) : null}
         {preview.kind === "webpage" ? (
           <button
             type="button"
@@ -187,64 +278,98 @@ export function FileViewer({
           {t("drive.folder.download")}
         </button>
       </header>
-      <div className="min-h-0 flex-1 overflow-auto">
-        {preview.kind === "loading" ? (
-          <p className="p-8 text-center text-somnus-subtle">{t("drive.loading")}</p>
-        ) : null}
-        {preview.kind === "pdf" ? (
-          <iframe title={name} src={preview.url} className="h-full w-full border-0 bg-white" />
-        ) : null}
-        {preview.kind === "image" ? (
-          <div className="flex h-full items-center justify-center p-6">
-            <img src={preview.url} alt={name} className="max-h-full max-w-full rounded-lg" />
-          </div>
-        ) : null}
-        {preview.kind === "html" ? (
-          <iframe
-            title={name}
-            // No allow-* tokens: the converted document can run nothing,
-            // submit nothing and navigate nowhere.
-            sandbox=""
-            srcDoc={preview.page}
-            className="mx-auto block h-full w-full max-w-4xl border-0 bg-white"
+      <div className="flex min-h-0 flex-1">
+        <div className="min-h-0 min-w-0 flex-1 overflow-auto">
+          {preview.kind === "loading" ? (
+            <p className="p-8 text-center text-somnus-subtle">{t("drive.loading")}</p>
+          ) : null}
+          {preview.kind === "pdf" ? (
+            <iframe
+              // Reloading is how a page number reaches the browser's PDF viewer.
+              key={pdfPage ?? 0}
+              title={name}
+              src={pdfPage ? `${preview.url}#page=${pdfPage}` : preview.url}
+              className="h-full w-full border-0 bg-white"
+            />
+          ) : null}
+          {preview.kind === "image" ? (
+            <div className="flex h-full items-center justify-center p-6">
+              <img src={preview.url} alt={name} className="max-h-full max-w-full rounded-lg" />
+            </div>
+          ) : null}
+          {preview.kind === "html" && annotating
+            ? frameFor(
+                preview.page,
+                "allow-scripts",
+                "mx-auto block h-full w-full max-w-4xl border-0 bg-white",
+              )
+            : null}
+          {preview.kind === "html" && !annotating ? (
+            <iframe
+              title={name}
+              // No allow-* tokens: the converted document can run nothing,
+              // submit nothing and navigate nowhere.
+              sandbox=""
+              srcDoc={preview.page}
+              className="mx-auto block h-full w-full max-w-4xl border-0 bg-white"
+            />
+          ) : null}
+          {preview.kind === "webpage" ? (
+            <iframe
+              title={name}
+              sandbox="allow-scripts"
+              allow="clipboard-write"
+              srcDoc={preview.page}
+              className="block h-full w-full border-0 bg-white"
+            />
+          ) : null}
+          {preview.kind === "markdown" && annotating
+            ? frameFor(
+                preview.page,
+                "allow-scripts allow-popups allow-popups-to-escape-sandbox",
+                "block h-full w-full border-0 bg-white",
+              )
+            : null}
+          {preview.kind === "markdown" && !annotating ? (
+            <iframe
+              title={name}
+              // It can still run nothing; the one addition is that a link may
+              // open in a new tab, and only http, https and mail links survive.
+              sandbox="allow-popups allow-popups-to-escape-sandbox"
+              srcDoc={preview.page}
+              className="block h-full w-full border-0 bg-white"
+            />
+          ) : null}
+          {preview.kind === "sheet" ? (
+            <SheetFrame
+              title={name}
+              sheets={preview.sheets}
+              readOnly
+              onFailed={() => setPreview({ kind: "none" })}
+            />
+          ) : null}
+          {preview.kind === "text" ? (
+            <pre className="mx-auto max-w-4xl whitespace-pre-wrap break-words p-8 text-sm text-somnus-text">
+              {preview.text}
+            </pre>
+          ) : null}
+          {preview.kind === "none" ? (
+            <div className="flex h-full items-center justify-center">
+              <EmptyState icon="file" title={t("drive.preview.noPreview")} />
+            </div>
+          ) : null}
+        </div>
+        {notes && notable && panelOpen ? (
+          <NotesPanel
+            notes={notes}
+            blocks={blocks}
+            pages={preview.kind === "pdf"}
+            draft={draft}
+            focusedBlock={focusedBlock}
+            onClearDraft={() => setDraft(null)}
+            onSelect={selectNote}
+            onClose={() => setPanelOpen(false)}
           />
-        ) : null}
-        {preview.kind === "webpage" ? (
-          <iframe
-            title={name}
-            sandbox="allow-scripts"
-            allow="clipboard-write"
-            srcDoc={preview.page}
-            className="block h-full w-full border-0 bg-white"
-          />
-        ) : null}
-        {preview.kind === "markdown" ? (
-          <iframe
-            title={name}
-            // It can still run nothing; the one addition is that a link may
-            // open in a new tab, and only http, https and mail links survive.
-            sandbox="allow-popups allow-popups-to-escape-sandbox"
-            srcDoc={preview.page}
-            className="block h-full w-full border-0 bg-white"
-          />
-        ) : null}
-        {preview.kind === "sheet" ? (
-          <SheetFrame
-            title={name}
-            sheets={preview.sheets}
-            readOnly
-            onFailed={() => setPreview({ kind: "none" })}
-          />
-        ) : null}
-        {preview.kind === "text" ? (
-          <pre className="mx-auto max-w-4xl whitespace-pre-wrap break-words p-8 text-sm text-somnus-text">
-            {preview.text}
-          </pre>
-        ) : null}
-        {preview.kind === "none" ? (
-          <div className="flex h-full items-center justify-center">
-            <EmptyState icon="file" title={t("drive.preview.noPreview")} />
-          </div>
         ) : null}
       </div>
     </div>

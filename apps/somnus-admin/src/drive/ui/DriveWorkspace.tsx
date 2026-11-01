@@ -34,6 +34,7 @@ import type {
   DriveSession,
   DriveShareEntry,
 } from "../drive-session.js";
+import { useNotes } from "../notes/use-notes.js";
 import { csvToSheets, isSheetFile, isXlsx, xlsxToSheets } from "../sheets/convert.js";
 import { SheetEditor } from "../sheets/SheetEditor.js";
 import {
@@ -260,6 +261,13 @@ export function DriveWorkspace({
   }
 
   const canEdit = view !== null && view.role !== "viewer";
+  const openDocument = doc?.kind === "document" ? doc.id : null;
+  const notes = useNotes(
+    session,
+    view?.shareId ?? null,
+    viewer?.item ?? view?.items.find((i) => i.node.id === openDocument) ?? null,
+    canEdit,
+  );
   const isOwner = view?.role === "owner";
   const byId = new Map(view?.items.map((i) => [i.node.id, i]) ?? []);
   const current = folderId ?? view?.rootId ?? null;
@@ -341,7 +349,8 @@ export function DriveWorkspace({
   async function show(item: DriveItem) {
     if (!view) return;
     const bytes = await run(() => session.readFile(view, item));
-    if (!bytes) return;
+    // The person may have gone back while it was decrypting.
+    if (!bytes || shownFile.current !== item.node.id) return;
     if (kindOf(item) === "note") {
       setDialog({ kind: "readNote", item, body: fromUtf8(bytes) });
     } else {
@@ -358,8 +367,11 @@ export function DriveWorkspace({
 
   // The file in the URL, once its folder is open: shown once, not on every reload.
   useEffect(() => {
+    // No file in the URL: the browser's back button closes it, like our own arrow.
     if (!fileParam) {
       shownFile.current = null;
+      setViewer(null);
+      setDialog((d) => (d.kind === "readNote" ? { kind: "none" } : d));
       return;
     }
     if (!view || shownFile.current === fileParam) return;
@@ -684,6 +696,7 @@ export function DriveWorkspace({
         readOnly={!canEdit}
         onSave={saveDocument}
         onClose={() => go({ share: view.shareId, folder: current })}
+        notes={notes}
       />
     ) : (
       <p className="p-8 text-center text-somnus-subtle">
@@ -707,6 +720,7 @@ export function DriveWorkspace({
             saveBytes(viewer.bytes, viewer.item.meta?.name ?? t("drive.folder.kind.file"))
           }
           onClose={closeFile}
+          notes={notes}
         />
       ) : null}
       <div

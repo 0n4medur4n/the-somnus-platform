@@ -829,6 +829,26 @@
         "home": "Home",
         "briefcase": "Business"
       }
+    },
+    "notes": {
+      "title": "Notes on this file",
+      "heading_one": "{{count}} note",
+      "heading_other": "{{count}} notes",
+      "close": "Close the notes",
+      "add": "Add note",
+      "addHere": "+ Note",
+      "write": "Write a note…",
+      "done": "Resolved",
+      "delete": "Delete the note",
+      "goTo": "Go to this note in the file",
+      "page": "Page",
+      "onPage": "Page {{page}}",
+      "lostPlace": "No longer in the text: “{{quote}}”",
+      "empty": "No notes. Hover over a paragraph or a question and press “+ Note”.",
+      "emptyPdf": "No notes. Write one below and give its page.",
+      "emptyRead": "No notes.",
+      "pickPlace": "It will be added as a general note. Choose a paragraph to place it there.",
+      "clearPlace": "Remove the note's place"
     }
   },
   "charts": {
