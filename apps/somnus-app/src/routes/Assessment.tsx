@@ -25,9 +25,10 @@ import { useAuth } from "../auth/useAuth.js";
 import { BrandLogo } from "../components/BrandLogo.js";
 import { Button } from "../components/Button.js";
 import { ChoiceCard } from "../components/ChoiceCard.js";
-import { FullPageStatus } from "../components/FullPageStatus.js";
 import { LanguageSwitcher } from "../components/LanguageSwitcher.js";
 import { formatDateTime, LegalDocument } from "../components/LegalDocument.js";
+import { PageSkeleton } from "../components/PageSkeleton.js";
+import { CardsSkeleton, LoadingRegion, SkeletonLines } from "../components/Skeleton.js";
 import { ThemeSwitcher } from "../components/ThemeSwitcher.js";
 import { activeLocale } from "../i18n/index.js";
 import { MorpheoLayout } from "../layouts/MorpheoLayout.js";
@@ -59,7 +60,7 @@ export function AssessmentRoute() {
     staleTime: 5 * 60_000,
   });
   if (state.status === "loading" || flow.isPending) {
-    return <FullPageStatus message={t("common.loading")} />;
+    return <PageSkeleton message={t("common.loading")} />;
   }
   const v1 = flow.data?.activeFlow === "v1";
   if (state.status === "authenticated" && accountViewOf(state.me).isMorpheoUser) {
@@ -382,7 +383,7 @@ export function Assessment({
   const Wrapper = embedded ? "section" : "main";
 
   if (contentQuery.isPending) {
-    return <p role="status">{t("assessment.loadingContent")}</p>;
+    return <CardsSkeleton message={t("assessment.loadingContent")} cards={2} />;
   }
   if (contentQuery.isError) {
     return (
@@ -508,7 +509,9 @@ export function Assessment({
       {step === "consent" ? (
         <StepCard title={t("assessment.consent.legend")} intro={t("assessment.consent.intro")}>
           {legalQuery.isPending ? (
-            <p role="status">{t("legal.loading")}</p>
+            <LoadingRegion message={t("legal.loading")}>
+              <SkeletonLines lines={5} />
+            </LoadingRegion>
           ) : !healthDocument ? (
             <div className="flex flex-col gap-2">
               <p role="alert" className="text-somnus-danger">

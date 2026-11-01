@@ -11,6 +11,7 @@ import { Link, Navigate } from "react-router";
 import { type AccountView, accountViewOf } from "../auth/account-view.js";
 import { useAuth } from "../auth/useAuth.js";
 import { Avatar } from "../components/Avatar.js";
+import { CardsSkeleton } from "../components/Skeleton.js";
 import { edge } from "../lib/edge.js";
 
 export const OWN_ASSESSMENTS_QUERY = ["own-assessments"] as const;
@@ -202,7 +203,7 @@ export function MorpheoHome() {
   const firstName = me.individualProfile?.firstName;
 
   if (own.isPending || funnel.isPending) {
-    return <p role="status">{t("space.loading")}</p>;
+    return <CardsSkeleton message={t("space.loading")} title />;
   }
   if (own.isError) {
     return (
@@ -232,7 +233,9 @@ export function MorpheoHome() {
     // An empty list may be the stale one cached before the first result was
     // saved; redirecting on it would bounce the person straight back to the
     // questionnaire. Only a fresh empty answer sends them there.
-    if (own.isFetching || funnel.isFetching) return <p role="status">{t("space.loading")}</p>;
+    if (own.isFetching || funnel.isFetching) {
+      return <CardsSkeleton message={t("space.loading")} title />;
+    }
     return <Navigate to="/assessment" replace />;
   }
 

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { BarChart, HBarChart } from "../components/charts/charts.js";
 import { Icon } from "../components/ui/Icon.js";
+import { ChartSkeleton, LoadingRegion } from "../components/ui/Skeleton.js";
 import { Card, SectionTitle, StatTile } from "../components/ui/ui.js";
 import { edge } from "../lib/edge.js";
 import { usePendingCounts, type ViewId } from "../routes/sections.js";
@@ -168,24 +169,28 @@ export function DashboardScreen({
               icon="users"
               tone="primary"
               label={t("dashboard.totalAccounts")}
+              loading={overview.isPending}
               value={o ? number.format(o.total) : "—"}
             />
             <StatTile
               icon="check"
               tone="success"
               label={t("dashboard.activeAccounts")}
+              loading={overview.isPending}
               value={o ? number.format(o.byStatus.active) : "—"}
             />
             <StatTile
               icon="lock"
               tone={o?.byStatus.suspended ? "danger" : "neutral"}
               label={t("dashboard.suspendedAccounts")}
+              loading={overview.isPending}
               value={o ? number.format(o.byStatus.suspended) : "—"}
             />
             <StatTile
               icon="plus"
               tone="primary"
               label={t("dashboard.newAccounts30")}
+              loading={overview.isPending}
               value={o ? number.format(o.newLast30Days) : "—"}
               {...(o ? { hint: t("dashboard.newAccounts7", { count: o.newLast7Days }) } : {})}
             />
@@ -205,9 +210,11 @@ export function DashboardScreen({
                     };
                   })}
                 />
-              ) : (
-                <p className="text-sm text-somnus-subtle">{t("common.loading")}</p>
-              )}
+              ) : overview.isPending ? (
+                <LoadingRegion message={t("common.loading")}>
+                  <ChartSkeleton />
+                </LoadingRegion>
+              ) : null}
             </Card>
             <Card aria-labelledby="dash-types">
               <SectionTitle id="dash-types">{t("dashboard.accountTypes")}</SectionTitle>
@@ -219,9 +226,11 @@ export function DashboardScreen({
                     value: o.byRegistrationRole[k],
                   }))}
                 />
-              ) : (
-                <p className="text-sm text-somnus-subtle">{t("common.loading")}</p>
-              )}
+              ) : overview.isPending ? (
+                <LoadingRegion message={t("common.loading")}>
+                  <ChartSkeleton />
+                </LoadingRegion>
+              ) : null}
             </Card>
           </div>
         </section>

@@ -99,6 +99,33 @@ body {
   border-radius: 2px;
 }
 
+/* Skeleton screens: a quiet shimmer in the shape of what is about to appear. At rest
+   (reduced motion, or when the animation ends) the band sits off to the side, so the
+   block is a flat tint. */
+@keyframes somnus-shimmer {
+  from {
+    background-position: -150% 0;
+  }
+  to {
+    background-position: 250% 0;
+  }
+}
+
+.somnus-skeleton {
+  border-radius: 0.5rem;
+  background-color: color-mix(in srgb, var(--color-somnus-muted) 22%, transparent);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0,
+    color-mix(in srgb, var(--color-somnus-text) 9%, transparent) 50%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 60% 100%;
+  background-position: 250% 0;
+  animation: somnus-shimmer 1.5s ease-in-out infinite;
+}
+
 /* A11y baseline: respect reduced-motion. */
 @media (prefers-reduced-motion: reduce) {
   *,

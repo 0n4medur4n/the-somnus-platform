@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import somnusWordmark from "../assets/brand/somnus-wordmark.png";
 import { useAdminAuth } from "../auth/useAdminAuth.js";
-import { FullPageStatus } from "../components/FullPageStatus.js";
+import { DriveSkeleton } from "../components/DriveSkeleton.js";
 import { Icon } from "../components/ui/Icon.js";
 import { DriveScreen } from "../drive/ui/DriveScreen.js";
 import { rememberReturnTo } from "../lib/return-to.js";
@@ -28,7 +28,7 @@ export function DriveApp() {
     }
   }, [state.status]);
 
-  if (state.status === "loading") return <FullPageStatus message={t("common.loading")} />;
+  if (state.status === "loading") return <DriveSkeleton message={t("common.loading")} />;
   if (state.status === "unauthenticated") return <Login />;
   if (state.status === "invited") return <Invited invitation={state.invitation} />;
   if (state.status === "denied" || !state.me.capabilities.includes("admin_drive")) {

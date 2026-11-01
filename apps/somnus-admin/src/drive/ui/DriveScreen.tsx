@@ -2,6 +2,7 @@ import type { DriveAccount } from "@somnus/api-contracts";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/ui/Icon.js";
+import { LoadingRegion, Skeleton, SkeletonLines } from "../../components/ui/Skeleton.js";
 import { ApiRequestError } from "../../lib/api.js";
 import { edge } from "../../lib/edge.js";
 import { DriveSession } from "../drive-session.js";
@@ -125,7 +126,14 @@ export function DriveScreen({ fullScreen = false }: { fullScreen?: boolean } = {
   return (
     <section aria-label={t("drive.title")} className={fullScreen ? "px-4 py-10" : undefined}>
       {phase.kind === "loading" ? (
-        <p className="text-center text-somnus-subtle">{t("drive.loading")}</p>
+        <LoadingRegion
+          message={t("drive.loading")}
+          className="mx-auto flex max-w-md flex-col gap-4 rounded-xl border border-white/[0.06] bg-somnus-surface/80 p-6"
+        >
+          <Skeleton className="h-6 w-1/2" />
+          <SkeletonLines lines={3} />
+          <Skeleton className="h-10 w-full" />
+        </LoadingRegion>
       ) : null}
       {phase.kind === "error" ? <Notice tone="danger">{t("errors.generic")}</Notice> : null}
       {phase.kind === "setup" ? gateCard(<DriveSetup onOpened={(r) => void opened(r)} />) : null}

@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { AdminAuthProvider } from "./auth/AdminAuthProvider.js";
 import { useAdminAuth } from "./auth/useAdminAuth.js";
-import { FullPageStatus } from "./components/FullPageStatus.js";
+import { ConsoleSkeleton } from "./components/ConsoleSkeleton.js";
+import { DriveSkeleton } from "./components/DriveSkeleton.js";
 import { AuthCallback } from "./routes/AuthCallback.js";
 import { ConsoleHome } from "./routes/ConsoleHome.js";
 import { Denied } from "./routes/Denied.js";
@@ -16,15 +17,15 @@ const DriveApp = lazy(() => import("./routes/DriveApp.js").then((m) => ({ defaul
 
 function DriveRoute() {
   return (
-    <Suspense fallback={<FullPageStatusLoading />}>
+    <Suspense fallback={<DriveLoading />}>
       <DriveApp />
     </Suspense>
   );
 }
 
-function FullPageStatusLoading() {
+function DriveLoading() {
   const { t } = useTranslation();
-  return <FullPageStatus message={t("common.loading")} />;
+  return <DriveSkeleton message={t("common.loading")} />;
 }
 
 const queryClient = new QueryClient({
@@ -43,7 +44,7 @@ export function Gate() {
   const { t } = useTranslation();
   const { state } = useAdminAuth();
 
-  if (state.status === "loading") return <FullPageStatus message={t("common.loading")} />;
+  if (state.status === "loading") return <ConsoleSkeleton message={t("common.loading")} />;
   if (state.status === "unauthenticated") return <Login />;
   if (state.status === "denied") return <Denied />;
   if (state.status === "invited") return <Invited invitation={state.invitation} />;

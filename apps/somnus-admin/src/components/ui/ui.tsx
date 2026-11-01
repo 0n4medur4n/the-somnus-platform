@@ -9,6 +9,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { twMerge } from "tailwind-merge";
 import { Icon, type IconName } from "./Icon.js";
+import { Skeleton } from "./Skeleton.js";
 
 /**
  * The console's building blocks: surfaces, figures and overlays in one place,
@@ -70,6 +71,7 @@ export function StatTile({
   icon,
   tone = "neutral",
   onClick,
+  loading = false,
 }: {
   label: string;
   value: string | number;
@@ -77,6 +79,8 @@ export function StatTile({
   icon: IconName;
   tone?: "neutral" | "primary" | "success" | "warning" | "danger";
   onClick?: () => void;
+  /** The figure is still on its way: a placeholder where it will be. */
+  loading?: boolean;
 }) {
   const chip = {
     neutral: "bg-white/5 text-somnus-subtle",
@@ -92,7 +96,11 @@ export function StatTile({
       </span>
       <span className="flex min-w-0 flex-col text-left">
         <span className="truncate text-sm text-somnus-subtle">{label}</span>
-        <span className="text-2xl font-semibold tabular-nums text-somnus-text">{value}</span>
+        {loading ? (
+          <Skeleton className="my-1 h-6 w-20" />
+        ) : (
+          <span className="text-2xl font-semibold tabular-nums text-somnus-text">{value}</span>
+        )}
         {hint ? <span className="truncate text-xs text-somnus-subtle">{hint}</span> : null}
       </span>
     </>
@@ -108,7 +116,9 @@ export function StatTile({
       {body}
     </button>
   ) : (
-    <div className={base}>{body}</div>
+    <div className={base} aria-busy={loading || undefined}>
+      {body}
+    </div>
   );
 }
 

@@ -14,6 +14,7 @@ import { useSearchParams } from "react-router";
 import { Button } from "../../components/Button.js";
 import { Field } from "../../components/Field.js";
 import { Icon, type IconName } from "../../components/ui/Icon.js";
+import { LoadingRegion, Skeleton, SkeletonLines } from "../../components/ui/Skeleton.js";
 import {
   Badge,
   EmptyState,
@@ -699,9 +700,17 @@ export function DriveWorkspace({
         notes={notes}
       />
     ) : (
-      <p className="p-8 text-center text-somnus-subtle">
-        {task.error ? task.error : t("drive.loading")}
-      </p>
+      <div className="mx-auto max-w-2xl p-8">
+        {task.error ? (
+          <p className="text-center text-somnus-subtle">{task.error}</p>
+        ) : (
+          <LoadingRegion message={t("drive.loading")} className="flex flex-col gap-4">
+            <Skeleton className="h-7 w-1/2" />
+            <SkeletonLines lines={5} />
+            <SkeletonLines lines={4} />
+          </LoadingRegion>
+        )}
+      </div>
     );
   }
 
@@ -763,7 +772,11 @@ export function DriveWorkspace({
               {t("drive.sharedFolders")}
             </p>
             {shares === null ? (
-              <p className="px-3 text-sm text-somnus-subtle">{t("drive.loading")}</p>
+              <LoadingRegion message={t("drive.loading")} className="flex flex-col gap-2 px-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-4 w-2/3" />
+              </LoadingRegion>
             ) : shares.length === 0 ? (
               <p className="px-3 text-sm text-somnus-subtle">{t("drive.noFoldersYet")}</p>
             ) : (
@@ -1577,7 +1590,27 @@ function ShareGrid({
   onDelete: (share: DriveShareEntry) => void;
 }) {
   const { t } = useTranslation();
-  if (shares === null) return <p className="text-sm text-somnus-subtle">{t("drive.loading")}</p>;
+  if (shares === null) {
+    return (
+      <LoadingRegion
+        message={t("drive.loading")}
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {["a", "b", "c"].map((id) => (
+          <div
+            key={id}
+            className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-somnus-surface/80 p-4"
+          >
+            <Skeleton className="h-10 w-10 shrink-0" />
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-3.5 w-2/3" />
+              <Skeleton className="h-2.5 w-1/3" />
+            </div>
+          </div>
+        ))}
+      </LoadingRegion>
+    );
+  }
   if (shares.length === 0) {
     return (
       <EmptyState icon="folderShared" title={t("drive.shares.empty")}>

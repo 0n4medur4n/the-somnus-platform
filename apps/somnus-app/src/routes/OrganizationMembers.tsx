@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { LoadingRegion, Skeleton } from "../components/Skeleton.js";
 import { edge } from "../lib/edge.js";
 import { useActiveOrg } from "../org/OrgContext.js";
 
@@ -27,9 +28,11 @@ export function OrganizationMembers() {
           </Link>
         </p>
       ) : membersQuery.isLoading ? (
-        <p role="status" aria-live="polite" className="text-somnus-subtle">
-          {t("common.loading")}
-        </p>
+        <LoadingRegion message={t("common.loading")} className="flex flex-col gap-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </LoadingRegion>
       ) : membersQuery.data && membersQuery.data.length > 0 ? (
         <ul className="flex flex-col gap-2" data-testid="member-list">
           {membersQuery.data.map((member) => (

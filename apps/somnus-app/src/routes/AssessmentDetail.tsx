@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router";
 import { DownloadReportLink } from "../assessment/DownloadReportLink.js";
 import { ResultView } from "../assessment/ResultView.js";
+import { CardsSkeleton } from "../components/Skeleton.js";
 import { edge } from "../lib/edge.js";
 import { ASSESSMENT_CONTENT_QUERY, formatDate, OWN_ASSESSMENTS_QUERY } from "./MorpheoHome.js";
 
@@ -45,7 +46,7 @@ export function AssessmentDetail() {
         ) : null}
       </div>
       {snapshot.isPending || content.isPending ? (
-        <p role="status">{t("common.loading")}</p>
+        <CardsSkeleton message={t("common.loading")} cards={2} />
       ) : snapshot.isError || content.isError ? (
         <p role="alert" className="text-somnus-danger">
           {t("resultPage.error")}

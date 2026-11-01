@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Button } from "../components/Button.js";
 import { formatDateTime, LegalDocument } from "../components/LegalDocument.js";
+import { CardsSkeleton } from "../components/Skeleton.js";
 import { edge } from "../lib/edge.js";
 import { CONSENT_STATUS_QUERY } from "./Assessment.js";
 
@@ -143,7 +144,7 @@ export function MyConsents() {
         <p className="text-somnus-subtle">{t("consents.intro")}</p>
       </div>
       {records.isPending ? (
-        <p role="status">{t("common.loading")}</p>
+        <CardsSkeleton message={t("common.loading")} />
       ) : records.isError ? (
         <p role="alert" className="text-somnus-danger">
           {t("consents.loadError")}

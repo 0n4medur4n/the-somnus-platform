@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router";
 import { FunnelResultView } from "../assessment/funnel/FunnelResultView.js";
+import { CardsSkeleton } from "../components/Skeleton.js";
 import { edge } from "../lib/edge.js";
 import { formatDate, OWN_FUNNEL_QUERY } from "./MorpheoHome.js";
 
@@ -40,7 +41,7 @@ export function EvaluationDetail() {
         ) : null}
       </div>
       {interview.isPending ? (
-        <p role="status">{t("common.loading")}</p>
+        <CardsSkeleton message={t("common.loading")} cards={2} />
       ) : interview.isError ? (
         <p role="alert" className="text-somnus-danger">
           {t("resultPage.error")}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/ui/Icon.js";
+import { LoadingRegion, Skeleton, SkeletonLines } from "../../components/ui/Skeleton.js";
 import { EmptyState } from "../../components/ui/ui.js";
 import { fromUtf8 } from "../crypto.js";
 import { htmlViewerPage, isHtml } from "../documents/html-view.js";
@@ -281,7 +282,14 @@ export function FileViewer({
       <div className="flex min-h-0 flex-1">
         <div className="min-h-0 min-w-0 flex-1 overflow-auto">
           {preview.kind === "loading" ? (
-            <p className="p-8 text-center text-somnus-subtle">{t("drive.loading")}</p>
+            <LoadingRegion
+              message={t("drive.loading")}
+              className="mx-auto flex max-w-2xl flex-col gap-4 p-8"
+            >
+              <Skeleton className="h-7 w-1/2" />
+              <SkeletonLines lines={5} />
+              <SkeletonLines lines={4} />
+            </LoadingRegion>
           ) : null}
           {preview.kind === "pdf" ? (
             <iframe

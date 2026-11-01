@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { twMerge } from "tailwind-merge";
 import { Button } from "./Button.js";
+import { LoadingRegion, SkeletonLines } from "./Skeleton.js";
 
 type Block =
   | { kind: "heading"; text: string }
@@ -258,7 +259,9 @@ export function LegalDocumentDialog({
           {doc ? (
             <LegalDocument document={doc} className="border-0 bg-transparent p-0" />
           ) : (
-            <p role="status">{t("legal.loading")}</p>
+            <LoadingRegion message={t("legal.loading")}>
+              <SkeletonLines lines={5} />
+            </LoadingRegion>
           )}
         </div>
       </div>
