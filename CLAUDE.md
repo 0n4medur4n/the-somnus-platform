@@ -45,6 +45,22 @@ Morpheo: the embudo v0.2 (`services/morpheo-service/clinical/Morpheo_algoritmo_e
 - Negative tests are immutable once green.
 - Never claim a command passed without executing it.
 
+## Git worktrees
+
+(owner rule, 2026-11-03)
+
+- Every git worktree of this repository lives in `wt/` at the repository
+  root: `git worktree add wt/<short-name> <branch>`. Never create one
+  anywhere else -- not `C:\wt`, not a session scratchpad, not the Desktop.
+  `wt/` is gitignored and dockerignored; nothing in it is committed.
+- Keep `<short-name>` short (`cpu-idle`, `nox-sse`), because `node_modules`
+  paths are long on Windows. Reuse an existing worktree before creating one.
+- Remove a worktree with `git worktree remove wt/<name>` when its branch is
+  merged or abandoned, and say so in the session report. Removing a worktree
+  keeps its branch; uncommitted changes in it are lost.
+- A worktree moved from elsewhere needs `pnpm install --frozen-lockfile`
+  (pnpm links are absolute paths) and, for Python services, `uv sync`.
+
 ## Session protocol
 
 (build plan §23)

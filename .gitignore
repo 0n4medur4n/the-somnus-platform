@@ -81,6 +81,9 @@ firestore-debug.log
 ui-debug.log
 *-debug.log
 
+# Git worktrees (CLAUDE.md "Git worktrees": every worktree lives here)
+/wt/
+
 # Local services
 .localstack/
 .pgdata/

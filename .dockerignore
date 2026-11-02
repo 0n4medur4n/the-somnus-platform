@@ -25,6 +25,7 @@
 .git
 **/.git
 .github
+wt
 **/.DS_Store
 
 # Terraform (never belongs in an image context)

@@ -39,6 +39,12 @@ Non-negotiable rules (summarized from the build plan; the plan's full text gover
 - Negative tests are immutable once green.
 - Never claim a command passed without executing it.
 
+Git worktrees (owner rule, 2026-11-03): every worktree lives in `wt/` at the
+repository root (`git worktree add wt/<short-name> <branch>`), never `C:\wt`,
+a scratchpad or the Desktop. `wt/` is gitignored and dockerignored. Keep names
+short, reuse before creating, and `git worktree remove wt/<name>` when the
+branch is merged or abandoned. See CLAUDE.md for details.
+
 Session protocol (build plan §23):
 BEFORE: inspect repo, restate objective, list files to change, list and
 justify dependencies, state boundary and security implications. Wait for
