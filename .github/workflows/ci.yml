@@ -726,6 +726,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Fetch the private clinical artifacts
+        uses: ./.github/actions/fetch-clinical
+        with:
+          deploy-key: ${{ secrets.CLINICAL_DEPLOY_KEY }}
+
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
         with:
