@@ -25,6 +25,7 @@ import {
   normalizeQuote,
 } from "../notes/notes-format.js";
 import type { NotesBinding } from "../notes/use-notes.js";
+import { PdfFrame } from "../pdf/PdfFrame.js";
 import { csvToSheets, isSheetFile, isXlsx, xlsxToSheets } from "../sheets/convert.js";
 import { SheetFrame } from "../sheets/SheetFrame.js";
 import type { StoredSheet } from "../sheets/sheet-format.js";
@@ -47,8 +48,9 @@ function isPdf(mime: string | undefined, name: string | undefined): boolean {
 
 /**
  * A file opened full screen, like a drive's viewer. The bytes were decrypted in
- * this browser; the preview never leaves it. A PDF goes to the browser's own
- * viewer through a blob URL; a Word file is converted here to plain HTML and
+ * this browser; the preview never leaves it. A PDF opens in our own viewer
+ * (pdf.js, in an isolated frame: see `PdfFrame`), so it can be read aloud, and in
+ * the browser's own viewer in a tab of its own; a Word file is converted here to plain HTML and
  * shown in a sandboxed frame that may run nothing at all. Markdown takes the
  * same road, a spreadsheet opens read-only in its own isolated frame, and an HTML
  * file runs in one too, here or in a tab of its own (see `htmlViewerPage`).
@@ -100,12 +102,20 @@ export function FileViewer({
   const [draft, setDraft] = useState<NoteAnchor | null>(null);
   const [focusedBlock, setFocusedBlock] = useState<number | null>(null);
   const [goTo, setGoTo] = useState<{ index: number; nonce: number } | null>(null);
-  const [pdfPage, setPdfPage] = useState<number | null>(null);
+  const [pdfGoTo, setPdfGoTo] = useState<{ page: number; nonce: number } | null>(null);
+  const [pdfReading, setPdfReading] = useState<{
+    page: number | null;
+    start?: number;
+    end?: number;
+  }>({ page: null });
+  const pdfTexts = useRef<string[] | null>(null);
+  const pdfWaiters = useRef<Array<(texts: string[]) => void>>([]);
 
   useEffect(() => {
     let url: string | null = null;
     let cancelled = false;
     fullBlocks.current = null;
+    pdfTexts.current = null;
     const blobOf = (type: string) => new Blob([bytes as Uint8Array<ArrayBuffer>], { type });
     if (isPdf(mime, name)) {
       url = URL.createObjectURL(blobOf("application/pdf"));
@@ -190,7 +200,7 @@ export function FileViewer({
   }
 
   function selectNote(note: DriveNote) {
-    if (note.anchor.kind === "page") setPdfPage(note.anchor.page);
+    if (note.anchor.kind === "page") setPdfGoTo({ page: note.anchor.page, nonce: Date.now() });
     const index = blockOf(note, blocks);
     if (index === null) return;
     setFocusedBlock(index);
@@ -231,6 +241,20 @@ export function FileViewer({
     });
   }
 
+  // A PDF's pages arrive once the viewer has read the file.
+  function pdfPages(): Promise<string[]> {
+    if (pdfTexts.current) return Promise.resolve(pdfTexts.current);
+    return new Promise((resolve) => {
+      pdfWaiters.current.push(resolve);
+      setTimeout(() => resolve([]), 20_000);
+    });
+  }
+
+  function onPdfPages(texts: string[]) {
+    pdfTexts.current = texts;
+    for (const resolve of pdfWaiters.current.splice(0)) resolve(texts);
+  }
+
   function onFullBlocks(texts: string[]) {
     fullBlocks.current = texts;
     for (const resolve of fullWaiters.current.splice(0)) resolve(texts);
@@ -262,6 +286,25 @@ export function FileViewer({
           className="h-5 w-5 shrink-0 text-somnus-primary"
         />
         <h2 className="min-w-0 flex-1 truncate font-medium text-somnus-text">{name}</h2>
+        {voice && preview.kind === "pdf" ? (
+          <span className="flex items-center gap-1">
+            <VoiceLanguage lang={voiceLang} onChange={setVoiceLang} />
+            <ReadAloudButton
+              voice={voice}
+              lang={voiceLang}
+              collect={async () => passagesOfTexts(await pdfPages())}
+              onPassage={(passage) => setPdfReading({ page: passage ? passage.from + 1 : null })}
+              onWord={(passage, word) => {
+                const range = word && wordRange(passage, word[0], word[1]);
+                setPdfReading(
+                  range
+                    ? { page: passage.from + 1, start: range[0], end: range[1] }
+                    : { page: passage.from + 1 },
+                );
+              }}
+            />
+          </span>
+        ) : null}
         {voice && (preview.kind === "markdown" || preview.kind === "html") ? (
           <span className="flex items-center gap-1">
             <VoiceLanguage lang={voiceLang} onChange={setVoiceLang} />
@@ -292,6 +335,16 @@ export function FileViewer({
           >
             <Icon name="note" className="h-4 w-4" />
             {t("drive.notes.heading", { count: notes.list.length })}
+          </button>
+        ) : null}
+        {preview.kind === "pdf" ? (
+          <button
+            type="button"
+            onClick={() => window.open(preview.url, "_blank", "noopener")}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-sm text-somnus-text hover:bg-white/5"
+          >
+            <Icon name="external" className="h-4 w-4" />
+            {t("drive.viewer.openInTab")}
           </button>
         ) : null}
         {preview.kind === "webpage" ? (
@@ -346,12 +399,13 @@ export function FileViewer({
             </LoadingRegion>
           ) : null}
           {preview.kind === "pdf" ? (
-            <iframe
-              // Reloading is how a page number reaches the browser's PDF viewer.
-              key={pdfPage ?? 0}
+            <PdfFrame
               title={name}
-              src={pdfPage ? `${preview.url}#page=${pdfPage}` : preview.url}
-              className="h-full w-full border-0 bg-white"
+              bytes={bytes}
+              goTo={pdfGoTo}
+              reading={pdfReading}
+              onPages={onPdfPages}
+              onFailed={() => setPreview({ kind: "none" })}
             />
           ) : null}
           {preview.kind === "image" ? (

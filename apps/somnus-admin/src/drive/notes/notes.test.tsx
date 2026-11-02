@@ -329,10 +329,20 @@ describe("FileViewer with notes", () => {
       list: [note({ anchor: { kind: "page", page: 7 } })],
     });
     viewer("guia.pdf", "application/pdf", notes);
+    // Our viewer reports its pages; then a note's page is a scroll, not a reload.
+    const frame = (await screen.findByTitle("guia.pdf")) as HTMLIFrameElement;
+    const target = frame.contentWindow as Window;
+    const post = vi.spyOn(target, "postMessage");
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: { t: "pages", texts: Array.from({ length: 9 }, (_, i) => `Página ${i + 1}`) },
+          source: target,
+        }),
+      );
+    });
     await user.click(await screen.findByRole("button", { name: t("drive.notes.goTo") }));
-    await waitFor(() =>
-      expect(screen.getByTitle("guia.pdf")).toHaveAttribute("src", "blob:pdf#page=7"),
-    );
+    await waitFor(() => expect(post).toHaveBeenCalledWith({ t: "go", page: 7 }, "*"));
   });
 
   it("adds a note on the page given", async () => {

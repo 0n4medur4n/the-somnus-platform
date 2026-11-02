@@ -272,3 +272,19 @@ raised later).
   nothing). The script reports each block's whole text and highlights the passage, and the word through the CSS
   Custom Highlight API, without touching the document. It is told only a block number and two offsets, checked
   against the blocks it reported.
+
+### Our own PDF viewer (owner decision 2026-11-02)
+
+- **pdf.js replaces the browser's PDF viewer in the Drive,** so a PDF can be read aloud word by word (and annotated,
+  next). pdfjs-dist 6.4.299 (Mozilla, Apache-2.0), chosen over 6.5.438 because that one was a day old. The browser's
+  own viewer stays one click away: "Open in a new tab" opens the decrypted copy there.
+- **Isolated like the spreadsheet engine.** pdf.js parses files other people made, and this tab holds the Drive's
+  keys, so it runs only in a frame with `sandbox="allow-scripts"` (an opaque origin) whose policy names one boot
+  script by hash and allows `unsafe-eval` only so the viewer, which arrives as text, can start; no connection, no
+  remote image or font. pdf.js 6 compiles nothing from a PDF (the eval path behind CVE-2024-4367 is gone) and runs
+  its parser in that same thread: the worker's code is bundled into the viewer and handed over as `pdfjsWorker`.
+  XFA forms are off. The frame gets the one PDF (a copy of its bytes) and sends back only its pages' texts, kept
+  only when they are strings. In Chromium two real PDFs opened, rendered and read with no request leaving the frame.
+- **Page notes jump instead of reloading,** and the page being read is outlined, the spoken word highlighted
+  through the CSS Custom Highlight API over pdf.js's text layer. CJK PDFs that rely on external CMaps may show
+  without text: the frame fetches nothing, by design.

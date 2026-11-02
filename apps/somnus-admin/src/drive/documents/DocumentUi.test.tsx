@@ -33,9 +33,16 @@ describe("FileViewer", () => {
       />,
     );
 
-  it("shows a PDF in the browser's viewer, from this browser's memory", () => {
+  it("shows a PDF in our own viewer, isolated, and in the browser's in a tab of its own", async () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
     viewer("guia.pdf", "application/pdf", new TextEncoder().encode("%PDF-1.4"));
-    expect(screen.getByTitle("guia.pdf")).toHaveAttribute("src", "blob:preview");
+    const frame = await screen.findByTitle("guia.pdf");
+    // pdf.js parses other people's files: never with this tab's origin.
+    expect(frame).toHaveAttribute("sandbox", "allow-scripts");
+    expect(frame.getAttribute("srcdoc")).toContain("default-src 'none'");
+    expect(frame.getAttribute("srcdoc")).not.toContain("connect-src");
+    screen.getByRole("button", { name: t("drive.viewer.openInTab") }).click();
+    expect(open).toHaveBeenCalledWith("blob:preview", "_blank", "noopener");
   });
 
   it("shows a Word file converted to HTML, in a frame that can run nothing", async () => {

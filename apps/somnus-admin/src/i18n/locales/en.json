@@ -689,7 +689,8 @@
     "viewer": {
       "editAsDocument": "Edit as document",
       "editAsSheet": "Edit as spreadsheet",
-      "openInTab": "Open in a new tab"
+      "openInTab": "Open in a new tab",
+      "page": "Page"
     },
     "doc": {
       "new": "Text document",
