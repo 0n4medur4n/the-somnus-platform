@@ -22,10 +22,9 @@ export const SpeechConfigSchema = z.object({
     .default("false")
     .transform((value) => value === "true"),
   // Chirp 3: HD voices on the EU endpoint (owner decision 2026-11-02): the text
-  // is turned into speech in the EU.
+  // is turned into speech in the EU. Catalan has no Chirp 3 voice; its one
+  // Standard voice is served there too (checked against voices.list).
   TTS_ENDPOINT: z.url().default("https://eu-texttospeech.googleapis.com"),
-  // Catalan has no Chirp 3 voice; its one voice is served where Google serves it.
-  TTS_ENDPOINT_CA: z.url().default("https://texttospeech.googleapis.com"),
   TTS_VOICE_ES: z.string().default("es-ES-Chirp3-HD-Kore"),
   TTS_VOICE_EN: z.string().default("en-GB-Chirp3-HD-Kore"),
   TTS_VOICE_CA: z.string().default("ca-ES-Standard-B"),

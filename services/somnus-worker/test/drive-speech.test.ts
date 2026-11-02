@@ -99,11 +99,11 @@ describe("speech service", () => {
     });
   });
 
-  it("reads Catalan with its own voice, where Google serves it", async () => {
+  it("reads Catalan with its own voice, in the EU too", async () => {
     const http = vi.fn().mockResolvedValue(json({ audioContent: "SUQz" }));
     await new SpeechService(configured, http, async () => "t").readAloud("Bon dia.", "ca");
     const [url, init] = http.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://texttospeech.googleapis.com/v1/text:synthesize");
+    expect(url).toBe("https://eu-texttospeech.googleapis.com/v1/text:synthesize");
     expect(JSON.parse(String(init.body)).voice).toEqual({
       languageCode: "ca-ES",
       name: "ca-ES-Standard-B",

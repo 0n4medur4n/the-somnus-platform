@@ -243,9 +243,10 @@ raised later).
 - **Reading aloud.** The browser sends the passage from the caret (or the selection) a part at a time, at most 4800
   bytes each, through `/admin/v1/drive/speech/read-aloud`; the worker calls Text-to-Speech with its own identity (no
   key), and the MP3 plays in the page while the next part is fetched. The owner chose Chirp 3: HD voices on the EU
-  endpoint (`eu-texttospeech.googleapis.com`), so Spanish, English and French are spoken in the EU. Catalan has no
-  Chirp 3 voice: its one voice (`ca-ES-Standard-B`) is called on the global endpoint. Endpoints and voices are
-  configuration (`TTS_ENDPOINT`, `TTS_ENDPOINT_CA`, `TTS_VOICE_*`).
+  endpoint (`eu-texttospeech.googleapis.com`), so every passage is spoken in the EU. Catalan has no Chirp 3 voice:
+  its one voice (`ca-ES-Standard-B`) is on the same endpoint (checked against `voices.list` and a real synthesis on
+  2026-11-02, like `es-ES`, `en-GB` and `fr-FR-Chirp3-HD-Kore`). Endpoint and voices are configuration
+  (`TTS_ENDPOINT`, `TTS_VOICE_*`).
 - **Language.** A selector beside the buttons sets the language for both, defaulting to the console's: a document in
   Catalan can be dictated and read in Catalan from a console in Spanish. The owner confirmed AssemblyAI's DPA, which
   is part of its terms of service.
