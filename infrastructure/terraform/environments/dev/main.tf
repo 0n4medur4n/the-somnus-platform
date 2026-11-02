@@ -43,6 +43,9 @@ locals {
     "serviceusage.googleapis.com",
     # Reading Drive documents aloud (owner decision 2026-11-02, ADR 0019).
     "texttospeech.googleapis.com",
+    # Proofreading Drive documents with Gemini on Vertex AI, in the EU (owner
+    # decision 2026-11-02, ADR 0019): called by the report service alone.
+    "aiplatform.googleapis.com",
     # Also needed on the backend project: with user_project_override,
     # every API call (even ones targeting firebase_project_id) is
     # quota-billed against project_id, and Google checks enablement
@@ -328,6 +331,11 @@ module "run_report" {
     MORPHEO_BASE_URL = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
     # Uploaded corpus originals (owner decision 2026-10-18, Addendum B §B6.3).
     CORPUS_FILES_BUCKET = module.corpus_files_bucket.bucket_name
+    # Proofreading Drive documents with Gemini on Vertex AI in the EU (ADR 0019),
+    # with this service's own identity (roles/aiplatform.user below): no key.
+    PROOFREAD_ENABLED = "true"
+    VERTEX_PROJECT    = var.project_id
+    VERTEX_LOCATION   = var.region
   }
   # OPENAI_API_KEY: embeddings, and the AI wording job
   # (`python -m report.jobs.generate_rewrites`, GPT-6 Luna at xhigh effort -- the
@@ -740,6 +748,15 @@ resource "google_project_iam_member" "edge_sign_in_link_issuer" {
   project = var.project_id
   role    = google_project_iam_custom_role.sign_in_link_issuer.name
   member  = module.sa_edge_api.member
+}
+
+# Gemini on Vertex AI for proofreading Drive documents (ADR 0019): the report
+# service, which holds the provider abstraction (build plan §3.6), may call
+# models in this project, and nothing more.
+resource "google_project_iam_member" "report_vertex_user" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = module.sa_report.member
 }
 
 # The Brevo API key: created by hand in Secret Manager (never in Terraform

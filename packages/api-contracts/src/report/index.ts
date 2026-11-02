@@ -1,4 +1,14 @@
 export {
+  DRIVE_PROOFREAD_MAX_CHARS,
+  DRIVE_PROOFREAD_MAX_SUGGESTIONS,
+  type DriveProofreadRequest,
+  DriveProofreadRequestSchema,
+  type DriveProofreadResult,
+  DriveProofreadResultSchema,
+  type DriveProofreadSuggestion,
+  DriveProofreadSuggestionSchema,
+} from "./proofread.js";
+export {
   type FunnelReportRequest,
   FunnelReportRequestSchema,
   type PersonReport,

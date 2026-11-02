@@ -844,6 +844,30 @@
         "pages_other": "{{n}} pages",
         "selected_one": "{{n}} word selected",
         "selected_other": "{{n}} words selected"
+      },
+      "proofread": {
+        "label": "Proofread",
+        "start": "Proofread the document with AI",
+        "working": "Proofreading {{done}}/{{total}}…",
+        "mode": "How to correct",
+        "suggest": "Suggest",
+        "apply": "Correct directly",
+        "suggestion": "Proposed correction",
+        "accept": "Accept",
+        "dismiss": "Dismiss",
+        "acceptAll": "Accept all",
+        "dismissAll": "Dismiss all",
+        "count_one": "{{count}} suggestion",
+        "count_other": "{{count}} suggestions",
+        "none": "Nothing to correct.",
+        "applied_one": "{{count}} correction applied. Ctrl+Z undoes it.",
+        "applied_other": "{{count}} corrections applied. Ctrl+Z undoes them.",
+        "unavailable": "Proofreading isn't available right now. Try again later.",
+        "failed": "Proofreading failed. Try again.",
+        "noticeTitle": "Proofreading uses Google Cloud's AI",
+        "notice": "To proofread, the document's text is sent, a part at a time, to Gemini in our own Google Cloud, in the European Union. That text leaves the Drive's encryption while it is checked; it is not stored anywhere. Corrections are proposals: you decide which to accept.",
+        "warning": "Do not proofread documents with patient data or anything that identifies a person.",
+        "noticeAccept": "Understood, proofread"
       }
     },
     "sheet": {

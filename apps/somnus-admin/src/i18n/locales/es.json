@@ -844,6 +844,30 @@
         "pages_other": "{{n}} páginas",
         "selected_one": "{{n}} palabra seleccionada",
         "selected_other": "{{n}} palabras seleccionadas"
+      },
+      "proofread": {
+        "label": "Corregir",
+        "start": "Corregir el documento con IA",
+        "working": "Corrigiendo {{done}}/{{total}}…",
+        "mode": "Cómo corregir",
+        "suggest": "Sugerir",
+        "apply": "Corregir directamente",
+        "suggestion": "Corrección propuesta",
+        "accept": "Aceptar",
+        "dismiss": "Descartar",
+        "acceptAll": "Aceptar todas",
+        "dismissAll": "Descartar todas",
+        "count_one": "{{count}} sugerencia",
+        "count_other": "{{count}} sugerencias",
+        "none": "No hay nada que corregir.",
+        "applied_one": "{{count}} corrección aplicada. Ctrl+Z la deshace.",
+        "applied_other": "{{count}} correcciones aplicadas. Ctrl+Z las deshace.",
+        "unavailable": "La corrección no está disponible ahora. Inténtalo más tarde.",
+        "failed": "No se ha podido corregir. Vuelve a intentarlo.",
+        "noticeTitle": "La corrección usa la IA de Google Cloud",
+        "notice": "Para corregir, el texto del documento se envía, por partes, a Gemini en nuestro propio Google Cloud, en la Unión Europea. Ese texto sale del cifrado del Drive mientras se corrige; no se guarda en ningún sitio. Las correcciones son propuestas: tú decides cuáles aceptar.",
+        "warning": "No corrijas con IA documentos con datos de pacientes ni información que identifique a una persona.",
+        "noticeAccept": "Entendido, corregir"
       }
     },
     "sheet": {

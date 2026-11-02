@@ -758,6 +758,7 @@ export function DriveWorkspace({
         onClose={() => go({ share: view.shareId, folder: current })}
         notes={notes}
         password={documentPassword}
+        proofread={(text, lang) => edge.proofread(text, lang)}
         voice={{
           dictation: (lang) => edge.speech.dictation(lang),
           readAloud: (text, lang) => edge.speech.readAloud(text, lang),

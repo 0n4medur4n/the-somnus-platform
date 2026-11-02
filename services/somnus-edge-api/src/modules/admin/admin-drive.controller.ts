@@ -29,6 +29,7 @@ import {
   DriveMemberSchema,
   type DriveNode,
   DriveNodeSchema,
+  type DriveProofreadResult,
   type DrivePurgeResult,
   DrivePurgeResultSchema,
   type DriveReadAloudResult,
@@ -61,6 +62,7 @@ import {
   DriveMemberRemoveDto,
   DriveMemberRoleDto,
   DriveMoveDto,
+  DriveProofreadDto,
   DriveReadAloudDto,
   DriveRenameDto,
   DriveRewrapDto,
@@ -69,6 +71,7 @@ import {
   DriveUploadStartDto,
 } from "./admin-drive.dto.js";
 import { AdminDriveService } from "./admin-drive.service.js";
+import { AdminDriveProofreadService } from "./admin-drive-proofread.service.js";
 import { AdminRoute } from "./admin-route.decorator.js";
 
 const BASE = "/internal/v1/drive";
@@ -112,7 +115,10 @@ function int(value: string, min: number, max: number, correlationId: string): nu
 @UseGuards(SessionGuard, AdminCapabilityGuard)
 @UseInterceptors(AdminAuditInterceptor)
 export class AdminDriveController {
-  constructor(private readonly drive: AdminDriveService) {}
+  constructor(
+    private readonly drive: AdminDriveService,
+    private readonly proofreader: AdminDriveProofreadService,
+  ) {}
 
   private call<T>(input: {
     session: SessionRecord | undefined;
@@ -808,6 +814,27 @@ export class AdminDriveController {
       path: `${BASE}/speech/read-aloud`,
       schema: DriveReadAloudResultSchema,
       body,
+    });
+  }
+
+  @Post("proofread")
+  @HttpCode(200)
+  @RouteConfig({ rateLimit: { max: 120, timeWindow: 10 * 60_000 } })
+  @AdminRoute({
+    capability: "admin_drive",
+    eventType: "admin.drive_proofread.requested.v1",
+    entity: "drive_proofread",
+  })
+  @ApiOperation({ summary: "Proposed corrections of a document's text, from Gemini (EU)." })
+  proofread(
+    @CurrentSession() session: SessionRecord | undefined,
+    @Body() body: DriveProofreadDto,
+    @CorrelationId() correlationId?: string,
+  ): Promise<DriveProofreadResult> {
+    return this.proofreader.proofread({
+      body,
+      actorId: session?.somnusUserId ?? "",
+      correlationId: correlationOf(correlationId),
     });
   }
 

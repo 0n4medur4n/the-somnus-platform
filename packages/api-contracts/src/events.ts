@@ -197,6 +197,8 @@ export const DRIVE_EVENT_TYPES: ReadonlyArray<string> = [
   // read aloud. Never what was said or read.
   "admin.drive_dictation.started.v1",
   "admin.drive_read_aloud.requested.v1",
+  // Proofreading (owner decision 2026-11-02): that it was asked for, never the text.
+  "admin.drive_proofread.requested.v1",
 ];
 
 /**

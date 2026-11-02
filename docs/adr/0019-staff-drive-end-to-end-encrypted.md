@@ -74,7 +74,8 @@ raised later).
 - Account deletion (`DELETE /v1/me`) erases the person's Drive identity and
   memberships through `POST /internal/v1/drive/account/erase`.
 - The Drive is not for patient data; the console says so. It is outside §15's
-  scope: no model ever sees it.
+  scope: no model ever sees it -- except proofreading, on request (amended
+  2026-11-02, see the addendum on AI proofreading below).
 - Cost: Standard storage in `europe-west3` (~0.023 USD per GB-month) plus
   operations at fractions of a cent per thousand; traffic to Cloud Run in the
   same region is free. A few GB of team documents cost cents a month.
@@ -310,4 +311,24 @@ raised later).
   pauses at commas and full stops. Passages are now at most 300 characters (a few sentences), so the estimate starts
   again often and stays close to the voice. A voice that does report times (Catalan's) still sends them, and they
   are used as they are.
+
+## Addendum -- AI proofreading of documents (owner decision 2026-11-02)
+
+- **The rule changes, narrowly.** "No model ever sees the Drive" now has one exception the owner chose: when a
+  member of staff presses Proofread in a Drive document, its text goes, a few paragraphs at a time, to a model. The
+  first time after a reload the console says so and asks not to proofread patient data. Nothing else reads the Drive
+  with a model; the server still holds only ciphertext otherwise. The platform build plan's §5.7 sentence ("no LLM
+  ... reads it") is to be read with this exception.
+- **Gemini on Vertex AI, in the EU, in our project.** The plan's provider abstraction lives in the report service
+  (§3.6), so the text goes edge-api -> report service -> Gemini (`gemini-2.5-flash`, `europe-west3`), with the report
+  service's own identity (`roles/aiplatform.user`, no key). §3.6 already names Gemini on Vertex as the EU adapter;
+  this is that adapter, used for this alone. Nothing is logged or stored; a model failure is logged by its type.
+- **Proposals, not decisions.** The model answers with phrases to change; the report service finds each in the text by
+  its words (never by the model's positions) and drops what is not there, changes nothing or overlaps; the console
+  then places each on the document only if the words there are still the same. By default each correction is a
+  suggestion (wavy underline; accept, dismiss, accept all); the person may switch to applying them all at once, which
+  Ctrl+Z undoes. It fixes spelling, grammar and punctuation in staff writing: it never scores, flags or decides
+  anything (§15). The document's text is untrusted input to the model, so the worst a document can do is make it
+  propose corrections that are shown, read and ignored.
+- **Limits:** 4000 characters per request, 100 suggestions per answer, 120 requests per 10 minutes per address.
 

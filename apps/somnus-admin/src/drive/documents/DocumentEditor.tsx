@@ -1,3 +1,4 @@
+import type { DriveSpeechLang } from "@somnus/api-contracts";
 import type { JSONContent } from "@tiptap/core";
 import { type Editor, EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
@@ -24,8 +25,10 @@ import {
   TEXT_COLORS,
 } from "./doc-format.js";
 import { EXPORT_FORMATS, type ExportFormat, exportDocument, PASSWORD_FORMATS } from "./export.js";
+import { openSuggestion, ProofreadControls, type Proofreader } from "./ProofreadTools.js";
+import { Proofreading } from "./proofreading.js";
 import { blockText, ReadingMark } from "./read-aloud.js";
-import { type VoiceBinding, VoiceControls } from "./VoiceTools.js";
+import { langOf, type VoiceBinding, VoiceControls, VoiceLanguage } from "./VoiceTools.js";
 
 export type SaveOutcome = "saved" | "conflict" | "error";
 type Status = "saved" | "dirty" | "saving" | "error" | "conflict";
@@ -69,6 +72,7 @@ export function DocumentEditor({
   notes,
   password,
   voice,
+  proofread,
 }: {
   initialTitle: string;
   initialContent: JSONContent;
@@ -79,6 +83,8 @@ export function DocumentEditor({
   password?: PasswordBinding | undefined;
   /** Dictation and reading aloud; without it the toolbar offers neither. */
   voice?: VoiceBinding | undefined;
+  /** AI proofreading (Gemini, EU); without it the toolbar does not offer it. */
+  proofread?: Proofreader | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const [title, setTitle] = useState(initialTitle);
@@ -94,6 +100,7 @@ export function DocumentEditor({
   const [exporting, setExporting] = useState(false);
   const [passwordDialog, setPasswordDialog] = useState<PasswordDialogState>({ kind: "none" });
   const pageRef = useRef<HTMLDivElement>(null);
+  const openSuggestionAt = useRef<(id: string | null) => void>(() => {});
   const titleRef = useRef(title);
   titleRef.current = title;
   const timer = useRef<number | null>(null);
@@ -104,6 +111,7 @@ export function DocumentEditor({
       ...documentExtensions(),
       NoteMarks.configure({ onClickBlock: (index) => openNotesAt.current(index) }),
       ReadingMark,
+      Proofreading.configure({ onOpen: (id) => openSuggestionAt.current(id) }),
     ],
     content: initialContent,
     editable: !readOnly,
@@ -148,6 +156,9 @@ export function DocumentEditor({
     },
   });
 
+  openSuggestionAt.current = (id) => {
+    if (editor) openSuggestion(editor, id);
+  };
   const noteList = notes?.list;
   const hasNotes = (noteList?.length ?? 0) > 0;
 
@@ -385,6 +396,7 @@ export function DocumentEditor({
           <Toolbar
             editor={editor}
             voice={voice}
+            proofread={proofread}
             onComment={notes?.canEdit ? () => setPanelOpen(true) : undefined}
           />
         ) : null}
@@ -504,13 +516,17 @@ function Divider() {
 function Toolbar({
   editor,
   voice,
+  proofread,
   onComment,
 }: {
   editor: Editor;
   voice: VoiceBinding | undefined;
+  proofread: Proofreader | undefined;
   /** Opens the notes beside the page, the selected words ready to comment on. */
   onComment: (() => void) | undefined;
 }) {
+  const { i18n } = useTranslation();
+  const [lang, setLang] = useState<DriveSpeechLang>(() => langOf(i18n.language));
   const { t } = useTranslation();
   const [linking, setLinking] = useState(false);
   const [href, setHref] = useState("");
@@ -817,10 +833,14 @@ function Toolbar({
         active={state.table}
         onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
       />
-      {voice ? (
+      {voice || proofread ? (
         <>
           <Divider />
-          <VoiceControls editor={editor} voice={voice} />
+          <VoiceLanguage lang={lang} onChange={setLang} />
+          {voice ? <VoiceControls editor={editor} voice={voice} lang={lang} /> : null}
+          {proofread ? (
+            <ProofreadControls editor={editor} lang={lang} proofread={proofread} />
+          ) : null}
         </>
       ) : null}
 

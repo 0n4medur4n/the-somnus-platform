@@ -20,12 +20,14 @@ from sqlalchemy.orm import sessionmaker
 from report.api.content_review import router as content_review_router
 from report.api.corpus_admin import router as corpus_admin_router
 from report.api.health import router as health_router
+from report.api.proofread import router as proofread_router
 from report.api.reports import router as reports_router
 from report.api.version import router as version_router
 from report.application.content_review import ContentReviewService
 from report.application.funnel_passages import FunnelPassages
 from report.application.funnel_report import FunnelReportService
 from report.application.narrative import NarrativeService
+from report.application.proofread import ProofreadService
 from report.application.provenance import ProvenanceRecorder, ProvenanceResolver
 from report.application.render_service import RenderService
 from report.application.retrieval import (
@@ -45,6 +47,7 @@ from report.infrastructure.errors import register_exception_handlers
 from report.infrastructure.llm.openai_adapter import OpenAiAdapter
 from report.infrastructure.llm.openai_embedding_adapter import OpenAiEmbeddingAdapter
 from report.infrastructure.llm.openai_endpoint import log_openai_endpoint
+from report.infrastructure.llm.vertex_adapter import VertexGeminiAdapter
 from report.infrastructure.logging import configure_logging
 from report.infrastructure.morpheo_client import MorpheoContentClient
 from report.infrastructure.pdf import WeasyPrintPdfRenderer
@@ -231,6 +234,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.narrative_service = narrative_service
 
+    # Proofreading Drive documents: Gemini on Vertex AI (EU), only when enabled
+    # and given a project. Otherwise the endpoint answers 503 and the console
+    # says proofreading is unavailable.
+    proofread_ready = settings.proofread_enabled and bool(settings.vertex_project)
+    app.state.proofread_service = ProofreadService(
+        provider=VertexGeminiAdapter(settings.vertex_project, settings.vertex_location)
+        if proofread_ready
+        else None,
+        model=settings.proofread_model,
+    )
+
     # The v2 report: deterministic, no model, nothing stored.
     # Its professional page may carry verbatim excerpts from the library: Index B
     # searched across the languages the sources were written in (they are cited
@@ -284,6 +298,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(version_router)
     app.include_router(reports_router)
+    app.include_router(proofread_router)
     app.include_router(content_review_router)
     app.include_router(corpus_admin_router)
 

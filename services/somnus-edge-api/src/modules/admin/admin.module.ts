@@ -13,6 +13,7 @@ import { AdminCorpusController } from "./admin-corpus.controller.js";
 import { AdminCorpusService } from "./admin-corpus.service.js";
 import { AdminDriveController } from "./admin-drive.controller.js";
 import { AdminDriveService } from "./admin-drive.service.js";
+import { AdminDriveProofreadService } from "./admin-drive-proofread.service.js";
 import { AdminInsightsController } from "./admin-insights.controller.js";
 import { AdminInsightsService } from "./admin-insights.service.js";
 import { AdminMeController } from "./admin-me.controller.js";
@@ -47,6 +48,7 @@ import { AdminStaffInvitationsController } from "./admin-staff-invitations.contr
     // Checkpoint 15.3: the review queue lives in `somnus_reporting`, so its
     // proxy targets the report service rather than identity (§7).
     AdminContentReviewService,
+    AdminDriveProofreadService,
     AdminInsightsService,
     // Checkpoint 15.5: assessment results are morpheo's data (§7), so this
     // proxy targets morpheo rather than identity or the worker.

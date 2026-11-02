@@ -46,6 +46,7 @@ import type {
   DriveMemberRemoveRequest,
   DriveMoveRequest,
   DriveNode,
+  DriveProofreadResult,
   DrivePurgeResult,
   DriveReadAloudResult,
   DriveRenameRequest,
@@ -265,6 +266,9 @@ export const edge = {
   drive: driveEdge(),
   // Voice in Drive documents (owner decision 2026-11-02): a dictation pass for
   // AssemblyAI, and passages read aloud by Google Cloud Text-to-Speech.
+  // Proofreading a Drive document with Gemini in our Google Cloud, EU (ADR 0019).
+  proofread: (text: string, lang: DriveSpeechLang): Promise<DriveProofreadResult> =>
+    api.post<DriveProofreadResult>("/admin/v1/drive/proofread", { text, lang }),
   speech: {
     dictation: (lang: DriveSpeechLang): Promise<DriveDictationSession> =>
       api.post<DriveDictationSession>("/admin/v1/drive/speech/dictation", { lang }),

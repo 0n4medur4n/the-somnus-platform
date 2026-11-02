@@ -1551,6 +1551,31 @@
         ]
       }
     },
+    "/admin/v1/drive/proofread": {
+      "post": {
+        "operationId": "AdminDriveController_proofread",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveProofreadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Proposed corrections of a document's text, from Gemini (EU).",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/v1/staff-invitations": {
       "get": {
         "operationId": "AdminStaffInvitationsController_list",
@@ -4132,6 +4157,29 @@
           "text": {
             "type": "string",
             "minLength": 1
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "lang"
+        ]
+      },
+      "DriveProofreadDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
           },
           "lang": {
             "type": "string",

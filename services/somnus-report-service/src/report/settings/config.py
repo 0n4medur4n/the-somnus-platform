@@ -98,6 +98,13 @@ class Settings(BaseSettings):
     # to print every report deterministically and never consult the queue.
     # See report.application.ai_wording.
     ai_rewrite_enabled: bool = Field(default=True, alias="AI_REWRITE_ENABLED")
+    # Proofreading Drive documents (owner decision 2026-11-02, ADR 0019): Gemini on
+    # Vertex AI, in our project and an EU region, with the service's own identity.
+    # Off until configured, so local runs and tests never reach a model.
+    proofread_enabled: bool = Field(default=False, alias="PROOFREAD_ENABLED")
+    proofread_model: str = Field(default="gemini-2.5-flash", min_length=1, alias="PROOFREAD_MODEL")
+    vertex_project: str = Field(default="", alias="VERTEX_PROJECT")
+    vertex_location: str = Field(default="europe-west3", min_length=1, alias="VERTEX_LOCATION")
     # Embeddings for explanation-only clinical grounding (build plan §3.6b). The
     # dimensions are fixed at the model default (3072); reducing them requires a
     # documented decision. Used only over the approved corpus — never on the

@@ -474,12 +474,17 @@ export function VoiceLanguage({
  * a document in Catalan, written by someone whose console is in Spanish. The
  * names are each language's own.
  */
-export function VoiceControls({ editor, voice }: { editor: Editor; voice: VoiceBinding }) {
-  const { i18n } = useTranslation();
-  const [lang, setLang] = useState<DriveSpeechLang>(() => langOf(i18n.language));
+export function VoiceControls({
+  editor,
+  voice,
+  lang,
+}: {
+  editor: Editor;
+  voice: VoiceBinding;
+  lang: DriveSpeechLang;
+}) {
   return (
     <>
-      <VoiceLanguage lang={lang} onChange={setLang} />
       <DictationButton editor={editor} voice={voice} lang={lang} />
       <ReadAloudButton
         voice={voice}

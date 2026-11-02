@@ -7,6 +7,7 @@ import {
   DriveMemberRemoveRequestSchema,
   DriveMemberRoleRequestSchema,
   DriveMoveRequestSchema,
+  DriveProofreadRequestSchema,
   DriveReadAloudRequestSchema,
   DriveRenameRequestSchema,
   DriveRewrapRequestSchema,
@@ -36,3 +37,5 @@ export class DriveMemberRemoveDto extends createZodDto(DriveMemberRemoveRequestS
 /** Voice (owner decision 2026-11-02): a language, and for reading aloud, plain text. */
 export class DriveDictationDto extends createZodDto(DriveDictationRequestSchema) {}
 export class DriveReadAloudDto extends createZodDto(DriveReadAloudRequestSchema) {}
+/** Proofreading (owner decision 2026-11-02): a few paragraphs of a document, and its language. */
+export class DriveProofreadDto extends createZodDto(DriveProofreadRequestSchema) {}

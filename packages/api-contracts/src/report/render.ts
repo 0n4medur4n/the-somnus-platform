@@ -2,6 +2,7 @@ import { z } from "zod";
 import { LocaleSchema } from "../locale.js";
 import { ModuleIdSchema, RoleIdSchema, SafetyLevelIdSchema } from "../morpheo/enums.js";
 import { FunnelInstrumentSchema, FunnelReportSchema, FunnelTextSchema } from "../morpheo/funnel.js";
+import { DriveProofreadRequestSchema, DriveProofreadResultSchema } from "./proofread.js";
 
 /**
  * The report service boundary (build plan §5.6 / §20 Checkpoint 11.1). The
@@ -159,4 +160,6 @@ export const REPORT_CONTRACT_SCHEMAS = {
   PersonReportsDeleteRequest: PersonReportsDeleteRequestSchema,
   PersonReportsDeleteResult: PersonReportsDeleteResultSchema,
   FunnelReportRequest: FunnelReportRequestSchema,
+  DriveProofreadRequest: DriveProofreadRequestSchema,
+  DriveProofreadResult: DriveProofreadResultSchema,
 } as const;

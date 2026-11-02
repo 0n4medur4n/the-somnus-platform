@@ -114,3 +114,22 @@ def test_the_person_reports_erasure_conforms() -> None:
         PersonReportsDeleteResultDTO(deleted=3).model_dump(by_alias=True, mode="json"),
         _schema("PersonReportsDeleteResult"),
     )
+
+
+def test_proofread_dtos_conform() -> None:
+    from report.schemas.proofread import (
+        ProofreadRequestDTO,
+        ProofreadResultDTO,
+        ProofreadSuggestionDTO,
+    )
+
+    request = ProofreadRequestDTO(text="Hola", lang="ca")
+    jsonschema.validate(
+        request.model_dump(by_alias=True, mode="json"), _schema("DriveProofreadRequest")
+    )
+    result = ProofreadResultDTO(
+        suggestions=[ProofreadSuggestionDTO(start=0, end=4, replacement="Hola", reason="r")]
+    )
+    jsonschema.validate(
+        result.model_dump(by_alias=True, mode="json"), _schema("DriveProofreadResult")
+    )
