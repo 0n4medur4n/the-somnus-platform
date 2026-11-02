@@ -11,6 +11,12 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { REPORT_CONTRACT_SCHEMAS, ReportRefSchema, ReportRenderRequestSchema } from "./render.js";
+import {
+  DRIVE_TRANSLATE_MAX_CHARS,
+  DRIVE_TRANSLATE_MAX_PASSAGES,
+  DriveTranslateRequestSchema,
+  DriveTranslateResultSchema,
+} from "./translate.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ARTIFACT_DIR = resolve(__dirname, "..", "..", "..", "..", "schemas", "json-schema", "report");
@@ -80,5 +86,34 @@ describe("ReportRef", () => {
     expect(
       ReportRefSchema.safeParse({ ...base, htmlUrl: "https://x/y", pdfUrl: "https://x/z" }).success,
     ).toBe(true);
+  });
+});
+
+describe("DriveTranslate (owner decision 2026-11-03)", () => {
+  it("takes a few passages and a voice language, within the size limits", () => {
+    expect(
+      DriveTranslateRequestSchema.safeParse({ passages: ["Hello."], lang: "es" }).success,
+    ).toBe(true);
+    expect(DriveTranslateRequestSchema.safeParse({ passages: [], lang: "es" }).success).toBe(false);
+    expect(DriveTranslateRequestSchema.safeParse({ passages: [""], lang: "es" }).success).toBe(
+      false,
+    );
+    expect(DriveTranslateRequestSchema.safeParse({ passages: ["Hi"], lang: "de" }).success).toBe(
+      false,
+    );
+    const many = Array.from({ length: DRIVE_TRANSLATE_MAX_PASSAGES + 1 }, () => "a");
+    expect(DriveTranslateRequestSchema.safeParse({ passages: many, lang: "es" }).success).toBe(
+      false,
+    );
+    const long = Array.from({ length: 7 }, () => "a".repeat(600));
+    expect(long.join("").length).toBeGreaterThan(DRIVE_TRANSLATE_MAX_CHARS);
+    expect(DriveTranslateRequestSchema.safeParse({ passages: long, lang: "es" }).success).toBe(
+      false,
+    );
+  });
+
+  it("answers with one translation per passage", () => {
+    expect(DriveTranslateResultSchema.safeParse({ passages: ["Hola."] }).success).toBe(true);
+    expect(DriveTranslateResultSchema.safeParse({ passages: [1] }).success).toBe(false);
   });
 });

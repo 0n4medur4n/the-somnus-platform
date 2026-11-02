@@ -1576,6 +1576,31 @@
         ]
       }
     },
+    "/admin/v1/drive/translate": {
+      "post": {
+        "operationId": "AdminDriveController_translate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveTranslateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Passages about to be read aloud, in the voice's language (Gemini, EU).",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/v1/staff-invitations": {
       "get": {
         "operationId": "AdminStaffInvitationsController_list",
@@ -4193,6 +4218,34 @@
         },
         "required": [
           "text",
+          "lang"
+        ]
+      },
+      "DriveTranslateDto": {
+        "type": "object",
+        "properties": {
+          "passages": {
+            "minItems": 1,
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 600
+            }
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          }
+        },
+        "required": [
+          "passages",
           "lang"
         ]
       },

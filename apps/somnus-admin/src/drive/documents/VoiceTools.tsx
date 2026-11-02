@@ -15,6 +15,7 @@ import {
   type DictationError,
   dictationSupported,
   insertDictation,
+  type NoticeKind,
   speechNoticeSeen,
   spokenText,
   startDictation,
@@ -37,6 +38,8 @@ import {
 export type VoiceBinding = {
   dictation: (lang: DriveSpeechLang) => Promise<DriveDictationSession>;
   readAloud: (text: string, lang: DriveSpeechLang) => Promise<DriveReadAloudResult>;
+  /** Puts passages into the voice's language (Gemini, EU); without it, no translation. */
+  translate?: ((passages: string[], lang: DriveSpeechLang) => Promise<string[]>) | undefined;
 };
 
 const keepSelection = (event: { preventDefault: () => void }) => event.preventDefault();
@@ -52,7 +55,7 @@ function SpeechNotice({
   onAccept,
   onClose,
 }: {
-  kind: "dictation" | "readAloud";
+  kind: Exclude<NoticeKind, "proofread">;
   onAccept: () => void;
   onClose: () => void;
 }) {
@@ -258,6 +261,7 @@ function ReaderBar({ state, reader }: { state: ReaderState; reader: Reader }) {
       aria-label={t("drive.doc.readAloud.player")}
       className="fixed bottom-4 left-1/2 z-[60] w-[min(40rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-white/10 bg-[#0f1528]/95 px-4 py-3 shadow-2xl backdrop-blur"
     >
+      {state.caption ? <Caption caption={state.caption} /> : null}
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -332,6 +336,36 @@ function ReaderBar({ state, reader }: { state: ReaderState; reader: Reader }) {
 }
 
 /**
+ * What the voice is saying when it reads a translation: the words are not the
+ * document's, so they are shown here, the one being spoken marked.
+ */
+function Caption({ caption }: { caption: NonNullable<ReaderState["caption"]> }) {
+  const { t } = useTranslation();
+  const { text, word } = caption;
+  return (
+    <figure className="mb-2 max-h-28 overflow-y-auto border-b border-white/10 pb-2">
+      <figcaption className="mb-1 flex items-center gap-1 text-[11px] uppercase tracking-wide text-somnus-subtle">
+        <Icon name="translate" className="h-3.5 w-3.5" />
+        {t("drive.doc.readAloud.translated")}
+      </figcaption>
+      <p className="text-sm leading-relaxed text-somnus-text">
+        {word ? (
+          <>
+            {text.slice(0, word[0])}
+            <mark className="rounded bg-[#437ef7]/40 px-0.5 text-white">
+              {text.slice(word[0], word[1])}
+            </mark>
+            {text.slice(word[1])}
+          </>
+        ) : (
+          text
+        )}
+      </p>
+    </figure>
+  );
+}
+
+/**
  * Reads the document aloud with Google's voice: the selection if there is one,
  * otherwise from the paragraph the caret is in to the end. The passage being
  * read is highlighted and kept in view.
@@ -354,8 +388,10 @@ export function ReadAloudButton({
   const { t } = useTranslation();
   const [state, setState] = useState<ReaderState | null>(null);
   const [error, setError] = useState<ReadAloudError | null>(null);
-  const [asking, setAsking] = useState(false);
+  const [asking, setAsking] = useState<"readAloud" | "translate" | null>(null);
+  const [translating, setTranslating] = useState(false);
   const reader = useRef<Reader | null>(null);
+  const translate = voice.translate;
   const alive = useRef(true);
 
   useEffect(
@@ -373,6 +409,7 @@ export function ReadAloudButton({
     reader.current = startReader({
       passages,
       speak: (text) => voice.readAloud(text, lang),
+      ...(translating && translate ? { translate: (texts) => translate(texts, lang) } : {}),
       onState: (next) => alive.current && setState(next),
       onPassage,
       onWord,
@@ -384,13 +421,24 @@ export function ReadAloudButton({
     });
   }
 
+  // Each service the words go to is named once per session before they go.
+  function next() {
+    const pending = (["readAloud", ...(translating ? ["translate" as const] : [])] as const).find(
+      (kind) => !speechNoticeSeen(kind),
+    );
+    if (pending) setAsking(pending);
+    else {
+      setAsking(null);
+      void begin();
+    }
+  }
+
   function toggle() {
     if (reader.current) {
       reader.current.stop();
       return;
     }
-    if (speechNoticeSeen("readAloud")) void begin();
-    else setAsking(true);
+    next();
   }
 
   const reading = state !== null;
@@ -413,6 +461,25 @@ export function ReadAloudButton({
         <Icon name="speaker" className="h-[18px] w-[18px]" />
         {t("drive.doc.readAloud.label")}
       </button>
+      {translate ? (
+        <button
+          type="button"
+          title={t("drive.doc.translate.toggle", { lang: t(`drive.doc.voiceLang.${lang}`) })}
+          aria-label={t("drive.doc.translate.toggle", { lang: t(`drive.doc.voiceLang.${lang}`) })}
+          aria-pressed={translating}
+          disabled={reading}
+          onMouseDown={keepSelection}
+          onClick={() => setTranslating((on) => !on)}
+          className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1.5 text-sm disabled:opacity-50 ${
+            translating
+              ? "bg-somnus-primary/20 text-somnus-primary"
+              : "text-somnus-subtle hover:bg-white/10 hover:text-somnus-text"
+          }`}
+        >
+          <Icon name="translate" className="h-[18px] w-[18px]" />
+          {t("drive.doc.translate.label")}
+        </button>
+      ) : null}
       {state && reader.current ? <ReaderBar state={state} reader={reader.current} /> : null}
       {error ? (
         <StatusPill
@@ -422,14 +489,7 @@ export function ReadAloudButton({
         />
       ) : null}
       {asking ? (
-        <SpeechNotice
-          kind="readAloud"
-          onClose={() => setAsking(false)}
-          onAccept={() => {
-            setAsking(false);
-            void begin();
-          }}
-        />
+        <SpeechNotice key={asking} kind={asking} onClose={() => setAsking(null)} onAccept={next} />
       ) : null}
     </>
   );

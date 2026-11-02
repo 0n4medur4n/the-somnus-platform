@@ -13,6 +13,7 @@ import {
   DriveRewrapRequestSchema,
   DriveShareCreateRequestSchema,
   DriveStateRequestSchema,
+  DriveTranslateRequestSchema,
   DriveUploadStartRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
@@ -39,3 +40,5 @@ export class DriveDictationDto extends createZodDto(DriveDictationRequestSchema)
 export class DriveReadAloudDto extends createZodDto(DriveReadAloudRequestSchema) {}
 /** Proofreading (owner decision 2026-11-02): a few paragraphs of a document, and its language. */
 export class DriveProofreadDto extends createZodDto(DriveProofreadRequestSchema) {}
+/** Translation (owner decision 2026-11-03): the passages about to be read, and the voice's language. */
+export class DriveTranslateDto extends createZodDto(DriveTranslateRequestSchema) {}

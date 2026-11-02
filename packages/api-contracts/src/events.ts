@@ -199,6 +199,9 @@ export const DRIVE_EVENT_TYPES: ReadonlyArray<string> = [
   "admin.drive_read_aloud.requested.v1",
   // Proofreading (owner decision 2026-11-02): that it was asked for, never the text.
   "admin.drive_proofread.requested.v1",
+  // Translating what is read aloud (owner decision 2026-11-03): that it was asked
+  // for, never the text.
+  "admin.drive_translate.requested.v1",
 ];
 
 /**

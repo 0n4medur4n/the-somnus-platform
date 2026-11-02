@@ -327,7 +327,7 @@ export async function startDictation(options: {
 
 // Remembered in memory only, like everything else the Drive holds: the notice
 // shows again after a reload, which is also when the Drive asks to be unlocked.
-type NoticeKind = "dictation" | "readAloud" | "proofread";
+export type NoticeKind = "dictation" | "readAloud" | "proofread" | "translate";
 const noticesSeen = new Set<NoticeKind>();
 
 /** Whether the "this leaves the Drive's encryption" notice was accepted in this session. */

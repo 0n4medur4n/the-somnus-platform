@@ -787,6 +787,7 @@ export function DriveWorkspace({
         voice={{
           dictation: (lang) => edge.speech.dictation(lang),
           readAloud: (text, lang) => edge.speech.readAloud(text, lang),
+          translate: (passages, lang) => edge.translate(passages, lang),
         }}
       />
     ) : (
@@ -818,6 +819,7 @@ export function DriveWorkspace({
           voice={{
             dictation: (lang) => edge.speech.dictation(lang),
             readAloud: (text, lang) => edge.speech.readAloud(text, lang),
+            translate: (passages, lang) => edge.translate(passages, lang),
           }}
           onDownload={() =>
             saveBytes(viewer.bytes, viewer.item.meta?.name ?? t("drive.folder.kind.file"))

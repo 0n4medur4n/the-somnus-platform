@@ -22,6 +22,7 @@ from report.api.corpus_admin import router as corpus_admin_router
 from report.api.health import router as health_router
 from report.api.proofread import router as proofread_router
 from report.api.reports import router as reports_router
+from report.api.translate import router as translate_router
 from report.api.version import router as version_router
 from report.application.content_review import ContentReviewService
 from report.application.funnel_passages import FunnelPassages
@@ -35,6 +36,7 @@ from report.application.retrieval import (
     SourceRetriever,
     VectorStoreRetriever,
 )
+from report.application.translate import TranslateService
 from report.corpus.db import create_corpus_engine
 from report.corpus.embedding_gate import CorpusEmbeddingGate
 from report.corpus.file_store import create_corpus_file_store
@@ -245,6 +247,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         chat_model=settings.proofread_model,
         thinking=settings.proofread_thinking,
     )
+    # Translating what is read aloud: the same Gemini, its own switch.
+    translate_ready = settings.translate_enabled and bool(settings.vertex_project)
+    app.state.translate_service = TranslateService(
+        provider=VertexGeminiAdapter(settings.vertex_project, settings.vertex_location)
+        if translate_ready
+        else None,
+        chat_model=settings.translate_model,
+        thinking=settings.translate_thinking,
+    )
 
     # The v2 report: deterministic, no model, nothing stored.
     # Its professional page may carry verbatim excerpts from the library: Index B
@@ -300,6 +311,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(version_router)
     app.include_router(reports_router)
     app.include_router(proofread_router)
+    app.include_router(translate_router)
     app.include_router(content_review_router)
     app.include_router(corpus_admin_router)
 

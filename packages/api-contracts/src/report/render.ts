@@ -3,6 +3,7 @@ import { LocaleSchema } from "../locale.js";
 import { ModuleIdSchema, RoleIdSchema, SafetyLevelIdSchema } from "../morpheo/enums.js";
 import { FunnelInstrumentSchema, FunnelReportSchema, FunnelTextSchema } from "../morpheo/funnel.js";
 import { DriveProofreadRequestSchema, DriveProofreadResultSchema } from "./proofread.js";
+import { DriveTranslateRequestSchema, DriveTranslateResultSchema } from "./translate.js";
 
 /**
  * The report service boundary (build plan §5.6 / §20 Checkpoint 11.1). The
@@ -162,4 +163,6 @@ export const REPORT_CONTRACT_SCHEMAS = {
   FunnelReportRequest: FunnelReportRequestSchema,
   DriveProofreadRequest: DriveProofreadRequestSchema,
   DriveProofreadResult: DriveProofreadResultSchema,
+  DriveTranslateRequest: DriveTranslateRequestSchema,
+  DriveTranslateResult: DriveTranslateResultSchema,
 } as const;

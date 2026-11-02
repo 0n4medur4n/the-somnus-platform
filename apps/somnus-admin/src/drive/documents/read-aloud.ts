@@ -25,6 +25,12 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 const PASSAGE_CHARS = 300;
 /** How many passages ahead are asked for while one plays. */
 const AHEAD = 2;
+/**
+ * Passages translated in one request (owner decision 2026-11-03): about 2400
+ * characters, under the contract's 4000, and a dozen seconds of listening
+ * ahead of the voice.
+ */
+export const TRANSLATE_BATCH = 8;
 
 /**
  * A stretch to read: its text, where its block is (to highlight it), and where
@@ -274,7 +280,7 @@ export function wordMeta(range: [number, number] | null): HighlightMeta {
   return { kind: "word", range };
 }
 
-export type ReadAloudError = "unavailable" | "failed";
+export type ReadAloudError = "unavailable" | "failed" | "translation";
 
 /** What the reader shows: which passage, whether it plays, and how far in. */
 export type ReaderState = {
@@ -285,7 +291,21 @@ export type ReaderState = {
   /** Seconds into the passage, and its length once known. */
   position: number;
   duration: number;
+  /**
+   * When translating: what the voice is saying, and the word it is on. The
+   * words do not match the document's, so they are followed here instead.
+   */
+  caption: { text: string; word: [number, number] | null } | null;
 };
+
+/** A translation cut to what one request to the voice may carry, at a space. */
+function fitted(text: string): string {
+  if (bytes(text) <= DRIVE_READ_ALOUD_MAX_BYTES) return text;
+  let cut = text;
+  while (bytes(cut) > DRIVE_READ_ALOUD_MAX_BYTES) cut = cut.slice(0, Math.floor(cut.length * 0.9));
+  const space = cut.lastIndexOf(" ");
+  return space > 0 ? cut.slice(0, space) : cut;
+}
 
 /** The part of an HTMLAudioElement the reader uses, replaceable in tests. */
 export type AudioOutput = {
@@ -299,15 +319,17 @@ export type AudioOutput = {
   onloadedmetadata: (() => void) | null;
 };
 
-type Spoken = { url: string; words: DriveSpokenWord[] };
+/** A passage ready to play: its audio, its word times, and the words it says. */
+type Spoken = { url: string; words: DriveSpokenWord[]; text: string };
 
-function spoken(result: DriveReadAloudResult): Spoken {
+function spoken(result: DriveReadAloudResult, text: string): Spoken {
   const raw = atob(result.audio);
   const data = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) data[i] = raw.charCodeAt(i);
   return {
     url: URL.createObjectURL(new Blob([data], { type: result.mime })),
     words: [...(result.words ?? [])].sort((a, b) => a.time - b.time),
+    text,
   };
 }
 
@@ -368,6 +390,11 @@ export function startReader(options: {
   onWord?: (passage: Passage, word: [number, number] | null) => void;
   onError: (error: ReadAloudError) => void;
   onStop: () => void;
+  /**
+   * Puts passages into the voice's language before they are spoken, a batch
+   * at a time; without it they are read as written.
+   */
+  translate?: (texts: string[]) => Promise<string[]>;
   audio?: AudioOutput;
   /** The display's frame clock, to follow words smoothly; replaceable in tests. */
   frame?: (callback: () => void) => () => void;
@@ -381,7 +408,10 @@ export function startReader(options: {
       return () => cancelAnimationFrame(id);
     });
   const fetched = new Map<number, Promise<Spoken>>();
+  const batches = new Map<number, Promise<string[]>>();
+  const translating = options.translate !== undefined;
   let index = 0;
+  let saying = "";
   let playing = true;
   let loading = true;
   let stopped = false;
@@ -398,6 +428,10 @@ export function startReader(options: {
       loading,
       position: Number.isFinite(audio.currentTime) ? audio.currentTime : 0,
       duration: Number.isFinite(audio.duration) ? audio.duration : 0,
+      caption:
+        translating && !loading
+          ? { text: saying, word: lastWord ? [lastWord.start, lastWord.end] : null }
+          : null,
     });
 
   // Following the voice word by word: checked every frame while it plays.
@@ -408,22 +442,50 @@ export function startReader(options: {
     const passage = passages[index];
     if (word !== lastWord && passage) {
       lastWord = word;
-      options.onWord?.(passage, word ? [word.start, word.end] : null);
+      // Translated words are not the document's: they are followed in the caption.
+      if (translating) report();
+      else options.onWord?.(passage, word ? [word.start, word.end] : null);
     }
     cancelFrame = frame(follow);
   };
   const startFollowing = () => {
-    if (!cancelFrame && options.onWord && words.length > 0) cancelFrame = frame(follow);
+    if (!cancelFrame && (options.onWord || translating) && words.length > 0) {
+      cancelFrame = frame(follow);
+    }
   };
   const stopFollowing = () => {
     cancelFrame?.();
     cancelFrame = null;
   };
 
+  // The batch a passage belongs to, translated once however often it is heard.
+  const wordsOf = (i: number): Promise<string> => {
+    const passage = passages[i];
+    const translate = options.translate;
+    if (!passage) return Promise.resolve("");
+    if (!translate) return Promise.resolve(passage.text);
+    const batch = Math.floor(i / TRANSLATE_BATCH);
+    let pending = batches.get(batch);
+    if (!pending) {
+      const first = batch * TRANSLATE_BATCH;
+      pending = translate(passages.slice(first, first + TRANSLATE_BATCH).map((p) => p.text));
+      pending.catch(() => {});
+      batches.set(batch, pending);
+    }
+    return pending.then(
+      (out) => fitted(out[i - batch * TRANSLATE_BATCH]?.trim() || passage.text),
+      (error: unknown) => {
+        throw Object.assign(new Error("translation"), { translation: true, cause: error });
+      },
+    );
+  };
+
   const fetchPassage = (i: number) => {
     const passage = passages[i];
     if (!passage || fetched.has(i)) return;
-    const pending = options.speak(passage.text).then(spoken);
+    const pending = wordsOf(i).then((text) =>
+      options.speak(text).then((result) => spoken(result, text)),
+    );
     pending.catch(() => {});
     fetched.set(i, pending);
   };
@@ -456,21 +518,34 @@ export function startReader(options: {
     options.onPassage(passages[i] ?? null);
     report();
     for (let ahead = 0; ahead <= AHEAD; ahead++) fetchPassage(i + ahead);
+    // Translating: the next batch is asked for halfway through this one.
+    if (translating && i % TRANSLATE_BATCH >= TRANSLATE_BATCH / 2) {
+      void wordsOf(
+        Math.min(passages.length - 1, (Math.floor(i / TRANSLATE_BATCH) + 1) * TRANSLATE_BATCH),
+      ).catch(() => {});
+    }
     let result: Spoken;
     try {
       result = await (fetched.get(i) as Promise<Spoken>);
     } catch (error) {
       if (stopped || mine !== turn) return;
       const status = (error as { status?: number }).status;
-      options.onError(status === 502 || status === 503 ? "unavailable" : "failed");
+      options.onError(
+        (error as { translation?: boolean }).translation
+          ? "translation"
+          : status === 502 || status === 503
+            ? "unavailable"
+            : "failed",
+      );
       finish();
       return;
     }
     if (stopped || mine !== turn) return;
     audio.src = result.url;
     words = result.words;
+    saying = result.text;
     // No word times from the voice: worked out once the audio's length is known.
-    estimating = words.length === 0 ? (passages[i]?.text ?? null) : null;
+    estimating = words.length === 0 ? result.text : null;
     loading = false;
     report();
     if (playing) {

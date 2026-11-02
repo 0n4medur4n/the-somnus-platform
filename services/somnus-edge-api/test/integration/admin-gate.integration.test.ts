@@ -93,6 +93,7 @@ const DRIVE_ROUTES: Array<{ method: string; url: string }> = [
   { method: "POST", url: "/admin/v1/drive/speech/dictation" },
   { method: "POST", url: "/admin/v1/drive/speech/read-aloud" },
   { method: "POST", url: "/admin/v1/drive/proofread" },
+  { method: "POST", url: "/admin/v1/drive/translate" },
 ];
 
 /** A Drive route with real ids, for tests that need the request past validation. */
@@ -670,6 +671,7 @@ describe("admin console gate (/admin/v1/*)", () => {
       "POST /admin/v1/drive/speech/dictation": { lang: "es" },
       "POST /admin/v1/drive/speech/read-aloud": { text: "Hola", lang: "es" },
       "POST /admin/v1/drive/proofread": { text: "Hola", lang: "es" },
+      "POST /admin/v1/drive/translate": { passages: ["Hello."], lang: "es" },
       "POST /admin/v1/corpus/documents/doc1/retire": {
         reason: "Sustituida por la edición de 2027.",
         changelog: "Retirada.",

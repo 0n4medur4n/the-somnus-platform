@@ -31,6 +31,8 @@ const PATHS = {
   skipBack: "M18 6v12l-8.5-6zM6 6v12",
   skipForward: "M6 6v12l8.5-6zM18 6v12",
   speaker: "M4 9.5h3.5L12 5v14l-4.5-4.5H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11",
+  translate:
+    "M4 5h9M8.5 3v2m2.5 0c-.7 3.6-3 6.6-6.5 8.5M7 9c1 2 2.7 3.6 5 4.6M13 21l4-9 4 9m-6.6-3h5.2",
   textColor: "M7 15l5-11 5 11M9 11h6",
   highlighter: "M14.5 4.5l5 5L11 18H6v-5zM4 21h16",
   subscript: "M4 5l7 10M11 5L4 15M16 19h4m-4 0c0-2 4-2.5 4-4.3a2 2 0 0 0-4-.2",

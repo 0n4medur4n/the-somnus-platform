@@ -816,7 +816,8 @@
         "accept": "Understood, read",
         "error": {
           "unavailable": "Reading aloud isn't available right now. Try again later.",
-          "failed": "The text couldn't be read. Try again."
+          "failed": "The text couldn't be read. Try again.",
+          "translation": "The text couldn't be translated. Try again, or read it untranslated."
         },
         "player": "Reading aloud",
         "pause": "Pause",
@@ -826,7 +827,8 @@
         "part": "Part {{part}} of {{total}}",
         "loading": "Preparing the voice…",
         "timeline": "Go to another part of the text",
-        "close": "Close the reader"
+        "close": "Close the reader",
+        "translated": "Translation being read"
       },
       "voiceLang": {
         "label": "Language for dictation and reading",
@@ -904,6 +906,13 @@
         "copy": "Copy the document's code",
         "copied": "Code copied",
         "explain": "This document's unique code: computed (SHA-256) from its Drive identifier, it does not change when you edit and appears on every export together with the fingerprint of its contents."
+      },
+      "translate": {
+        "label": "Translate",
+        "toggle": "Translate into the voice's language ({{lang}}) before reading",
+        "noticeTitle": "Translation uses Gemini",
+        "notice": "To read a translation, the text is sent, a few paragraphs at a time, to Gemini in our own Google Cloud, in the European Union, and comes back in the voice's language. That text leaves the Drive's encryption while it is translated; it is not stored. It is a machine translation: when in doubt, the original prevails.",
+        "accept": "Understood, translate"
       }
     },
     "sheet": {

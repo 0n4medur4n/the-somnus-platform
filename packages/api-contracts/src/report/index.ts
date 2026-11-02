@@ -27,3 +27,11 @@ export {
   type ReportRenderRequest,
   ReportRenderRequestSchema,
 } from "./render.js";
+export {
+  DRIVE_TRANSLATE_MAX_CHARS,
+  DRIVE_TRANSLATE_MAX_PASSAGES,
+  type DriveTranslateRequest,
+  DriveTranslateRequestSchema,
+  type DriveTranslateResult,
+  DriveTranslateResultSchema,
+} from "./translate.js";

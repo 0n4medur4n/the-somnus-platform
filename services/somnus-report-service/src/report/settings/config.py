@@ -108,6 +108,14 @@ class Settings(BaseSettings):
     proofread_thinking: Literal["minimal", "low", "medium", "high"] = Field(
         default="low", alias="PROOFREAD_THINKING"
     )
+    # Translating what is read aloud in the Drive (owner decision 2026-11-03):
+    # the same Gemini, with no thinking -- measured 2026-11-03 on four passages:
+    # 1.5 s with "minimal", 4.3 s with "low", the same translations.
+    translate_enabled: bool = Field(default=False, alias="TRANSLATE_ENABLED")
+    translate_model: str = Field(default="gemini-3.5-flash", min_length=1, alias="TRANSLATE_MODEL")
+    translate_thinking: Literal["minimal", "low", "medium", "high"] = Field(
+        default="minimal", alias="TRANSLATE_THINKING"
+    )
     vertex_project: str = Field(default="", alias="VERTEX_PROJECT")
     vertex_location: str = Field(default="europe-west3", min_length=1, alias="VERTEX_LOCATION")
     # Embeddings for explanation-only clinical grounding (build plan §3.6b). The

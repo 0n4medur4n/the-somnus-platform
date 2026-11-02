@@ -355,3 +355,22 @@ raised later).
   **fingerprint**: the SHA-256 of exactly what was exported (title, text, header and footer). Two exports with the
   same code and fingerprint have the same contents. Neither is a signature: they show which document a file came
   from and whether two copies match, not who wrote it, and anyone holding a copy can recompute them.
+
+## Addendum -- reading a translation aloud (owner decision 2026-11-03)
+
+- **What.** Beside "Read" there is "Translate". When it is on, the passages about to be read go, eight at a time, to
+  Gemini (`gemini-3.5-flash`, `europe-west3`, our project, the report service's identity) and come back in the
+  voice's language; the voice reads the translation. Mostly for open studies in PDF, so the owner accepted a second
+  exception to "no model reads the Drive", under the same terms as proofreading: only when the person turns it on,
+  named once per session before the first text goes, nothing logged or stored.
+- **The model only translates.** The passages are data: an instruction inside one is translated, not followed
+  (checked live). The answer is accepted only as one string per passage, in order; an empty or runaway translation
+  (more than three times its source) is replaced by the passage as written. It scores, flags and decides nothing (§15).
+- **What the reader shows.** The translated words are not the document's, so the passage being read stays
+  highlighted in the document and the words are followed in the player, as a caption. The next batch is asked for
+  halfway through the current one, so the voice does not wait.
+- **Model and cost, checked live on 2026-11-03.** `gemini-3.6-flash` and `gemini-3.7-flash` are not served to this
+  project in `europe-west3` (404); `gemini-3.5-flash` is. With thinking set to minimal, four passages took 1.5 s
+  (4.3 s at "low", the same translations); about 0.1 USD for a ten-page study at the published Vertex rates. Its own
+  switch (`TRANSLATE_ENABLED`), off until set; 12 passages and 4000 characters per request; 300 requests per
+  10 minutes per address.

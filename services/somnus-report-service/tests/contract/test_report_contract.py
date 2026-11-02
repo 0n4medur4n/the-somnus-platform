@@ -133,3 +133,16 @@ def test_proofread_dtos_conform() -> None:
     jsonschema.validate(
         result.model_dump(by_alias=True, mode="json"), _schema("DriveProofreadResult")
     )
+
+
+def test_translate_dtos_conform() -> None:
+    from report.schemas.translate import TranslateRequestDTO, TranslateResultDTO
+
+    request = TranslateRequestDTO(passages=["Hello.", "World."], lang="es")
+    jsonschema.validate(
+        request.model_dump(by_alias=True, mode="json"), _schema("DriveTranslateRequest")
+    )
+    result = TranslateResultDTO(passages=["Hola.", "Mundo."])
+    jsonschema.validate(
+        result.model_dump(by_alias=True, mode="json"), _schema("DriveTranslateResult")
+    )

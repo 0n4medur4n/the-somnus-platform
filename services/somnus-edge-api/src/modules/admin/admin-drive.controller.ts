@@ -40,6 +40,7 @@ import {
   DriveShareListSchema,
   type DriveShareSummary,
   DriveShareSummarySchema,
+  type DriveTranslateResult,
   type DriveUploadStartResponse,
   DriveUploadStartResponseSchema,
   opaqueIdSchema,
@@ -68,10 +69,12 @@ import {
   DriveRewrapDto,
   DriveShareCreateDto,
   DriveStateDto,
+  DriveTranslateDto,
   DriveUploadStartDto,
 } from "./admin-drive.dto.js";
 import { AdminDriveService } from "./admin-drive.service.js";
 import { AdminDriveProofreadService } from "./admin-drive-proofread.service.js";
+import { AdminDriveTranslateService } from "./admin-drive-translate.service.js";
 import { AdminRoute } from "./admin-route.decorator.js";
 
 const BASE = "/internal/v1/drive";
@@ -118,6 +121,7 @@ export class AdminDriveController {
   constructor(
     private readonly drive: AdminDriveService,
     private readonly proofreader: AdminDriveProofreadService,
+    private readonly translator: AdminDriveTranslateService,
   ) {}
 
   private call<T>(input: {
@@ -832,6 +836,31 @@ export class AdminDriveController {
     @CorrelationId() correlationId?: string,
   ): Promise<DriveProofreadResult> {
     return this.proofreader.proofread({
+      body,
+      actorId: session?.somnusUserId ?? "",
+      correlationId: correlationOf(correlationId),
+    });
+  }
+
+  // A long study read with translation asks for a dozen passages at a time:
+  // 300 requests in 10 minutes is far more than anyone listens to.
+  @Post("translate")
+  @HttpCode(200)
+  @RouteConfig({ rateLimit: { max: 300, timeWindow: 10 * 60_000 } })
+  @AdminRoute({
+    capability: "admin_drive",
+    eventType: "admin.drive_translate.requested.v1",
+    entity: "drive_translate",
+  })
+  @ApiOperation({
+    summary: "Passages about to be read aloud, in the voice's language (Gemini, EU).",
+  })
+  translate(
+    @CurrentSession() session: SessionRecord | undefined,
+    @Body() body: DriveTranslateDto,
+    @CorrelationId() correlationId?: string,
+  ): Promise<DriveTranslateResult> {
+    return this.translator.translate({
       body,
       actorId: session?.somnusUserId ?? "",
       correlationId: correlationOf(correlationId),

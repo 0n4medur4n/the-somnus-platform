@@ -816,7 +816,8 @@
         "accept": "Entendido, leer",
         "error": {
           "unavailable": "La lectura en voz alta no está disponible ahora. Inténtalo más tarde.",
-          "failed": "No se ha podido leer el texto. Vuelve a intentarlo."
+          "failed": "No se ha podido leer el texto. Vuelve a intentarlo.",
+          "translation": "No se ha podido traducir el texto. Vuelve a intentarlo, o lee sin traducir."
         },
         "player": "Lectura en voz alta",
         "pause": "Pausar",
@@ -826,7 +827,8 @@
         "part": "Parte {{part}} de {{total}}",
         "loading": "Preparando la voz…",
         "timeline": "Ir a otra parte del texto",
-        "close": "Cerrar la lectura"
+        "close": "Cerrar la lectura",
+        "translated": "Traducción que se está leyendo"
       },
       "voiceLang": {
         "label": "Idioma del dictado y la lectura",
@@ -904,6 +906,13 @@
         "copy": "Copiar el código del documento",
         "copied": "Código copiado",
         "explain": "Código único de este documento: se calcula (SHA-256) a partir de su identificador en el Drive, no cambia al editarlo y aparece en cada exportación junto con la huella de su contenido."
+      },
+      "translate": {
+        "label": "Traducir",
+        "toggle": "Traducir al idioma de la voz ({{lang}}) antes de leer",
+        "noticeTitle": "La traducción usa Gemini",
+        "notice": "Para leer traducido, el texto se envía, unos párrafos cada vez, a Gemini en nuestro propio Google Cloud, en la Unión Europea, y vuelve en el idioma de la voz. Ese texto sale del cifrado del Drive mientras se traduce, y no se guarda. Es una traducción automática: ante una duda, el original manda.",
+        "accept": "Entendido, traducir"
       }
     },
     "sheet": {
