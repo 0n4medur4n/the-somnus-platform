@@ -242,7 +242,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         provider=VertexGeminiAdapter(settings.vertex_project, settings.vertex_location)
         if proofread_ready
         else None,
-        model=settings.proofread_model,
+        chat_model=settings.proofread_model,
     )
 
     # The v2 report: deterministic, no model, nothing stored.

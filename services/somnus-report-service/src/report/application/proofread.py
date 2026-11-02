@@ -46,9 +46,11 @@ class ProofreadUnavailableError(Exception):
 
 
 class ProofreadService:
-    def __init__(self, provider: LlmProvider | None, model: str, temperature: float = 0.0) -> None:
+    def __init__(
+        self, provider: LlmProvider | None, chat_model: str, temperature: float = 0.0
+    ) -> None:
         self._provider = provider
-        self._model = model
+        self._model = chat_model
         self._temperature = temperature
 
     def proofread(self, body: ProofreadRequestDTO) -> ProofreadResultDTO:

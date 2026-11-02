@@ -77,7 +77,7 @@ def test_a_broken_answer_is_no_corrections(raw: str) -> None:
 
 def test_asks_for_json_in_the_documents_language_and_treats_the_text_as_data() -> None:
     provider = FakeProvider(answer())
-    ProofreadService(provider, model="gemini-2.5-flash").proofread(
+    ProofreadService(provider, chat_model="gemini-2.5-flash").proofread(
         ProofreadRequestDTO(text=TEXT, lang="es")
     )
     request = provider.requests[0]
@@ -90,14 +90,16 @@ def test_asks_for_json_in_the_documents_language_and_treats_the_text_as_data() -
 
 def test_unavailable_without_a_model_or_when_it_fails() -> None:
     with pytest.raises(ProofreadUnavailableError):
-        ProofreadService(None, model="m").proofread(ProofreadRequestDTO(text=TEXT, lang="es"))
+        ProofreadService(None, chat_model="m").proofread(ProofreadRequestDTO(text=TEXT, lang="es"))
 
     class Failing:
         def complete(self, request: LlmRequest) -> LlmResponse:
             raise RuntimeError(f"echo {request.user}")
 
     with pytest.raises(ProofreadUnavailableError) as error:
-        ProofreadService(Failing(), model="m").proofread(ProofreadRequestDTO(text=TEXT, lang="es"))
+        ProofreadService(Failing(), chat_model="m").proofread(
+            ProofreadRequestDTO(text=TEXT, lang="es")
+        )
     assert "medico" not in str(error.value)
 
 
@@ -179,7 +181,7 @@ def test_the_route_answers_503_until_configured_and_validates_the_body() -> None
             FakeProvider(
                 answer({"original": "medico", "replacement": "médico", "reason": "Tilde"})
             ),
-            model="m",
+            chat_model="m",
         )
         ok = client.post("/internal/v1/drive/proofread", json={"text": TEXT, "lang": "es"})
         assert ok.status_code == 200
