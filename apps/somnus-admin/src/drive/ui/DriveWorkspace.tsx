@@ -24,6 +24,7 @@ import {
   Modal,
 } from "../../components/ui/ui.js";
 import { ApiRequestError } from "../../lib/api.js";
+import { edge } from "../../lib/edge.js";
 import type { Appearance } from "../appearance.js";
 import { type Bytes, fromUtf8, utf8 } from "../crypto.js";
 import { DocumentEditor, type SaveOutcome } from "../documents/DocumentEditor.js";
@@ -757,6 +758,10 @@ export function DriveWorkspace({
         onClose={() => go({ share: view.shareId, folder: current })}
         notes={notes}
         password={documentPassword}
+        voice={{
+          dictation: (lang) => edge.speech.dictation(lang),
+          readAloud: (text, lang) => edge.speech.readAloud(text, lang),
+        }}
       />
     ) : (
       <div className="mx-auto max-w-2xl p-8">

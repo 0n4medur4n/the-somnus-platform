@@ -193,6 +193,10 @@ export const DRIVE_EVENT_TYPES: ReadonlyArray<string> = [
   "admin.drive_node.trashed.v1",
   "admin.drive_node.restored.v1",
   "admin.drive_node.purged.v1",
+  // Voice (owner decision 2026-11-02): that dictation started or a passage was
+  // read aloud. Never what was said or read.
+  "admin.drive_dictation.started.v1",
+  "admin.drive_read_aloud.requested.v1",
 ];
 
 /**

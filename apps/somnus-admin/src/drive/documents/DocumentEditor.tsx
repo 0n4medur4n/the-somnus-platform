@@ -23,6 +23,7 @@ import {
   TEXT_COLORS,
 } from "./doc-format.js";
 import { EXPORT_FORMATS, type ExportFormat, exportDocument, PASSWORD_FORMATS } from "./export.js";
+import { DictationButton, ReadAloudButton, type VoiceBinding } from "./VoiceTools.js";
 
 export type SaveOutcome = "saved" | "conflict" | "error";
 type Status = "saved" | "dirty" | "saving" | "error" | "conflict";
@@ -65,6 +66,7 @@ export function DocumentEditor({
   onClose,
   notes,
   password,
+  voice,
 }: {
   initialTitle: string;
   initialContent: JSONContent;
@@ -73,6 +75,8 @@ export function DocumentEditor({
   onClose: () => void;
   notes?: NotesBinding | undefined;
   password?: PasswordBinding | undefined;
+  /** Dictation and reading aloud; without it the toolbar offers neither. */
+  voice?: VoiceBinding | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const [title, setTitle] = useState(initialTitle);
@@ -353,7 +357,7 @@ export function DocumentEditor({
             </button>
           )}
         </div>
-        {editor && !readOnly ? <Toolbar editor={editor} /> : null}
+        {editor && !readOnly ? <Toolbar editor={editor} voice={voice} /> : null}
       </header>
 
       {passwordDialog.kind === "lock" ? (
@@ -463,7 +467,7 @@ function Divider() {
   return <span aria-hidden="true" className="mx-1 h-5 w-px bg-white/10" />;
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, voice }: { editor: Editor; voice: VoiceBinding | undefined }) {
   const { t } = useTranslation();
   const [linking, setLinking] = useState(false);
   const [href, setHref] = useState("");
@@ -767,6 +771,13 @@ function Toolbar({ editor }: { editor: Editor }) {
         active={state.table}
         onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
       />
+      {voice ? (
+        <>
+          <Divider />
+          <DictationButton editor={editor} voice={voice} />
+          <ReadAloudButton editor={editor} voice={voice} />
+        </>
+      ) : null}
 
       {state.table ? (
         <span className="ml-1 flex flex-wrap items-center gap-1 text-xs">

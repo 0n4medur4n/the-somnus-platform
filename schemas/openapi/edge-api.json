@@ -1501,6 +1501,56 @@
         ]
       }
     },
+    "/admin/v1/drive/speech/dictation": {
+      "post": {
+        "operationId": "AdminDriveController_dictation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveDictationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "A one-minute pass to stream dictation to AssemblyAI (EU).",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/drive/speech/read-aloud": {
+      "post": {
+        "operationId": "AdminDriveController_readAloud",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveReadAloudDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "A passage spoken by Google Cloud Text-to-Speech, as MP3.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/v1/staff-invitations": {
       "get": {
         "operationId": "AdminStaffInvitationsController_list",
@@ -4058,6 +4108,45 @@
           "parentId"
         ],
         "additionalProperties": false
+      },
+      "DriveDictationDto": {
+        "type": "object",
+        "properties": {
+          "lang": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          }
+        },
+        "required": [
+          "lang"
+        ]
+      },
+      "DriveReadAloudDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "lang"
+        ]
       },
       "CreateDto": {
         "type": "object",

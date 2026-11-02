@@ -86,3 +86,18 @@ export {
   type DriveUploadStartResponse,
   DriveUploadStartResponseSchema,
 } from "./drive.js";
+export {
+  DRIVE_READ_ALOUD_AUDIO_MAX_BYTES,
+  DRIVE_READ_ALOUD_MAX_BYTES,
+  DRIVE_SPEECH_LANGS,
+  type DriveDictationRequest,
+  DriveDictationRequestSchema,
+  type DriveDictationSession,
+  DriveDictationSessionSchema,
+  type DriveReadAloudRequest,
+  DriveReadAloudRequestSchema,
+  type DriveReadAloudResult,
+  DriveReadAloudResultSchema,
+  type DriveSpeechLang,
+  DriveSpeechLangSchema,
+} from "./speech.js";

@@ -90,6 +90,8 @@ const DRIVE_ROUTES: Array<{ method: string; url: string }> = [
   { method: "POST", url: `${DRIVE_NODE_URL}/trash` },
   { method: "POST", url: `${DRIVE_NODE_URL}/restore` },
   { method: "POST", url: `${DRIVE_NODE_URL}/purge` },
+  { method: "POST", url: "/admin/v1/drive/speech/dictation" },
+  { method: "POST", url: "/admin/v1/drive/speech/read-aloud" },
 ];
 
 /** A Drive route with real ids, for tests that need the request past validation. */
@@ -664,6 +666,8 @@ describe("admin console gate (/admin/v1/*)", () => {
       "POST /admin/v1/corpus/documents/doc1/edit": { title: "Higiene del sueño (rev.)" },
       "POST /admin/v1/corpus/documents/doc1/publish": { changelog: "Alta de la guía." },
       "POST /admin/v1/corpus/documents/doc1/web-page": { url: "https://example.org/guia" },
+      "POST /admin/v1/drive/speech/dictation": { lang: "es" },
+      "POST /admin/v1/drive/speech/read-aloud": { text: "Hola", lang: "es" },
       "POST /admin/v1/corpus/documents/doc1/retire": {
         reason: "Sustituida por la edición de 2027.",
         changelog: "Retirada.",

@@ -226,3 +226,28 @@ raised later).
   here, with a synchronous SHA-512 for the 100 000 rounds (checked against WebCrypto in tests). An independent
   implementation (msoffcrypto-tool 5.4.2) opened our file with the password, verified its integrity and rejected a
   wrong password; a test also decrypts it with WebCrypto.
+
+## Addendum -- voice: dictation with AssemblyAI, reading aloud with Google Cloud (owner decision 2026-11-02)
+
+- **Both leave the end-to-end encryption, on purpose.** The owner chose dictation through AssemblyAI and reading
+  aloud through Google Cloud Text-to-Speech Neural2 in our own project. Before either starts for the first time
+  after a reload, the console says where the words go and asks not to use them for patient data; the acceptance is
+  kept in memory only. What comes back -- the dictated text -- is saved encrypted like the rest of the document.
+- **Dictation.** The worker holds AssemblyAI's API key (Secret Manager `assemblyai-api-key`, created by hand, read by
+  the worker alone) and gives the browser a pass: a token that expires in 60 seconds, for a session of at most 30
+  minutes that closes itself after 30 seconds of silence. The browser streams 16 kHz PCM from an AudioWorklet
+  straight to AssemblyAI's EU endpoint (`streaming.eu.assemblyai.com`, audio processed in the EU); the audio never
+  passes through our servers, which also keeps it clear of Hosting, which buffers whole responses. The model is
+  `universal-streaming-multilingual` (es, en, fr, de, it, pt; $0.15 per hour of open stream) with formatted turns;
+  Catalan, which it lacks, uses `universal-3-6-pro` ($0.45 per hour). AssemblyAI is a new processor: its DPA and the
+  DPIA entry are the owner's to complete.
+- **Reading aloud.** The browser sends the passage from the caret (or the selection) a part at a time, at most 4800
+  bytes each, through `/admin/v1/drive/speech/read-aloud`; the worker calls Text-to-Speech with its own identity (no
+  key), and the MP3 plays in the page while the next part is fetched. The default endpoint is the global one: the
+  documentation confirms Neural2 there and does not confirm it on the EU endpoint (only Chirp 3: HD voices are listed
+  for `eu-texttospeech.googleapis.com`). Endpoint and voices are configuration (`TTS_ENDPOINT`, `TTS_VOICE_*`).
+- **Limits and audit.** Both routes need `admin_drive`, are rate-limited per address (30 dictation passes and 300
+  passages per 10 minutes) and emit `admin.drive_dictation.started.v1` / `admin.drive_read_aloud.requested.v1`
+  without content. Nothing logs the text or the audio; an upstream failure carries its status code only.
+- The console's `Permissions-Policy` now allows the microphone for itself (`microphone=(self)`).
+

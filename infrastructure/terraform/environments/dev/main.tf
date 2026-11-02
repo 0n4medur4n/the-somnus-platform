@@ -41,6 +41,8 @@ locals {
     "logging.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "serviceusage.googleapis.com",
+    # Reading Drive documents aloud (owner decision 2026-11-02, ADR 0019).
+    "texttospeech.googleapis.com",
     # Also needed on the backend project: with user_project_override,
     # every API call (even ones targeting firebase_project_id) is
     # quota-billed against project_id, and Google checks enablement
@@ -386,11 +388,15 @@ module "run_worker" {
     MORPHEO_BASE_URL   = "https://morpheo-service-lx3fvb5r5q-ey.a.run.app"
     BREVO_SENDER_EMAIL = "access@thesomnus.com"
     BREVO_SENDER_NAME  = "The Somnus"
+    # Reading Drive documents aloud with Google Cloud Text-to-Speech (ADR 0019),
+    # with the worker's own identity: no key.
+    TTS_ENABLED = "true"
   }
   secret_env_vars = {
     NOTIFICATIONS_DATABASE_URL = { secret_id = "notifications-db-url", version = "latest" }
     AUDIT_DATABASE_URL         = { secret_id = "audit-db-url", version = "latest" }
     BREVO_API_KEY              = { secret_id = "brevo-api-key", version = "latest" }
+    ASSEMBLYAI_API_KEY         = { secret_id = "assemblyai-api-key", version = "latest" }
   }
   labels = { app = "somnus", service = "worker", env = var.env }
 
@@ -398,6 +404,7 @@ module "run_worker" {
   depends_on = [
     module.project_apis_backend,
     google_secret_manager_secret_iam_member.worker_brevo_api_key,
+    google_secret_manager_secret_iam_member.worker_assemblyai_api_key,
   ]
 }
 
@@ -745,6 +752,21 @@ data "google_secret_manager_secret" "brevo_api_key" {
 resource "google_secret_manager_secret_iam_member" "worker_brevo_api_key" {
   project   = var.project_id
   secret_id = data.google_secret_manager_secret.brevo_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = module.sa_worker.member
+}
+
+# The AssemblyAI API key, for dictation in Drive documents (owner decision
+# 2026-11-02, ADR 0019): created by hand in Secret Manager like Brevo's, read by
+# the worker alone, which gives browsers one-minute streaming tokens instead.
+data "google_secret_manager_secret" "assemblyai_api_key" {
+  project   = var.project_id
+  secret_id = "assemblyai-api-key"
+}
+
+resource "google_secret_manager_secret_iam_member" "worker_assemblyai_api_key" {
+  project   = var.project_id
+  secret_id = data.google_secret_manager_secret.assemblyai_api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = module.sa_worker.member
 }

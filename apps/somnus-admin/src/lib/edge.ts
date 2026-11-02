@@ -35,6 +35,7 @@ import type {
   Dashboards,
   DriveAccount,
   DriveBlock,
+  DriveDictationSession,
   DriveDirectory,
   DriveEnrollRequest,
   DriveFolderCreateRequest,
@@ -46,6 +47,7 @@ import type {
   DriveMoveRequest,
   DriveNode,
   DrivePurgeResult,
+  DriveReadAloudResult,
   DriveRenameRequest,
   DriveRewrapRequest,
   DriveRole,
@@ -53,6 +55,7 @@ import type {
   DriveShareDetail,
   DriveShareList,
   DriveShareSummary,
+  DriveSpeechLang,
   DriveStateRequest,
   DriveUploadStartRequest,
   DriveUploadStartResponse,
@@ -260,6 +263,14 @@ export const edge = {
   // The staff Drive (admin_drive, every internal role; ADR 0019). Every body
   // below is built by `drive/crypto.ts`: ciphertext, public keys and signatures.
   drive: driveEdge(),
+  // Voice in Drive documents (owner decision 2026-11-02): a dictation pass for
+  // AssemblyAI, and passages read aloud by Google Cloud Text-to-Speech.
+  speech: {
+    dictation: (lang: DriveSpeechLang): Promise<DriveDictationSession> =>
+      api.post<DriveDictationSession>("/admin/v1/drive/speech/dictation", { lang }),
+    readAloud: (text: string, lang: DriveSpeechLang): Promise<DriveReadAloudResult> =>
+      api.post<DriveReadAloudResult>("/admin/v1/drive/speech/read-aloud", { text, lang }),
+  },
 };
 
 /** The Drive's routes. A function so the paths are built in one place, with ids encoded. */

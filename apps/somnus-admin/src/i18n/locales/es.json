@@ -785,6 +785,38 @@
         "exportIntro": "El archivo descargado pedirá esta contraseña al abrirlo en Word, LibreOffice o cualquier lector de PDF.",
         "exportWarning": "Si se olvida, el archivo no se puede abrir. El documento del Drive no cambia.",
         "lockedIntro": "Este documento tiene contraseña. Escríbela para abrirlo."
+      },
+      "speechWarning": "No dictes ni leas en voz alta datos de pacientes ni información que identifique a una persona.",
+      "dictation": {
+        "label": "Dictar",
+        "start": "Dictar con la voz",
+        "stop": "Dejar de dictar",
+        "starting": "Abriendo el micrófono…",
+        "listening": "Escuchando… habla con normalidad",
+        "noticeTitle": "El dictado usa AssemblyAI",
+        "notice": "Para convertir tu voz en texto, el navegador envía el audio a AssemblyAI, que lo procesa en servidores de la Unión Europea. Ese audio no está protegido por el cifrado del Drive. El texto que resulta sí se guarda cifrado, como el resto del documento.",
+        "commands": "AssemblyAI pone la puntuación solo, y también puedes dictarla: «coma», «punto», «dos puntos», «abrir interrogación», «punto y aparte» o «nuevo párrafo». Este aviso no vuelve a salir hasta que recargues la página.",
+        "accept": "Entendido, dictar",
+        "error": {
+          "denied": "El navegador no deja usar el micrófono. Permítelo en el candado de la barra de direcciones.",
+          "noMicrophone": "No se encuentra ningún micrófono.",
+          "network": "Se ha cortado la conexión con el servicio de dictado. Vuelve a intentarlo.",
+          "unavailable": "El dictado no está disponible ahora. Inténtalo más tarde.",
+          "failed": "El dictado se ha detenido. Vuelve a intentarlo.",
+          "unsupported": "Este navegador no permite dictar. Usa Chrome, Edge o Firefox actualizados."
+        }
+      },
+      "readAloud": {
+        "label": "Leer",
+        "start": "Leer en voz alta desde el cursor, o la selección",
+        "stop": "Dejar de leer",
+        "noticeTitle": "La lectura usa Google Cloud",
+        "notice": "Para leer el documento en voz alta, el texto se envía, por partes, al servicio de voz de Google Cloud de nuestro propio proyecto. Ese texto sale del cifrado del Drive mientras se convierte en voz, y no se guarda.",
+        "accept": "Entendido, leer",
+        "error": {
+          "unavailable": "La lectura en voz alta no está disponible ahora. Inténtalo más tarde.",
+          "failed": "No se ha podido leer el texto. Vuelve a intentarlo."
+        }
       }
     },
     "sheet": {

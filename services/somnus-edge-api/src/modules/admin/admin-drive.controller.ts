@@ -10,6 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
+import { RouteConfig } from "@nestjs/platform-fastify";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import {
   DRIVE_BLOCK_MAX_BYTES,
@@ -18,6 +19,8 @@ import {
   DriveAccountSchema,
   type DriveBlock,
   DriveBlockSchema,
+  type DriveDictationSession,
+  DriveDictationSessionSchema,
   type DriveDirectory,
   DriveDirectorySchema,
   type DriveKeyGenerationResult,
@@ -28,6 +31,8 @@ import {
   DriveNodeSchema,
   type DrivePurgeResult,
   DrivePurgeResultSchema,
+  type DriveReadAloudResult,
+  DriveReadAloudResultSchema,
   type DriveShareDetail,
   DriveShareDetailSchema,
   type DriveShareList,
@@ -48,6 +53,7 @@ import type { SessionRecord } from "../sessions/session.service.js";
 import { AdminAuditInterceptor, type RequestWithAuditDetail } from "./admin-audit.interceptor.js";
 import { AdminCapabilityGuard } from "./admin-capability.guard.js";
 import {
+  DriveDictationDto,
   DriveEnrollDto,
   DriveFolderCreateDto,
   DriveMemberAddDto,
@@ -55,6 +61,7 @@ import {
   DriveMemberRemoveDto,
   DriveMemberRoleDto,
   DriveMoveDto,
+  DriveReadAloudDto,
   DriveRenameDto,
   DriveRewrapDto,
   DriveShareCreateDto,
@@ -748,6 +755,60 @@ export class AdminDriveController {
       undefined,
       DrivePurgeResultSchema,
     );
+  }
+
+  // --- voice (owner decision 2026-11-02) ---
+  //
+  // The only Drive routes that carry readable content, because the person asked
+  // for it: the console has already said where it goes. Neither is logged; the
+  // audit event records that it happened, never what was said or read.
+
+  @Post("speech/dictation")
+  @HttpCode(200)
+  @RouteConfig({ rateLimit: { max: 30, timeWindow: 10 * 60_000 } })
+  @AdminRoute({
+    capability: "admin_drive",
+    eventType: "admin.drive_dictation.started.v1",
+    entity: "drive_speech",
+  })
+  @ApiOperation({ summary: "A one-minute pass to stream dictation to AssemblyAI (EU)." })
+  dictation(
+    @CurrentSession() session: SessionRecord | undefined,
+    @Body() body: DriveDictationDto,
+    @CorrelationId() correlationId?: string,
+  ): Promise<DriveDictationSession> {
+    return this.call({
+      session,
+      correlationId,
+      method: "POST",
+      path: `${BASE}/speech/dictation`,
+      schema: DriveDictationSessionSchema,
+      body,
+    });
+  }
+
+  @Post("speech/read-aloud")
+  @HttpCode(200)
+  @RouteConfig({ rateLimit: { max: 300, timeWindow: 10 * 60_000 } })
+  @AdminRoute({
+    capability: "admin_drive",
+    eventType: "admin.drive_read_aloud.requested.v1",
+    entity: "drive_speech",
+  })
+  @ApiOperation({ summary: "A passage spoken by Google Cloud Text-to-Speech, as MP3." })
+  readAloud(
+    @CurrentSession() session: SessionRecord | undefined,
+    @Body() body: DriveReadAloudDto,
+    @CorrelationId() correlationId?: string,
+  ): Promise<DriveReadAloudResult> {
+    return this.call({
+      session,
+      correlationId,
+      method: "POST",
+      path: `${BASE}/speech/read-aloud`,
+      schema: DriveReadAloudResultSchema,
+      body,
+    });
   }
 
   private nodeAction<T = DriveNode>(

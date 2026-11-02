@@ -1,4 +1,5 @@
 import {
+  DriveDictationRequestSchema,
   DriveEnrollRequestSchema,
   DriveFolderCreateRequestSchema,
   DriveMemberAddRequestSchema,
@@ -6,6 +7,7 @@ import {
   DriveMemberRemoveRequestSchema,
   DriveMemberRoleRequestSchema,
   DriveMoveRequestSchema,
+  DriveReadAloudRequestSchema,
   DriveRenameRequestSchema,
   DriveRewrapRequestSchema,
   DriveShareCreateRequestSchema,
@@ -31,3 +33,6 @@ export class DriveMemberAddDto extends createZodDto(DriveMemberAddRequestSchema)
 export class DriveMemberKeyAcceptDto extends createZodDto(DriveMemberKeyAcceptRequestSchema) {}
 export class DriveMemberRoleDto extends createZodDto(DriveMemberRoleRequestSchema) {}
 export class DriveMemberRemoveDto extends createZodDto(DriveMemberRemoveRequestSchema) {}
+/** Voice (owner decision 2026-11-02): a language, and for reading aloud, plain text. */
+export class DriveDictationDto extends createZodDto(DriveDictationRequestSchema) {}
+export class DriveReadAloudDto extends createZodDto(DriveReadAloudRequestSchema) {}

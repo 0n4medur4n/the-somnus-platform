@@ -785,6 +785,38 @@
         "exportIntro": "The downloaded file will ask for this password when opened in Word, LibreOffice or any PDF reader.",
         "exportWarning": "If it is forgotten, the file cannot be opened. The Drive document does not change.",
         "lockedIntro": "This document has a password. Type it to open it."
+      },
+      "speechWarning": "Do not dictate or read aloud patient data or anything that identifies a person.",
+      "dictation": {
+        "label": "Dictate",
+        "start": "Dictate by voice",
+        "stop": "Stop dictating",
+        "starting": "Opening the microphone…",
+        "listening": "Listening… speak normally",
+        "noticeTitle": "Dictation uses AssemblyAI",
+        "notice": "To turn your voice into text, the browser sends the audio to AssemblyAI, which processes it on servers in the European Union. That audio is not protected by the Drive's encryption. The resulting text is saved encrypted, like the rest of the document.",
+        "commands": "AssemblyAI adds punctuation by itself, and you can also dictate it: “comma”, “full stop”, “colon”, “question mark”, “new paragraph”. This notice won't show again until you reload the page.",
+        "accept": "Understood, dictate",
+        "error": {
+          "denied": "The browser won't allow the microphone. Allow it from the padlock in the address bar.",
+          "noMicrophone": "No microphone was found.",
+          "network": "The connection to the dictation service dropped. Try again.",
+          "unavailable": "Dictation isn't available right now. Try again later.",
+          "failed": "Dictation stopped. Try again.",
+          "unsupported": "This browser can't dictate. Use an up-to-date Chrome, Edge or Firefox."
+        }
+      },
+      "readAloud": {
+        "label": "Read",
+        "start": "Read aloud from the cursor, or the selection",
+        "stop": "Stop reading",
+        "noticeTitle": "Reading aloud uses Google Cloud",
+        "notice": "To read the document aloud, the text is sent, a part at a time, to Google Cloud's speech service in our own project. That text leaves the Drive's encryption while it becomes speech, and it is not stored.",
+        "accept": "Understood, read",
+        "error": {
+          "unavailable": "Reading aloud isn't available right now. Try again later.",
+          "failed": "The text couldn't be read. Try again."
+        }
       }
     },
     "sheet": {
