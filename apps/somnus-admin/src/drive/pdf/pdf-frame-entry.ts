@@ -1,5 +1,6 @@
 import { getDocument, type PDFDocumentProxy, TextLayer } from "pdfjs-dist";
 import * as pdfWorker from "pdfjs-dist/build/pdf.worker.mjs";
+import { MARK_COLORS } from "../notes/notes-format.js";
 import { type FromFrame, type PdfTextItem, pageText, type ToFrame } from "./pdf-protocol.js";
 
 /**
@@ -26,6 +27,103 @@ type Page = {
 const pages: Page[] = [];
 let pdf: PDFDocumentProxy | null = null;
 let reading: Page | null = null;
+let phrases: Extract<ToFrame, { t: "phrases" }>["marks"] = [];
+let canMark = false;
+let picked: { index: number; start: number; end: number } | null = null;
+
+type Highlights = Map<string, unknown>;
+const highlights = (): Highlights | undefined =>
+  (globalThis as unknown as { CSS?: { highlights?: Highlights } }).CSS?.highlights;
+const HighlightClass = () =>
+  (globalThis as unknown as { Highlight: new (...ranges: Range[]) => unknown }).Highlight;
+
+/** A range over a page's text layer, from offsets in the page's text. */
+function rangeOf(page: Page, start: number, end: number): Range | null {
+  const first = page.map[start];
+  const last = page.map[end - 1];
+  const divs = page.textLayer?.textDivs ?? [];
+  const from = first && divs[first[0]]?.firstChild;
+  const to = last && divs[last[0]]?.firstChild;
+  if (!first || !last || !from || !to) return null;
+  const range = document.createRange();
+  range.setStart(from, Math.min(first[1], from.textContent?.length ?? 0));
+  range.setEnd(to, Math.min(last[1] + 1, to.textContent?.length ?? 0));
+  return range;
+}
+
+/** Marked phrases on the pages drawn so far, one highlight per colour. */
+function paint() {
+  const registry = highlights();
+  if (!registry) return;
+  const byColor = new Map<string, Range[]>();
+  for (const mark of phrases) {
+    const page = pages[mark.index];
+    const range = page?.textLayer ? rangeOf(page, mark.start, mark.end) : null;
+    if (range) byColor.set(mark.color, [...(byColor.get(mark.color) ?? []), range]);
+  }
+  for (const color of MARK_COLORS) {
+    const ranges = byColor.get(color);
+    if (ranges) registry.set(`somnus-c-${color}`, new (HighlightClass())(...ranges));
+    else registry.delete(`somnus-c-${color}`);
+  }
+}
+
+// The bar that marks or comments on a selection, shown above it.
+const bar = document.createElement("div");
+bar.id = "somnus-tools";
+bar.setAttribute("role", "toolbar");
+document.body.append(bar);
+
+/** The selection, as offsets in one page's text; null if it spans pages. */
+function chosen(): { index: number; start: number; end: number; rect: DOMRect } | null {
+  const selection = getSelection();
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  const element = (node: Node) => (node instanceof Element ? node : node.parentElement);
+  const box = element(range.startContainer)?.closest(".page");
+  if (!box || box !== element(range.endContainer)?.closest(".page")) return null;
+  const index = pages.findIndex((page) => page.box === box);
+  const page = pages[index];
+  const divs = page?.textLayer?.textDivs ?? [];
+  if (!page) return null;
+  let start = -1;
+  let end = -1;
+  page.map.forEach(([item, char], k) => {
+    const node = divs[item]?.firstChild;
+    if (!node) return;
+    if (range.comparePoint(node, char) === 0 && range.comparePoint(node, char + 1) === 0) {
+      if (start < 0) start = k;
+      end = k + 1;
+    }
+  });
+  return start < 0 ? null : { index, start, end, rect: range.getBoundingClientRect() };
+}
+
+function send(color: string, comment: boolean) {
+  if (!picked) return;
+  tell({ t: "select", ...picked, color, comment });
+  picked = null;
+  bar.style.display = "none";
+  getSelection()?.removeAllRanges();
+}
+
+document.addEventListener("mousedown", (event) => {
+  if (!bar.contains(event.target as Node)) bar.style.display = "none";
+});
+document.addEventListener("mouseup", (event) => {
+  if (bar.contains(event.target as Node)) return;
+  setTimeout(() => {
+    const choice = canMark ? chosen() : null;
+    picked = choice && { index: choice.index, start: choice.start, end: choice.end };
+    if (!choice) {
+      bar.style.display = "none";
+      return;
+    }
+    bar.style.display = "flex";
+    bar.style.top = `${Math.max(scrollY + 4, scrollY + choice.rect.top - bar.offsetHeight - 8)}px`;
+    bar.style.left = `${Math.max(8, Math.min(scrollX + choice.rect.left, innerWidth - bar.offsetWidth - 8))}px`;
+  }, 0);
+});
 
 const root = document.getElementById("root") as HTMLElement;
 root.className = "somnus-pdf";
@@ -64,6 +162,7 @@ async function draw(page: Page, number: number) {
     viewport,
   });
   await page.textLayer.render();
+  paint();
 }
 
 /** The word being read, highlighted without touching the page's text. */
@@ -139,6 +238,26 @@ addEventListener("message", (event: MessageEvent<ToFrame>) => {
   const message = event.data;
   if (message?.t === "open") {
     open(message.data, message.pageLabel).catch(() => tell({ t: "failed" }));
+  } else if (message?.t === "phrases") {
+    if (!bar.childNodes.length) {
+      for (const color of MARK_COLORS) {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = `somnus-dot somnus-dot-${color}`;
+        dot.setAttribute("aria-label", String(message.labels.colors[color] ?? color));
+        dot.addEventListener("click", () => send(color, false));
+        bar.append(dot);
+      }
+      const talk = document.createElement("button");
+      talk.type = "button";
+      talk.className = "somnus-comment";
+      talk.textContent = String(message.labels.comment);
+      talk.addEventListener("click", () => send("yellow", true));
+      bar.append(talk);
+    }
+    canMark = true;
+    phrases = Array.isArray(message.marks) ? message.marks : [];
+    paint();
   } else if (message?.t === "go") {
     pages[message.page - 1]?.box.scrollIntoView({ block: "start" });
   } else if (message?.t === "read") {

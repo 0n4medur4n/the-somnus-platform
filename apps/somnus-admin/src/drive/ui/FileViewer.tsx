@@ -20,9 +20,12 @@ import { NotesPanel } from "../notes/NotesPanel.js";
 import {
   blockOf,
   type DriveNote,
+  MARK_COLORS,
   marksFor,
   type NoteAnchor,
   normalizeQuote,
+  phraseAnchor,
+  textMarksFor,
 } from "../notes/notes-format.js";
 import type { NotesBinding } from "../notes/use-notes.js";
 import { PdfFrame } from "../pdf/PdfFrame.js";
@@ -91,6 +94,8 @@ export function FileViewer({
     index: null,
   });
   const fullBlocks = useRef<string[] | null>(null);
+  // The whole texts the marks are placed in: a preview's blocks, or a PDF's pages.
+  const [wholeTexts, setWholeTexts] = useState<string[]>([]);
   const fullWaiters = useRef<Array<(texts: string[]) => void>>([]);
   const [preview, setPreview] = useState<Preview>({ kind: "loading" });
   const docx = isDocx(mime, name);
@@ -116,6 +121,7 @@ export function FileViewer({
     let cancelled = false;
     fullBlocks.current = null;
     pdfTexts.current = null;
+    setWholeTexts([]);
     const blobOf = (type: string) => new Blob([bytes as Uint8Array<ArrayBuffer>], { type });
     if (isPdf(mime, name)) {
       url = URL.createObjectURL(blobOf("application/pdf"));
@@ -186,6 +192,38 @@ export function FileViewer({
   }, [hasNotes]);
 
   const marks = useMemo(() => marksFor(notes?.list ?? [], blocks), [notes?.list, blocks]);
+  // Marked phrases, and what the selection bar says: one object while nothing
+  // changes, so the frame is not told the same thing again.
+  const phrases = useMemo(
+    () => ({
+      marks: textMarksFor(notes?.list ?? [], wholeTexts),
+      labels: {
+        comment: t("drive.notes.comment"),
+        colors: Object.fromEntries(MARK_COLORS.map((c) => [c, t(`drive.notes.colors.${c}`)])),
+      },
+    }),
+    [notes?.list, wholeTexts, t],
+  );
+
+  // A selection in the file: a coloured mark at once, or a comment to write.
+  async function onSelect(choice: {
+    index: number;
+    start: number;
+    end: number;
+    color: string;
+    comment: boolean;
+  }) {
+    if (!notes?.canEdit) return;
+    const color = MARK_COLORS.find((c) => c === choice.color) ?? "yellow";
+    const anchor = phraseAnchor(wholeTexts, choice.index, choice.start, choice.end, color);
+    if (!anchor) return;
+    if (choice.comment) {
+      setPanelOpen(true);
+      setDraft(anchor);
+    } else {
+      await notes.add("", anchor);
+    }
+  }
 
   function togglePanel() {
     setAnnotating(true);
@@ -201,6 +239,10 @@ export function FileViewer({
 
   function selectNote(note: DriveNote) {
     if (note.anchor.kind === "page") setPdfGoTo({ page: note.anchor.page, nonce: Date.now() });
+    if (note.anchor.kind === "text" && preview.kind === "pdf") {
+      setPdfGoTo({ page: note.anchor.index + 1, nonce: Date.now() });
+      return;
+    }
     const index = blockOf(note, blocks);
     if (index === null) return;
     setFocusedBlock(index);
@@ -219,6 +261,8 @@ export function FileViewer({
         addLabel={t("drive.notes.addHere")}
         goTo={goTo}
         reading={reading}
+        phrases={notes ? phrases : undefined}
+        onSelect={(choice) => void onSelect(choice)}
         onBlocks={setBlocks}
         onFullBlocks={onFullBlocks}
         onAdd={addAt}
@@ -252,11 +296,13 @@ export function FileViewer({
 
   function onPdfPages(texts: string[]) {
     pdfTexts.current = texts;
+    setWholeTexts(texts);
     for (const resolve of pdfWaiters.current.splice(0)) resolve(texts);
   }
 
   function onFullBlocks(texts: string[]) {
     fullBlocks.current = texts;
+    setWholeTexts(texts);
     for (const resolve of fullWaiters.current.splice(0)) resolve(texts);
   }
 
@@ -404,6 +450,8 @@ export function FileViewer({
               bytes={bytes}
               goTo={pdfGoTo}
               reading={pdfReading}
+              phrases={notes ? phrases : undefined}
+              onSelect={(choice) => void onSelect(choice)}
               onPages={onPdfPages}
               onFailed={() => setPreview({ kind: "none" })}
             />

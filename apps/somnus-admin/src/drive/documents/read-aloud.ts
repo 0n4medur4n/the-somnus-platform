@@ -122,6 +122,11 @@ function blockChars(node: PmNode, pos: number, from = 0, to = Number.POSITIVE_IN
   return chars;
 }
 
+/** A textblock's whole text as a reader hears it, with each character's document position. */
+export function blockText(node: PmNode, pos: number): { text: string; at: number[] } {
+  return collapse(blockChars(node, pos));
+}
+
 function piecesOf(text: string, at: number[], from: number, to: number, whole: boolean): Passage[] {
   return splitRanges(text).map(([start, end]) => ({
     text: text.slice(start, end),

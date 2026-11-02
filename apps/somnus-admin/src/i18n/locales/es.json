@@ -935,7 +935,16 @@
       "emptyPdf": "Sin notas. Escribe una abajo e indica la página.",
       "emptyRead": "Sin notas.",
       "pickPlace": "Se añadirá como nota general. Elige un párrafo para colocarla en él.",
-      "clearPlace": "Quitar el lugar de la nota"
+      "clearPlace": "Quitar el lugar de la nota",
+      "comment": "Comentar",
+      "highlightOnly": "Subrayado",
+      "colors": {
+        "yellow": "Amarillo",
+        "green": "Verde",
+        "blue": "Azul",
+        "pink": "Rosa",
+        "orange": "Naranja"
+      }
     }
   },
   "charts": {

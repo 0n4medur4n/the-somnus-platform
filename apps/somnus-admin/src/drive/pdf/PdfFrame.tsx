@@ -1,6 +1,7 @@
 import css from "pdfjs-dist/web/pdf_viewer.css?inline";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MARK_COLORS, MARK_HEX } from "../notes/notes-format.js";
 import engineUrl from "./pdf-frame-entry.js?worker&url";
 import type { FromFrame, ToFrame } from "./pdf-protocol.js";
 
@@ -20,7 +21,11 @@ const PAGE_STYLE = `html,body{margin:0;background:#e8eaed}
 .somnus-pdf{padding:12px 0 96px}
 .somnus-pdf .page{position:relative;width:min(100% - 24px,900px);margin:0 auto 12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .somnus-pdf .page.somnus-reading{outline:3px solid #437ef7;outline-offset:2px}
-::highlight(somnus-word){background-color:rgba(67,126,247,.45)}`;
+::highlight(somnus-word){background-color:rgba(67,126,247,.45)}
+${MARK_COLORS.map((c) => `::highlight(somnus-c-${c}){background-color:${MARK_HEX[c]}99}.somnus-dot-${c}{background:${MARK_HEX[c]}}`).join("\n")}
+#somnus-tools{display:none;position:absolute;z-index:20;gap:6px;align-items:center;padding:6px 8px;border-radius:999px;background:#1f2937;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+#somnus-tools .somnus-dot{width:20px;height:20px;border-radius:999px;border:2px solid #fff;cursor:pointer;padding:0}
+#somnus-tools .somnus-comment{border:0;border-radius:999px;background:#2563eb;color:#fff;font:600 12px Arial,sans-serif;padding:4px 10px;cursor:pointer}`;
 
 /**
  * The page. pdf.js needs `unsafe-eval` only to start (the viewer arrives as
@@ -72,6 +77,8 @@ export function PdfFrame({
   bytes,
   goTo,
   reading,
+  phrases,
+  onSelect,
   onPages,
   onFailed,
 }: {
@@ -81,6 +88,23 @@ export function PdfFrame({
   goTo: { page: number; nonce: number } | null;
   /** The page being read aloud, and the word, as offsets in its text. */
   reading: { page: number | null; start?: number; end?: number };
+  /** Marked phrases (by page, from 0), and the labels of the selection bar; none: no marking. */
+  phrases?:
+    | {
+        marks: Array<{ index: number; start: number; end: number; color: string }>;
+        labels: { comment: string; colors: Record<string, string> };
+      }
+    | undefined;
+  /** A selection to mark or comment on; checked against the page text by the caller. */
+  onSelect?:
+    | ((choice: {
+        index: number;
+        start: number;
+        end: number;
+        color: string;
+        comment: boolean;
+      }) => void)
+    | undefined;
   onPages: (texts: string[]) => void;
   onFailed: () => void;
 }) {
@@ -88,8 +112,10 @@ export function PdfFrame({
   const frame = useRef<HTMLIFrameElement>(null);
   const [page, setPage] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState<number | null>(null);
-  const latest = useRef({ bytes, onPages, onFailed, label: t("drive.viewer.page") });
-  latest.current = { bytes, onPages, onFailed, label: t("drive.viewer.page") };
+  const latest = useRef({ bytes, onPages, onFailed, onSelect, label: t("drive.viewer.page") });
+  latest.current = { bytes, onPages, onFailed, onSelect, label: t("drive.viewer.page") };
+  const count = useRef<number | null>(null);
+  count.current = pageCount;
 
   useEffect(() => {
     let cancelled = false;
@@ -134,6 +160,16 @@ export function PdfFrame({
         case "failed":
           latest.current.onFailed();
           break;
+        case "select": {
+          const { index, start, end, color, comment } = message;
+          const whole = (n: unknown): n is number => typeof n === "number" && Number.isInteger(n);
+          const pagesNow = count.current;
+          if (!whole(index) || !whole(start) || !whole(end) || typeof color !== "string") break;
+          if (pagesNow === null || index < 0 || index >= pagesNow || start < 0 || end <= start)
+            break;
+          latest.current.onSelect?.({ index, start, end, color, comment: comment === true });
+          break;
+        }
         default:
           break;
       }
@@ -158,6 +194,12 @@ export function PdfFrame({
     };
     frame.current?.contentWindow?.postMessage(message, "*");
   }, [pageCount, reading]);
+
+  useEffect(() => {
+    if (pageCount === null || !phrases) return;
+    const message: ToFrame = { t: "phrases", marks: phrases.marks, labels: phrases.labels };
+    frame.current?.contentWindow?.postMessage(message, "*");
+  }, [pageCount, phrases]);
 
   if (!page) return null;
   return (

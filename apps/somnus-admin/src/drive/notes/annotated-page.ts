@@ -1,3 +1,5 @@
+import { MARK_COLORS, MARK_HEX } from "./notes-format.js";
+
 /**
  * The console speaking to a page being annotated, and the page speaking back.
  * Blocks are the page's readable pieces, in order: headings, paragraphs, list
@@ -12,22 +14,35 @@ export type ToPage =
     }
   | { t: "go"; index: number }
   /** Reading aloud: the block being read (null: none) and the word, as offsets in its full text. */
-  | { t: "read"; index: number | null; start?: number; end?: number };
+  | { t: "read"; index: number | null; start?: number; end?: number }
+  /** Marked phrases, by colour; and the labels of the bar that marks a selection. */
+  | {
+      t: "phrases";
+      marks: Array<{ index: number; start: number; end: number; color: string }>;
+      labels: { comment: string; colors: Record<string, string> };
+    };
 
 export type FromPage =
   /** `full` is each block's whole text as a reader hears it; `blocks` is cut for note quotes. */
   | { t: "blocks"; blocks: unknown; full?: unknown }
   | { t: "add"; index: unknown }
+  /** A selection, marked in a colour or to comment on: offsets in a block's full text. */
+  | { t: "select"; index: unknown; start: unknown; end: unknown; color: unknown; comment: unknown }
   | { t: "focus"; index: unknown };
+
+const COLOR_LIST = JSON.stringify(MARK_COLORS);
 
 /**
  * The one script the page may run, named by its hash: it finds the blocks, shows
  * "add a note" beside the one under the mouse and marks the ones with notes. It
  * sees the page's own text and nothing else, and it writes only classes, a count
- * and its own button's label.
+ * and its own buttons. It also paints marked phrases (CSS highlights, not the
+ * document), and offers to mark or comment on a selection within one block,
+ * sending back only the block's number and two offsets.
  */
 const SCRIPT = `(function () {
-  var blocks = [], maps = [], canAdd = false, hovered = -1, add, reading = null;
+  var COLORS = ${COLOR_LIST};
+  var blocks = [], maps = [], canAdd = false, hovered = -1, add, reading = null, tools, picked = null;
   function tell(m) { parent.postMessage(m, "*"); }
   function words(e) { return (e.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 200); }
   // A block's whole text as a reader hears it (spaces collapsed, a space
@@ -86,7 +101,66 @@ const SCRIPT = `(function () {
       var b = t.closest(".somnus-noted");
       if (b) tell({ t: "focus", index: Number(b.getAttribute("data-somnus-block")) });
     });
+    tools = document.createElement("div");
+    tools.id = "somnus-tools";
+    tools.setAttribute("role", "toolbar");
+    document.body.appendChild(tools);
+    document.addEventListener("mousedown", function (ev) { if (!tools.contains(ev.target)) tools.style.display = "none"; });
+    document.addEventListener("mouseup", function (ev) {
+      if (tools.contains(ev.target)) return;
+      setTimeout(choose, 0);
+    });
     tell({ t: "blocks", blocks: texts, full: full });
+  }
+  // The selection, as offsets in one block's whole text; null if it spans blocks.
+  function chosen() {
+    var sel = getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+    var range = sel.getRangeAt(0);
+    var a = range.startContainer, b = range.endContainer;
+    var ea = (a.nodeType === 1 ? a : a.parentElement), eb = (b.nodeType === 1 ? b : b.parentElement);
+    var block = ea && ea.closest("[data-somnus-block]");
+    if (!block || !eb || block !== eb.closest("[data-somnus-block]")) return null;
+    var index = Number(block.getAttribute("data-somnus-block")), map = maps[index], start = -1, end = -1;
+    for (var k = 0; k < map.length; k++) {
+      var n = map[k][0], o = map[k][1];
+      if (range.comparePoint(n, o) === 0 && range.comparePoint(n, o + 1) === 0) {
+        if (start < 0) start = k;
+        end = k + 1;
+      }
+    }
+    return start < 0 ? null : { index: index, start: start, end: end, rect: range.getBoundingClientRect() };
+  }
+  function choose() {
+    picked = canAdd && tools.childNodes.length ? chosen() : null;
+    if (!picked) { tools.style.display = "none"; return; }
+    tools.style.display = "flex";
+    var top = scrollY + picked.rect.top - tools.offsetHeight - 8;
+    tools.style.top = Math.max(scrollY + 4, top) + "px";
+    tools.style.left = Math.max(8, Math.min(scrollX + picked.rect.left, innerWidth - tools.offsetWidth - 8)) + "px";
+  }
+  function send(color, comment) {
+    if (!picked) return;
+    tell({ t: "select", index: picked.index, start: picked.start, end: picked.end, color: color, comment: comment });
+    picked = null;
+    tools.style.display = "none";
+    getSelection().removeAllRanges();
+  }
+  function paint(marks) {
+    if (!window.CSS || !CSS.highlights) return;
+    var by = {};
+    marks.forEach(function (x) {
+      var map = maps[x.index], first = map && map[x.start], last = map && map[x.end - 1];
+      if (!first || !last) return;
+      var r = document.createRange();
+      r.setStart(first[0], first[1]);
+      r.setEnd(last[0], last[1] + 1);
+      (by[x.color] = by[x.color] || []).push(r);
+    });
+    COLORS.forEach(function (c) {
+      if (by[c]) CSS.highlights.set("somnus-c-" + c, new Highlight(...by[c]));
+      else CSS.highlights.delete("somnus-c-" + c);
+    });
   }
   addEventListener("message", function (ev) {
     var m = ev.data;
@@ -106,6 +180,24 @@ const SCRIPT = `(function () {
         if (x.done) b.classList.add("somnus-done");
         b.setAttribute("data-somnus-count", String(x.count));
       });
+    } else if (m.t === "phrases") {
+      if (!tools.childNodes.length) {
+        COLORS.forEach(function (c) {
+          var dot = document.createElement("button");
+          dot.type = "button";
+          dot.className = "somnus-dot somnus-dot-" + c;
+          dot.setAttribute("aria-label", String(m.labels.colors[c] || c));
+          dot.addEventListener("click", function () { send(c, false); });
+          tools.appendChild(dot);
+        });
+        var talk = document.createElement("button");
+        talk.type = "button";
+        talk.className = "somnus-comment";
+        talk.textContent = String(m.labels.comment);
+        talk.addEventListener("click", function () { send("yellow", true); });
+        tools.appendChild(talk);
+      }
+      paint(Array.isArray(m.marks) ? m.marks : []);
     } else if (m.t === "read") {
       var b = typeof m.index === "number" ? blocks[m.index] : null;
       if (b !== reading) {
@@ -135,6 +227,10 @@ const SCRIPT = `(function () {
 })();`;
 
 const STYLE = `<style>
+${MARK_COLORS.map((c) => `::highlight(somnus-c-${c}){background-color:${MARK_HEX[c]}}.somnus-dot-${c}{background:${MARK_HEX[c]}}`).join("\n")}
+#somnus-tools{display:none;position:absolute;z-index:20;gap:6px;align-items:center;padding:6px 8px;border-radius:999px;background:#1f2937;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+#somnus-tools .somnus-dot{width:20px;height:20px;border-radius:999px;border:2px solid #fff;cursor:pointer;padding:0}
+#somnus-tools .somnus-comment{border:0;border-radius:999px;background:#2563eb;color:#fff;font:600 12px Arial,sans-serif;padding:4px 10px;cursor:pointer}
 .somnus-noted{position:relative;background:#fff3bf;box-shadow:inset 4px 0 #e0a800;padding-left:.6rem;padding-right:2.4rem;cursor:pointer;border-radius:4px}
 .somnus-noted::after{content:attr(data-somnus-count);position:absolute;right:.4rem;top:.25rem;min-width:1.4rem;height:1.4rem;padding:0 .2rem;box-sizing:border-box;border-radius:999px;background:#e0a800;color:#1f2328;font:700 .75rem/1.4rem Arial,sans-serif;text-align:center}
 tr.somnus-noted td{background:#fff3bf}

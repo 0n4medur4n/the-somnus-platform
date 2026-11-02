@@ -18,8 +18,10 @@ export function AnnotatedFrame({
   addLabel,
   goTo,
   reading,
+  phrases,
   onBlocks,
   onFullBlocks,
+  onSelect,
   onAdd,
   onFocus,
   onFailed,
@@ -36,9 +38,26 @@ export function AnnotatedFrame({
   goTo: { index: number; nonce: number } | null;
   /** The block being read aloud, and the word, as offsets in its full text. */
   reading?: { index: number | null; start?: number; end?: number } | undefined;
+  /** Marked phrases, and the labels of the bar that marks a selection. */
+  phrases?:
+    | {
+        marks: Array<{ index: number; start: number; end: number; color: string }>;
+        labels: { comment: string; colors: Record<string, string> };
+      }
+    | undefined;
   onBlocks: (blocks: string[]) => void;
-  /** Each block's whole text, for reading aloud. */
+  /** Each block's whole text, for reading aloud and marking phrases. */
   onFullBlocks?: ((texts: string[]) => void) | undefined;
+  /** A selection to mark or comment on; checked against the text by the caller. */
+  onSelect?:
+    | ((choice: {
+        index: number;
+        start: number;
+        end: number;
+        color: string;
+        comment: boolean;
+      }) => void)
+    | undefined;
   onAdd: (index: number) => void;
   onFocus: (index: number) => void;
   onFailed: () => void;
@@ -46,8 +65,8 @@ export function AnnotatedFrame({
   const frame = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState<string | null>(null);
   const [blockCount, setBlockCount] = useState<number | null>(null);
-  const latest = useRef({ onBlocks, onFullBlocks, onAdd, onFocus, onFailed });
-  latest.current = { onBlocks, onFullBlocks, onAdd, onFocus, onFailed };
+  const latest = useRef({ onBlocks, onFullBlocks, onSelect, onAdd, onFocus, onFailed });
+  latest.current = { onBlocks, onFullBlocks, onSelect, onAdd, onFocus, onFailed };
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +94,16 @@ export function AnnotatedFrame({
         if (full.length === blocks.length && full.every((b) => typeof b === "string")) {
           latest.current.onFullBlocks?.(full as string[]);
         }
+        return;
+      }
+      if (message?.t === "select") {
+        const { index, start, end, color, comment } = message;
+        const whole = (n: unknown): n is number => typeof n === "number" && Number.isInteger(n);
+        if (!whole(index) || !whole(start) || !whole(end) || typeof color !== "string") return;
+        if (blockCount === null || index < 0 || index >= blockCount || start < 0 || end <= start) {
+          return;
+        }
+        latest.current.onSelect?.({ index, start, end, color, comment: comment === true });
         return;
       }
       if (message?.t !== "add" && message?.t !== "focus") return;
@@ -114,6 +143,12 @@ export function AnnotatedFrame({
     };
     frame.current?.contentWindow?.postMessage(message, "*");
   }, [blockCount, reading]);
+
+  useEffect(() => {
+    if (blockCount === null || !phrases) return;
+    const message: ToPage = { t: "phrases", marks: phrases.marks, labels: phrases.labels };
+    frame.current?.contentWindow?.postMessage(message, "*");
+  }, [blockCount, phrases]);
 
   if (!ready) return null;
   return (

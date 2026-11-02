@@ -935,7 +935,16 @@
       "emptyPdf": "No notes. Write one below and give its page.",
       "emptyRead": "No notes.",
       "pickPlace": "It will be added as a general note. Choose a paragraph to place it there.",
-      "clearPlace": "Remove the note's place"
+      "clearPlace": "Remove the note's place",
+      "comment": "Comment",
+      "highlightOnly": "Highlight",
+      "colors": {
+        "yellow": "Yellow",
+        "green": "Green",
+        "blue": "Blue",
+        "pink": "Pink",
+        "orange": "Orange"
+      }
     }
   },
   "charts": {

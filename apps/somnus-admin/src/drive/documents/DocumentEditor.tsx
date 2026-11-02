@@ -6,7 +6,7 @@ import { Icon, type IconName } from "../../components/ui/Icon.js";
 import { Menu, type MenuItem } from "../../components/ui/ui.js";
 import { NotesPanel } from "../notes/NotesPanel.js";
 import { docBlocks, NoteMarks, noteMarksKey } from "../notes/note-marks.js";
-import { blockOf, type DriveNote, type NoteAnchor } from "../notes/notes-format.js";
+import { blockOf, type DriveNote, type NoteAnchor, phraseAnchor } from "../notes/notes-format.js";
 import type { NotesBinding } from "../notes/use-notes.js";
 import { ColorPicker, PasswordDialog } from "./DocumentTools.js";
 import {
@@ -23,7 +23,7 @@ import {
   TEXT_COLORS,
 } from "./doc-format.js";
 import { EXPORT_FORMATS, type ExportFormat, exportDocument, PASSWORD_FORMATS } from "./export.js";
-import { ReadingMark } from "./read-aloud.js";
+import { blockText, ReadingMark } from "./read-aloud.js";
 import { type VoiceBinding, VoiceControls } from "./VoiceTools.js";
 
 export type SaveOutcome = "saved" | "conflict" | "error";
@@ -117,12 +117,32 @@ export function DocumentEditor({
       setBlocks(docBlocks(e.state.doc).map((block) => block.text));
     },
     // The note about to be written goes on the block the caret is in.
+    // A selection within one paragraph: the note goes on those words.
     onSelectionUpdate: ({ editor: e }) => {
-      const { pos } = e.state.selection.$from;
+      const { from, to, empty, $from } = e.state.selection;
       const found = docBlocks(e.state.doc);
-      const index = found.findIndex((b) => pos >= b.pos && pos < b.pos + b.size);
+      const index = found.findIndex((b) => $from.pos >= b.pos && $from.pos < b.pos + b.size);
       const block = found[index];
-      setDraft(block ? { kind: "block", quote: block.text, index } : null);
+      if (!block) {
+        setDraft(null);
+        return;
+      }
+      const node = e.state.doc.nodeAt(block.pos);
+      if (!empty && node && to <= block.pos + block.size) {
+        const { text, at } = blockText(node, block.pos);
+        const start = at.findIndex((p) => p >= from);
+        let end = -1;
+        at.forEach((p, i) => {
+          if (p < to) end = i + 1;
+        });
+        const anchor =
+          start >= 0 && end > start ? phraseAnchor([text], 0, start, end, "yellow") : null;
+        if (anchor?.kind === "text") {
+          setDraft({ ...anchor, index, quote: block.text });
+          return;
+        }
+      }
+      setDraft({ kind: "block", quote: block.text, index });
     },
   });
 
@@ -359,7 +379,13 @@ export function DocumentEditor({
             </button>
           )}
         </div>
-        {editor && !readOnly ? <Toolbar editor={editor} voice={voice} /> : null}
+        {editor && !readOnly ? (
+          <Toolbar
+            editor={editor}
+            voice={voice}
+            onComment={notes?.canEdit ? () => setPanelOpen(true) : undefined}
+          />
+        ) : null}
       </header>
 
       {passwordDialog.kind === "lock" ? (
@@ -469,7 +495,16 @@ function Divider() {
   return <span aria-hidden="true" className="mx-1 h-5 w-px bg-white/10" />;
 }
 
-function Toolbar({ editor, voice }: { editor: Editor; voice: VoiceBinding | undefined }) {
+function Toolbar({
+  editor,
+  voice,
+  onComment,
+}: {
+  editor: Editor;
+  voice: VoiceBinding | undefined;
+  /** Opens the notes beside the page, the selected words ready to comment on. */
+  onComment: (() => void) | undefined;
+}) {
   const { t } = useTranslation();
   const [linking, setLinking] = useState(false);
   const [href, setHref] = useState("");
@@ -676,6 +711,9 @@ function Toolbar({ editor, voice }: { editor: Editor; voice: VoiceBinding | unde
         label={t("drive.doc.tools.clear")}
         onClick={() => chain().unsetAllMarks().clearNodes().run()}
       />
+      {onComment ? (
+        <ToolButton icon="note" label={t("drive.notes.comment")} onClick={onComment} />
+      ) : null}
       <ToolButton
         icon="link"
         label={t("drive.doc.tools.link")}

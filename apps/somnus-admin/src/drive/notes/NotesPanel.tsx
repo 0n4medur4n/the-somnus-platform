@@ -5,6 +5,7 @@ import { Notice } from "../ui/drive-ui.js";
 import {
   blockOf,
   type DriveNote,
+  MARK_HEX,
   NOTE_MAX_LENGTH,
   type NoteAnchor,
   orderNotes,
@@ -15,7 +16,24 @@ function AnchorChip({ note, blocks }: { note: DriveNote; blocks: readonly string
   const { t } = useTranslation();
   const { anchor } = note;
   if (anchor.kind === "general") return null;
-  const lost = anchor.kind === "block" && blockOf(note, blocks) === null && blocks.length > 0;
+  const lost =
+    (anchor.kind === "block" || anchor.kind === "text") &&
+    blockOf(note, blocks) === null &&
+    blocks.length > 0;
+  if (anchor.kind === "text") {
+    return (
+      <span className="flex max-w-full items-start gap-1.5 text-xs font-medium text-amber-200">
+        <span
+          aria-hidden="true"
+          className="mt-0.5 h-3 w-3 shrink-0 rounded-sm"
+          style={{ background: MARK_HEX[anchor.color] }}
+        />
+        <span className="line-clamp-2 min-w-0">
+          {lost ? t("drive.notes.lostPlace", { quote: anchor.phrase }) : `«${anchor.phrase}»`}
+        </span>
+      </span>
+    );
+  }
   return (
     <span className="block max-w-full truncate text-xs font-medium text-amber-200">
       {anchor.kind === "page"
@@ -66,7 +84,7 @@ export function NotesPanel({
   const pageValid = Number.isInteger(pageNumber) && pageNumber > 0;
 
   useEffect(() => {
-    if (draft?.kind === "block") input.current?.focus();
+    if (draft?.kind === "block" || draft?.kind === "text") input.current?.focus();
   }, [draft]);
 
   useEffect(() => {
@@ -79,10 +97,13 @@ export function NotesPanel({
   async function submit(event?: FormEvent) {
     event?.preventDefault();
     const body = text.trim();
-    if (!body || (pages && !pageValid)) return;
-    const anchor: NoteAnchor = pages
-      ? { kind: "page", page: pageNumber }
-      : (draft ?? { kind: "general" });
+    if (!body || (pages && draft?.kind !== "text" && !pageValid)) return;
+    const anchor: NoteAnchor =
+      draft?.kind === "text"
+        ? draft
+        : pages
+          ? { kind: "page", page: pageNumber }
+          : (draft ?? { kind: "general" });
     if (await notes.add(body, anchor)) {
       setText("");
       onClearDraft();
@@ -145,9 +166,9 @@ export function NotesPanel({
               >
                 <AnchorChip note={note} blocks={blocks} />
                 <span
-                  className={`mt-1 block whitespace-pre-wrap break-words text-somnus-text ${note.done ? "line-through" : ""}`}
+                  className={`mt-1 block whitespace-pre-wrap break-words ${note.text ? "text-somnus-text" : "text-somnus-subtle italic"} ${note.done ? "line-through" : ""}`}
                 >
-                  {note.text}
+                  {note.text || t("drive.notes.highlightOnly")}
                 </span>
               </button>
               <p className="mt-2 truncate text-xs text-somnus-subtle">
@@ -191,7 +212,7 @@ export function NotesPanel({
 
       {notes.canEdit ? (
         <form onSubmit={submit} className="flex flex-col gap-2 border-t border-white/10 p-3">
-          {pages ? (
+          {pages && draft?.kind !== "text" ? (
             <label className="flex items-center gap-2 text-sm text-somnus-subtle">
               {t("drive.notes.page")}
               <input
@@ -202,9 +223,11 @@ export function NotesPanel({
                 className="w-20 rounded-md border border-white/15 bg-somnus-background px-2 py-1 text-somnus-text"
               />
             </label>
-          ) : draft?.kind === "block" ? (
+          ) : draft?.kind === "block" || draft?.kind === "text" ? (
             <p className="flex items-center gap-2 text-xs text-amber-200">
-              <span className="min-w-0 flex-1 truncate">«{draft.quote}»</span>
+              <span className="min-w-0 flex-1 truncate">
+                «{draft.kind === "text" ? draft.phrase : draft.quote}»
+              </span>
               <button
                 type="button"
                 onClick={onClearDraft}
@@ -232,7 +255,9 @@ export function NotesPanel({
           </label>
           <button
             type="submit"
-            disabled={notes.busy || text.trim() === "" || (pages && !pageValid)}
+            disabled={
+              notes.busy || text.trim() === "" || (pages && draft?.kind !== "text" && !pageValid)
+            }
             className="rounded-lg bg-somnus-primary-strong px-3 py-1.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-60"
           >
             {notes.busy ? t("drive.working") : t("drive.notes.add")}

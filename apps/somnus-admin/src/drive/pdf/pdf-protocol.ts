@@ -9,13 +9,21 @@ export type ToFrame =
   /** Scrolls to a page. */
   | { t: "go"; page: number }
   /** Reading aloud: the page being read (null: none) and the word, as offsets in its text. */
-  | { t: "read"; page: number | null; start?: number; end?: number };
+  | { t: "read"; page: number | null; start?: number; end?: number }
+  /** Marked phrases (`index` is the page, from 0), and the labels of the selection bar. */
+  | {
+      t: "phrases";
+      marks: Array<{ index: number; start: number; end: number; color: string }>;
+      labels: { comment: string; colors: Record<string, string> };
+    };
 
 export type FromFrame =
   | { t: "booted" }
   | { t: "ready" }
   /** Each page's text as a reader hears it, in order. */
   | { t: "pages"; texts: unknown }
+  /** A selection within one page, to mark or comment on: offsets in its text. */
+  | { t: "select"; index: unknown; start: unknown; end: unknown; color: unknown; comment: unknown }
   | { t: "failed" };
 
 /** A piece of a page's text, as pdf.js gives it. */

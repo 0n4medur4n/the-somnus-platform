@@ -14,11 +14,39 @@ export const NOTE_MAX_LENGTH = 4000;
 
 /** How much of a block a note remembers, to find it again if the text moves. */
 const QUOTE_LENGTH = 200;
+/** The longest phrase a mark or a comment can hold. */
+export const PHRASE_LENGTH = 1000;
+
+/** The highlighter colours for marking a phrase (owner decision 2026-11-02). */
+export const MARK_COLORS = ["yellow", "green", "blue", "pink", "orange"] as const;
+export type MarkColor = (typeof MARK_COLORS)[number];
+export const MARK_HEX: Record<MarkColor, string> = {
+  yellow: "#fff176",
+  green: "#b9f6ca",
+  blue: "#bbdefb",
+  pink: "#f8bbd0",
+  orange: "#ffcc80",
+};
 
 export type NoteAnchor =
   | { kind: "general" }
   | { kind: "page"; page: number }
-  | { kind: "block"; quote: string; index: number };
+  | { kind: "block"; quote: string; index: number }
+  /**
+   * A phrase: marked in a colour, and commented if the note has text. `index`
+   * is the block (a PDF's page, from 0) and `quote` its opening, as for a block
+   * note; `start` and `end` are offsets in the block's whole text, as a reader
+   * hears it, and `phrase` the words there, to find them again if they move.
+   */
+  | {
+      kind: "text";
+      quote: string;
+      index: number;
+      phrase: string;
+      start: number;
+      end: number;
+      color: MarkColor;
+    };
 
 export type DriveNote = {
   id: string;
@@ -50,6 +78,24 @@ function cleanAnchor(value: unknown): NoteAnchor | null {
     return typeof quote === "string" && Number.isInteger(index) && (index as number) >= 0
       ? { kind: "block", quote: quote.slice(0, QUOTE_LENGTH), index: index as number }
       : null;
+  }
+  if (anchor.kind === "text") {
+    const text = value as Partial<{ phrase: string; start: number; end: number; color: string }>;
+    const { quote, index } = anchor;
+    const { phrase, start, end, color } = text;
+    if (typeof quote !== "string" || typeof phrase !== "string" || phrase === "") return null;
+    if (!Number.isInteger(index) || (index as number) < 0) return null;
+    if (!Number.isInteger(start) || !Number.isInteger(end)) return null;
+    if ((start as number) < 0 || (end as number) <= (start as number)) return null;
+    return {
+      kind: "text",
+      quote: quote.slice(0, QUOTE_LENGTH),
+      index: index as number,
+      phrase: phrase.slice(0, PHRASE_LENGTH),
+      start: start as number,
+      end: end as number,
+      color: MARK_COLORS.includes(color as MarkColor) ? (color as MarkColor) : "yellow",
+    };
   }
   return null;
 }
@@ -92,7 +138,7 @@ export function decodeNotes(bytes: Uint8Array): DriveNote[] {
  * wherever that text went. Null when the text is gone; the note is still listed.
  */
 export function blockOf(note: DriveNote, blocks: readonly string[]): number | null {
-  if (note.anchor.kind !== "block") return null;
+  if (note.anchor.kind !== "block" && note.anchor.kind !== "text") return null;
   const { quote, index } = note.anchor;
   const at = blocks[index];
   if (at?.startsWith(quote)) return index;
@@ -106,6 +152,8 @@ export type BlockMark = { index: number; count: number; done: boolean };
 export function marksFor(notes: readonly DriveNote[], blocks: readonly string[]): BlockMark[] {
   const marks = new Map<number, BlockMark>();
   for (const note of notes) {
+    // A phrase has its own mark, in its colour, not the block's.
+    if (note.anchor.kind === "text") continue;
     const index = blockOf(note, blocks);
     if (index === null) continue;
     const mark = marks.get(index) ?? { index, count: 0, done: true };
@@ -122,4 +170,64 @@ export function orderNotes(notes: readonly DriveNote[], blocks: readonly string[
     return blockOf(note, blocks) ?? Number.MAX_SAFE_INTEGER;
   };
   return [...notes].sort((a, b) => place(a) - place(b) || a.createdAt.localeCompare(b.createdAt));
+}
+
+export type TextMark = { id: string; index: number; start: number; end: number; color: MarkColor };
+
+/**
+ * Where each marked phrase is now, in the blocks' whole texts: where it was if
+ * the words are still there, or wherever in its block they went. A phrase whose
+ * words are gone has no mark, and its note stays listed.
+ */
+export function textMarksFor(
+  notes: readonly DriveNote[],
+  fullBlocks: readonly string[],
+): TextMark[] {
+  const quotes = fullBlocks.map(normalizeQuote);
+  const out: TextMark[] = [];
+  for (const note of notes) {
+    const { anchor } = note;
+    if (anchor.kind !== "text") continue;
+    const index = blockOf(note, quotes);
+    const text = index === null ? undefined : fullBlocks[index];
+    if (index === null || text === undefined) continue;
+    let start = anchor.start;
+    if (text.slice(start, anchor.end) !== anchor.phrase) start = text.indexOf(anchor.phrase);
+    if (start < 0) continue;
+    out.push({ id: note.id, index, start, end: start + anchor.phrase.length, color: anchor.color });
+  }
+  return out;
+}
+
+/**
+ * The anchor for a phrase chosen in a block's whole text, or null when the
+ * choice does not fit the text (the offsets came from a frame: they are checked
+ * here against the text the console holds, and the phrase is taken from it).
+ */
+export function phraseAnchor(
+  fullBlocks: readonly string[],
+  index: unknown,
+  start: unknown,
+  end: unknown,
+  color: MarkColor,
+): NoteAnchor | null {
+  if (!Number.isInteger(index) || !Number.isInteger(start) || !Number.isInteger(end)) return null;
+  const text = fullBlocks[index as number];
+  if (text === undefined || (start as number) < 0 || (end as number) > text.length) return null;
+  // A double click takes the space after a word: the mark is the words only.
+  let from = start as number;
+  let to = end as number;
+  while (from < to && /\s/.test(text[from] ?? "")) from++;
+  while (to > from && /\s/.test(text[to - 1] ?? "")) to--;
+  if (to <= from) return null;
+  const phrase = text.slice(from, to).slice(0, PHRASE_LENGTH);
+  return {
+    kind: "text",
+    quote: normalizeQuote(text),
+    index: index as number,
+    phrase,
+    start: from,
+    end: from + phrase.length,
+    color,
+  };
 }

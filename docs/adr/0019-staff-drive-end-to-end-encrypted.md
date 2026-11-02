@@ -288,3 +288,17 @@ raised later).
 - **Page notes jump instead of reloading,** and the page being read is outlined, the spoken word highlighted
   through the CSS Custom Highlight API over pdf.js's text layer. CJK PDFs that rely on external CMaps may show
   without text: the frame fetches nothing, by design.
+
+### Marking and commenting on phrases (owner decision 2026-11-02)
+
+- **A note can sit on a phrase,** not only on a block or a page: a coloured mark (five highlighter colours) with no
+  text, or a comment with text. It is stored in the same notes file, as an anchor with the block (a PDF's page),
+  that block's opening to find it again, the phrase and its offsets in the block's whole text. When the text moves,
+  the mark follows its words within its block; when the words are gone, the note stays listed and marks nothing.
+- **Previews and PDFs:** selecting words within one block (one page) shows a small bar to mark them or comment. The
+  frame sends only the block's number and two offsets; the console checks them against the text it already holds
+  and takes the phrase from there, never from the frame. Marks are CSS highlights over the text: the file is not
+  touched. As with notes, the bar exists only once the frame runs its note script (notes opened, or reading).
+- **Drive documents:** the highlighter in the toolbar already colours words in the document itself; a comment on
+  selected words goes in the notes, and the words show in the comment's colour as an editor decoration (not saved
+  into the document, and not exported).
