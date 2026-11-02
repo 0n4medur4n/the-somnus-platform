@@ -130,6 +130,12 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Fetch the private clinical artifacts
+        if: matrix.service == 'morpheo-service'
+        uses: ./.github/actions/fetch-clinical
+        with:
+          deploy-key: ${{ secrets.CLINICAL_DEPLOY_KEY }}
+
       # Build-time auth: a repo-level provider + a build service account with
       # write access to the shared artifacts registry only.
       - name: Authenticate to Google Cloud (WIF)

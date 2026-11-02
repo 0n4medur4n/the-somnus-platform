@@ -3,7 +3,8 @@
 You are implementing The Somnus platform.
 
 MANDATORY FIRST ACTION of every session, before any other step:
-read THE_SOMNUS_PLATFORM_BUILD_PLAN.md in full, then re-read the section(s)
+read internal/THE_SOMNUS_PLATFORM_BUILD_PLAN.md in full (the private repo
+`the-somnus-internal`, cloned at `internal/`), then re-read the section(s)
 named in the current prompt. The build plan is the single source of truth.
 If anything in your training knowledge, a library default, or a previous
 session conflicts with the build plan, the build plan wins.

@@ -92,3 +92,6 @@ schemas/openapi/**
 !schemas/openapi/edge-api.json
 *.gen.ts
 *.gen.json
+
+# Local clone of the private the-somnus-internal repository (plans, security, runbooks)
+/internal/

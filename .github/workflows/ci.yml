@@ -397,6 +397,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Fetch the private clinical artifacts
+        uses: ./.github/actions/fetch-clinical
+        with:
+          deploy-key: ${{ secrets.CLINICAL_DEPLOY_KEY }}
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -656,6 +661,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Fetch the private clinical artifacts
+        uses: ./.github/actions/fetch-clinical
+        with:
+          deploy-key: ${{ secrets.CLINICAL_DEPLOY_KEY }}
+
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -849,6 +859,12 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
+
+      - name: Fetch the private clinical artifacts
+        if: matrix.service == 'morpheo-service'
+        uses: ./.github/actions/fetch-clinical
+        with:
+          deploy-key: ${{ secrets.CLINICAL_DEPLOY_KEY }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

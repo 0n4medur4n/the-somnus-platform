@@ -1,0 +1,33 @@
+name: Fetch the private clinical artifacts
+description: >-
+  services/morpheo-service/clinical is a git submodule of a private repository
+  (0n4medur4n/the-somnus-clinical). This step checks it out with a read-only
+  deploy key. The runner is ephemeral, so the key is not removed afterwards.
+
+inputs:
+  deploy-key:
+    description: Private half of the read-only deploy key (secret CLINICAL_DEPLOY_KEY).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check out the clinical submodule
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        DEPLOY_KEY: ${{ inputs.deploy-key }}
+      run: |
+        set -euo pipefail
+        if [ -z "$DEPLOY_KEY" ]; then
+          echo "::error::CLINICAL_DEPLOY_KEY is not available (secrets are not exposed to pull requests from forks)."
+          exit 1
+        fi
+        install -d -m 700 "$HOME/.ssh"
+        printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/clinical_deploy_key"
+        chmod 600 "$HOME/.ssh/clinical_deploy_key"
+        # GitHub's published ed25519 host key (https://api.github.com/meta -> ssh_keys).
+        echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$HOME/.ssh/known_hosts"
+        git config --global core.sshCommand "ssh -i $HOME/.ssh/clinical_deploy_key -o IdentitiesOnly=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+        git config --global url."git@github.com:0n4medur4n/the-somnus-clinical.git".insteadOf "https://github.com/0n4medur4n/the-somnus-clinical.git"
+        git submodule update --init --depth 1 services/morpheo-service/clinical

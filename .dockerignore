@@ -23,6 +23,7 @@
 
 # VCS / CI / editor
 .git
+**/.git
 .github
 **/.DS_Store
 

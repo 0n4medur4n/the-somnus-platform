@@ -41,6 +41,6 @@ the consequences.
 
 ## Cross-references
 
-- Build plan: [`../../THE_SOMNUS_PLATFORM_BUILD_PLAN.md`](../../THE_SOMNUS_PLATFORM_BUILD_PLAN.md)
-- Prompt sequence: [`../../THE_SOMNUS_PROMPT_PLAYBOOK.md`](../../THE_SOMNUS_PROMPT_PLAYBOOK.md)
+- Build plan and prompt sequence: private repository `the-somnus-internal`
+  (see [`../build-progress.md`](../build-progress.md#private-repositories))
 - Environment deviations: [`../environment-baseline.md`](../environment-baseline.md)

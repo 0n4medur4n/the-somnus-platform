@@ -1,0 +1,3 @@
+[submodule "services/morpheo-service/clinical"]
+	path = services/morpheo-service/clinical
+	url = https://github.com/0n4medur4n/the-somnus-clinical.git

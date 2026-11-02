@@ -1,116 +1,215 @@
-# The Somnus Platform
+# The Somnus
 
-Monorepo for **The Somnus** platform. The single source of truth is
-[`THE_SOMNUS_PLATFORM_BUILD_PLAN.md`](./THE_SOMNUS_PLATFORM_BUILD_PLAN.md).
-The companion prompt-by-prompt sequence lives in
-[`THE_SOMNUS_PROMPT_PLAYBOOK.md`](./THE_SOMNUS_PROMPT_PLAYBOOK.md).
-The build plan governs everything: if anything in code, library defaults,
-or AI training knowledge conflicts with it, the build plan wins.
+**Salud digital del sueño.** Comprende tu sueño. Toma mejores decisiones.
 
-## Status
+[![CI](https://github.com/0n4medur4n/the-somnus-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/0n4medur4n/the-somnus-platform/actions/workflows/ci.yml)
 
-| Phase | Checkpoint | State |
-|-------|------------|-------|
-| 0     | 0.1 Environment baseline | **DONE** (see [`docs/environment-baseline.md`](./docs/environment-baseline.md)) |
-| 1     | 1.1 Workspace and quality gate | **DONE** |
-| 1     | 1.2 ADRs and CI | **DONE** |
-| 2     | 2.1 config, errors, observability | **DONE** |
-| 2     | 2.2 api-contracts, cloud-run-client, i18n, design-system | **DONE** |
-| 3     | 3.1 NestJS template (identity shell) | **DONE** (see [`services/somnus-identity-service`](./services/somnus-identity-service)) |
-| 4     | 4.1 Python template (Morpheo shell) | **DONE** (see [`services/morpheo-service`](./services/morpheo-service)) |
-| 5     | 5.1 Terraform dev | **DONE** (see [`docs/runbooks/deploy-dev.md`](./docs/runbooks/deploy-dev.md)) |
-| 6     | 6.1 Identity data layer | **DONE** (Drizzle schema, repositories, tenant-scope guard) |
-| 6     | 6.2 Identity domain and API | **DONE** (contracts, authorization engine, endpoints; `sessions` stubbed until Phase 8) |
-| 6     | 6.3 Negative authorization suite | **DONE** (10/10 scenarios green, marked immutable, CI-enforced against the real TiDB dev cluster; see [`services/somnus-identity-service` README](./services/somnus-identity-service/README.md#negative-authorization-suite-phase-63-immutable)) |
-| 7     | 7.1 Consent module | **DONE** (fully isolated: own database, own migrations, own repositories; identity reaches it only through `ConsentService`; see [`services/somnus-identity-service` README](./services/somnus-identity-service/README.md#consent-module-phase-71-fully-isolated)) |
-| 8     | 8.1 Edge API sessions and hardening | **DONE** (Firebase token verification, Firestore-backed server-side sessions, CSRF, strict CORS, rate limiting, size limits; negative tests green against the emulators; see [`services/somnus-edge-api`](./services/somnus-edge-api)) |
-| 8     | 8.2 Edge API composition | pending |
-| 9+    | frontends, Morpheo domain, report, worker, hardening | pending |
+The Somnus es una empresa de salud digital centrada en el sueño. Este repositorio
+contiene toda la plataforma: la web pública, la aplicación de las personas, la
+consola interna del equipo y los servicios que lo sostienen.
 
-## Repository layout (per build plan §6)
+Su primer producto es **Morpheo**.
+
+## Qué es Morpheo
+
+Dormir mal no siempre tiene la misma causa. Despertares, cansancio, dificultad
+para dormir o un sueño que no repara pueden parecer el mismo problema y no serlo.
+Morpheo es una entrevista guiada para **personas adultas** que duermen mal: les
+ayuda a ordenar lo que les pasa, entender qué patrón puede haber detrás y saber
+cuál es el siguiente paso razonable, con un informe claro que pueden llevar a su
+profesional sanitario.
+
+Morpheo es una herramienta de **orientación**, no de diagnóstico.
+
+- No diagnostica ni descarta enfermedades.
+- No receta ni ajusta tratamientos.
+- No decide por sí sola si hace falta una prueba o una derivación.
+- No sustituye a un profesional sanitario.
+
+Un resultado tranquilizador significa solo que, con la información disponible,
+no apareció ninguna señal que pida actuar antes. Nunca significa que no haya
+nada.
+
+### Cómo es una evaluación
+
+1. **Preguntas de protección primero.** Antes de nada, el sistema comprueba las
+   situaciones que no pueden esperar. En medicina del sueño casi no hay
+   urgencias; las dos prioridades reales son la ideación suicida y la
+   somnolencia al volante. El tono es sereno, nunca alarmista.
+2. **Una pregunta por pantalla.** Un recorrido sencillo, con ramas que solo se
+   abren si hacen falta.
+3. **La persona cuenta su caso con sus palabras.** Una IA propone qué ha
+   entendido («Por lo que nos ha contado, entendemos…») y **la persona confirma o
+   corrige** antes de que el motor use nada de eso.
+4. **Reglas, no modelos, deciden.** Un motor determinista aplica las reglas
+   clínicas y elige la orientación.
+5. **Un informe.** Una página para la persona y otra para entregar a su
+   profesional, con los hechos que activaron cada orientación, lo que se
+   desconoce, qué conviene preparar y los límites del resultado. Se ve en
+   pantalla y se descarga en PDF.
+
+Con el mismo conjunto de respuestas, el resultado es siempre el mismo.
+
+### Cuestionarios validados
+
+El motor está preparado para ofrecer ISI (insomnio), Epworth (somnolencia) y
+STOP-Bang (apnea) como complemento opcional, que nunca decide por sí solo. Solo
+se activan a partir de los ficheros oficiales de las versiones validadas en
+español, con su licencia.
+
+## Quién lo usa
+
+| Quién | Dónde | Qué hace |
+|-------|-------|----------|
+| Personas adultas | [app.thesomnus.com](https://app.thesomnus.com) | Hacen la evaluación, ven su historial en «Mi espacio», descargan su informe |
+| Público | [thesomnus.com](https://thesomnus.com) | Conoce The Somnus y Morpheo; textos legales; en cuatro idiomas |
+| Equipo de The Somnus | Consola interna | Gestión de usuarios y verificación profesional, revisión de contenidos, biblioteca de fuentes clínicas, estadísticas, auditoría y un Drive cifrado de extremo a extremo |
+
+Los profesionales sanitarios y las organizaciones forman parte del modelo de la
+plataforma (verificación, roles, invitaciones, acceso solo con consentimiento
+explícito), y se irán abriendo por fases.
+
+## Cómo está construida
+
+Una plataforma pequeña, barata de mantener y con fronteras claras. **Dos
+frontales estáticos** más la consola, y **cinco servicios** independientes en
+Google Cloud Run.
 
 ```text
-the-somnus-platform/
-├── apps/                 (frontends: somnus-marketing, somnus-app)
-├── services/             (Cloud Run services: edge-api, identity, morpheo, report, worker)
-├── packages/             (shared: api-contracts, cloud-run-client, config, design-system, errors, i18n, observability, test-utils, tsconfig)
-├── schemas/              (events/, json-schema/, openapi/)
-├── infrastructure/       (terraform/)
-├── docs/                 (adr/, api/, data/, runbooks/, security/)
-├── scripts/              (developer scripts)
-├── .github/workflows/    (CI)
-├── docker-compose.dev.yml
-├── justfile
-├── package.json
-├── pnpm-workspace.yaml
-├── tsconfig.json
-├── biome.json
-├── vitest.config.ts
-├── .nvmrc
-├── .editorconfig
-└── .gitignore
+Internet
+   |
+   +--> Firebase Hosting
+   |        +--> somnus-marketing   Astro, estático        thesomnus.com
+   |        +--> somnus-app         Vite + React           app.thesomnus.com
+   |        +--> somnus-admin       Vite + React           consola interna
+   |
+   +--> somnus-edge-api             NestJS, público
+              |
+              +--> somnus-identity-service   NestJS, privado
+              |        incluye el módulo aislado de Consentimiento
+              +--> morpheo-service           Python, privado
+              +--> somnus-report-service     Python, privado
+              +--> somnus-worker             NestJS, privado
+                       incluye los módulos aislados de Notificaciones,
+                       Auditoría y Drive
 ```
 
-## Prerequisites
+| Servicio | Responsabilidad |
+|----------|-----------------|
+| [`somnus-edge-api`](./services/somnus-edge-api) | La única puerta pública. Sesiones, CSRF, CORS, límites de uso y composición. No toca ninguna base de datos |
+| [`somnus-identity-service`](./services/somnus-identity-service) | Usuarios, perfiles, organizaciones, roles y **todas las decisiones de autorización**. Aloja el módulo de Consentimiento, con su propia base de datos |
+| [`morpheo-service`](./services/morpheo-service) | El motor clínico: la entrevista, las reglas, las categorías de orientación y los artefactos clínicos versionados |
+| [`somnus-report-service`](./services/somnus-report-service) | Informes en HTML y PDF, redacción controlada, biblioteca de fuentes clínicas y su búsqueda |
+| [`somnus-worker`](./services/somnus-worker) | Correos, auditoría, tareas programadas (como el borrado automático) y el Drive del equipo |
 
-All tools are listed in [`docs/environment-baseline.md`](./docs/environment-baseline.md).
-On Windows, open a normal PowerShell (no admin required for `just` /
-`pnpm`); the only steps that need elevation are the first install of
-Docker Desktop and the first activation of a Corepack-pinned pnpm.
+Código compartido en [`packages/`](./packages): contratos (Zod), errores,
+configuración, observabilidad, internacionalización, sistema de diseño y cliente
+de servicios internos.
 
-## Local development
+### Principios que no se negocian
+
+- **Firebase autentica. The Somnus autoriza.** Quién eres lo dice Firebase; qué
+  puedes hacer lo decide siempre `somnus-identity-service`. Que alguien
+  administre una organización no le da acceso a datos clínicos.
+- **Cada servicio es dueño de sus datos.** Una base de datos lógica por servicio
+  y por módulo aislado, sobre TiDB Cloud. Nadie lee las tablas de otro.
+- **La IA no decide nada clínico.** Nunca puntúa, deriva ni fija la urgencia.
+  Extrae datos del relato que la persona confirma, redacta con las palabras ya
+  aprobadas y cita fuentes. Todo lo que dice pasa por un filtro de frases
+  prohibidas y por un esquema acotado; si falla, se muestra el texto aprobado.
+- **El contenido clínico es una fuente de verdad versionada.** Las preguntas,
+  reglas y textos viven en `services/morpheo-service/clinical/`, un submódulo de
+  un repositorio privado, con su registro de cambios. El código los aplica, no
+  los reescribe.
+- **Privacidad por diseño.** Sin nombres ni identificadores en la entrevista;
+  nada de datos de salud en los registros ni en los correos; las evaluaciones
+  anónimas sin reclamar se borran a los 30 días y los enlaces de reclamación
+  caducan a las 72 horas; cualquiera puede borrar su cuenta y sus datos.
+- **Coste primero.** Todos los servicios escalan a cero instancias. Los
+  arranques en frío son el precio de mantener la plataforma barata.
+- **Cuatro idiomas.** Interfaz en español (por defecto), inglés, catalán y
+  francés; una clave que falte en cualquiera rompe la integración continua. La
+  consola interna va en español e inglés. Hoy la entrevista clínica está
+  redactada en español.
+- **Los contratos se escriben una vez.** Zod es la fuente de verdad; OpenAPI y
+  los esquemas JSON se generan, nunca se escriben a mano.
+
+## Tecnología
+
+| Capa | Herramientas |
+|------|--------------|
+| Frontales | Astro, Vite, React, TypeScript, Tailwind CSS, TanStack Query, i18next |
+| Servicios de plataforma | Node.js 24, NestJS 11 con Fastify 5, Drizzle ORM, Zod 4 |
+| Motor clínico e informes | Python 3.13, FastAPI, SQLAlchemy 2, Alembic, WeasyPrint, `uv` |
+| Datos | TiDB Cloud (protocolo MySQL), Firestore (solo estado temporal de sesión), Cloud Storage, BigQuery (analítica sin datos personales) |
+| IA | API de OpenAI detrás de una capa de abstracción de proveedores, con `store: false` en cada llamada |
+| Identidad y correo | Firebase Authentication con enlace por correo, sin contraseñas; Brevo |
+| Infraestructura | Google Cloud (europe-west3), Terraform, GitHub Actions |
+| Calidad | Biome, Ruff, mypy, Vitest, pytest, Playwright, dependency-cruiser |
+
+## Estado
+
+La plataforma está **en funcionamiento y en fase previa al lanzamiento**: la
+aplicación, la consola y la web pública están desplegadas y el motor clínico
+actual (el embudo v0.2) es el flujo activo. Antes de abrirlo a pacientes reales
+quedan tareas de producción y de cumplimiento normativo; la lista de pendientes
+y la evaluación de impacto están en el repositorio interno privado (ver
+«Material privado»).
+
+Todo el contenido clínico que el equipo clínico no ha aprobado se marca como
+borrador y nunca se presenta como aprobado.
+
+## Estructura del repositorio
+
+```text
+apps/              somnus-marketing · somnus-app · somnus-admin
+services/          edge-api · identity · morpheo · report · worker
+packages/          contratos, errores, configuración, i18n, diseño, observabilidad…
+schemas/           esquemas JSON y OpenAPI generados
+infrastructure/    Terraform (módulos y entornos)
+docs/              ADR y guías de desarrollo
+scripts/           utilidades de desarrollo y de CI
+```
+
+## Desarrollo en local
+
+Requisitos y versiones exactas en [`docs/environment-baseline.md`](./docs/environment-baseline.md).
 
 ```bash
-# Start MySQL 8 + Firebase emulators
-just dev-up
-
-# Stop them
-just dev-down
-
-# Run the full quality gate locally (format check, lint, typecheck, tests, build)
-just ci
-
-# Reset the dev database and reseed (no seeds defined yet at Phase 1.1)
-just seed
+pnpm install          # dependencias del workspace
+just dev-up           # MySQL 8 y emuladores de Firebase en Docker
+just ci               # formato, lint, tipos, tests y build
+just dev-down         # parar el entorno
 ```
 
-## Quality gate
+Los servicios Python se prueban desde su carpeta con `uv run ruff check .`,
+`uv run mypy src` y `uv run pytest`. Las reglas de trabajo, la puerta de calidad
+y las convenciones están en [`docs/build-progress.md`](./docs/build-progress.md).
 
-The build plan (§23) requires the following to be green before any
-checkpoint is considered done:
+## Documentación
 
-```bash
-pnpm run lint
-pnpm run typecheck
-pnpm run test:run
-pnpm run build
-```
+| Qué | Dónde |
+|-----|-------|
+| Avance de la construcción, estructura y guía de desarrollo | [`docs/build-progress.md`](./docs/build-progress.md) |
+| Decisiones de arquitectura | [`docs/adr/`](./docs/adr/README.md) |
+| Cada servicio y cada app | el `README.md` de su carpeta |
+| Plan de construcción, operación (despliegue, copias, incidentes), seguridad, amenazas y evaluación de impacto | repositorio privado `the-somnus-internal` |
+| Contenido clínico y su registro de cambios | repositorio privado `the-somnus-clinical` |
 
-Biome handles formatting and linting. TypeScript strict mode is never
-weakened. Vitest is the test runner for TypeScript code.
+## Material privado
 
-Python services (starting with `morpheo-service`, Phase 4) run their
-own gate with `uv`, from the service directory:
+Parte de la documentación y todo el contenido clínico viven en dos repositorios
+privados y no se publican aquí:
 
-```bash
-uv run ruff format --check .
-uv run ruff check .
-uv run mypy src
-uv run pytest
-```
+- `the-somnus-clinical` es el submódulo `services/morpheo-service/clinical/`.
+  Tras clonar: `git submodule update --init`.
+- `the-somnus-internal` se clona en `internal/` (ignorado por git):
+  `git clone git@github.com:0n4medur4n/the-somnus-internal.git internal`.
 
-## Conventions
+Hace falta acceso a ambos para compilar y probar `morpheo-service`. La CI los
+obtiene con una clave de despliegue de solo lectura.
 
-- Two static frontends on Firebase Hosting (Astro marketing, Vite+React SPA).
-- Five Cloud Run services (edge-api, identity, morpheo, report, worker),
-  all with `min-instances = 0`.
-- Zod 4 is the single source of truth for API contracts; OpenAPI is
-  generated, never hand-written.
-- i18n: `es` (default), `en`, `ca`, `fr`. No hardcoded user-facing strings.
-- Never log passwords, tokens, cookies, health data, or secrets.
-- Exception filters never maintain their own code→HTTP-status map; they always
-  import `errorCodeToHttpStatus` from `@somnus/errors`. A new error code is wired
-  once, there, and never copied into a filter.
-- LLMs only rephrase approved structured results (§15).
+## Aviso
 
-See the build plan for the full ruleset.
+Morpheo ofrece información orientativa y educativa. No realiza diagnósticos ni
+sustituye a un profesional sanitario. Si tienes una urgencia, llama al **112**.
