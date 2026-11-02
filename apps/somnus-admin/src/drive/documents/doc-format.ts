@@ -20,6 +20,7 @@ import { TextAlign } from "@tiptap/extension-text-align";
 import { TextStyleKit } from "@tiptap/extension-text-style";
 import { Underline } from "@tiptap/extension-underline";
 import { Dropcursor, Gapcursor, TrailingNode, UndoRedo } from "@tiptap/extensions";
+import { SomnusImage } from "./doc-image.js";
 import { type LockedBody, lockedBodyOf } from "./doc-lock.js";
 import { SomnusLink } from "./link-mark.js";
 
@@ -31,11 +32,39 @@ import { SomnusLink } from "./link-mark.js";
  */
 export const DOCUMENT_MIME = "application/vnd.somnus.document+json";
 
+/**
+ * What a page carries besides its text (owner decision 2026-11-02): a header
+ * and a footer, written like the document, and whether pages are numbered.
+ * Optional: a document without them reads as it always did.
+ */
+export type DocExtras = {
+  header?: JSONContent | undefined;
+  footer?: JSONContent | undefined;
+  pageNumbers?: boolean | undefined;
+};
+
 export type SomnusDocument = {
   format: "somnus-document";
   version: 1;
   content: JSONContent;
-};
+} & DocExtras;
+
+/** The extras as stored: only bands that are documents, and a boolean. */
+export function cleanExtras(
+  value: { header?: unknown; footer?: unknown; pageNumbers?: unknown } | undefined,
+): DocExtras {
+  const band = (v: unknown) =>
+    v && typeof v === "object" && (v as JSONContent).type === "doc"
+      ? (v as JSONContent)
+      : undefined;
+  const header = band(value?.header);
+  const footer = band(value?.footer);
+  return {
+    ...(header ? { header } : {}),
+    ...(footer ? { footer } : {}),
+    ...(value?.pageNumbers === true ? { pageNumbers: true } : {}),
+  };
+}
 
 /** A document with its own password: the text is sealed, see doc-lock.ts. */
 export type LockedDocument = {
@@ -152,6 +181,7 @@ export function documentExtensions(): Extensions {
     Subscript,
     Superscript,
     TableKit.configure({ table: { resizable: false } }),
+    SomnusImage,
   ];
 }
 
@@ -159,8 +189,13 @@ export function emptyDocument(): SomnusDocument {
   return { format: "somnus-document", version: 1, content: { type: "doc", content: [] } };
 }
 
-export function encodeDocument(content: JSONContent): Uint8Array {
-  const document: SomnusDocument = { format: "somnus-document", version: 1, content };
+export function encodeDocument(content: JSONContent, extras: DocExtras = {}): Uint8Array {
+  const document: SomnusDocument = {
+    format: "somnus-document",
+    version: 1,
+    content,
+    ...cleanExtras(extras),
+  };
   return new TextEncoder().encode(JSON.stringify(document));
 }
 
@@ -187,7 +222,12 @@ export function decodeDocument(bytes: Uint8Array): SomnusDocument {
   try {
     const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Partial<SomnusDocument>;
     if (parsed.format === "somnus-document" && parsed.content?.type === "doc") {
-      return { format: "somnus-document", version: 1, content: parsed.content };
+      return {
+        format: "somnus-document",
+        version: 1,
+        content: parsed.content,
+        ...cleanExtras(parsed),
+      };
     }
   } catch {
     // fall through

@@ -868,6 +868,42 @@
         "notice": "To proofread, the document's text is sent, a part at a time, to Gemini in our own Google Cloud, in the European Union. That text leaves the Drive's encryption while it is checked; it is not stored anywhere. Corrections are proposals: you decide which to accept.",
         "warning": "Do not proofread documents with patient data or anything that identifies a person.",
         "noticeAccept": "Understood, proofread"
+      },
+      "image": {
+        "menu": "Insert picture or logo",
+        "upload": "Picture from the computer…",
+        "width": "Picture size",
+        "failed": "The picture couldn't be inserted (PNG, JPG, GIF or WebP).",
+        "logos": {
+          "somnus": "The Somnus logo",
+          "somnusDark": "The Somnus logo on dark",
+          "morpheo": "Morpheo logo",
+          "morpheoDark": "Morpheo logo on dark"
+        }
+      },
+      "bands": {
+        "header": "Header",
+        "footer": "Footer",
+        "insert": "Insert logo or layout",
+        "clear": "Clear",
+        "presets": {
+          "logoTitle": "Layout: logo and title",
+          "logoCentred": "Layout: centred logo"
+        },
+        "placeholder": {
+          "header": "Click to add a header (repeated on every page)",
+          "footer": "Click to add a footer (repeated on every page)"
+        },
+        "numberPages": "Number pages",
+        "page": "Page",
+        "pageSample": "Page 1 / N"
+      },
+      "code": {
+        "label": "Code",
+        "fingerprint": "Fingerprint",
+        "copy": "Copy the document's code",
+        "copied": "Code copied",
+        "explain": "This document's unique code: computed (SHA-256) from its Drive identifier, it does not change when you edit and appears on every export together with the fingerprint of its contents."
       }
     },
     "sheet": {

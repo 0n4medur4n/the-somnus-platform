@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 import { generateHTML } from "@tiptap/core";
+import { contentFingerprint } from "./doc-code.js";
 import {
   type BrandFont,
   FONT_FILES,
@@ -16,6 +17,7 @@ import {
   hexOf,
   pointsOf,
 } from "./doc-format.js";
+import { safeImageSrc } from "./doc-image.js";
 
 /**
  * A Drive document, saved as a file in another format. Everything happens in
@@ -28,6 +30,27 @@ export const EXPORT_FORMATS = ["docx", "pdf", "html", "md", "txt"] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 /** The formats that can carry a password. */
 export const PASSWORD_FORMATS = ["docx", "pdf"] as const satisfies readonly ExportFormat[];
+
+/**
+ * What every page of an export carries besides the text: the document's header
+ * and footer, its page numbers, and the line that identifies it (the
+ * document's code and the fingerprint of this export).
+ */
+export type PageDress = {
+  header?: JSONContent | undefined;
+  footer?: JSONContent | undefined;
+  pageNumbers?: boolean | undefined;
+  code?: string | undefined;
+  fingerprint?: string | undefined;
+  labels: { code: string; fingerprint: string; page: string };
+};
+
+/** "Código SMN-… · Huella …", or nothing when the document has no code. */
+export function stampOf(page: PageDress | undefined): string {
+  if (!page?.code) return "";
+  const fingerprint = page.fingerprint ? ` · ${page.labels.fingerprint} ${page.fingerprint}` : "";
+  return `${page.labels.code} ${page.code}${fingerprint}`;
+}
 
 export const EXPORT_MIME: Record<ExportFormat, string> = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -119,6 +142,37 @@ export function fontsUsed(content: JSONContent): Set<BrandFont> {
   return used;
 }
 
+/** A picture of the document, if it is one we can write: an embedded PNG, JPEG or GIF. */
+export function pictureOf(node: JSONContent): {
+  src: string;
+  bytes: Uint8Array;
+  type: "png" | "jpg" | "gif";
+  /** Share of the page's width, 5..100. */
+  width: number;
+  /** Height over width. */
+  ratio: number;
+  align: Align;
+} | null {
+  const src = safeImageSrc(node.attrs?.["src"]);
+  const kind = src?.match(/^data:image\/(png|jpeg|gif);/)?.[1];
+  if (!src || !kind) return null;
+  const raw = atob(src.slice(src.indexOf(",") + 1));
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  const nw = Number(node.attrs?.["naturalWidth"]) || 1;
+  const nh = Number(node.attrs?.["naturalHeight"]) || nw;
+  const width = Math.min(100, Math.max(5, Number(node.attrs?.["width"]) || 50));
+  const align = node.attrs?.["align"];
+  return {
+    src,
+    bytes,
+    type: kind === "jpeg" ? "jpg" : (kind as "png" | "gif"),
+    width,
+    ratio: nh / nw,
+    align: align === "left" || align === "right" ? align : "center",
+  };
+}
+
 function plain(node: JSONContent): string {
   return runsOf(node)
     .map((r) => (r.lineBreak ? "\n" : r.text))
@@ -165,6 +219,13 @@ function textBlocks(nodes: JSONContent[], indent = ""): string[] {
     }
   }
   return out;
+}
+
+function withBands(body: string, page: PageDress | undefined, render: (c: JSONContent) => string) {
+  const header = page?.header ? render(page.header).trim() : "";
+  const footer = page?.footer ? render(page.footer).trim() : "";
+  const stamp = stampOf(page);
+  return [header, body.trim(), footer, stamp].filter(Boolean).join("\n\n---\n\n");
 }
 
 export function toText(content: JSONContent): string {
@@ -287,8 +348,17 @@ export function fontFaces(fonts: FontBytes): string {
 }
 
 /** A standalone page: the document and a plain print-friendly style. */
-export function toHtml(content: JSONContent, title: string, lang = "es", faces = ""): string {
+export function toHtml(
+  content: JSONContent,
+  title: string,
+  lang = "es",
+  faces = "",
+  page?: PageDress,
+): string {
   const body = generateHTML(content, documentExtensions());
+  const header = page?.header ? generateHTML(page.header, documentExtensions()) : "";
+  const footer = page?.footer ? generateHTML(page.footer, documentExtensions()) : "";
+  const stamp = stampOf(page);
   return `<!doctype html>
 <html lang="${escapeHtml(lang)}">
 <head>
@@ -303,11 +373,16 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:.4
 blockquote{border-left:3px solid #999;margin-left:0;padding-left:1rem;color:#444}
 pre{background:#f5f5f5;padding:.8rem;overflow:auto}code{font-family:Consolas,monospace}
 ul[data-type=taskList]{list-style:none;padding-left:.2rem}ul[data-type=taskList] li{display:flex;gap:.5rem}
+img{display:block;max-width:100%;height:auto}
+.page-header{border-bottom:1px solid #ddd;padding-bottom:.6rem;margin-bottom:1.5rem;font-size:9pt}
+.page-footer{border-top:1px solid #ddd;padding-top:.6rem;margin-top:2.5rem;font-size:9pt}
+.page-stamp{font-size:8pt;color:#80868b;font-family:Consolas,monospace}
 </style>
 </head>
 <body>
-<h1>${escapeHtml(title)}</h1>
+${header ? `<header class="page-header">${header}</header>\n` : ""}<h1>${escapeHtml(title)}</h1>
 ${body}
+${footer || stamp ? `<footer class="page-footer">${footer}${stamp ? `<p class="page-stamp">${escapeHtml(stamp)}</p>` : ""}</footer>` : ""}
 </body>
 </html>
 `;
@@ -318,7 +393,7 @@ ${body}
 export async function toDocx(
   content: JSONContent,
   title: string,
-  options: { password?: string | undefined } = {},
+  options: { password?: string | undefined; page?: PageDress | undefined } = {},
 ): Promise<Blob> {
   const d = await import("docx");
   const ALIGN = {
@@ -422,6 +497,25 @@ export async function toDocx(
             );
           }
           break;
+        case "image": {
+          const picture = pictureOf(node);
+          if (!picture) break;
+          // A4 with 2.54 cm margins leaves about 6.3 inches: 605 px at 96 dpi.
+          const width = Math.round((605 * picture.width) / 100);
+          out.push(
+            new d.Paragraph({
+              alignment: ALIGN[picture.align],
+              children: [
+                new d.ImageRun({
+                  type: picture.type,
+                  data: picture.bytes,
+                  transformation: { width, height: Math.round(width * picture.ratio) },
+                }),
+              ],
+            }),
+          );
+          break;
+        }
         case "horizontalRule":
           out.push(
             new d.Paragraph({
@@ -473,6 +567,38 @@ export async function toDocx(
       style: { paragraph: { indent: { left: 720 * (level + 1), hanging: 360 } } },
     }));
 
+  // The header and footer repeat on every page; the footer ends with the
+  // document's code on the left and the page number on the right.
+  const page = options.page;
+  const stamp = stampOf(page);
+  const quiet = { size: 14, color: "80868B" };
+  const footerLine =
+    stamp || page?.pageNumbers
+      ? [
+          new d.Paragraph({
+            tabStops: [{ type: d.TabStopType.RIGHT, position: d.TabStopPosition.MAX }],
+            children: [
+              new d.TextRun({ text: stamp, ...quiet }),
+              ...(page?.pageNumbers
+                ? [
+                    new d.TextRun({
+                      children: [
+                        new d.Tab(),
+                        `${page.labels.page} `,
+                        d.PageNumber.CURRENT,
+                        " / ",
+                        d.PageNumber.TOTAL_PAGES,
+                      ],
+                      ...quiet,
+                    }),
+                  ]
+                : []),
+            ],
+          }),
+        ]
+      : [];
+  const footerBlocks = page?.footer ? blocks(page.footer.content ?? []) : [];
+
   const file = new d.Document({
     title,
     creator: "The Somnus",
@@ -491,6 +617,12 @@ export async function toDocx(
     },
     sections: [
       {
+        ...(page?.header
+          ? { headers: { default: new d.Header({ children: blocks(page.header.content ?? []) }) } }
+          : {}),
+        ...(footerBlocks.length > 0 || footerLine.length > 0
+          ? { footers: { default: new d.Footer({ children: [...footerBlocks, ...footerLine] }) } }
+          : {}),
         children: [
           new d.Paragraph({ text: title, heading: d.HeadingLevel.TITLE }),
           ...blocks(content.content ?? []),
@@ -510,10 +642,27 @@ export async function toDocx(
 
 // --- PDF ---------------------------------------------------------------------------
 
+export function bandHeight(band: JSONContent | undefined): number {
+  let height = 0;
+  for (const node of band?.content ?? []) {
+    if (node.type === "image") {
+      const picture = pictureOf(node);
+      if (picture) height += (483 * picture.width * picture.ratio) / 100 + 8;
+    } else if (node.type === "heading") height += 22;
+    else if (node.type === "table") height += 18 * (node.content?.length ?? 1);
+    else height += 14;
+  }
+  return height;
+}
+
 export async function toPdf(
   content: JSONContent,
   title: string,
-  options: { password?: string | undefined; fonts?: FontBytes } = {},
+  options: {
+    password?: string | undefined;
+    fonts?: FontBytes;
+    page?: PageDress | undefined;
+  } = {},
 ): Promise<Blob> {
   const [pdfMake, vfs] = await Promise.all([
     import("pdfmake/build/pdfmake"),
@@ -615,6 +764,17 @@ export async function toPdf(
         case "codeBlock":
           out.push({ text: plain(node), fontSize: 9, background: "#f2f2f2", margin: [0, 0, 0, 6] });
           break;
+        case "image": {
+          const picture = pictureOf(node);
+          if (!picture || picture.type === "gif") break;
+          out.push({
+            image: picture.src,
+            width: (483 * picture.width) / 100,
+            alignment: picture.align,
+            margin: [0, 4, 0, 8],
+          });
+          break;
+        }
         case "horizontalRule":
           out.push({
             canvas: [{ type: "line", x1: 0, y1: 4, x2: 515, y2: 4, lineWidth: 0.5 }],
@@ -648,9 +808,54 @@ export async function toPdf(
     return out;
   };
 
+  // The header and footer sit in the page's top and bottom margins, which
+  // grow to hold them: pdfmake does not measure them for us.
+  const page = options.page;
+  const stamp = stampOf(page);
+  const header = page?.header ? blocks(page.header.content ?? []) : [];
+  const footer = page?.footer ? blocks(page.footer.content ?? []) : [];
+  const footerLine = stamp || page?.pageNumbers;
+  const top = header.length > 0 ? Math.min(220, 44 + bandHeight(page?.header)) : 56;
+  const bottom =
+    footer.length > 0 || footerLine
+      ? Math.min(220, 40 + bandHeight(page?.footer) + (footerLine ? 14 : 0))
+      : 56;
+
   return maker
     .createPdf({
-      info: { title, creator: "The Somnus" },
+      info: { title, creator: "The Somnus", ...(page?.code ? { subject: stamp } : {}) },
+      ...(header.length > 0
+        ? { header: { stack: header, margin: [56, 30, 56, 0], fontSize: 9 } }
+        : {}),
+      ...(footer.length > 0 || footerLine
+        ? {
+            footer: (current: number, total: number) => ({
+              margin: [56, 8, 56, 0],
+              fontSize: 9,
+              stack: [
+                ...footer,
+                ...(footerLine
+                  ? [
+                      {
+                        columns: [
+                          { text: stamp, fontSize: 7, color: "#80868b" },
+                          {
+                            text: page?.pageNumbers
+                              ? `${page.labels.page} ${current} / ${total}`
+                              : "",
+                            alignment: "right" as const,
+                            fontSize: 8,
+                            color: "#80868b",
+                            width: "auto" as const,
+                          },
+                        ],
+                      },
+                    ]
+                  : []),
+              ],
+            }),
+          }
+        : {}),
       ...(options.password
         ? {
             // PDF 1.7 extension level 3 is AES-256, the strongest PDF readers know.
@@ -668,7 +873,7 @@ export async function toPdf(
             },
           }
         : {}),
-      pageMargins: [56, 56, 56, 56],
+      pageMargins: [56, top, 56, bottom],
       defaultStyle: { font: fontFor(DEFAULT_FONT), fontSize: DEFAULT_FONT_SIZE, lineHeight: 1.3 },
       content: [
         { text: title, fontSize: 22, bold: true, margin: [0, 0, 0, 14] },
@@ -684,21 +889,48 @@ export async function exportDocument(
   content: JSONContent,
   title: string,
   lang: string,
-  options: { password?: string | undefined } = {},
+  options: { password?: string | undefined; page?: PageDress | undefined } = {},
 ): Promise<Blob> {
+  // The fingerprint is of exactly what goes out: title, text and bands.
+  const page = options.page
+    ? {
+        ...options.page,
+        fingerprint: await contentFingerprint({
+          title,
+          content,
+          header: options.page.header ?? null,
+          footer: options.page.footer ?? null,
+        }),
+      }
+    : undefined;
+  // Our fonts, wherever the text or the bands use them.
+  const used = () =>
+    new Set([
+      ...fontsUsed(content),
+      ...(page?.header ? fontsUsed(page.header) : []),
+      ...(page?.footer ? fontsUsed(page.footer) : []),
+    ]);
   switch (format) {
     case "docx":
-      return toDocx(content, title, options);
+      return toDocx(content, title, { password: options.password, page });
     case "pdf":
-      return toPdf(content, title, { ...options, fonts: await loadFonts(fontsUsed(content)) });
+      return toPdf(content, title, {
+        password: options.password,
+        page,
+        fonts: await loadFonts(used()),
+      });
     case "html":
-      return new Blob(
-        [toHtml(content, title, lang, fontFaces(await loadFonts(fontsUsed(content))))],
-        { type: EXPORT_MIME.html },
-      );
+      return new Blob([toHtml(content, title, lang, fontFaces(await loadFonts(used())), page)], {
+        type: EXPORT_MIME.html,
+      });
     case "md":
-      return new Blob([toMarkdown(content, title)], { type: EXPORT_MIME.md });
+      return new Blob(
+        [
+          `${withBands(toMarkdown(content, title), page, (band) => mdBlocks(band.content ?? []).join("\n\n"))}\n`,
+        ],
+        { type: EXPORT_MIME.md },
+      );
     case "txt":
-      return new Blob([toText(content)], { type: EXPORT_MIME.txt });
+      return new Blob([`${withBands(toText(content), page, toText)}\n`], { type: EXPORT_MIME.txt });
   }
 }

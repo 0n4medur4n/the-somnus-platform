@@ -11,11 +11,14 @@ import { blockOf, type DriveNote, type NoteAnchor, phraseAnchor } from "../notes
 import type { NotesBinding } from "../notes/use-notes.js";
 import { DocStats } from "./DocStats.js";
 import { ColorPicker, PasswordDialog } from "./DocumentTools.js";
+import { documentCode } from "./doc-code.js";
 import {
+  cleanExtras,
   DEFAULT_FONT,
   DEFAULT_FONT_SIZE,
   DOC_FONT_SIZES,
   DOC_FONTS,
+  type DocExtras,
   documentExtensions,
   fileNameFor,
   fontNameOf,
@@ -24,7 +27,9 @@ import {
   pointsOf,
   TEXT_COLORS,
 } from "./doc-format.js";
+import { IMAGE_WIDTHS, imageFromFile, LOGOS, logoImage } from "./doc-image.js";
 import { EXPORT_FORMATS, type ExportFormat, exportDocument, PASSWORD_FORMATS } from "./export.js";
+import { FooterOptions, PageBand } from "./PageBands.js";
 import { openSuggestion, ProofreadControls, type Proofreader } from "./ProofreadTools.js";
 import { Proofreading } from "./proofreading.js";
 import { blockText, ReadingMark } from "./read-aloud.js";
@@ -66,6 +71,8 @@ export function saveBlob(blob: Blob, name: string) {
 export function DocumentEditor({
   initialTitle,
   initialContent,
+  initialExtras,
+  documentId,
   readOnly,
   onSave,
   onClose,
@@ -76,8 +83,12 @@ export function DocumentEditor({
 }: {
   initialTitle: string;
   initialContent: JSONContent;
+  /** The page's header, footer and numbering, as saved with the document. */
+  initialExtras?: DocExtras | undefined;
+  /** The Drive file's identifier: the document's code is made from it. */
+  documentId?: string | undefined;
   readOnly: boolean;
-  onSave: (title: string, content: JSONContent) => Promise<SaveOutcome>;
+  onSave: (title: string, content: JSONContent, extras: DocExtras) => Promise<SaveOutcome>;
   onClose: () => void;
   notes?: NotesBinding | undefined;
   password?: PasswordBinding | undefined;
@@ -105,6 +116,34 @@ export function DocumentEditor({
   titleRef.current = title;
   const timer = useRef<number | null>(null);
   const saving = useRef(false);
+  const extras = useRef<DocExtras>(cleanExtras(initialExtras));
+  const [pageNumbers, setPageNumbers] = useState(extras.current.pageNumbers === true);
+  const [code, setCode] = useState<string | undefined>(undefined);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  useEffect(() => {
+    if (!documentId) return;
+    let live = true;
+    void documentCode(documentId).then((value) => {
+      if (live) setCode(value);
+    });
+    return () => {
+      live = false;
+    };
+  }, [documentId]);
+
+  // The header, the footer and the numbering save with the text.
+  function changeExtras(change: Partial<DocExtras>) {
+    extras.current = { ...extras.current, ...change };
+    setStatus((s) => (s === "conflict" ? s : "dirty"));
+  }
+
+  async function copyCode() {
+    if (!code) return;
+    await navigator.clipboard.writeText(code).catch(() => undefined);
+    setCodeCopied(true);
+    window.setTimeout(() => setCodeCopied(false), 2000);
+  }
 
   const editor = useEditor({
     extensions: [
@@ -201,6 +240,7 @@ export function DocumentEditor({
     const outcome = await onSave(
       titleRef.current.trim() || t("drive.doc.untitled"),
       editor.getJSON(),
+      cleanExtras(extras.current),
     );
     saving.current = false;
     setStatus(outcome === "saved" ? "saved" : outcome);
@@ -242,6 +282,15 @@ export function DocumentEditor({
       const name = titleRef.current.trim() || t("drive.doc.untitled");
       const blob = await exportDocument(format, editor.getJSON(), name, i18n.language, {
         password: filePassword,
+        page: {
+          ...cleanExtras(extras.current),
+          code,
+          labels: {
+            code: t("drive.doc.code.label"),
+            fingerprint: t("drive.doc.code.fingerprint"),
+            page: t("drive.doc.bands.page"),
+          },
+        },
       });
       saveBlob(blob, fileNameFor(name, format));
     } finally {
@@ -322,6 +371,21 @@ export function DocumentEditor({
               className="w-full truncate rounded-md border border-transparent bg-transparent px-2 py-1 text-lg font-medium text-somnus-text hover:border-white/10 focus:border-somnus-primary focus:outline-none"
             />
           </label>
+          {code ? (
+            <button
+              type="button"
+              onClick={() => void copyCode()}
+              title={t("drive.doc.code.explain")}
+              aria-label={`${t("drive.doc.code.copy")}: ${code}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-0.5 font-mono text-xs tracking-wide text-somnus-text hover:bg-white/5"
+            >
+              <Icon
+                name={codeCopied ? "check" : "fingerprint"}
+                className="h-3.5 w-3.5 text-somnus-primary"
+              />
+              {codeCopied ? t("drive.doc.code.copied") : code}
+            </button>
+          ) : null}
           {password?.locked ? (
             <span className="inline-flex items-center gap-1 rounded-full border border-somnus-primary/40 px-2 py-0.5 text-xs text-somnus-primary">
               <Icon name="lock" className="h-3.5 w-3.5" />
@@ -454,7 +518,30 @@ export function DocumentEditor({
             ref={pageRef}
             className="somnus-page mx-auto text-[#202124] shadow-[0_1px_3px_rgba(0,0,0,0.35)]"
           >
+            <PageBand
+              kind="header"
+              initial={extras.current.header}
+              title={title}
+              readOnly={readOnly}
+              onChange={(header) => changeExtras({ header })}
+            />
             <EditorContent editor={editor} />
+            <PageBand
+              kind="footer"
+              initial={extras.current.footer}
+              title={title}
+              readOnly={readOnly}
+              onChange={(footer) => changeExtras({ footer })}
+            />
+            <FooterOptions
+              code={code}
+              pageNumbers={pageNumbers}
+              readOnly={readOnly}
+              onPageNumbers={(on) => {
+                setPageNumbers(on);
+                changeExtras({ pageNumbers: on });
+              }}
+            />
           </div>
           {editor ? <DocStats editor={editor} page={pageRef} /> : null}
         </main>
@@ -550,6 +637,9 @@ function Toolbar({
       code: e.isActive("codeBlock"),
       link: e.isActive("link"),
       table: e.isActive("table"),
+      image: e.isActive("image"),
+      imageWidth: Number(e.getAttributes("image")["width"]) || 50,
+      imageAlign: String(e.getAttributes("image")["align"] ?? "center"),
       task: e.isActive("taskList"),
       inList: e.isActive("listItem") || e.isActive("taskItem"),
       sub: e.isActive("subscript"),
@@ -568,6 +658,34 @@ function Toolbar({
     }),
   });
   const chain = () => editor.chain().focus();
+  const pictureInput = useRef<HTMLInputElement>(null);
+  const [pictureError, setPictureError] = useState<string | null>(null);
+
+  // A picture goes in where the caret is, at half the page's width, centred.
+  async function insertPicture(
+    pending: Promise<{ src: string; width: number; height: number } | null>,
+    alt: string,
+  ) {
+    setPictureError(null);
+    const picture = await pending.catch(() => null);
+    if (!picture) {
+      setPictureError(t("drive.doc.image.failed"));
+      return;
+    }
+    chain()
+      .insertContent({
+        type: "image",
+        attrs: {
+          src: picture.src,
+          alt,
+          width: 50,
+          align: "center",
+          naturalWidth: picture.width,
+          naturalHeight: picture.height,
+        },
+      })
+      .run();
+  }
 
   function applyLink(event: FormEvent) {
     event.preventDefault();
@@ -749,20 +867,32 @@ function Toolbar({
       <ToolButton
         icon="alignLeft"
         label={t("drive.doc.tools.alignLeft")}
-        active={state.align === "left"}
-        onClick={() => chain().setTextAlign("left").run()}
+        active={state.image ? state.imageAlign === "left" : state.align === "left"}
+        onClick={() =>
+          state.image
+            ? chain().updateAttributes("image", { align: "left" }).run()
+            : chain().setTextAlign("left").run()
+        }
       />
       <ToolButton
         icon="alignCenter"
         label={t("drive.doc.tools.alignCenter")}
-        active={state.align === "center"}
-        onClick={() => chain().setTextAlign("center").run()}
+        active={state.image ? state.imageAlign === "center" : state.align === "center"}
+        onClick={() =>
+          state.image
+            ? chain().updateAttributes("image", { align: "center" }).run()
+            : chain().setTextAlign("center").run()
+        }
       />
       <ToolButton
         icon="alignRight"
         label={t("drive.doc.tools.alignRight")}
-        active={state.align === "right"}
-        onClick={() => chain().setTextAlign("right").run()}
+        active={state.image ? state.imageAlign === "right" : state.align === "right"}
+        onClick={() =>
+          state.image
+            ? chain().updateAttributes("image", { align: "right" }).run()
+            : chain().setTextAlign("right").run()
+        }
       />
       <ToolButton
         icon="alignJustify"
@@ -833,6 +963,73 @@ function Toolbar({
         active={state.table}
         onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
       />
+      <Menu
+        label={t("drive.doc.image.menu")}
+        items={[
+          ...LOGOS.map((logo) => ({
+            label: t(`drive.doc.image.logos.${logo.key}`),
+            icon: "star" as const,
+            onSelect: () =>
+              void insertPicture(logoImage(logo.path), t(`drive.doc.image.logos.${logo.key}`)),
+          })),
+          {
+            label: t("drive.doc.image.upload"),
+            icon: "upload" as const,
+            onSelect: () => pictureInput.current?.click(),
+          },
+        ]}
+        trigger={({ onClick, expanded }) => (
+          <button
+            type="button"
+            title={t("drive.doc.image.menu")}
+            aria-label={t("drive.doc.image.menu")}
+            aria-haspopup="menu"
+            aria-expanded={expanded}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={onClick}
+            className="rounded-md p-1.5 text-somnus-subtle hover:bg-white/10 hover:text-somnus-text"
+          >
+            <Icon name="image" className="h-[18px] w-[18px]" />
+          </button>
+        )}
+      />
+      <input
+        ref={pictureInput}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void insertPicture(imageFromFile(file), file.name);
+        }}
+      />
+      {state.image ? (
+        <label className="ml-1">
+          <span className="sr-only">{t("drive.doc.image.width")}</span>
+          <select
+            value={String(state.imageWidth)}
+            onChange={(event) =>
+              chain()
+                .updateAttributes("image", { width: Number(event.target.value) })
+                .run()
+            }
+            title={t("drive.doc.image.width")}
+            className="rounded-md border border-white/10 bg-somnus-background px-1 py-1 text-sm text-somnus-text"
+          >
+            {IMAGE_WIDTHS.map((w) => (
+              <option key={w} value={String(w)}>
+                {w} %
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {pictureError ? (
+        <span role="alert" className="ml-1 text-xs text-somnus-danger">
+          {pictureError}
+        </span>
+      ) : null}
       {voice || proofread ? (
         <>
           <Divider />

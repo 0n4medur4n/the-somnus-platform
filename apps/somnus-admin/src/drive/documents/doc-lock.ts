@@ -72,7 +72,20 @@ export async function newLock(password: string): Promise<DocLock> {
   };
 }
 
-export async function seal(content: JSONContent, lock: DocLock): Promise<LockedBody> {
+/**
+ * What is sealed: the text, or the text with its header, footer and page
+ * numbering (all of it is behind the password).
+ */
+export type SealedPage =
+  | JSONContent
+  | {
+      content: JSONContent;
+      header?: JSONContent | undefined;
+      footer?: JSONContent | undefined;
+      pageNumbers?: boolean | undefined;
+    };
+
+export async function seal(content: SealedPage, lock: DocLock): Promise<LockedBody> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
@@ -92,7 +105,7 @@ export async function seal(content: JSONContent, lock: DocLock): Promise<LockedB
 export async function unseal(
   body: LockedBody,
   password: string,
-): Promise<{ content: JSONContent; lock: DocLock }> {
+): Promise<{ content: JSONContent; lock: DocLock; extras: Record<string, unknown> }> {
   const salt = fromBase64(body.salt);
   const key = await deriveKey(password, salt, body.iterations);
   let plain: ArrayBuffer;
@@ -105,9 +118,17 @@ export async function unseal(
   } catch {
     throw new WrongPasswordError();
   }
-  const content = JSON.parse(new TextDecoder().decode(plain)) as JSONContent;
+  const parsed = JSON.parse(new TextDecoder().decode(plain)) as
+    | JSONContent
+    | { content?: JSONContent; [extra: string]: unknown };
+  const lockOut = { key, salt, iterations: body.iterations };
+  // A document sealed before headers existed is its text alone.
+  if ((parsed as JSONContent)?.type === "doc") {
+    return { content: parsed as JSONContent, lock: lockOut, extras: {} };
+  }
+  const { content, ...extras } = parsed as { content?: JSONContent; [extra: string]: unknown };
   if (content?.type !== "doc") throw new WrongPasswordError();
-  return { content, lock: { key, salt, iterations: body.iterations } };
+  return { content, lock: lockOut, extras };
 }
 
 /** A sealed body as stored, or null when `value` is not one. */

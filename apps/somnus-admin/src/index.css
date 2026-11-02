@@ -365,3 +365,44 @@ body {
   background: #dbe7ff;
   border-radius: 2px;
 }
+/* Pictures in a document: their own width and alignment, never wider than the page. */
+.somnus-doc img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.somnus-doc img.ProseMirror-selectednode {
+  outline: 3px solid #437ef7;
+  outline-offset: 2px;
+}
+/* A page's header and footer: the same paper in smaller type, in a band of
+   their own above and below the text. */
+.somnus-band {
+  color-scheme: light;
+  min-height: 1.6em;
+  padding: 0.25rem 0;
+  font-family: Satoshi, Arial, Helvetica, sans-serif;
+  font-size: 9pt;
+  line-height: 1.4;
+  color: #3c4043;
+  caret-color: #1a73e8;
+  overflow-wrap: break-word;
+}
+.somnus-band:focus,
+.somnus-band:focus-visible {
+  outline: none;
+}
+.somnus-band > * + * {
+  margin-top: 0.3em;
+}
+.somnus-band img {
+  display: block;
+  max-width: 100%;
+  max-height: 40mm;
+  height: auto;
+  object-fit: contain;
+}
+.somnus-band img.ProseMirror-selectednode {
+  outline: 2px solid #437ef7;
+  outline-offset: 2px;
+}

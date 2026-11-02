@@ -335,3 +335,23 @@ raised later).
   `gemini-3.5-flash` answers in `europe-west3`, and on a test sentence found all five errors, each placed by the
   report service. A one-off job with the report service's own identity got corrections back: the IAM grant works.
 
+
+## Addendum -- logos, pictures, headers, footers and a code for every document (owner decision 2026-11-02)
+
+- **Pictures are part of the document, never links.** A picture is stored inside the encrypted document as a
+  `data:` URI (PNG, JPEG, GIF or WebP only; never SVG, never a URL), so opening a document fetches nothing. Photos are
+  scaled to 1600 px across in the browser before they go in. Our four logos (The Somnus and Morpheo, plain and on
+  their dark background) are files the console serves (`/brand/`), offered in the toolbar's picture menu and read
+  into the document the same way. Word and PDF exports embed them; GIFs go into Word only, as pdfmake cannot draw
+  them.
+- **Headers and footers.** A document may have a header, a footer and page numbering, written in the same editor as
+  the text (bold, italics, alignment, logos, and two ready-made header layouts). They are saved with the text, in the
+  same encrypted file; a document with a password seals them with the text. A document without them reads as before,
+  and a document sealed before they existed still opens. Word and PDF exports repeat them on every page; HTML puts
+  them above and below the page; Markdown and text carry their words.
+- **Every document has a code.** `SMN-XXXX-XXXX-XXXX-XXXX`: the first 64 bits of the SHA-256 of the Drive file's
+  identifier, shown beside the title (click to copy) and at the foot of the page. It never changes while the file
+  exists, and a copy or a re-import is another file with another code. Every export carries it, with a
+  **fingerprint**: the SHA-256 of exactly what was exported (title, text, header and footer). Two exports with the
+  same code and fingerprint have the same contents. Neither is a signature: they show which document a file came
+  from and whether two copies match, not who wrote it, and anyone holding a copy can recompute them.

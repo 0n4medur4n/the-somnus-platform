@@ -868,6 +868,42 @@
         "notice": "Para corregir, el texto del documento se envía, por partes, a Gemini en nuestro propio Google Cloud, en la Unión Europea. Ese texto sale del cifrado del Drive mientras se corrige; no se guarda en ningún sitio. Las correcciones son propuestas: tú decides cuáles aceptar.",
         "warning": "No corrijas con IA documentos con datos de pacientes ni información que identifique a una persona.",
         "noticeAccept": "Entendido, corregir"
+      },
+      "image": {
+        "menu": "Insertar imagen o logo",
+        "upload": "Imagen desde el ordenador…",
+        "width": "Tamaño de la imagen",
+        "failed": "No se ha podido insertar la imagen (PNG, JPG, GIF o WebP).",
+        "logos": {
+          "somnus": "Logo The Somnus",
+          "somnusDark": "Logo The Somnus con fondo",
+          "morpheo": "Logo Morpheo",
+          "morpheoDark": "Logo Morpheo con fondo"
+        }
+      },
+      "bands": {
+        "header": "Encabezado",
+        "footer": "Pie de página",
+        "insert": "Insertar logo o diseño",
+        "clear": "Vaciar",
+        "presets": {
+          "logoTitle": "Diseño: logo y título",
+          "logoCentred": "Diseño: logo centrado"
+        },
+        "placeholder": {
+          "header": "Haz clic para añadir un encabezado (se repite en cada página)",
+          "footer": "Haz clic para añadir un pie de página (se repite en cada página)"
+        },
+        "numberPages": "Numerar páginas",
+        "page": "Página",
+        "pageSample": "Página 1 / N"
+      },
+      "code": {
+        "label": "Código",
+        "fingerprint": "Huella",
+        "copy": "Copiar el código del documento",
+        "copied": "Código copiado",
+        "explain": "Código único de este documento: se calcula (SHA-256) a partir de su identificador en el Drive, no cambia al editarlo y aparece en cada exportación junto con la huella de su contenido."
       }
     },
     "sheet": {

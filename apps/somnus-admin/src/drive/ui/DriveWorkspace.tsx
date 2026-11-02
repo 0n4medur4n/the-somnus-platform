@@ -30,7 +30,9 @@ import { type Bytes, fromUtf8, utf8 } from "../crypto.js";
 import { DocumentEditor, type SaveOutcome } from "../documents/DocumentEditor.js";
 import { UnlockDocument } from "../documents/DocumentTools.js";
 import {
+  cleanExtras,
   DOCUMENT_MIME,
+  type DocExtras,
   decodeDocument,
   encodeDocument,
   encodeLockedDocument,
@@ -185,7 +187,7 @@ export function DriveWorkspace({
     go({ share: view?.shareId ?? shareParam, ...(on ? { trash: true } : {}) });
   const [viewer, setViewer] = useState<{ item: DriveItem; bytes: Bytes } | null>(null);
   const [doc, setDoc] = useState<
-    | { kind: "document"; id: string; title: string; content: JSONContent }
+    | { kind: "document"; id: string; title: string; content: JSONContent; extras: DocExtras }
     | { kind: "locked"; id: string; title: string; body: LockedBody }
     | { kind: "sheet"; id: string; title: string; sheets: StoredSheet[] }
     | null
@@ -514,7 +516,16 @@ export function DriveWorkspace({
             }
           : locked
             ? { kind: "locked", id: item.node.id, title, body: locked }
-            : { kind: "document", id: item.node.id, title, content: decodeDocument(bytes).content },
+            : (() => {
+                const decoded = decodeDocument(bytes);
+                return {
+                  kind: "document" as const,
+                  id: item.node.id,
+                  title,
+                  content: decoded.content,
+                  extras: cleanExtras(decoded),
+                };
+              })(),
       );
     })();
     return () => {
@@ -546,9 +557,15 @@ export function DriveWorkspace({
     return "saved";
   }
 
-  async function saveDocument(title: string, content: JSONContent): Promise<SaveOutcome> {
+  async function saveDocument(
+    title: string,
+    content: JSONContent,
+    extras: DocExtras,
+  ): Promise<SaveOutcome> {
     const lock = docLock.current;
-    const bytes = lock ? encodeLockedDocument(await seal(content, lock)) : encodeDocument(content);
+    const bytes = lock
+      ? encodeLockedDocument(await seal({ content, ...extras }, lock))
+      : encodeDocument(content, extras);
     return saveRevision(title, DOCUMENT_MIME, bytes);
   }
 
@@ -557,7 +574,13 @@ export function DriveWorkspace({
     try {
       const opened = await unseal(doc.body, password);
       docLock.current = opened.lock;
-      setDoc({ kind: "document", id: doc.id, title: doc.title, content: opened.content });
+      setDoc({
+        kind: "document",
+        id: doc.id,
+        title: doc.title,
+        content: opened.content,
+        extras: cleanExtras(opened.extras),
+      });
       return true;
     } catch (error) {
       if (error instanceof WrongPasswordError) return false;
@@ -753,6 +776,8 @@ export function DriveWorkspace({
         key={doc.id}
         initialTitle={doc.title}
         initialContent={doc.content}
+        initialExtras={doc.extras}
+        documentId={doc.id}
         readOnly={!canEdit}
         onSave={saveDocument}
         onClose={() => go({ share: view.shareId, folder: current })}
