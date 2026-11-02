@@ -5,11 +5,11 @@ import type {
 } from "@somnus/api-contracts";
 import type { Editor } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Icon } from "../../components/ui/Icon.js";
 import { Modal } from "../../components/ui/ui.js";
-import { docBlocks } from "../notes/note-marks.js";
 import {
   acceptSpeechNotice,
   type DictationError,
@@ -19,7 +19,16 @@ import {
   spokenText,
   startDictation,
 } from "./dictation.js";
-import { passagesOf, type ReadAloudError, startReadAloud } from "./read-aloud.js";
+import {
+  type Passage,
+  passagesFrom,
+  passagesOfSelection,
+  type ReadAloudError,
+  type Reader,
+  type ReaderState,
+  readingKey,
+  startReader,
+} from "./read-aloud.js";
 
 /** Our two voice services, as the Drive reaches them (owner decision 2026-11-02). */
 export type VoiceBinding = {
@@ -82,7 +91,7 @@ function StatusPill({
   onDismiss: () => void;
 }) {
   const { t } = useTranslation();
-  return (
+  return createPortal(
     <div
       role="status"
       aria-live="polite"
@@ -110,7 +119,8 @@ function StatusPill({
           <span className="truncate">{text}</span>
         </span>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -224,9 +234,104 @@ export function DictationButton({
   );
 }
 
+function clock(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+}
+
+/**
+ * The player at the bottom of the page while a document is read: where it is
+ * (part n of m, and time within the part), pause and continue, back and
+ * forward, a timeline to jump with, and stop.
+ */
+function ReaderBar({ state, reader }: { state: ReaderState; reader: Reader }) {
+  const { t } = useTranslation();
+  const part = Math.min(state.index + 1, state.total);
+  const within = state.duration > 0 ? Math.min(1, state.position / state.duration) : 0;
+  const control =
+    "rounded-full p-2 text-somnus-text hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-transparent";
+  return createPortal(
+    <section
+      aria-label={t("drive.doc.readAloud.player")}
+      className="fixed bottom-4 left-1/2 z-40 w-[min(40rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-white/10 bg-[#0f1528]/95 px-4 py-3 shadow-2xl backdrop-blur"
+    >
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className={control}
+          onClick={() => reader.seek(state.index - 1)}
+          disabled={state.index === 0}
+          aria-label={t("drive.doc.readAloud.previous")}
+          title={t("drive.doc.readAloud.previous")}
+        >
+          <Icon name="skipBack" className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          className="rounded-full bg-somnus-primary-strong p-2.5 text-white hover:brightness-110"
+          onClick={() => (state.playing ? reader.pause() : reader.resume())}
+          aria-label={
+            state.playing ? t("drive.doc.readAloud.pause") : t("drive.doc.readAloud.resume")
+          }
+          title={state.playing ? t("drive.doc.readAloud.pause") : t("drive.doc.readAloud.resume")}
+        >
+          <Icon name={state.playing ? "pause" : "play"} className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          className={control}
+          onClick={() => reader.seek(state.index + 1)}
+          disabled={state.index >= state.total - 1}
+          aria-label={t("drive.doc.readAloud.next")}
+          title={t("drive.doc.readAloud.next")}
+        >
+          <Icon name="skipForward" className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 flex-1 px-2">
+          <div className="flex justify-between text-xs text-somnus-subtle">
+            <span>{t("drive.doc.readAloud.part", { part, total: state.total })}</span>
+            <span aria-live="off">
+              {state.loading
+                ? t("drive.doc.readAloud.loading")
+                : `${clock(state.position)} / ${clock(state.duration)}`}
+            </span>
+          </div>
+          <label className="mt-1 block">
+            <span className="sr-only">{t("drive.doc.readAloud.timeline")}</span>
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, state.total - 1)}
+              step={1}
+              value={state.index}
+              onChange={(event) => reader.seek(Number(event.target.value))}
+              aria-valuetext={t("drive.doc.readAloud.part", { part, total: state.total })}
+              className="w-full accent-[#437ef7]"
+            />
+          </label>
+          <div aria-hidden="true" className="mt-0.5 h-1 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full bg-somnus-primary" style={{ width: `${within * 100}%` }} />
+          </div>
+        </div>
+        <button
+          type="button"
+          className={control}
+          onClick={() => reader.stop()}
+          aria-label={t("drive.doc.readAloud.close")}
+          title={t("drive.doc.readAloud.close")}
+        >
+          <Icon name="x" className="h-5 w-5" />
+        </button>
+      </div>
+    </section>,
+    document.body,
+  );
+}
+
 /**
  * Reads the document aloud with Google's voice: the selection if there is one,
- * otherwise from the paragraph the caret is in to the end.
+ * otherwise from the paragraph the caret is in to the end. The passage being
+ * read is highlighted and kept in view.
  */
 export function ReadAloudButton({
   editor,
@@ -238,55 +343,61 @@ export function ReadAloudButton({
   lang: DriveSpeechLang;
 }) {
   const { t } = useTranslation();
-  const [reading, setReading] = useState(false);
+  const [state, setState] = useState<ReaderState | null>(null);
   const [error, setError] = useState<ReadAloudError | null>(null);
   const [asking, setAsking] = useState(false);
-  const session = useRef<{ stop: () => void } | null>(null);
+  const reader = useRef<Reader | null>(null);
   const alive = useRef(true);
 
   useEffect(
     () => () => {
       alive.current = false;
-      session.current?.stop();
+      reader.current?.stop();
     },
     [],
   );
 
+  function follow(passage: Passage | null) {
+    if (editor.isDestroyed) return;
+    editor.view.dispatch(editor.state.tr.setMeta(readingKey, passage));
+    if (!passage) return;
+    const node = passage.whole
+      ? editor.view.nodeDOM(passage.from)
+      : editor.view.domAtPos(passage.from).node;
+    const element = node instanceof HTMLElement ? node : node?.parentElement;
+    element?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  }
+
   function begin() {
     setError(null);
     const { from, to, empty } = editor.state.selection;
-    let texts: string[];
-    if (!empty) {
-      texts = editor.state.doc.textBetween(from, to, "\n", " ").split("\n");
-    } else {
-      const blocks = docBlocks(editor.state.doc);
-      const at = blocks.findIndex((b) => from >= b.pos && from < b.pos + b.size);
-      texts = blocks.slice(Math.max(at, 0)).map((b) => b.text);
-    }
-    const passages = passagesOf(texts);
+    const passages = empty
+      ? passagesFrom(editor.state.doc, from)
+      : passagesOfSelection(editor.state.doc, from, to);
     if (passages.length === 0) return;
-    setReading(true);
-    session.current = startReadAloud({
+    reader.current = startReader({
       passages,
       speak: (text) => voice.readAloud(text, lang),
-      onPassage: () => {},
+      onState: (next) => alive.current && setState(next),
+      onPassage: follow,
       onError: (e) => alive.current && setError(e),
       onStop: () => {
-        session.current = null;
-        if (alive.current) setReading(false);
+        reader.current = null;
+        if (alive.current) setState(null);
       },
     });
   }
 
   function toggle() {
-    if (reading) {
-      session.current?.stop();
+    if (reader.current) {
+      reader.current.stop();
       return;
     }
     if (speechNoticeSeen("readAloud")) begin();
     else setAsking(true);
   }
 
+  const reading = state !== null;
   const label = reading ? t("drive.doc.readAloud.stop") : t("drive.doc.readAloud.start");
   return (
     <>
@@ -306,6 +417,7 @@ export function ReadAloudButton({
         <Icon name="speaker" className="h-[18px] w-[18px]" />
         {t("drive.doc.readAloud.label")}
       </button>
+      {state && reader.current ? <ReaderBar state={state} reader={reader.current} /> : null}
       {error ? (
         <StatusPill
           error={t(`drive.doc.readAloud.error.${error}`)}

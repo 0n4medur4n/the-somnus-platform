@@ -23,6 +23,7 @@ import {
   TEXT_COLORS,
 } from "./doc-format.js";
 import { EXPORT_FORMATS, type ExportFormat, exportDocument, PASSWORD_FORMATS } from "./export.js";
+import { ReadingMark } from "./read-aloud.js";
 import { type VoiceBinding, VoiceControls } from "./VoiceTools.js";
 
 export type SaveOutcome = "saved" | "conflict" | "error";
@@ -100,6 +101,7 @@ export function DocumentEditor({
     extensions: [
       ...documentExtensions(),
       NoteMarks.configure({ onClickBlock: (index) => openNotesAt.current(index) }),
+      ReadingMark,
     ],
     content: initialContent,
     editable: !readOnly,

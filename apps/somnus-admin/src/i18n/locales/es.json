@@ -816,7 +816,16 @@
         "error": {
           "unavailable": "La lectura en voz alta no está disponible ahora. Inténtalo más tarde.",
           "failed": "No se ha podido leer el texto. Vuelve a intentarlo."
-        }
+        },
+        "player": "Lectura en voz alta",
+        "pause": "Pausar",
+        "resume": "Continuar",
+        "previous": "Parte anterior",
+        "next": "Parte siguiente",
+        "part": "Parte {{part}} de {{total}}",
+        "loading": "Preparando la voz…",
+        "timeline": "Ir a otra parte del texto",
+        "close": "Cerrar la lectura"
       },
       "voiceLang": {
         "label": "Idioma del dictado y la lectura",

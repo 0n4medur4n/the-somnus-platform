@@ -30,9 +30,10 @@ export type DriveDictationRequest = z.infer<typeof DriveDictationRequestSchema>;
  * through our servers.
  */
 export const DriveDictationSessionSchema = z.object({
+  // The token is a signed JWT of a kilobyte or more, and travels in the URL.
   url: z
     .string()
-    .max(2048)
+    .max(10_000)
     .regex(/^wss:\/\/[a-z0-9.-]+\.assemblyai\.com\/v3\/ws\?/, "must be AssemblyAI streaming"),
   sampleRate: z.literal(16_000),
   expiresInSeconds: z.number().int().min(1).max(600),

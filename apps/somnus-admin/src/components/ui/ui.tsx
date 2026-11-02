@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { twMerge } from "tailwind-merge";
 import { Icon, type IconName } from "./Icon.js";
@@ -253,7 +254,9 @@ export function Modal({
     }
   }
 
-  return (
+  // Drawn on the page itself, not where it is declared: an ancestor with a
+  // filter or backdrop blur (a sticky toolbar) would otherwise trap and clip it.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-6">
       <div
         ref={panel}
@@ -280,7 +283,8 @@ export function Modal({
         </div>
         <div className="overflow-y-auto px-5 py-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

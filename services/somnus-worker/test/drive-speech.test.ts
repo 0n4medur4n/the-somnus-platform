@@ -1,6 +1,6 @@
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { Test } from "@nestjs/testing";
-import { UUIDv7 } from "@somnus/api-contracts";
+import { DriveDictationSessionSchema, UUIDv7 } from "@somnus/api-contracts";
 import { SomnusError } from "@somnus/errors";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AppModule } from "../src/app.module.js";
@@ -51,6 +51,14 @@ describe("speech service", () => {
     // The key itself never reaches the browser.
     expect(session.url).not.toContain("assembly-key");
     expect(session).toMatchObject({ sampleRate: 16_000, expiresInSeconds: 60 });
+  });
+
+  it("accepts AssemblyAI's real tokens, signed JWTs well over a kilobyte", async () => {
+    const jwt = `eyJ${"a".repeat(1500)}.${"b".repeat(400)}.${"c".repeat(86)}`;
+    const http = vi.fn().mockResolvedValue(json({ token: jwt }));
+    const session = await new SpeechService(configured, http).dictationSession("es");
+    expect(new URL(session.url).searchParams.get("token")).toBe(jwt);
+    expect(DriveDictationSessionSchema.safeParse(session).success).toBe(true);
   });
 
   it("uses the larger model only for Catalan, which the standard one lacks", async () => {

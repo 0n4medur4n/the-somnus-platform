@@ -816,7 +816,16 @@
         "error": {
           "unavailable": "Reading aloud isn't available right now. Try again later.",
           "failed": "The text couldn't be read. Try again."
-        }
+        },
+        "player": "Reading aloud",
+        "pause": "Pause",
+        "resume": "Continue",
+        "previous": "Previous part",
+        "next": "Next part",
+        "part": "Part {{part}} of {{total}}",
+        "loading": "Preparing the voice…",
+        "timeline": "Go to another part of the text",
+        "close": "Close the reader"
       },
       "voiceLang": {
         "label": "Language for dictation and reading",

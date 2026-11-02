@@ -336,3 +336,10 @@ body {
   color: #80868b;
   text-decoration: line-through;
 }
+/* The passage being read aloud: a decoration, never saved. */
+.somnus-doc .somnus-reading {
+  background: #dbe7ff;
+  box-shadow: inset 4px 0 #437ef7;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}

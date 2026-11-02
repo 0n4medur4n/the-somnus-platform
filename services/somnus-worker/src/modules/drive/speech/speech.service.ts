@@ -55,7 +55,8 @@ export class SpeechService {
     const response = await this.http(tokenUrl, { headers: { authorization: key } });
     if (!response.ok) throw unavailable(`Dictation token refused: ${response.status}`);
     const body = (await response.json()) as { token?: unknown };
-    if (typeof body.token !== "string" || body.token.length === 0 || body.token.length > 1024) {
+    // A signed JWT: longer than a kilobyte, and nowhere near this.
+    if (typeof body.token !== "string" || body.token.length === 0 || body.token.length > 8192) {
       throw unavailable("Dictation token missing.");
     }
 

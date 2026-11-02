@@ -13,7 +13,13 @@ import {
   startDictation,
 } from "./dictation.js";
 import { documentExtensions } from "./doc-format.js";
-import { passagesOf, startReadAloud } from "./read-aloud.js";
+import {
+  passagesFrom,
+  passagesOfSelection,
+  type ReaderState,
+  splitText,
+  startReader,
+} from "./read-aloud.js";
 
 const t = i18n.t.bind(i18n);
 
@@ -215,81 +221,157 @@ describe("dictation through AssemblyAI", () => {
 });
 
 describe("reading aloud", () => {
-  it("groups paragraphs into passages that each fit Google's limit", () => {
-    expect(passagesOf(["Uno.", "", "Dos."])).toEqual(["Uno.\nDos."]);
-    const long = `${"Frase larga de prueba. ".repeat(120)}`;
-    const parts = passagesOf([long]);
+  const doc = (content: JSONContent[]) =>
+    new Editor({ extensions: documentExtensions(), content: { type: "doc", content } });
+  const paragraph = (text: string): JSONContent => ({
+    type: "paragraph",
+    content: [{ type: "text", text }],
+  });
+
+  it("reads every paragraph whole, from the caret on (it once stopped at 200 characters)", () => {
+    const long = `${"Los Fundadores han desarrollado conjuntamente el proyecto. ".repeat(10)}Fin del párrafo.`;
+    const editor = doc([paragraph("Antes."), paragraph(long), paragraph("Después.")]);
+    const second = editor.state.doc.child(0).nodeSize + 1;
+    const passages = passagesFrom(editor.state.doc, second);
+    editor.destroy();
+    expect(passages.map((p) => p.text)).toEqual([long.trim(), "Después."]);
+    expect(passages[0]?.text.endsWith("Fin del párrafo.")).toBe(true);
+    expect(passages.every((p) => p.whole && p.to > p.from)).toBe(true);
+  });
+
+  it("reads table cells and list items, and cuts a very long paragraph at sentence ends", () => {
+    const editor = doc([
+      {
+        type: "bulletList",
+        content: [{ type: "listItem", content: [paragraph("Uno de la lista.")] }],
+      },
+      {
+        type: "table",
+        content: [
+          {
+            type: "tableRow",
+            content: [
+              { type: "tableCell", content: [paragraph("Socio")] },
+              { type: "tableCell", content: [paragraph("Rol")] },
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(passagesFrom(editor.state.doc, 0).map((p) => p.text)).toEqual([
+      "Uno de la lista.",
+      "Socio",
+      "Rol",
+    ]);
+    editor.destroy();
+    const parts = splitText("Frase larga de prueba. ".repeat(120));
     expect(parts.length).toBeGreaterThan(1);
     for (const part of parts) {
       expect(part.length).toBeLessThanOrEqual(900);
       expect(new TextEncoder().encode(part).length).toBeLessThanOrEqual(4800);
     }
-    expect(parts.join(" ").replace(/\s+/g, " ")).toBe(long.trim().replace(/\s+/g, " "));
   });
 
-  it("plays passages in order, asking for the next while one plays", async () => {
-    const played: string[] = [];
+  it("reads a selection as it is", () => {
+    const editor = doc([paragraph("Primera frase."), paragraph("Segunda frase.")]);
+    const passages = passagesOfSelection(editor.state.doc, 1, editor.state.doc.content.size);
+    editor.destroy();
+    expect(passages.map((p) => p.text)).toEqual(["Primera frase. Segunda frase."]);
+    expect(passages[0]?.whole).toBe(false);
+  });
+
+  /** An audio element that "plays" when told to finish. */
+  function fakeAudio() {
+    const audio = {
+      src: "",
+      currentTime: 0,
+      duration: 12,
+      play: vi.fn(async () => {}),
+      pause: vi.fn(),
+      onended: null as (() => void) | null,
+      ontimeupdate: null as (() => void) | null,
+      onloadedmetadata: null as (() => void) | null,
+      end: () => audio.onended?.(),
+    };
+    return audio;
+  }
+  const passages = ["uno", "dos", "tres", "cuatro"].map((text, i) => ({
+    text,
+    from: i * 10,
+    to: i * 10 + 5,
+    whole: true,
+  }));
+
+  it("plays in order, asks ahead, highlights each part, and stops at the end", async () => {
+    const audio = fakeAudio();
     const speak = vi.fn(async (text: string) => ({
       mime: "audio/mpeg" as const,
       audio: btoa(text),
     }));
-    let urls = 0;
-    Object.assign(URL, { createObjectURL: vi.fn(() => `blob:${urls++}`) });
+    const followed: Array<string | null> = [];
     const onStop = vi.fn();
-    startReadAloud({
-      passages: ["uno", "dos", "tres"],
+    startReader({
+      passages,
       speak,
-      onPassage: () => {},
+      onState: () => {},
+      onPassage: (p) => followed.push(p?.text ?? null),
       onError: vi.fn(),
       onStop,
-      player: {
-        play: async (url) => {
-          played.push(url);
-          // While the first plays, the second is already on its way.
-          if (played.length === 1) expect(speak).toHaveBeenCalledTimes(2);
-        },
-        stop: () => {},
-      },
+      audio,
     });
-    await waitFor(() => expect(onStop).toHaveBeenCalled());
+    await waitFor(() => expect(audio.play).toHaveBeenCalledTimes(1));
+    // The first and the two after it were asked for at once.
     expect(speak.mock.calls.map((c) => c[0])).toEqual(["uno", "dos", "tres"]);
-    expect(played).toHaveLength(3);
+    for (const n of [2, 3, 4]) {
+      audio.end();
+      await waitFor(() => expect(audio.play).toHaveBeenCalledTimes(n));
+    }
+    audio.end();
+    await waitFor(() => expect(onStop).toHaveBeenCalled());
+    expect(followed).toEqual(["uno", "dos", "tres", "cuatro", null]);
   });
 
-  it("stops when asked, and says when the service is unavailable", async () => {
+  it("pauses, continues where it was, and jumps on the timeline", async () => {
+    const audio = fakeAudio();
+    const states: ReaderState[] = [];
+    const reader = startReader({
+      passages,
+      speak: async (text) => ({ mime: "audio/mpeg", audio: btoa(text) }),
+      onState: (s) => states.push(s),
+      onPassage: () => {},
+      onError: vi.fn(),
+      onStop: vi.fn(),
+      audio,
+    });
+    await waitFor(() => expect(audio.play).toHaveBeenCalledTimes(1));
+    audio.currentTime = 5;
+    reader.pause();
+    expect(audio.pause).toHaveBeenCalled();
+    expect(states.at(-1)).toMatchObject({ playing: false, position: 5, duration: 12, index: 0 });
+    reader.resume();
+    expect(audio.play).toHaveBeenCalledTimes(2);
+    expect(audio.currentTime).toBe(5);
+
+    reader.seek(3);
+    await waitFor(() => expect(states.at(-1)).toMatchObject({ index: 3, loading: false }));
+    expect(audio.src).toContain("blob:");
+    expect(states.at(-1)?.total).toBe(4);
+  });
+
+  it("says when the voice service is unavailable, and stops", async () => {
     const errors: string[] = [];
     const onStop = vi.fn();
-    startReadAloud({
-      passages: ["uno"],
-      speak: vi.fn().mockRejectedValue(Object.assign(new Error("x"), { status: 503 })),
+    startReader({
+      passages,
+      speak: vi.fn().mockRejectedValue(Object.assign(new Error("x"), { status: 502 })),
+      onState: () => {},
       onPassage: () => {},
       onError: (e) => errors.push(e),
       onStop,
-      player: { play: async () => {}, stop: () => {} },
+      audio: fakeAudio(),
     });
     await waitFor(() => expect(onStop).toHaveBeenCalled());
     expect(errors).toEqual(["unavailable"]);
-
-    let finish = () => {};
-    const stopped = vi.fn();
-    const reading = startReadAloud({
-      passages: ["uno", "dos"],
-      speak: async () => ({ mime: "audio/mpeg", audio: "SUQz" }),
-      onPassage: () => {},
-      onError: vi.fn(),
-      onStop: stopped,
-      player: {
-        play: () =>
-          new Promise<void>((resolve) => {
-            finish = resolve;
-          }),
-        stop: () => finish(),
-      },
-    });
-    await waitFor(() => expect(finish).not.toBe(undefined));
-    await new Promise((r) => setTimeout(r, 20));
-    reading.stop();
-    await waitFor(() => expect(stopped).toHaveBeenCalled());
   });
 });
 
@@ -335,9 +417,7 @@ describe("voice in the editor", () => {
     ).toBeVisible();
     expect(readAloud).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: t("drive.doc.readAloud.accept") }));
-    await waitFor(() =>
-      expect(readAloud).toHaveBeenCalledWith("Primer párrafo.\nSegundo párrafo.", "es"),
-    );
+    await waitFor(() => expect(readAloud).toHaveBeenCalledWith("Primer párrafo.", "es"));
     expect(screen.getByRole("button", { name: t("drive.doc.readAloud.stop") })).toBeVisible();
   });
 
