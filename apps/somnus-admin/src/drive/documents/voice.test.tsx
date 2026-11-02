@@ -14,11 +14,15 @@ import {
 } from "./dictation.js";
 import { documentExtensions } from "./doc-format.js";
 import {
+  type Passage,
   passagesFrom,
   passagesOfSelection,
+  passagesOfTexts,
   type ReaderState,
   splitText,
   startReader,
+  wordAt,
+  wordRange,
 } from "./read-aloud.js";
 
 const t = i18n.t.bind(i18n);
@@ -272,6 +276,15 @@ describe("reading aloud", () => {
     }
   });
 
+  it("reads a preview's blocks by number, each character at its offset", () => {
+    const passages = passagesOfTexts(["Pacto", "", "Primer párrafo."]);
+    expect(passages.map((p) => [p.from, p.text])).toEqual([
+      [0, "Pacto"],
+      [2, "Primer párrafo."],
+    ]);
+    expect(wordRange(passages[1] as Passage, 7, 15)).toEqual([7, 15]);
+  });
+
   it("reads a selection as it is", () => {
     const editor = doc([paragraph("Primera frase."), paragraph("Segunda frase.")]);
     const passages = passagesOfSelection(editor.state.doc, 1, editor.state.doc.content.size);
@@ -300,6 +313,7 @@ describe("reading aloud", () => {
     from: i * 10,
     to: i * 10 + 5,
     whole: true,
+    at: [...text].map((_, c) => i * 10 + 1 + c),
   }));
 
   it("plays in order, asks ahead, highlights each part, and stops at the end", async () => {
@@ -356,6 +370,67 @@ describe("reading aloud", () => {
     await waitFor(() => expect(states.at(-1)).toMatchObject({ index: 3, loading: false }));
     expect(audio.src).toContain("blob:");
     expect(states.at(-1)?.total).toBe(4);
+  });
+
+  it("follows the voice word by word, from the times Google reports", async () => {
+    const audio = fakeAudio();
+    let tick: (() => void) | null = null;
+    const followed: Array<[number, number] | null> = [];
+    startReader({
+      passages: [
+        {
+          text: "Hola equipo de guardia",
+          from: 0,
+          to: 24,
+          whole: true,
+          at: [...Array(22).keys()].map((c) => c + 1),
+        },
+      ],
+      speak: async () => ({
+        mime: "audio/mpeg",
+        audio: "SUQz",
+        words: [
+          { start: 0, end: 4, time: 0 },
+          { start: 5, end: 11, time: 0.4 },
+          { start: 12, end: 14, time: 0.9 },
+          { start: 15, end: 22, time: 1.1 },
+        ],
+      }),
+      onState: () => {},
+      onPassage: () => {},
+      onWord: (_passage, word) => followed.push(word),
+      onError: vi.fn(),
+      onStop: vi.fn(),
+      audio,
+      frame: (callback) => {
+        tick = callback;
+        return () => {
+          tick = null;
+        };
+      },
+    });
+    await waitFor(() => expect(tick).not.toBeNull());
+    for (const time of [0.1, 0.5, 0.6, 1.2]) {
+      audio.currentTime = time;
+      (tick as unknown as () => void)();
+    }
+    // Each word once, as it starts; the same word is not reported twice.
+    expect(followed).toEqual([
+      [0, 4],
+      [5, 11],
+      [15, 22],
+    ]);
+  });
+
+  it("knows where each spoken word is in the document", () => {
+    const editor = doc([paragraph("El   presente pacto")]);
+    const [passage] = passagesFrom(editor.state.doc, 0);
+    editor.destroy();
+    if (!passage) throw new Error("no passage");
+    // Spaces collapse for the voice, but positions still point at the document.
+    expect(passage.text).toBe("El presente pacto");
+    expect(wordRange(passage, 3, 11)).toEqual([6, 14]);
+    expect(wordAt([{ start: 0, end: 2, time: 0.2 }], 0.1)).toBeNull();
   });
 
   it("says when the voice service is unavailable, and stops", async () => {

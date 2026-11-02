@@ -789,6 +789,10 @@ export function DriveWorkspace({
           onEditAsDocument={() => void editAsDocument(viewer.item, viewer.bytes)}
           canEditAsSheet={canEdit && isSheetFile(viewer.item.meta?.mime, viewer.item.meta?.name)}
           onEditAsSheet={() => void editAsSheet(viewer.item, viewer.bytes)}
+          voice={{
+            dictation: (lang) => edge.speech.dictation(lang),
+            readAloud: (text, lang) => edge.speech.readAloud(text, lang),
+          }}
           onDownload={() =>
             saveBytes(viewer.bytes, viewer.item.meta?.name ?? t("drive.folder.kind.file"))
           }

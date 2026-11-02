@@ -52,9 +52,23 @@ export const DriveReadAloudRequestSchema = z.object({
 });
 export type DriveReadAloudRequest = z.infer<typeof DriveReadAloudRequestSchema>;
 
-/** MP3, base64, as the internal hop is JSON. */
+/** One word of the passage: where it is in the text, and when it is spoken. */
+export const DriveSpokenWordSchema = z.object({
+  start: z.number().int().min(0),
+  end: z.number().int().min(1),
+  /** Seconds from the start of the audio. */
+  time: z.number().min(0).max(3600),
+});
+export type DriveSpokenWord = z.infer<typeof DriveSpokenWordSchema>;
+
+/**
+ * MP3, base64, as the internal hop is JSON; and, when the voice reports it,
+ * the moment each word is spoken, so the page can follow word by word.
+ * Optional: a result without it still plays.
+ */
 export const DriveReadAloudResultSchema = z.object({
   mime: z.literal("audio/mpeg"),
   audio: base64Bytes(1, DRIVE_READ_ALOUD_AUDIO_MAX_BYTES),
+  words: z.array(DriveSpokenWordSchema).max(DRIVE_READ_ALOUD_MAX_BYTES).optional(),
 });
 export type DriveReadAloudResult = z.infer<typeof DriveReadAloudResultSchema>;

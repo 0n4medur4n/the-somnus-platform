@@ -255,3 +255,20 @@ raised later).
   without content. Nothing logs the text or the audio; an upstream failure carries its status code only.
 - The console's `Permissions-Policy` now allows the microphone for itself (`microphone=(self)`).
 
+
+### Word by word, and previews (owner decision 2026-11-02, later the same day)
+
+- **Neural2 replaces Chirp 3: HD for reading aloud.** The owner chose exact word-by-word following over the more
+  natural voice: Chirp 3: HD reports no time points (checked: an empty list), Neural2 does. The worker sends each
+  passage as SSML with a `<mark>` before every word (the text XML-escaped, so markup in a document is read, never
+  obeyed) to `v1beta1/text:synthesize` with `enableTimePointing`, and returns each word's offsets and start time with
+  the MP3. A passage too long for every mark within Google's 5000 bytes marks every second (third...) word and places
+  the rest between their neighbours. Voices: `es-ES-Neural2-A`, `en-GB-Neural2-A`, `fr-FR-Neural2-F`,
+  `ca-ES-Standard-B`, all on the EU endpoint and all reporting time points (checked on 2026-11-02).
+- **The page follows the voice.** The document highlights the passage and, every display frame while it plays, the
+  word being spoken. Passages are at most 700 characters so every word can carry a mark.
+- **Markdown and Word previews read aloud too.** Reading switches the preview to the frame that runs the one hashed
+  note script (the same switch opening notes makes; a preview with no notes and no reading keeps the frame that runs
+  nothing). The script reports each block's whole text and highlights the passage, and the word through the CSS
+  Custom Highlight API, without touching the document. It is told only a block number and two offsets, checked
+  against the blocks it reported.

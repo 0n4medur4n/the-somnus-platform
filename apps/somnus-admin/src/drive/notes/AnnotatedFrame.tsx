@@ -17,7 +17,9 @@ export function AnnotatedFrame({
   canAdd,
   addLabel,
   goTo,
+  reading,
   onBlocks,
+  onFullBlocks,
   onAdd,
   onFocus,
   onFailed,
@@ -32,7 +34,11 @@ export function AnnotatedFrame({
   addLabel: string;
   /** Scrolls to a block; a new `nonce` repeats the same block. */
   goTo: { index: number; nonce: number } | null;
+  /** The block being read aloud, and the word, as offsets in its full text. */
+  reading?: { index: number | null; start?: number; end?: number } | undefined;
   onBlocks: (blocks: string[]) => void;
+  /** Each block's whole text, for reading aloud. */
+  onFullBlocks?: ((texts: string[]) => void) | undefined;
   onAdd: (index: number) => void;
   onFocus: (index: number) => void;
   onFailed: () => void;
@@ -40,8 +46,8 @@ export function AnnotatedFrame({
   const frame = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState<string | null>(null);
   const [blockCount, setBlockCount] = useState<number | null>(null);
-  const latest = useRef({ onBlocks, onAdd, onFocus, onFailed });
-  latest.current = { onBlocks, onAdd, onFocus, onFailed };
+  const latest = useRef({ onBlocks, onFullBlocks, onAdd, onFocus, onFailed });
+  latest.current = { onBlocks, onFullBlocks, onAdd, onFocus, onFailed };
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +70,11 @@ export function AnnotatedFrame({
         const blocks = message.blocks.filter((b): b is string => typeof b === "string");
         setBlockCount(blocks.length);
         latest.current.onBlocks(blocks);
+        // The same blocks, whole; anything else is dropped rather than misaligned.
+        const full = Array.isArray(message.full) ? message.full : [];
+        if (full.length === blocks.length && full.every((b) => typeof b === "string")) {
+          latest.current.onFullBlocks?.(full as string[]);
+        }
         return;
       }
       if (message?.t !== "add" && message?.t !== "focus") return;
@@ -88,6 +99,21 @@ export function AnnotatedFrame({
     const message: ToPage = { t: "go", index: goTo.index };
     frame.current?.contentWindow?.postMessage(message, "*");
   }, [blockCount, goTo]);
+
+  useEffect(() => {
+    if (blockCount === null || reading === undefined) return;
+    const index =
+      reading.index !== null && reading.index >= 0 && reading.index < blockCount
+        ? reading.index
+        : null;
+    const message: ToPage = {
+      t: "read",
+      index,
+      ...(reading.start !== undefined ? { start: reading.start } : {}),
+      ...(reading.end !== undefined ? { end: reading.end } : {}),
+    };
+    frame.current?.contentWindow?.postMessage(message, "*");
+  }, [blockCount, reading]);
 
   if (!ready) return null;
   return (

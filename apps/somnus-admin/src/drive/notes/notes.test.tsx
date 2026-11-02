@@ -233,6 +233,30 @@ describe("AnnotatedFrame", () => {
     expect(onAdd).toHaveBeenCalledWith(0);
   });
 
+  it("takes each block's whole text for reading, only when it lines up with the blocks", async () => {
+    const onFullBlocks = vi.fn();
+    const { fromPage } = await show({ onFullBlocks });
+    fromPage({ t: "blocks", blocks: ["Uno", "Dos"], full: ["Uno entero"] });
+    fromPage({ t: "blocks", blocks: ["Uno", "Dos"], full: ["Uno entero", 2] });
+    expect(onFullBlocks).not.toHaveBeenCalled();
+    fromPage({ t: "blocks", blocks: ["Uno", "Dos"], full: ["Uno entero", "Dos entero"] });
+    expect(onFullBlocks).toHaveBeenCalledWith(["Uno entero", "Dos entero"]);
+  });
+
+  it("tells the page what is being read, and nothing for a block it never reported", async () => {
+    const view = await show({ reading: { index: 1, start: 0, end: 4 } });
+    view.fromPage({ t: "blocks", blocks: ["Uno", "Dos"] });
+    await waitFor(() =>
+      expect(view.post).toHaveBeenCalledWith({ t: "read", index: 1, start: 0, end: 4 }, "*"),
+    );
+  });
+
+  it("clears the reading mark for an index out of range", async () => {
+    const view = await show({ reading: { index: 7 } });
+    view.fromPage({ t: "blocks", blocks: ["Uno"] });
+    await waitFor(() => expect(view.post).toHaveBeenCalledWith({ t: "read", index: null }, "*"));
+  });
+
   it("ignores any other window, and any block number that does not exist", async () => {
     const { fromPage, onAdd, onFocus } = await show();
     fromPage({ t: "blocks", blocks: ["Uno"] });

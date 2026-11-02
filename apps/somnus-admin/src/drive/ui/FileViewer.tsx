@@ -1,3 +1,4 @@
+import type { DriveSpeechLang } from "@somnus/api-contracts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/ui/Icon.js";
@@ -7,6 +8,13 @@ import { fromUtf8 } from "../crypto.js";
 import { htmlViewerPage, isHtml } from "../documents/html-view.js";
 import { docxToHtml, isDocx, previewPage } from "../documents/import-docx.js";
 import { isMarkdown, markdownPage, markdownToHtml } from "../documents/markdown.js";
+import { passagesOfTexts, wordRange } from "../documents/read-aloud.js";
+import {
+  langOf,
+  ReadAloudButton,
+  type VoiceBinding,
+  VoiceLanguage,
+} from "../documents/VoiceTools.js";
 import { AnnotatedFrame } from "../notes/AnnotatedFrame.js";
 import { NotesPanel } from "../notes/NotesPanel.js";
 import {
@@ -60,6 +68,7 @@ export function FileViewer({
   onDownload,
   onClose,
   notes,
+  voice,
 }: {
   name: string;
   mime: string | undefined;
@@ -71,8 +80,16 @@ export function FileViewer({
   onDownload: () => void;
   onClose: () => void;
   notes?: NotesBinding | undefined;
+  /** Reading aloud, for Markdown and Word previews. */
+  voice?: VoiceBinding | undefined;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [voiceLang, setVoiceLang] = useState<DriveSpeechLang>(() => langOf(i18n.language));
+  const [reading, setReading] = useState<{ index: number | null; start?: number; end?: number }>({
+    index: null,
+  });
+  const fullBlocks = useRef<string[] | null>(null);
+  const fullWaiters = useRef<Array<(texts: string[]) => void>>([]);
   const [preview, setPreview] = useState<Preview>({ kind: "loading" });
   const docx = isDocx(mime, name);
   const sheet = isSheetFile(mime, name);
@@ -88,6 +105,7 @@ export function FileViewer({
   useEffect(() => {
     let url: string | null = null;
     let cancelled = false;
+    fullBlocks.current = null;
     const blobOf = (type: string) => new Blob([bytes as Uint8Array<ArrayBuffer>], { type });
     if (isPdf(mime, name)) {
       url = URL.createObjectURL(blobOf("application/pdf"));
@@ -190,7 +208,9 @@ export function FileViewer({
         canAdd={notes?.canEdit ?? false}
         addLabel={t("drive.notes.addHere")}
         goTo={goTo}
+        reading={reading}
         onBlocks={setBlocks}
+        onFullBlocks={onFullBlocks}
         onAdd={addAt}
         onFocus={(index) => {
           setPanelOpen(true);
@@ -199,6 +219,21 @@ export function FileViewer({
         onFailed={() => setPreview({ kind: "none" })}
       />
     );
+  }
+
+  // The frame reads only once it runs the note script; until then, wait for it.
+  function readableBlocks(): Promise<string[]> {
+    if (fullBlocks.current) return Promise.resolve(fullBlocks.current);
+    setAnnotating(true);
+    return new Promise((resolve) => {
+      fullWaiters.current.push(resolve);
+      setTimeout(() => resolve([]), 10_000);
+    });
+  }
+
+  function onFullBlocks(texts: string[]) {
+    fullBlocks.current = texts;
+    for (const resolve of fullWaiters.current.splice(0)) resolve(texts);
   }
 
   function openInTab(page: string) {
@@ -227,6 +262,25 @@ export function FileViewer({
           className="h-5 w-5 shrink-0 text-somnus-primary"
         />
         <h2 className="min-w-0 flex-1 truncate font-medium text-somnus-text">{name}</h2>
+        {voice && (preview.kind === "markdown" || preview.kind === "html") ? (
+          <span className="flex items-center gap-1">
+            <VoiceLanguage lang={voiceLang} onChange={setVoiceLang} />
+            <ReadAloudButton
+              voice={voice}
+              lang={voiceLang}
+              collect={async () => passagesOfTexts(await readableBlocks())}
+              onPassage={(passage) => setReading({ index: passage ? passage.from : null })}
+              onWord={(passage, word) => {
+                const range = word && wordRange(passage, word[0], word[1]);
+                setReading(
+                  range
+                    ? { index: passage.from, start: range[0], end: range[1] }
+                    : { index: passage.from },
+                );
+              }}
+            />
+          </span>
+        ) : null}
         {notes && notable ? (
           <button
             type="button"

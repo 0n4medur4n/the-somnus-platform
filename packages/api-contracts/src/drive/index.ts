@@ -100,4 +100,6 @@ export {
   DriveReadAloudResultSchema,
   type DriveSpeechLang,
   DriveSpeechLangSchema,
+  type DriveSpokenWord,
+  DriveSpokenWordSchema,
 } from "./speech.js";

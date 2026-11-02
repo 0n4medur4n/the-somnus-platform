@@ -5,7 +5,11 @@ import { SomnusError } from "@somnus/errors";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AppModule } from "../src/app.module.js";
 import { SpeechConfigSchema } from "../src/modules/drive/speech/speech.config.js";
-import { SpeechService } from "../src/modules/drive/speech/speech.service.js";
+import {
+  markedSsml,
+  SpeechService,
+  wordTimes,
+} from "../src/modules/drive/speech/speech.service.js";
 
 /**
  * Voice in Drive documents (owner decision 2026-11-02, ADR 0019): dictation
@@ -85,37 +89,104 @@ describe("speech service", () => {
     );
   });
 
-  it("reads a passage with the worker's own identity and the language's voice", async () => {
-    const http = vi.fn().mockResolvedValue(json({ audioContent: "SUQzBAAA" }));
+  it("reads a passage with the worker's own identity, and says when each word is spoken", async () => {
+    const http = vi.fn().mockResolvedValue(
+      json({
+        audioContent: "SUQzBAAA",
+        timepoints: [
+          { markName: "0", timeSeconds: 0.01 },
+          { markName: "1", timeSeconds: 0.38 },
+        ],
+      }),
+    );
     const token = vi.fn().mockResolvedValue("ya29.worker");
     const result = await new SpeechService(configured, http, token).readAloud(
       "Hola, equipo.",
       "es",
     );
 
-    expect(result).toEqual({ mime: "audio/mpeg", audio: "SUQzBAAA" });
+    expect(result).toEqual({
+      mime: "audio/mpeg",
+      audio: "SUQzBAAA",
+      words: [
+        { start: 0, end: 5, time: 0.01 },
+        { start: 6, end: 13, time: 0.38 },
+      ],
+    });
     const [url, init] = http.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://eu-texttospeech.googleapis.com/v1/text:synthesize");
+    expect(url).toBe("https://eu-texttospeech.googleapis.com/v1beta1/text:synthesize");
     expect(init.headers).toEqual({
       authorization: "Bearer ya29.worker",
       "content-type": "application/json",
     });
     expect(JSON.parse(String(init.body))).toEqual({
-      input: { text: "Hola, equipo." },
-      voice: { languageCode: "es-ES", name: "es-ES-Chirp3-HD-Kore" },
+      input: { ssml: '<speak><mark name="0"/>Hola, <mark name="1"/>equipo.</speak>' },
+      voice: { languageCode: "es-ES", name: "es-ES-Neural2-A" },
       audioConfig: { audioEncoding: "MP3" },
+      enableTimePointing: ["SSML_MARK"],
     });
   });
 
   it("reads Catalan with its own voice, in the EU too", async () => {
     const http = vi.fn().mockResolvedValue(json({ audioContent: "SUQz" }));
-    await new SpeechService(configured, http, async () => "t").readAloud("Bon dia.", "ca");
+    const result = await new SpeechService(configured, http, async () => "t").readAloud(
+      "Bon dia.",
+      "ca",
+    );
     const [url, init] = http.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://eu-texttospeech.googleapis.com/v1/text:synthesize");
+    expect(url).toBe("https://eu-texttospeech.googleapis.com/v1beta1/text:synthesize");
     expect(JSON.parse(String(init.body)).voice).toEqual({
       languageCode: "ca-ES",
       name: "ca-ES-Standard-B",
     });
+    // A voice that reports nothing still plays, without words.
+    expect(result).toEqual({ mime: "audio/mpeg", audio: "SUQz" });
+  });
+
+  it("escapes the text inside the SSML, so markup in a document is read, not obeyed", () => {
+    const { ssml, words } = markedSsml('Usa <break time="9s"/> & "comillas"');
+    expect(ssml).not.toContain("<break");
+    expect(ssml).toBe(
+      '<speak><mark name="0"/>Usa <mark name="1"/>&#60;break <mark name="2"/>time=&#34;9s&#34;/&#62; <mark name="3"/>&#38; <mark name="4"/>&#34;comillas&#34;</speak>',
+    );
+    expect(words).toHaveLength(5);
+  });
+
+  it("marks fewer words when a long passage would not fit, and places the rest between", async () => {
+    const text = "palabra ".repeat(450).trim();
+    const http = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      const ssml = JSON.parse(String(init.body)).input.ssml as string;
+      expect(new TextEncoder().encode(ssml).length).toBeLessThanOrEqual(5000);
+      const names = [...ssml.matchAll(/mark name="(\d+)"/g)].map((m) => Number(m[1]));
+      return json({
+        audioContent: "SUQz",
+        timepoints: names.map((n) => ({ markName: String(n), timeSeconds: n / 2 })),
+      });
+    });
+    const result = await new SpeechService(configured, http, async () => "t").readAloud(text, "es");
+    expect(result.words).toHaveLength(450);
+    // Every word has a time, rising through the passage.
+    const times = (result.words ?? []).map((w) => w.time);
+    expect(times.every((t, i) => i === 0 || t >= (times[i - 1] ?? 0))).toBe(true);
+    expect(times[1]).toBeCloseTo(0.5, 5);
+  });
+
+  it("interpolates unmarked words by where they are in the text", () => {
+    const words: Array<[number, number]> = [
+      [0, 2],
+      [3, 5],
+      [6, 8],
+    ];
+    expect(
+      wordTimes(
+        words,
+        new Map([
+          [0, 1],
+          [2, 3],
+        ]),
+      ).map((w) => w.time),
+    ).toEqual([1, 2, 3]);
+    expect(wordTimes(words, new Map())).toEqual([]);
   });
 
   it("does not read aloud until enabled, and never puts the text in an error", async () => {

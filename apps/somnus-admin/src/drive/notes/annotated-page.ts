@@ -10,10 +10,13 @@ export type ToPage =
       canAdd: boolean;
       addLabel: string;
     }
-  | { t: "go"; index: number };
+  | { t: "go"; index: number }
+  /** Reading aloud: the block being read (null: none) and the word, as offsets in its full text. */
+  | { t: "read"; index: number | null; start?: number; end?: number };
 
 export type FromPage =
-  | { t: "blocks"; blocks: unknown }
+  /** `full` is each block's whole text as a reader hears it; `blocks` is cut for note quotes. */
+  | { t: "blocks"; blocks: unknown; full?: unknown }
   | { t: "add"; index: unknown }
   | { t: "focus"; index: unknown };
 
@@ -24,12 +27,30 @@ export type FromPage =
  * and its own button's label.
  */
 const SCRIPT = `(function () {
-  var blocks = [], canAdd = false, hovered = -1, add;
+  var blocks = [], maps = [], canAdd = false, hovered = -1, add, reading = null;
   function tell(m) { parent.postMessage(m, "*"); }
   function words(e) { return (e.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 200); }
+  // A block's whole text as a reader hears it (spaces collapsed, a space
+  // between table cells), and where each character is, to mark a word.
+  function spoken(e) {
+    var text = "", map = [], pending = null, cell = null;
+    var walk = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+    for (var n = walk.nextNode(); n; n = walk.nextNode()) {
+      var here = n.parentElement && n.parentElement.closest("td,th");
+      if (here !== cell) { if (text && !pending) pending = [n, 0]; cell = here; }
+      var s = n.data;
+      for (var i = 0; i < s.length; i++) {
+        if (/\\s/.test(s[i])) { if (text && !pending) pending = [n, i]; continue; }
+        if (pending) { text += " "; map.push(pending); pending = null; }
+        text += s[i];
+        map.push([n, i]);
+      }
+    }
+    return { text: text, map: map };
+  }
   function start() {
     var found = document.body.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,tr,pre");
-    var texts = [];
+    var texts = [], full = [];
     for (var i = 0; i < found.length; i++) {
       var e = found[i], own = e.tagName === "LI" || e.tagName === "TR";
       if (!own && e.parentElement.closest("li,td,th")) continue;
@@ -38,6 +59,9 @@ const SCRIPT = `(function () {
       e.setAttribute("data-somnus-block", String(blocks.length));
       blocks.push(e);
       texts.push(text);
+      var heard = spoken(e);
+      maps.push(heard.map);
+      full.push(heard.text);
     }
     add = document.createElement("button");
     add.type = "button";
@@ -62,7 +86,7 @@ const SCRIPT = `(function () {
       var b = t.closest(".somnus-noted");
       if (b) tell({ t: "focus", index: Number(b.getAttribute("data-somnus-block")) });
     });
-    tell({ t: "blocks", blocks: texts });
+    tell({ t: "blocks", blocks: texts, full: full });
   }
   addEventListener("message", function (ev) {
     var m = ev.data;
@@ -82,6 +106,23 @@ const SCRIPT = `(function () {
         if (x.done) b.classList.add("somnus-done");
         b.setAttribute("data-somnus-count", String(x.count));
       });
+    } else if (m.t === "read") {
+      var b = typeof m.index === "number" ? blocks[m.index] : null;
+      if (b !== reading) {
+        if (reading) reading.classList.remove("somnus-reading");
+        if (b) { b.classList.add("somnus-reading"); b.scrollIntoView({ block: "center", behavior: "smooth" }); }
+        reading = b;
+      }
+      if (!window.CSS || !CSS.highlights) return;
+      var map = b ? maps[m.index] : null;
+      var first = map && map[m.start], last = map && map[m.end - 1];
+      if (!first || !last) { CSS.highlights.delete("somnus-word"); return; }
+      var range = document.createRange();
+      range.setStart(first[0], first[1]);
+      range.setEnd(last[0], last[1] + 1);
+      CSS.highlights.set("somnus-word", new Highlight(range));
+      var r = range.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > innerHeight) scrollBy({ top: r.top - innerHeight / 2, behavior: "smooth" });
     } else if (m.t === "go" && blocks[m.index]) {
       var b = blocks[m.index];
       b.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -101,6 +142,9 @@ tr.somnus-noted td{background:#fff3bf}
 tr.somnus-done td{background:#eef1f4}
 .somnus-done::after{background:#afb8c1}
 .somnus-flash{outline:2px solid #2563eb;outline-offset:2px}
+.somnus-reading{background:#dbe7ff;box-shadow:inset 4px 0 #437ef7;border-radius:4px}
+tr.somnus-reading td{background:#dbe7ff}
+::highlight(somnus-word){background-color:#437ef7;color:#fff}
 #somnus-add{display:none;position:absolute;z-index:10;margin:0;padding:.2rem .6rem;border:0;border-radius:999px;background:#2563eb;color:#fff;font:600 .75rem Arial,sans-serif;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 </style>`;
 

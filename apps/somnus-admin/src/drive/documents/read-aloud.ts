@@ -1,4 +1,8 @@
-import { DRIVE_READ_ALOUD_MAX_BYTES, type DriveReadAloudResult } from "@somnus/api-contracts";
+import {
+  DRIVE_READ_ALOUD_MAX_BYTES,
+  type DriveReadAloudResult,
+  type DriveSpokenWord,
+} from "@somnus/api-contracts";
 import { Extension } from "@tiptap/core";
 import type { Node as PmNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
@@ -7,37 +11,141 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 /**
  * Reading a Drive document aloud (owner decision 2026-11-02): the text goes, a
  * passage at a time, to Google Cloud Text-to-Speech in our own project, and the
- * MP3 that comes back plays here. The passage being read is highlighted and
- * kept in view; the next ones are asked for while one plays, so the voice does
- * not stop between them, and the reader can pause, go back, skip or jump.
+ * MP3 that comes back plays here with the moment each word is spoken. The
+ * passage and the word being read are highlighted and kept in view; the next
+ * passages are asked for while one plays, so the voice does not stop between
+ * them, and the reader can pause, go back, skip or jump.
  */
 
-/** About a minute of speech at most: a long paragraph is read in pieces. */
-const PASSAGE_CHARS = 900;
+/** Under a minute of speech, and small enough that every word can carry a mark. */
+const PASSAGE_CHARS = 700;
 /** How many passages ahead are asked for while one plays. */
 const AHEAD = 2;
 
-/** A stretch of the document to read: its text, and where it is, to highlight it. */
-export type Passage = { text: string; from: number; to: number; whole: boolean };
+/**
+ * A stretch to read: its text, where its block is (to highlight it), and where
+ * each character of the text is (`at[i]`, -1 for joins), to highlight a word.
+ * In a document `from`, `to` and `at` are document positions; in a preview
+ * `from` is the block's number and `at` holds offsets in the block's text.
+ */
+export type Passage = {
+  text: string;
+  from: number;
+  to: number;
+  whole: boolean;
+  at: number[];
+};
 
 const bytes = (text: string) => new TextEncoder().encode(text).length;
 
-/** A long text cut at sentence ends, then at spaces, so every piece fits Google's limit. */
-export function splitText(text: string): string[] {
-  if (text.length <= PASSAGE_CHARS && bytes(text) <= DRIVE_READ_ALOUD_MAX_BYTES) return [text];
-  const out: string[] = [];
-  let current = "";
-  for (const sentence of text.match(/[^.!?…]+[.!?…]*\s*/g) ?? [text]) {
-    for (const piece of sentence.length > PASSAGE_CHARS ? sentence.split(/(?<=\s)/) : [sentence]) {
-      if (current && current.length + piece.length > PASSAGE_CHARS) {
-        out.push(current.trim());
-        current = "";
-      }
-      current += piece;
-    }
+/**
+ * Where to cut a long text, at sentence ends and then at spaces, so every
+ * piece fits: `[start, end)` ranges over the text, trimmed of spaces.
+ */
+export function splitRanges(text: string): Array<[number, number]> {
+  const trimmed = (start: number, end: number): [number, number] | null => {
+    let s = start;
+    let e = end;
+    while (s < e && /\s/.test(text[s] ?? "")) s++;
+    while (e > s && /\s/.test(text[e - 1] ?? "")) e--;
+    return s < e ? [s, e] : null;
+  };
+  if (text.length <= PASSAGE_CHARS && bytes(text) <= DRIVE_READ_ALOUD_MAX_BYTES) {
+    const whole = trimmed(0, text.length);
+    return whole ? [whole] : [];
   }
-  if (current.trim()) out.push(current.trim());
+  const pieces: Array<[number, number]> = [];
+  for (const match of text.matchAll(/[^.!?…]+[.!?…]*\s*/g)) {
+    const start = match.index;
+    const end = start + match[0].length;
+    if (end - start <= PASSAGE_CHARS) pieces.push([start, end]);
+    else
+      for (const word of match[0].matchAll(/\S+\s*/g))
+        pieces.push([start + word.index, start + word.index + word[0].length]);
+  }
+  const out: Array<[number, number]> = [];
+  let current: [number, number] | null = null;
+  for (const piece of pieces) {
+    if (current && piece[1] - current[0] > PASSAGE_CHARS) {
+      const kept = trimmed(current[0], current[1]);
+      if (kept) out.push(kept);
+      current = null;
+    }
+    current = current ? [current[0], piece[1]] : piece;
+  }
+  const last = current && trimmed(current[0], current[1]);
+  if (last) out.push(last);
   return out;
+}
+
+/** The pieces of a long text, as strings. */
+export function splitText(text: string): string[] {
+  return splitRanges(text).map(([start, end]) => text.slice(start, end));
+}
+
+/**
+ * Text with the location of each character, whitespace collapsed to single
+ * spaces and trimmed, as a reader hears it.
+ */
+export function collapse(chars: Array<[string, number]>): { text: string; at: number[] } {
+  let text = "";
+  const at: number[] = [];
+  let pending: number | null = null;
+  for (const [char, where] of chars) {
+    if (/\s/.test(char)) {
+      if (text) pending ??= where;
+      continue;
+    }
+    if (pending !== null) {
+      text += " ";
+      at.push(pending);
+      pending = null;
+    }
+    text += char;
+    at.push(where);
+  }
+  return { text, at };
+}
+
+/** A textblock's characters with their document positions; breaks read as spaces. */
+function blockChars(node: PmNode, pos: number, from = 0, to = Number.POSITIVE_INFINITY) {
+  const chars: Array<[string, number]> = [];
+  node.forEach((child, offset) => {
+    const start = pos + 1 + offset;
+    if (child.isText) {
+      const text = child.text ?? "";
+      for (let i = 0; i < text.length; i++) {
+        if (start + i >= from && start + i < to) chars.push([text[i] ?? "", start + i]);
+      }
+    } else if (start >= from && start < to) chars.push([" ", start]);
+  });
+  return chars;
+}
+
+function piecesOf(text: string, at: number[], from: number, to: number, whole: boolean): Passage[] {
+  return splitRanges(text).map(([start, end]) => ({
+    text: text.slice(start, end),
+    from,
+    to,
+    whole,
+    at: at.slice(start, end),
+  }));
+}
+
+/**
+ * Passages from the blocks of a preview, by number: `from` is the block and
+ * `at` the offset of each character in the block's text.
+ */
+export function passagesOfTexts(texts: string[]): Passage[] {
+  return texts.flatMap((text, index) =>
+    piecesOf(
+      text,
+      [...text].map((_, i) => i),
+      index,
+      index,
+      true,
+    ),
+  );
 }
 
 /**
@@ -51,31 +159,50 @@ export function passagesFrom(doc: PmNode, from: number): Passage[] {
     if (!node.isTextblock) return true;
     const end = pos + node.nodeSize;
     if (end <= from) return false;
-    const text = node.textBetween(0, node.content.size, " ", " ").replace(/\s+/g, " ").trim();
-    for (const piece of text ? splitText(text) : []) {
-      out.push({ text: piece, from: pos, to: end, whole: true });
-    }
+    const { text, at } = collapse(blockChars(node, pos));
+    out.push(...piecesOf(text, at, pos, end, true));
     return false;
   });
   return out;
 }
 
-/** The selection, read as it is, highlighted as it is. */
+/** The selection, read as it is, highlighted as it is; paragraphs joined by a pause. */
 export function passagesOfSelection(doc: PmNode, from: number, to: number): Passage[] {
-  const text = doc
-    .textBetween(from, to, "\n", " ")
-    .replace(/[ \t]+/g, " ")
-    .trim();
-  return splitText(text.replace(/\s*\n\s*/g, ". ").replace(/\.\.+/g, "."))
-    .filter(Boolean)
-    .map((piece) => ({ text: piece, from, to, whole: false }));
+  const chars: Array<[string, number]> = [];
+  doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isTextblock) return true;
+    const block = blockChars(node, pos, from, to);
+    if (block.length === 0) return false;
+    const last = chars.findLast(([c]) => !/\s/.test(c))?.[0];
+    if (last && !/[.!?:;…]/.test(last)) chars.push([".", -1]);
+    if (chars.length > 0) chars.push([" ", -1]);
+    chars.push(...block);
+    return false;
+  });
+  const { text, at } = collapse(chars);
+  return piecesOf(text, at, from, to, false);
 }
 
-type Highlight = { from: number; to: number; whole: boolean };
+/** The document range of a word of a passage, from its characters' positions. */
+export function wordRange(passage: Passage, start: number, end: number): [number, number] | null {
+  const located = passage.at.slice(start, end).filter((p) => p >= 0);
+  const first = located[0];
+  const last = located.at(-1);
+  return first === undefined || last === undefined ? null : [first, last + 1];
+}
 
-export const readingKey = new PluginKey<Highlight | null>("somnusReading");
+type Highlight = {
+  block: { from: number; to: number; whole: boolean } | null;
+  word: { from: number; to: number } | null;
+};
 
-/** Highlights what is being read. A decoration: not content, never saved. */
+type HighlightMeta =
+  | { kind: "passage"; passage: Passage | null }
+  | { kind: "word"; range: [number, number] | null };
+
+export const readingKey = new PluginKey<Highlight>("somnusReading");
+
+/** Highlights what is being read, and the word being spoken. Decorations: never saved. */
 export const ReadingMark = Extension.create({
   name: "somnusReading",
   addProseMirrorPlugins() {
@@ -83,31 +210,60 @@ export const ReadingMark = Extension.create({
       new Plugin({
         key: readingKey,
         state: {
-          init: (): Highlight | null => null,
-          apply: (tr, value: Highlight | null): Highlight | null => {
-            const meta = tr.getMeta(readingKey) as Passage | null | undefined;
-            if (meta !== undefined) {
-              return meta && { from: meta.from, to: meta.to, whole: meta.whole };
+          init: (): Highlight => ({ block: null, word: null }),
+          apply: (tr, value: Highlight): Highlight => {
+            const meta = tr.getMeta(readingKey) as HighlightMeta | undefined;
+            if (meta?.kind === "passage") {
+              const p = meta.passage;
+              return { block: p && { from: p.from, to: p.to, whole: p.whole }, word: null };
             }
-            return (
-              value && { ...value, from: tr.mapping.map(value.from), to: tr.mapping.map(value.to) }
-            );
+            if (meta?.kind === "word") {
+              const r = meta.range;
+              return { ...value, word: r && { from: r[0], to: r[1] } };
+            }
+            const map = (n: number) => tr.mapping.map(n);
+            return {
+              block: value.block && {
+                ...value.block,
+                from: map(value.block.from),
+                to: map(value.block.to),
+              },
+              word: value.word && { from: map(value.word.from), to: map(value.word.to) },
+            };
           },
         },
         props: {
           decorations(state) {
-            const value = readingKey.getState(state);
-            if (!value || value.to > state.doc.content.size || value.from >= value.to) return null;
-            const mark = value.whole
-              ? Decoration.node(value.from, value.to, { class: "somnus-reading" })
-              : Decoration.inline(value.from, value.to, { class: "somnus-reading" });
-            return DecorationSet.create(state.doc, [mark]);
+            const { block, word } = readingKey.getState(state) ?? { block: null, word: null };
+            const size = state.doc.content.size;
+            const marks: Decoration[] = [];
+            if (block && block.to <= size && block.from < block.to) {
+              marks.push(
+                block.whole
+                  ? Decoration.node(block.from, block.to, { class: "somnus-reading" })
+                  : Decoration.inline(block.from, block.to, { class: "somnus-reading" }),
+              );
+            }
+            if (word && word.to <= size && word.from < word.to) {
+              marks.push(Decoration.inline(word.from, word.to, { class: "somnus-reading-word" }));
+            }
+            return marks.length > 0 ? DecorationSet.create(state.doc, marks) : null;
           },
         },
       }),
     ];
   },
 });
+
+/** The transaction meta that moves the highlight to a passage. */
+export function passageMeta(passage: Passage | null): HighlightMeta {
+  return { kind: "passage", passage };
+}
+
+/** The transaction meta that moves the highlight to a word. */
+export function wordMeta(range: [number, number] | null): HighlightMeta {
+  return { kind: "word", range };
+}
 
 export type ReadAloudError = "unavailable" | "failed";
 
@@ -134,11 +290,26 @@ export type AudioOutput = {
   onloadedmetadata: (() => void) | null;
 };
 
-function audioUrl(result: DriveReadAloudResult): string {
+type Spoken = { url: string; words: DriveSpokenWord[] };
+
+function spoken(result: DriveReadAloudResult): Spoken {
   const raw = atob(result.audio);
   const data = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) data[i] = raw.charCodeAt(i);
-  return URL.createObjectURL(new Blob([data], { type: result.mime }));
+  return {
+    url: URL.createObjectURL(new Blob([data], { type: result.mime })),
+    words: [...(result.words ?? [])].sort((a, b) => a.time - b.time),
+  };
+}
+
+/** The word being spoken at `time`: the last one that has started. */
+export function wordAt(words: DriveSpokenWord[], time: number): DriveSpokenWord | null {
+  let found: DriveSpokenWord | null = null;
+  for (const word of words) {
+    if (word.time > time) break;
+    found = word;
+  }
+  return found;
 }
 
 export type Reader = {
@@ -155,18 +326,31 @@ export function startReader(options: {
   speak: (text: string) => Promise<DriveReadAloudResult>;
   onState: (state: ReaderState) => void;
   onPassage: (passage: Passage | null) => void;
+  /** The word being spoken, as `[start, end)` in the passage's text, or null. */
+  onWord?: (passage: Passage, word: [number, number] | null) => void;
   onError: (error: ReadAloudError) => void;
   onStop: () => void;
   audio?: AudioOutput;
+  /** The display's frame clock, to follow words smoothly; replaceable in tests. */
+  frame?: (callback: () => void) => () => void;
 }): Reader {
   const { passages } = options;
   const audio: AudioOutput = options.audio ?? (new Audio() as unknown as AudioOutput);
-  const urls = new Map<number, Promise<string>>();
+  const frame =
+    options.frame ??
+    ((callback: () => void) => {
+      const id = requestAnimationFrame(callback);
+      return () => cancelAnimationFrame(id);
+    });
+  const fetched = new Map<number, Promise<Spoken>>();
   let index = 0;
   let playing = true;
   let loading = true;
   let stopped = false;
   let turn = 0;
+  let words: DriveSpokenWord[] = [];
+  let lastWord: DriveSpokenWord | null = null;
+  let cancelFrame: (() => void) | null = null;
 
   const report = () =>
     options.onState({
@@ -178,21 +362,42 @@ export function startReader(options: {
       duration: Number.isFinite(audio.duration) ? audio.duration : 0,
     });
 
+  // Following the voice word by word: checked every frame while it plays.
+  const follow = () => {
+    cancelFrame = null;
+    if (stopped || !playing || loading) return;
+    const word = wordAt(words, audio.currentTime);
+    const passage = passages[index];
+    if (word !== lastWord && passage) {
+      lastWord = word;
+      options.onWord?.(passage, word ? [word.start, word.end] : null);
+    }
+    cancelFrame = frame(follow);
+  };
+  const startFollowing = () => {
+    if (!cancelFrame && options.onWord && words.length > 0) cancelFrame = frame(follow);
+  };
+  const stopFollowing = () => {
+    cancelFrame?.();
+    cancelFrame = null;
+  };
+
   const fetchPassage = (i: number) => {
     const passage = passages[i];
-    if (!passage || urls.has(i)) return;
-    const pending = options.speak(passage.text).then(audioUrl);
+    if (!passage || fetched.has(i)) return;
+    const pending = options.speak(passage.text).then(spoken);
     pending.catch(() => {});
-    urls.set(i, pending);
+    fetched.set(i, pending);
   };
 
   const finish = () => {
     if (stopped) return;
     stopped = true;
+    stopFollowing();
     audio.pause();
     audio.onended = audio.ontimeupdate = audio.onloadedmetadata = null;
-    for (const pending of urls.values()) {
-      void pending.then((url) => URL.revokeObjectURL(url)).catch(() => {});
+    for (const pending of fetched.values()) {
+      void pending.then(({ url }) => URL.revokeObjectURL(url)).catch(() => {});
     }
     options.onPassage(null);
     options.onStop();
@@ -207,12 +412,15 @@ export function startReader(options: {
     const mine = ++turn;
     index = i;
     loading = true;
+    stopFollowing();
+    words = [];
+    lastWord = null;
     options.onPassage(passages[i] ?? null);
     report();
     for (let ahead = 0; ahead <= AHEAD; ahead++) fetchPassage(i + ahead);
-    let url: string;
+    let result: Spoken;
     try {
-      url = await (urls.get(i) as Promise<string>);
+      result = await (fetched.get(i) as Promise<Spoken>);
     } catch (error) {
       if (stopped || mine !== turn) return;
       const status = (error as { status?: number }).status;
@@ -221,10 +429,14 @@ export function startReader(options: {
       return;
     }
     if (stopped || mine !== turn) return;
-    audio.src = url;
+    audio.src = result.url;
+    words = result.words;
     loading = false;
     report();
-    if (playing) await audio.play().catch(() => {});
+    if (playing) {
+      await audio.play().catch(() => {});
+      startFollowing();
+    }
   };
 
   audio.onended = () => void go(index + 1);
@@ -235,13 +447,17 @@ export function startReader(options: {
   return {
     pause: () => {
       playing = false;
+      stopFollowing();
       audio.pause();
       report();
     },
     resume: () => {
       playing = true;
       report();
-      if (!loading) void audio.play().catch(() => {});
+      if (!loading) {
+        void audio.play().catch(() => {});
+        startFollowing();
+      }
     },
     seek: (i) => {
       audio.pause();

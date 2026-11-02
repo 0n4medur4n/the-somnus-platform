@@ -21,6 +21,7 @@ import {
 } from "./dictation.js";
 import {
   type Passage,
+  passageMeta,
   passagesFrom,
   passagesOfSelection,
   type ReadAloudError,
@@ -28,6 +29,8 @@ import {
   type ReaderState,
   readingKey,
   startReader,
+  wordMeta,
+  wordRange,
 } from "./read-aloud.js";
 
 /** Our two voice services, as the Drive reaches them (owner decision 2026-11-02). */
@@ -95,7 +98,7 @@ function StatusPill({
     <div
       role="status"
       aria-live="polite"
-      className={`fixed bottom-6 left-1/2 z-40 max-w-xl -translate-x-1/2 rounded-full border px-4 py-2 text-sm shadow-xl ${
+      className={`fixed bottom-6 left-1/2 z-[60] max-w-xl -translate-x-1/2 rounded-full border px-4 py-2 text-sm shadow-xl ${
         error
           ? "border-somnus-danger/40 bg-[#2a1215] text-somnus-danger"
           : "border-white/10 bg-[#0f1528] text-somnus-text"
@@ -253,7 +256,7 @@ function ReaderBar({ state, reader }: { state: ReaderState; reader: Reader }) {
   return createPortal(
     <section
       aria-label={t("drive.doc.readAloud.player")}
-      className="fixed bottom-4 left-1/2 z-40 w-[min(40rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-white/10 bg-[#0f1528]/95 px-4 py-3 shadow-2xl backdrop-blur"
+      className="fixed bottom-4 left-1/2 z-[60] w-[min(40rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-white/10 bg-[#0f1528]/95 px-4 py-3 shadow-2xl backdrop-blur"
     >
       <div className="flex items-center gap-2">
         <button
@@ -334,13 +337,19 @@ function ReaderBar({ state, reader }: { state: ReaderState; reader: Reader }) {
  * read is highlighted and kept in view.
  */
 export function ReadAloudButton({
-  editor,
   voice,
   lang,
+  collect,
+  onPassage,
+  onWord,
 }: {
-  editor: Editor;
   voice: VoiceBinding;
   lang: DriveSpeechLang;
+  /** What to read, decided when reading starts; a preview may need a moment. */
+  collect: () => Passage[] | Promise<Passage[]>;
+  /** Highlights a passage (null: none), and the word being spoken in it. */
+  onPassage: (passage: Passage | null) => void;
+  onWord: (passage: Passage, word: [number, number] | null) => void;
 }) {
   const { t } = useTranslation();
   const [state, setState] = useState<ReaderState | null>(null);
@@ -357,29 +366,16 @@ export function ReadAloudButton({
     [],
   );
 
-  function follow(passage: Passage | null) {
-    if (editor.isDestroyed) return;
-    editor.view.dispatch(editor.state.tr.setMeta(readingKey, passage));
-    if (!passage) return;
-    const node = passage.whole
-      ? editor.view.nodeDOM(passage.from)
-      : editor.view.domAtPos(passage.from).node;
-    const element = node instanceof HTMLElement ? node : node?.parentElement;
-    element?.scrollIntoView?.({ block: "center", behavior: "smooth" });
-  }
-
-  function begin() {
+  async function begin() {
     setError(null);
-    const { from, to, empty } = editor.state.selection;
-    const passages = empty
-      ? passagesFrom(editor.state.doc, from)
-      : passagesOfSelection(editor.state.doc, from, to);
-    if (passages.length === 0) return;
+    const passages = await collect();
+    if (passages.length === 0 || !alive.current) return;
     reader.current = startReader({
       passages,
       speak: (text) => voice.readAloud(text, lang),
       onState: (next) => alive.current && setState(next),
-      onPassage: follow,
+      onPassage,
+      onWord,
       onError: (e) => alive.current && setError(e),
       onStop: () => {
         reader.current = null;
@@ -393,7 +389,7 @@ export function ReadAloudButton({
       reader.current.stop();
       return;
     }
-    if (speechNoticeSeen("readAloud")) begin();
+    if (speechNoticeSeen("readAloud")) void begin();
     else setAsking(true);
   }
 
@@ -431,11 +427,45 @@ export function ReadAloudButton({
           onClose={() => setAsking(false)}
           onAccept={() => {
             setAsking(false);
-            begin();
+            void begin();
           }}
         />
       ) : null}
     </>
+  );
+}
+
+function scrollToPosition(editor: Editor, pos: number, block: ScrollLogicalPosition) {
+  const node = editor.view.nodeDOM(pos) ?? editor.view.domAtPos(pos).node;
+  const element = node instanceof HTMLElement ? node : node?.parentElement;
+  element?.scrollIntoView?.({ block, behavior: "smooth" });
+}
+
+/** The language picker for voice, shared by the editor and the previews. */
+export function VoiceLanguage({
+  lang,
+  onChange,
+}: {
+  lang: DriveSpeechLang;
+  onChange: (lang: DriveSpeechLang) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <label>
+      <span className="sr-only">{t("drive.doc.voiceLang.label")}</span>
+      <select
+        value={lang}
+        onChange={(event) => onChange(langOf(event.target.value))}
+        title={t("drive.doc.voiceLang.label")}
+        className="rounded-md border border-white/10 bg-somnus-background px-1 py-1 text-sm text-somnus-text"
+      >
+        {(["es", "ca", "en", "fr"] as const).map((code) => (
+          <option key={code} value={code}>
+            {t(`drive.doc.voiceLang.${code}`)}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -445,27 +475,34 @@ export function ReadAloudButton({
  * names are each language's own.
  */
 export function VoiceControls({ editor, voice }: { editor: Editor; voice: VoiceBinding }) {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const [lang, setLang] = useState<DriveSpeechLang>(() => langOf(i18n.language));
   return (
     <>
-      <label>
-        <span className="sr-only">{t("drive.doc.voiceLang.label")}</span>
-        <select
-          value={lang}
-          onChange={(event) => setLang(langOf(event.target.value))}
-          title={t("drive.doc.voiceLang.label")}
-          className="rounded-md border border-white/10 bg-somnus-background px-1 py-1 text-sm text-somnus-text"
-        >
-          {(["es", "ca", "en", "fr"] as const).map((code) => (
-            <option key={code} value={code}>
-              {t(`drive.doc.voiceLang.${code}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+      <VoiceLanguage lang={lang} onChange={setLang} />
       <DictationButton editor={editor} voice={voice} lang={lang} />
-      <ReadAloudButton editor={editor} voice={voice} lang={lang} />
+      <ReadAloudButton
+        voice={voice}
+        lang={lang}
+        collect={() => {
+          const { from, to, empty } = editor.state.selection;
+          return empty
+            ? passagesFrom(editor.state.doc, from)
+            : passagesOfSelection(editor.state.doc, from, to);
+        }}
+        onPassage={(passage) => {
+          if (editor.isDestroyed) return;
+          editor.view.dispatch(editor.state.tr.setMeta(readingKey, passageMeta(passage)));
+          if (passage) scrollToPosition(editor, passage.from, "center");
+        }}
+        onWord={(passage, word) => {
+          if (editor.isDestroyed) return;
+          const range = word && wordRange(passage, word[0], word[1]);
+          editor.view.dispatch(editor.state.tr.setMeta(readingKey, wordMeta(range)));
+          // A long paragraph: keep the spoken word on screen as it moves down.
+          if (range) scrollToPosition(editor, range[0], "nearest");
+        }}
+      />
     </>
   );
 }
