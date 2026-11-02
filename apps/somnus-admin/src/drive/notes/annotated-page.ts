@@ -238,7 +238,7 @@ tr.somnus-noted td{background:#fff3bf}
 tr.somnus-done td{background:#eef1f4}
 .somnus-done::after{background:#afb8c1}
 .somnus-flash{outline:2px solid #2563eb;outline-offset:2px}
-.somnus-reading{background:#dbe7ff;box-shadow:inset 4px 0 #437ef7;border-radius:4px}
+.somnus-reading{background:#dbe7ff;box-shadow:-8px 0 0 #dbe7ff,-12px 0 0 #437ef7;border-radius:0 4px 4px 0}
 tr.somnus-reading td{background:#dbe7ff}
 ::highlight(somnus-word){background-color:#437ef7;color:#fff}
 #somnus-add{display:none;position:absolute;z-index:10;margin:0;padding:.2rem .6rem;border:0;border-radius:999px;background:#2563eb;color:#fff;font:600 .75rem Arial,sans-serif;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)}

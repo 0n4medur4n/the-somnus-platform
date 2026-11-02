@@ -834,6 +834,16 @@
         "ca": "Català",
         "en": "English",
         "fr": "Français"
+      },
+      "stats": {
+        "words_one": "{{n}} word",
+        "words_other": "{{n}} words",
+        "sentences_one": "{{n}} sentence",
+        "sentences_other": "{{n}} sentences",
+        "pages_one": "{{n}} page",
+        "pages_other": "{{n}} pages",
+        "selected_one": "{{n}} word selected",
+        "selected_other": "{{n}} words selected"
       }
     },
     "sheet": {

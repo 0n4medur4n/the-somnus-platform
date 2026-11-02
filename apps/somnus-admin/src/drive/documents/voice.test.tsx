@@ -14,6 +14,7 @@ import {
 } from "./dictation.js";
 import { documentExtensions } from "./doc-format.js";
 import {
+  estimateWords,
   type Passage,
   passagesFrom,
   passagesOfSelection,
@@ -238,9 +239,11 @@ describe("reading aloud", () => {
     const second = editor.state.doc.child(0).nodeSize + 1;
     const passages = passagesFrom(editor.state.doc, second);
     editor.destroy();
-    expect(passages.map((p) => p.text)).toEqual([long.trim(), "Después."]);
-    expect(passages[0]?.text.endsWith("Fin del párrafo.")).toBe(true);
-    expect(passages.every((p) => p.whole && p.to > p.from)).toBe(true);
+    // Every word is read, in short pieces that all highlight the same paragraph.
+    expect(passages.map((p) => p.text).join(" ")).toBe(`${long.trim()} Después.`);
+    expect(passages.at(-2)?.text.endsWith("Fin del párrafo.")).toBe(true);
+    expect(passages.every((p) => p.whole && p.to > p.from && p.text.length <= 300)).toBe(true);
+    expect(new Set(passages.slice(0, -1).map((p) => p.from)).size).toBe(1);
   });
 
   it("reads table cells and list items, and cuts a very long paragraph at sentence ends", () => {
@@ -420,6 +423,54 @@ describe("reading aloud", () => {
       [5, 11],
       [15, 22],
     ]);
+  });
+
+  it("works out when each word is spoken when the voice does not say", () => {
+    const words = estimateWords("Hola, equipo de guardia. Fin", 4);
+    expect(words.map((w) => [w.start, w.end])).toEqual([
+      [0, 5],
+      [6, 12],
+      [13, 15],
+      [16, 24],
+      [25, 28],
+    ]);
+    // In order, inside the audio, and a full stop takes longer than a short word.
+    const times = words.map((w) => w.time);
+    expect(times.every((t, i) => i === 0 || t > (times[i - 1] ?? 0))).toBe(true);
+    expect(times[0]).toBeGreaterThan(0);
+    expect(times.at(-1)).toBeLessThan(4);
+    const gap = (i: number) => (times[i + 1] ?? 0) - (times[i] ?? 0);
+    expect(gap(3)).toBeGreaterThan(gap(2));
+    expect(estimateWords("", 3)).toEqual([]);
+    expect(estimateWords("Hola", Number.NaN)).toEqual([]);
+  });
+
+  it("follows a voice that reports no times, once the audio's length is known", async () => {
+    const audio = { ...fakeAudio(), duration: 2 };
+    let tick: (() => void) | null = null;
+    const followed: Array<[number, number] | null> = [];
+    startReader({
+      passages: [{ text: "Uno dos tres", from: 0, to: 14, whole: true, at: [...Array(12).keys()] }],
+      speak: async () => ({ mime: "audio/mpeg", audio: "SUQz" }),
+      onState: () => {},
+      onPassage: () => {},
+      onWord: (_passage, word) => followed.push(word),
+      onError: vi.fn(),
+      onStop: vi.fn(),
+      audio,
+      frame: (callback) => {
+        tick = callback;
+        return () => {
+          tick = null;
+        };
+      },
+    });
+    await waitFor(() => expect(audio.play).toHaveBeenCalled());
+    audio.onloadedmetadata?.();
+    await waitFor(() => expect(tick).not.toBeNull());
+    audio.currentTime = 1.9;
+    (tick as unknown as () => void)();
+    expect(followed.at(-1)).toEqual([8, 12]);
   });
 
   it("knows where each spoken word is in the document", () => {

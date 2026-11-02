@@ -8,6 +8,7 @@ import { NotesPanel } from "../notes/NotesPanel.js";
 import { docBlocks, NoteMarks, noteMarksKey } from "../notes/note-marks.js";
 import { blockOf, type DriveNote, type NoteAnchor, phraseAnchor } from "../notes/notes-format.js";
 import type { NotesBinding } from "../notes/use-notes.js";
+import { DocStats } from "./DocStats.js";
 import { ColorPicker, PasswordDialog } from "./DocumentTools.js";
 import {
   DEFAULT_FONT,
@@ -92,6 +93,7 @@ export function DocumentEditor({
   const [status, setStatus] = useState<Status>("saved");
   const [exporting, setExporting] = useState(false);
   const [passwordDialog, setPasswordDialog] = useState<PasswordDialogState>({ kind: "none" });
+  const pageRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef(title);
   titleRef.current = title;
   const timer = useRef<number | null>(null);
@@ -436,9 +438,13 @@ export function DocumentEditor({
         <main className="min-w-0 flex-1 overflow-x-auto px-4 py-8">
           {/* An A4 sheet with Google Docs' 2.54 cm margins; it grows a page at a
             time, and a faint line marks where each printed page ends. */}
-          <div className="somnus-page mx-auto text-[#202124] shadow-[0_1px_3px_rgba(0,0,0,0.35)]">
+          <div
+            ref={pageRef}
+            className="somnus-page mx-auto text-[#202124] shadow-[0_1px_3px_rgba(0,0,0,0.35)]"
+          >
             <EditorContent editor={editor} />
           </div>
+          {editor ? <DocStats editor={editor} page={pageRef} /> : null}
         </main>
         {notes && panelOpen ? (
           <NotesPanel

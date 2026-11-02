@@ -89,7 +89,33 @@ describe("speech service", () => {
     );
   });
 
-  it("reads a passage with the worker's own identity, and says when each word is spoken", async () => {
+  it("reads a passage with the worker's own identity, in the warm voice, as plain text", async () => {
+    const http = vi.fn().mockResolvedValue(json({ audioContent: "SUQzBAAA" }));
+    const token = vi.fn().mockResolvedValue("ya29.worker");
+    const result = await new SpeechService(configured, http, token).readAloud(
+      "Hola, equipo.",
+      "es",
+    );
+    // Chirp 3: HD reports no word times: the page works them out.
+    expect(result).toEqual({ mime: "audio/mpeg", audio: "SUQzBAAA" });
+    const [url, init] = http.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://eu-texttospeech.googleapis.com/v1beta1/text:synthesize");
+    expect(init.headers).toEqual({
+      authorization: "Bearer ya29.worker",
+      "content-type": "application/json",
+    });
+    expect(JSON.parse(String(init.body))).toEqual({
+      input: { text: "Hola, equipo." },
+      voice: { languageCode: "es-ES", name: "es-ES-Chirp3-HD-Kore" },
+      audioConfig: { audioEncoding: "MP3" },
+    });
+  });
+
+  it("asks a voice that reports them when each word is spoken", async () => {
+    const neural = SpeechConfigSchema.parse({
+      TTS_ENABLED: "true",
+      TTS_VOICE_ES: "es-ES-Neural2-A",
+    });
     const http = vi.fn().mockResolvedValue(
       json({
         audioContent: "SUQzBAAA",
@@ -99,27 +125,15 @@ describe("speech service", () => {
         ],
       }),
     );
-    const token = vi.fn().mockResolvedValue("ya29.worker");
-    const result = await new SpeechService(configured, http, token).readAloud(
+    const result = await new SpeechService(neural, http, async () => "t").readAloud(
       "Hola, equipo.",
       "es",
     );
-
-    expect(result).toEqual({
-      mime: "audio/mpeg",
-      audio: "SUQzBAAA",
-      words: [
-        { start: 0, end: 5, time: 0.01 },
-        { start: 6, end: 13, time: 0.38 },
-      ],
-    });
-    const [url, init] = http.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://eu-texttospeech.googleapis.com/v1beta1/text:synthesize");
-    expect(init.headers).toEqual({
-      authorization: "Bearer ya29.worker",
-      "content-type": "application/json",
-    });
-    expect(JSON.parse(String(init.body))).toEqual({
+    expect(result.words).toEqual([
+      { start: 0, end: 5, time: 0.01 },
+      { start: 6, end: 13, time: 0.38 },
+    ]);
+    expect(JSON.parse(String((http.mock.calls[0] as [string, RequestInit])[1].body))).toEqual({
       input: { ssml: '<speak><mark name="0"/>Hola, <mark name="1"/>equipo.</speak>' },
       voice: { languageCode: "es-ES", name: "es-ES-Neural2-A" },
       audioConfig: { audioEncoding: "MP3" },
@@ -163,7 +177,7 @@ describe("speech service", () => {
         timepoints: names.map((n) => ({ markName: String(n), timeSeconds: n / 2 })),
       });
     });
-    const result = await new SpeechService(configured, http, async () => "t").readAloud(text, "es");
+    const result = await new SpeechService(configured, http, async () => "t").readAloud(text, "ca");
     expect(result.words).toHaveLength(450);
     // Every word has a time, rising through the passage.
     const times = (result.words ?? []).map((w) => w.time);

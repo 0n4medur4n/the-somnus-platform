@@ -337,10 +337,14 @@ body {
   text-decoration: line-through;
 }
 /* The passage being read aloud: a decoration, never saved. */
+/* The tint reaches past the text on the left and the bar sits outside it, so
+   neither covers the first letters. */
 .somnus-doc .somnus-reading {
   background: #dbe7ff;
-  box-shadow: inset 4px 0 #437ef7;
-  border-radius: 4px;
+  box-shadow:
+    -8px 0 0 #dbe7ff,
+    -12px 0 0 #437ef7;
+  border-radius: 0 4px 4px 0;
   transition: background-color 0.2s;
 }
 /* The word being spoken, inside the passage being read. */

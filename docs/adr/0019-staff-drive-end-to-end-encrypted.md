@@ -302,3 +302,12 @@ raised later).
 - **Drive documents:** the highlighter in the toolbar already colours words in the document itself; a comment on
   selected words goes in the notes, and the words show in the comment's colour as an editor decoration (not saved
   into the document, and not exported).
+
+### The warm voice again, with word times worked out (owner decision 2026-11-02, evening)
+
+- Heard side by side, the owner preferred Chirp 3: HD to Neural2. Reading aloud goes back to Chirp 3: HD (plain text,
+  no SSML), and the page works out when each word is spoken from the audio's length: time shared by syllables, with
+  pauses at commas and full stops. Passages are now at most 300 characters (a few sentences), so the estimate starts
+  again often and stays close to the voice. A voice that does report times (Catalan's) still sends them, and they
+  are used as they are.
+

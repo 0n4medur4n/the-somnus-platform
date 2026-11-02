@@ -145,10 +145,12 @@ export class SpeechService {
       ca: this.config.TTS_VOICE_CA,
       fr: this.config.TTS_VOICE_FR,
     }[lang];
-    // Every word marked if it fits; otherwise every second, third... word.
+    // Chirp 3: HD takes plain text and reports no word times; the others take
+    // SSML with a mark on every word if it fits, otherwise every second, third...
+    const reports = !name.includes("Chirp3");
     let step = 1;
     let marked = markedSsml(text, step);
-    while (new TextEncoder().encode(marked.ssml).length > SSML_MAX_BYTES && step < 50) {
+    while (reports && new TextEncoder().encode(marked.ssml).length > SSML_MAX_BYTES && step < 50) {
       step += 1;
       marked = markedSsml(text, step);
     }
@@ -157,10 +159,10 @@ export class SpeechService {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
       body: JSON.stringify({
-        input: { ssml: marked.ssml },
+        input: reports ? { ssml: marked.ssml } : { text },
         voice: { languageCode: name.split("-").slice(0, 2).join("-"), name },
         audioConfig: { audioEncoding: "MP3" },
-        enableTimePointing: ["SSML_MARK"],
+        ...(reports ? { enableTimePointing: ["SSML_MARK"] } : {}),
       }),
     });
     if (!response.ok) throw unavailable(`Text-to-Speech refused: ${response.status}`);

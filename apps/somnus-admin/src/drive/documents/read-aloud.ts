@@ -17,8 +17,12 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
  * them, and the reader can pause, go back, skip or jump.
  */
 
-/** Under a minute of speech, and small enough that every word can carry a mark. */
-const PASSAGE_CHARS = 700;
+/**
+ * A few sentences, about fifteen seconds: the warm voice reports no word times,
+ * so they are worked out from each passage's length, and a short passage keeps
+ * that close to the voice.
+ */
+const PASSAGE_CHARS = 300;
 /** How many passages ahead are asked for while one plays. */
 const AHEAD = 2;
 
@@ -307,6 +311,35 @@ function spoken(result: DriveReadAloudResult): Spoken {
   };
 }
 
+/** Roughly how long a word takes to say: its syllables, and the pause after it. */
+function spokenWeight(word: string): number {
+  const syllables = word.match(/[aeiouáéíóúàèòïüyAEIOUÁÉÍÓÚÀÈÒÏÜY]+/g)?.length ?? 0;
+  const digits = word.match(/\d/g)?.length ?? 0;
+  const pause = /[.!?…:]["»”)]*$/.test(word) ? 2.2 : /[,;]["»”)]*$/.test(word) ? 1.1 : 0;
+  return Math.max(1, syllables + digits * 1.5) + pause;
+}
+
+/**
+ * When each word is spoken, worked out from the audio's length when the voice
+ * does not say: time shared by syllables, with pauses at punctuation, after the
+ * short silence a voice starts with and before the one it ends with.
+ */
+export function estimateWords(text: string, duration: number): DriveSpokenWord[] {
+  const words = [...text.matchAll(/\S+/g)];
+  if (words.length === 0 || !(duration > 0)) return [];
+  const lead = Math.min(0.15, duration * 0.05);
+  const tail = Math.min(0.35, duration * 0.08);
+  const weights = words.map((m) => spokenWeight(m[0]));
+  const total = weights.reduce((a, b) => a + b, 0);
+  const span = Math.max(0, duration - lead - tail);
+  let elapsed = 0;
+  return words.map((m, i) => {
+    const time = lead + (span * elapsed) / total;
+    elapsed += weights[i] ?? 0;
+    return { start: m.index, end: m.index + m[0].length, time };
+  });
+}
+
 /** The word being spoken at `time`: the last one that has started. */
 export function wordAt(words: DriveSpokenWord[], time: number): DriveSpokenWord | null {
   let found: DriveSpokenWord | null = null;
@@ -436,6 +469,8 @@ export function startReader(options: {
     if (stopped || mine !== turn) return;
     audio.src = result.url;
     words = result.words;
+    // No word times from the voice: worked out once the audio's length is known.
+    estimating = words.length === 0 ? (passages[i]?.text ?? null) : null;
     loading = false;
     report();
     if (playing) {
@@ -444,9 +479,17 @@ export function startReader(options: {
     }
   };
 
+  let estimating: string | null = null;
   audio.onended = () => void go(index + 1);
   audio.ontimeupdate = report;
-  audio.onloadedmetadata = report;
+  audio.onloadedmetadata = () => {
+    if (estimating !== null && Number.isFinite(audio.duration)) {
+      words = estimateWords(estimating, audio.duration);
+      estimating = null;
+      if (playing && !loading) startFollowing();
+    }
+    report();
+  };
   void go(0);
 
   return {
