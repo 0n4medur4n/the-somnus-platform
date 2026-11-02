@@ -715,7 +715,9 @@
         "pdf": "PDF (.pdf)",
         "html": "Web page (.html)",
         "md": "Markdown (.md)",
-        "txt": "Text (.txt)"
+        "txt": "Text (.txt)",
+        "docxPassword": "Word with a password…",
+        "pdfPassword": "PDF with a password…"
       },
       "tools": {
         "undo": "Undo",
@@ -746,7 +748,43 @@
         "addColumnAfter": "+ Column",
         "deleteRow": "− Row",
         "deleteColumn": "− Column",
-        "deleteTable": "Remove table"
+        "deleteTable": "Remove table",
+        "font": "Font",
+        "size": "Font size (points)",
+        "brandFonts": "Our fonts",
+        "otherFonts": "Other fonts",
+        "subscript": "Subscript",
+        "superscript": "Superscript",
+        "color": "Text colour",
+        "colorNone": "Automatic colour",
+        "colorSwatch": "Colour {{color}}",
+        "highlight": "Highlight",
+        "highlightNone": "No highlight",
+        "clear": "Clear formatting",
+        "taskList": "Checklist",
+        "indent": "Increase indent",
+        "outdent": "Decrease indent"
+      },
+      "password": {
+        "menu": "Document password",
+        "badge": "Password protected",
+        "add": "Protect with a password",
+        "change": "Change password",
+        "remove": "Remove password",
+        "apply": "Protect",
+        "download": "Download",
+        "new": "Password",
+        "repeat": "Repeat the password",
+        "current": "Document password",
+        "open": "Open",
+        "wrong": "That password isn't right.",
+        "mismatch": "The two passwords don't match.",
+        "tooShort": "The password needs at least {{count}} characters.",
+        "lockIntro": "On top of Drive access, this document will ask for this password every time someone opens it. Share it with whoever should read it, through a different channel.",
+        "lockWarning": "If it is forgotten, the document cannot be recovered: nobody, not even us, can open it. The document's name and its notes are not protected by it.",
+        "exportIntro": "The downloaded file will ask for this password when opened in Word, LibreOffice or any PDF reader.",
+        "exportWarning": "If it is forgotten, the file cannot be opened. The Drive document does not change.",
+        "lockedIntro": "This document has a password. Type it to open it."
       }
     },
     "sheet": {

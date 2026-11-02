@@ -27,7 +27,22 @@ import { ApiRequestError } from "../../lib/api.js";
 import type { Appearance } from "../appearance.js";
 import { type Bytes, fromUtf8, utf8 } from "../crypto.js";
 import { DocumentEditor, type SaveOutcome } from "../documents/DocumentEditor.js";
-import { DOCUMENT_MIME, decodeDocument, encodeDocument } from "../documents/doc-format.js";
+import { UnlockDocument } from "../documents/DocumentTools.js";
+import {
+  DOCUMENT_MIME,
+  decodeDocument,
+  encodeDocument,
+  encodeLockedDocument,
+  lockedOf,
+} from "../documents/doc-format.js";
+import {
+  type DocLock,
+  type LockedBody,
+  newLock,
+  seal,
+  unseal,
+  WrongPasswordError,
+} from "../documents/doc-lock.js";
 import { docxToDocument, isDocx } from "../documents/import-docx.js";
 import type {
   DriveFolderView,
@@ -170,9 +185,13 @@ export function DriveWorkspace({
   const [viewer, setViewer] = useState<{ item: DriveItem; bytes: Bytes } | null>(null);
   const [doc, setDoc] = useState<
     | { kind: "document"; id: string; title: string; content: JSONContent }
+    | { kind: "locked"; id: string; title: string; body: LockedBody }
     | { kind: "sheet"; id: string; title: string; sheets: StoredSheet[] }
     | null
   >(null);
+  // The open document's own password, as a key, while it is open.
+  const docLock = useRef<DocLock | null>(null);
+  const [docLocked, setDocLocked] = useState(false);
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState<Dialog>({ kind: "none" });
@@ -481,6 +500,9 @@ export function DriveWorkspace({
       const bytes = await run(() => session.readFile(view, item));
       if (cancelled || !bytes) return;
       const title = item.meta?.name ?? "";
+      const locked = kind === "document" ? lockedOf(bytes) : null;
+      docLock.current = null;
+      setDocLocked(locked !== null);
       setDoc(
         kind === "sheet"
           ? {
@@ -489,7 +511,9 @@ export function DriveWorkspace({
               title,
               sheets: decodeSheets(bytes) ?? emptySheets(t("drive.sheet.firstSheet")),
             }
-          : { kind: "document", id: item.node.id, title, content: decodeDocument(bytes).content },
+          : locked
+            ? { kind: "locked", id: item.node.id, title, body: locked }
+            : { kind: "document", id: item.node.id, title, content: decodeDocument(bytes).content },
       );
     })();
     return () => {
@@ -521,8 +545,32 @@ export function DriveWorkspace({
     return "saved";
   }
 
-  const saveDocument = (title: string, content: JSONContent) =>
-    saveRevision(title, DOCUMENT_MIME, encodeDocument(content));
+  async function saveDocument(title: string, content: JSONContent): Promise<SaveOutcome> {
+    const lock = docLock.current;
+    const bytes = lock ? encodeLockedDocument(await seal(content, lock)) : encodeDocument(content);
+    return saveRevision(title, DOCUMENT_MIME, bytes);
+  }
+
+  async function unlockDocument(password: string): Promise<boolean> {
+    if (doc?.kind !== "locked") return false;
+    try {
+      const opened = await unseal(doc.body, password);
+      docLock.current = opened.lock;
+      setDoc({ kind: "document", id: doc.id, title: doc.title, content: opened.content });
+      return true;
+    } catch (error) {
+      if (error instanceof WrongPasswordError) return false;
+      throw error;
+    }
+  }
+
+  const documentPassword = {
+    locked: docLocked,
+    set: async (password: string | null) => {
+      docLock.current = password ? await newLock(password) : null;
+      setDocLocked(password !== null);
+    },
+  };
 
   const saveSheet = (title: string, sheets: StoredSheet[]) =>
     saveRevision(title, SHEET_MIME, encodeSheets(sheets));
@@ -689,6 +737,16 @@ export function DriveWorkspace({
         />
       );
     }
+    if (doc?.kind === "locked" && view) {
+      return (
+        <UnlockDocument
+          key={doc.id}
+          title={doc.title}
+          onUnlock={unlockDocument}
+          onBack={() => go({ share: view.shareId, folder: current })}
+        />
+      );
+    }
     return doc?.kind === "document" && view ? (
       <DocumentEditor
         key={doc.id}
@@ -698,6 +756,7 @@ export function DriveWorkspace({
         onSave={saveDocument}
         onClose={() => go({ share: view.shareId, folder: current })}
         notes={notes}
+        password={documentPassword}
       />
     ) : (
       <div className="mx-auto max-w-2xl p-8">

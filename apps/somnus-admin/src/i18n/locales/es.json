@@ -715,7 +715,9 @@
         "pdf": "PDF (.pdf)",
         "html": "Página web (.html)",
         "md": "Markdown (.md)",
-        "txt": "Texto (.txt)"
+        "txt": "Texto (.txt)",
+        "docxPassword": "Word con contraseña…",
+        "pdfPassword": "PDF con contraseña…"
       },
       "tools": {
         "undo": "Deshacer",
@@ -746,7 +748,43 @@
         "addColumnAfter": "+ Columna",
         "deleteRow": "− Fila",
         "deleteColumn": "− Columna",
-        "deleteTable": "Quitar tabla"
+        "deleteTable": "Quitar tabla",
+        "font": "Fuente",
+        "size": "Tamaño de letra (puntos)",
+        "brandFonts": "Nuestras fuentes",
+        "otherFonts": "Otras fuentes",
+        "subscript": "Subíndice",
+        "superscript": "Superíndice",
+        "color": "Color del texto",
+        "colorNone": "Color automático",
+        "colorSwatch": "Color {{color}}",
+        "highlight": "Resaltar",
+        "highlightNone": "Sin resaltado",
+        "clear": "Borrar formato",
+        "taskList": "Lista de tareas",
+        "indent": "Aumentar sangría",
+        "outdent": "Reducir sangría"
+      },
+      "password": {
+        "menu": "Contraseña del documento",
+        "badge": "Con contraseña",
+        "add": "Proteger con contraseña",
+        "change": "Cambiar contraseña",
+        "remove": "Quitar contraseña",
+        "apply": "Proteger",
+        "download": "Descargar",
+        "new": "Contraseña",
+        "repeat": "Repite la contraseña",
+        "current": "Contraseña del documento",
+        "open": "Abrir",
+        "wrong": "La contraseña no es correcta.",
+        "mismatch": "Las dos contraseñas no coinciden.",
+        "tooShort": "La contraseña necesita al menos {{count}} caracteres.",
+        "lockIntro": "Además de tu acceso al Drive, este documento pedirá esta contraseña cada vez que alguien lo abra. Compártela con quien deba leerlo, por un canal distinto.",
+        "lockWarning": "Si se olvida, el documento no se puede recuperar: nadie, ni nosotros, puede abrirlo. El nombre del documento y sus notas no quedan protegidos por ella.",
+        "exportIntro": "El archivo descargado pedirá esta contraseña al abrirlo en Word, LibreOffice o cualquier lector de PDF.",
+        "exportWarning": "Si se olvida, el archivo no se puede abrir. El documento del Drive no cambia.",
+        "lockedIntro": "Este documento tiene contraseña. Escríbela para abrirlo."
       }
     },
     "sheet": {

@@ -187,6 +187,68 @@ describe("DriveScreen", () => {
     expect(server.received.join(" ")).not.toContain("Protocolo de guardia");
   }, 60_000);
 
+  it("protects a document with its own password, and asks for it to open it again", async () => {
+    const user = userEvent.setup();
+    await setUp(user);
+    await user.click(screen.getByLabelText(i18n.t("drive.recovery.confirm")));
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.recovery.continue") }));
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.shares.new") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.shares.newName")), "Protocolos");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.shares.create") }));
+    await user.click(
+      (await screen.findAllByRole("button", { name: /Protocolos/ }))[0] as HTMLElement,
+    );
+    await user.click(await screen.findByRole("button", { name: i18n.t("drive.new") }));
+    await user.click(await screen.findByRole("menuitem", { name: i18n.t("drive.doc.new") }));
+    const title = await screen.findByLabelText(i18n.t("drive.doc.title"), {}, { timeout: 15_000 });
+    await user.clear(title);
+    await user.type(title, "Informe reservado");
+
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.doc.password.menu") }));
+    await user.click(screen.getByRole("menuitem", { name: i18n.t("drive.doc.password.add") }));
+    await user.type(screen.getByLabelText(i18n.t("drive.doc.password.new")), "clave-del-informe");
+    await user.type(
+      screen.getByLabelText(i18n.t("drive.doc.password.repeat")),
+      "clave-del-informe",
+    );
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.doc.password.apply") }));
+    expect(
+      await screen.findByText(i18n.t("drive.doc.password.badge"), {}, { timeout: 15_000 }),
+    ).toBeVisible();
+    expect(
+      await screen.findByText(i18n.t("drive.doc.status.saved"), {}, { timeout: 15_000 }),
+    ).toBeInTheDocument();
+
+    // Opened again from the folder, it asks for the password first.
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.doc.back") }));
+    await user.click(
+      await screen.findByRole(
+        "button",
+        { name: `${i18n.t("drive.folder.kind.document")}: Informe reservado` },
+        { timeout: 15_000 },
+      ),
+    );
+    const field = await screen.findByLabelText(
+      i18n.t("drive.doc.password.current"),
+      {},
+      { timeout: 15_000 },
+    );
+    expect(screen.queryByLabelText(i18n.t("drive.doc.title"))).toBeNull();
+    await user.type(field, "otra-clave");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.doc.password.open") }));
+    expect(
+      await screen.findByText(i18n.t("drive.doc.password.wrong"), {}, { timeout: 15_000 }),
+    ).toBeVisible();
+    await user.clear(field);
+    await user.type(field, "clave-del-informe");
+    await user.click(screen.getByRole("button", { name: i18n.t("drive.doc.password.open") }));
+    expect(
+      await screen.findByDisplayValue("Informe reservado", {}, { timeout: 15_000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(i18n.t("drive.doc.password.badge"))).toBeVisible();
+  }, 90_000);
+
   it("closes an open file with the browser's back button, and forward reopens it", async () => {
     const user = userEvent.setup();
     function History() {

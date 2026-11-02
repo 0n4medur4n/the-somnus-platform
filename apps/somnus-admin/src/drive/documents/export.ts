@@ -1,15 +1,33 @@
 import type { JSONContent } from "@tiptap/core";
 import { generateHTML } from "@tiptap/core";
-import { documentExtensions } from "./doc-format.js";
+import {
+  type BrandFont,
+  FONT_FILES,
+  type FontBytes,
+  hasFont,
+  isBrandFont,
+  loadFonts,
+} from "./doc-fonts.js";
+import {
+  DEFAULT_FONT,
+  DEFAULT_FONT_SIZE,
+  documentExtensions,
+  fontNameOf,
+  hexOf,
+  pointsOf,
+} from "./doc-format.js";
 
 /**
  * A Drive document, saved as a file in another format. Everything happens in
  * this browser, from the decrypted document already on screen: nothing is sent
  * anywhere to be converted. The heavy writers (Word, PDF) are loaded only when
- * someone exports, so the console does not carry them otherwise.
+ * someone exports, so the console does not carry them otherwise. Word and PDF
+ * files can carry a password, asked for when they are opened.
  */
 export const EXPORT_FORMATS = ["docx", "pdf", "html", "md", "txt"] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
+/** The formats that can carry a password. */
+export const PASSWORD_FORMATS = ["docx", "pdf"] as const satisfies readonly ExportFormat[];
 
 export const EXPORT_MIME: Record<ExportFormat, string> = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -28,6 +46,14 @@ type Run = {
   code?: boolean;
   link?: string;
   lineBreak?: boolean;
+  /** #rrggbb */
+  color?: string;
+  /** #rrggbb */
+  highlight?: string;
+  font?: string;
+  /** points */
+  size?: number;
+  script?: "sub" | "super";
 };
 
 type Align = "left" | "center" | "right" | "justify";
@@ -49,6 +75,17 @@ function runsOf(node: JSONContent): Run[] {
       else if (mark.type === "code") run.code = true;
       else if (mark.type === "link" && typeof mark.attrs?.["href"] === "string") {
         run.link = mark.attrs["href"] as string;
+      } else if (mark.type === "subscript") run.script = "sub";
+      else if (mark.type === "superscript") run.script = "super";
+      else if (mark.type === "highlight") {
+        run.highlight = hexOf(mark.attrs?.["color"]) ?? "#fff2a8";
+      } else if (mark.type === "textStyle") {
+        const color = hexOf(mark.attrs?.["color"]);
+        const font = fontNameOf(mark.attrs?.["fontFamily"]);
+        const size = pointsOf(mark.attrs?.["fontSize"]);
+        if (color) run.color = color;
+        if (font) run.font = font;
+        if (size) run.size = size;
       }
     }
     runs.push(run);
@@ -59,6 +96,27 @@ function runsOf(node: JSONContent): Run[] {
 function alignOf(node: JSONContent): Align {
   const value = node.attrs?.["textAlign"];
   return value === "center" || value === "right" || value === "justify" ? value : "left";
+}
+
+/** What starts a list item in plain text: a bullet, its number, or a box. */
+function markerOf(list: JSONContent, item: JSONContent, index: number, bullet: string): string {
+  if (list.type === "orderedList") return `${index + 1}. `;
+  if (list.type === "taskList") return item.attrs?.["checked"] === true ? "☑ " : "☐ ";
+  return bullet;
+}
+
+/** The brand fonts a document uses, its default included. */
+export function fontsUsed(content: JSONContent): Set<BrandFont> {
+  const used = new Set<BrandFont>([DEFAULT_FONT]);
+  const visit = (node: JSONContent) => {
+    for (const mark of node.marks ?? []) {
+      const name = fontNameOf(mark.attrs?.["fontFamily"]);
+      if (mark.type === "textStyle" && isBrandFont(name)) used.add(name);
+    }
+    for (const child of node.content ?? []) visit(child);
+  };
+  visit(content);
+  return used;
 }
 
 function plain(node: JSONContent): string {
@@ -79,8 +137,9 @@ function textBlocks(nodes: JSONContent[], indent = ""): string[] {
         break;
       case "bulletList":
       case "orderedList":
+      case "taskList":
         (node.content ?? []).forEach((item, index) => {
-          const marker = node.type === "bulletList" ? "• " : `${index + 1}. `;
+          const marker = markerOf(node, item, index, "• ");
           const [first, ...rest] = textBlocks(item.content ?? [], `${indent}   `);
           out.push(`${indent}${marker}${(first ?? "").trimStart()}`, ...rest);
         });
@@ -142,8 +201,12 @@ function mdBlocks(nodes: JSONContent[], prefix = ""): string[] {
         break;
       case "bulletList":
       case "orderedList":
+      case "taskList":
         (node.content ?? []).forEach((item, index) => {
-          const marker = node.type === "bulletList" ? "- " : `${index + 1}. `;
+          const marker =
+            node.type === "taskList"
+              ? `- [${item.attrs?.["checked"] === true ? "x" : " "}] `
+              : markerOf(node, item, index, "- ");
           const [first, ...rest] = mdBlocks(item.content ?? [], `${prefix}   `);
           out.push(`${prefix}${marker}${(first ?? "").trimStart()}`, ...rest);
         });
@@ -198,8 +261,33 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+function base64(bytes: Uint8Array): string {
+  let text = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    text += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(text);
+}
+
+/** @font-face rules that carry our fonts inside the page, for the files in `fonts`. */
+export function fontFaces(fonts: FontBytes): string {
+  const rules: string[] = [];
+  for (const [family, files] of Object.entries(FONT_FILES)) {
+    for (const [style, path] of Object.entries(files)) {
+      const bytes = fonts.get(path);
+      if (!bytes) continue;
+      const weight = style.startsWith("bold") ? 700 : 400;
+      const italic = style.endsWith("italics") ? "italic" : "normal";
+      rules.push(
+        `@font-face{font-family:"${family}";src:url(data:font/otf;base64,${base64(bytes)}) format("opentype");font-weight:${weight};font-style:${italic}}`,
+      );
+    }
+  }
+  return rules.join("\n");
+}
+
 /** A standalone page: the document and a plain print-friendly style. */
-export function toHtml(content: JSONContent, title: string, lang = "es"): string {
+export function toHtml(content: JSONContent, title: string, lang = "es", faces = ""): string {
   const body = generateHTML(content, documentExtensions());
   return `<!doctype html>
 <html lang="${escapeHtml(lang)}">
@@ -208,11 +296,13 @@ export function toHtml(content: JSONContent, title: string, lang = "es"): string
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <style>
-body{font-family:Georgia,"Times New Roman",serif;max-width:46rem;margin:3rem auto;padding:0 1.5rem;line-height:1.6;color:#111}
-h1,h2,h3{font-family:Arial,Helvetica,sans-serif;line-height:1.25}
+${faces}
+body{font-family:Satoshi,Arial,sans-serif;font-size:11pt;max-width:46rem;margin:3rem auto;padding:0 1.5rem;line-height:1.6;color:#111}
+h1,h2,h3{line-height:1.25}
 table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:.4rem .6rem;vertical-align:top}th{background:#f2f2f2}
 blockquote{border-left:3px solid #999;margin-left:0;padding-left:1rem;color:#444}
 pre{background:#f5f5f5;padding:.8rem;overflow:auto}code{font-family:Consolas,monospace}
+ul[data-type=taskList]{list-style:none;padding-left:.2rem}ul[data-type=taskList] li{display:flex;gap:.5rem}
 </style>
 </head>
 <body>
@@ -225,7 +315,11 @@ ${body}
 
 // --- Word (.docx) ----------------------------------------------------------------
 
-export async function toDocx(content: JSONContent, title: string): Promise<Blob> {
+export async function toDocx(
+  content: JSONContent,
+  title: string,
+  options: { password?: string | undefined } = {},
+): Promise<Blob> {
   const d = await import("docx");
   const ALIGN = {
     left: d.AlignmentType.LEFT,
@@ -248,8 +342,14 @@ export async function toDocx(content: JSONContent, title: string): Promise<Blob>
         ...(r.italic ? { italics: true } : {}),
         ...(r.underline || r.link ? { underline: {} } : {}),
         ...(r.strike ? { strike: true } : {}),
-        ...(r.code ? { font: "Consolas" } : {}),
-        ...(r.link ? { color: "1F5FD6" } : {}),
+        ...(r.code ? { font: "Consolas" } : r.font ? { font: r.font } : {}),
+        ...(r.size ? { size: Math.round(r.size * 2) } : {}),
+        ...(r.link ? { color: "1F5FD6" } : r.color ? { color: r.color.slice(1) } : {}),
+        ...(r.highlight
+          ? { shading: { type: d.ShadingType.CLEAR, color: "auto", fill: r.highlight.slice(1) } }
+          : {}),
+        ...(r.script === "super" ? { superScript: true } : {}),
+        ...(r.script === "sub" ? { subScript: true } : {}),
       });
       return r.link ? new d.ExternalHyperlink({ link: r.link, children: [run] }) : run;
     });
@@ -291,6 +391,24 @@ export async function toDocx(content: JSONContent, title: string): Promise<Blob>
           const level = list ? list.level + 1 : 0;
           for (const item of node.content ?? []) {
             out.push(...blocks(item.content ?? [], { reference, level }, quote));
+          }
+          break;
+        }
+        case "taskList": {
+          // Word lists have no tick boxes: each item starts with one, as text.
+          const left = 720 * ((list?.level ?? -1) + 2);
+          for (const item of node.content ?? []) {
+            const [first, ...rest] = item.content ?? [];
+            out.push(
+              new d.Paragraph({
+                children: [
+                  new d.TextRun({ text: markerOf(node, item, 0, "") }),
+                  ...children(first ?? {}),
+                ],
+                indent: { left, hanging: 360 },
+              }),
+              ...blocks(rest, list, quote),
+            );
           }
           break;
         }
@@ -358,6 +476,13 @@ export async function toDocx(content: JSONContent, title: string): Promise<Blob>
   const file = new d.Document({
     title,
     creator: "The Somnus",
+    // Our font, by name: Word shows it where it is installed and its nearest
+    // match elsewhere.
+    styles: {
+      default: {
+        document: { run: { font: DEFAULT_FONT, size: DEFAULT_FONT_SIZE * 2 } },
+      },
+    },
     numbering: {
       config: [
         { reference: "bullets", levels: levels("bullet") },
@@ -373,12 +498,23 @@ export async function toDocx(content: JSONContent, title: string): Promise<Blob>
       },
     ],
   });
-  return d.Packer.toBlob(file);
+  const blob = await d.Packer.toBlob(file);
+  if (!options.password) return blob;
+  const { encryptOfficeFile } = await import("./office-crypto.js");
+  const locked = await encryptOfficeFile(
+    new Uint8Array(await blob.arrayBuffer()),
+    options.password,
+  );
+  return new Blob([locked], { type: EXPORT_MIME.docx });
 }
 
 // --- PDF ---------------------------------------------------------------------------
 
-export async function toPdf(content: JSONContent, title: string): Promise<Blob> {
+export async function toPdf(
+  content: JSONContent,
+  title: string,
+  options: { password?: string | undefined; fonts?: FontBytes } = {},
+): Promise<Blob> {
   const [pdfMake, vfs] = await Promise.all([
     import("pdfmake/build/pdfmake"),
     import("pdfmake/build/vfs_fonts"),
@@ -392,6 +528,27 @@ export async function toPdf(content: JSONContent, title: string): Promise<Blob> 
   // The document is the only input: never let the PDF writer fetch anything.
   maker.setUrlAccessPolicy(() => false);
 
+  // Our fonts, from bytes already read. Any other font, or ours when its files
+  // could not be read, is written in the PDF writer's own (Roboto).
+  const fonts = options.fonts ?? new Map<string, Uint8Array>();
+  const embedded = new Set<string>(["Roboto"]);
+  const families: Record<string, Record<string, string>> = {};
+  const files: Record<string, string> = {};
+  for (const [family, paths] of Object.entries(FONT_FILES)) {
+    if (!hasFont(fonts, family as BrandFont)) continue;
+    const styles: Record<string, string> = {};
+    for (const [style, path] of Object.entries(paths)) {
+      const name = path.slice(path.lastIndexOf("/") + 1);
+      files[name] = base64(fonts.get(path) ?? new Uint8Array());
+      styles[style] = name;
+    }
+    families[family] = styles;
+    embedded.add(family);
+  }
+  maker.addVirtualFileSystem(files as Parameters<typeof maker.addVirtualFileSystem>[0]);
+  maker.addFonts(families as Parameters<typeof maker.addFonts>[0]);
+  const fontFor = (name: string) => (embedded.has(name) ? name : "Roboto");
+
   type Content = import("pdfmake/interfaces").Content;
 
   const inline = (node: JSONContent) =>
@@ -404,8 +561,16 @@ export async function toPdf(content: JSONContent, title: string): Promise<Blob> 
             ...(r.italic ? { italics: true } : {}),
             ...(r.underline || r.link ? { decoration: "underline" as const } : {}),
             ...(r.strike ? { decoration: "lineThrough" as const } : {}),
-            ...(r.link ? { link: r.link, color: "#1f5fd6" } : {}),
-            ...(r.code ? { background: "#f2f2f2" } : {}),
+            ...(r.link ? { link: r.link, color: "#1f5fd6" } : r.color ? { color: r.color } : {}),
+            ...(r.code
+              ? { background: "#f2f2f2" }
+              : r.highlight
+                ? { background: r.highlight }
+                : {}),
+            ...(r.font ? { font: fontFor(r.font) } : {}),
+            ...(r.size ? { fontSize: r.size } : {}),
+            ...(r.script === "super" ? { sup: true } : {}),
+            ...(r.script === "sub" ? { sub: true } : {}),
           },
     );
 
@@ -432,6 +597,17 @@ export async function toPdf(content: JSONContent, title: string): Promise<Blob> 
           break;
         case "orderedList":
           out.push({ ol: (node.content ?? []).map((item) => blocks(item.content ?? [])) });
+          break;
+        case "taskList":
+          for (const item of node.content ?? []) {
+            const [first, ...rest] = item.content ?? [];
+            // The boxes are drawn in Roboto, which has them.
+            out.push({
+              text: [{ text: markerOf(node, item, 0, ""), font: "Roboto" }, ...inline(first ?? {})],
+              margin: [0, 0, 0, 4],
+            });
+            out.push(...blocks(rest));
+          }
           break;
         case "blockquote":
           out.push({ stack: blocks(node.content ?? []), margin: [18, 0, 0, 6], color: "#444" });
@@ -475,8 +651,25 @@ export async function toPdf(content: JSONContent, title: string): Promise<Blob> 
   return maker
     .createPdf({
       info: { title, creator: "The Somnus" },
+      ...(options.password
+        ? {
+            // PDF 1.7 extension level 3 is AES-256, the strongest PDF readers know.
+            version: "1.7ext3" as const,
+            userPassword: options.password,
+            ownerPassword: options.password,
+            permissions: {
+              printing: "highResolution" as const,
+              modifying: true,
+              copying: true,
+              annotating: true,
+              fillingForms: true,
+              contentAccessibility: true,
+              documentAssembly: true,
+            },
+          }
+        : {}),
       pageMargins: [56, 56, 56, 56],
-      defaultStyle: { fontSize: 11, lineHeight: 1.3 },
+      defaultStyle: { font: fontFor(DEFAULT_FONT), fontSize: DEFAULT_FONT_SIZE, lineHeight: 1.3 },
       content: [
         { text: title, fontSize: 22, bold: true, margin: [0, 0, 0, 14] },
         ...blocks(content.content ?? []),
@@ -485,20 +678,24 @@ export async function toPdf(content: JSONContent, title: string): Promise<Blob> 
     .getBlob();
 }
 
-/** The chosen format, as a Blob ready to save. */
+/** The chosen format, as a Blob ready to save; Word and PDF take a password. */
 export async function exportDocument(
   format: ExportFormat,
   content: JSONContent,
   title: string,
   lang: string,
+  options: { password?: string | undefined } = {},
 ): Promise<Blob> {
   switch (format) {
     case "docx":
-      return toDocx(content, title);
+      return toDocx(content, title, options);
     case "pdf":
-      return toPdf(content, title);
+      return toPdf(content, title, { ...options, fonts: await loadFonts(fontsUsed(content)) });
     case "html":
-      return new Blob([toHtml(content, title, lang)], { type: EXPORT_MIME.html });
+      return new Blob(
+        [toHtml(content, title, lang, fontFaces(await loadFonts(fontsUsed(content))))],
+        { type: EXPORT_MIME.html },
+      );
     case "md":
       return new Blob([toMarkdown(content, title)], { type: EXPORT_MIME.md });
     case "txt":

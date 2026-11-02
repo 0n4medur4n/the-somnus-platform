@@ -1,5 +1,50 @@
 @import "tailwindcss";
 
+/* Our fonts, for Drive documents (owner decision 2026-11-02), served by the
+   console itself. Okine has no italic of its own. */
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/satoshi/Satoshi-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/satoshi/Satoshi-Italic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/satoshi/Satoshi-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/satoshi/Satoshi-BoldItalic.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Okine";
+  src: url("/fonts/okine/MADEOkineSansPERSONALUSE-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Okine";
+  src: url("/fonts/okine/MADEOkineSansPERSONALUSE-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Brand tokens (build plan §4). Exposed to Tailwind v4 as theme values,
    so utilities like `bg-somnus-background` / `text-somnus-text` exist. */
 @theme {
@@ -164,9 +209,12 @@ body {
 .somnus-doc .somnus-done::after {
   background: #afb8c1;
 }
+/* The page is paper: its checkboxes and other controls are drawn light, though
+   the console around it is dark. */
 .somnus-doc {
+  color-scheme: light;
   min-height: calc(297mm - 50.8mm);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Satoshi, Arial, Helvetica, sans-serif;
   font-size: 11pt;
   line-height: 1.5;
   color: #202124;
@@ -262,4 +310,29 @@ body {
 }
 .somnus-doc ::selection {
   background: #c6dafc;
+}
+.somnus-doc mark {
+  border-radius: 2px;
+  padding: 0 1px;
+  color: inherit;
+}
+.somnus-doc ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2em;
+}
+.somnus-doc ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+.somnus-doc ul[data-type="taskList"] li > label {
+  flex: none;
+  margin-top: 0.3em;
+}
+.somnus-doc ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+.somnus-doc ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: #80868b;
+  text-decoration: line-through;
 }

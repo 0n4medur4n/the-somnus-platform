@@ -200,3 +200,29 @@ raised later).
 - **Back and forward.** An open file is in the URL, but going back only cleared the URL and left the viewer on top.
   Going back now closes the file, or an open note, and forward reopens it.
 
+
+## Addendum -- more word processor: fonts, colours, dictation and passwords (owner decisions 2026-11-02)
+
+- **Toolbar.** Documents gain font and size, text colour, highlighter, subscript and superscript, clear
+  formatting, checklists and list indent. These are TipTap's own extensions at the pinned version; a passage stores
+  its colour as `#rrggbb`, its size in points and its font by name, and every export reads them back from there
+  (Word runs, PDF runs, inline styles in HTML; Markdown and text keep the words and the tick boxes).
+- **Our fonts.** Documents are written in Satoshi by default, and Okine is offered beside it, both served by the
+  console from its own Hosting (`/fonts/`). A PDF embeds them; an HTML export carries them as data URLs; a Word file
+  names them, so Word shows them where they are installed and its nearest match elsewhere. The owner chose to use
+  Okine although the files we hold are named "PERSONAL USE": a commercial licence is the owner's to hold.
+- **Dictation waits for AssemblyAI.** A first version used the browser's own speech service (Google in Chrome,
+  Microsoft in Edge), outside any contract with us. The owner chose AssemblyAI's EU streaming instead, so this
+  release ships without dictation; it comes back with that service.
+- **A document's own password.** On top of the Drive's encryption, a document can be sealed with a key derived
+  from a password (PBKDF2-SHA256, 600 000 rounds, AES-256-GCM), in the browser, before the Drive encrypts the file.
+  Opening it asks for the password; the key stays in memory while it is open and each save seals again with a fresh
+  IV. Nobody can recover a forgotten password. The file's name, colour and notes are not covered by it.
+- **Passwords on exported files.** A PDF is encrypted by the PDF writer with AES-256 (PDF 1.7 extension level 3,
+  revision 5, the newest the writer supports). Revision 5 checks the password with a single SHA-256, so a short
+  password falls quickly to an offline guess: the dialog asks for at least 8 characters, and a Word file is the
+  stronger choice for anything sensitive. A Word file is wrapped the way Office does it: MS-OFFCRYPTO agile encryption (AES-256-CBC, SHA-512, 100 000 rounds,
+  HMAC integrity) in a compound file written with `cfb`. No library did this in a browser, so the format is written
+  here, with a synchronous SHA-512 for the 100 000 rounds (checked against WebCrypto in tests). An independent
+  implementation (msoffcrypto-tool 5.4.2) opened our file with the password, verified its integrity and rejected a
+  wrong password; a test also decrypts it with WebCrypto.

@@ -8,11 +8,36 @@ import { NotesPanel } from "../notes/NotesPanel.js";
 import { docBlocks, NoteMarks, noteMarksKey } from "../notes/note-marks.js";
 import { blockOf, type DriveNote, type NoteAnchor } from "../notes/notes-format.js";
 import type { NotesBinding } from "../notes/use-notes.js";
-import { documentExtensions, fileNameFor } from "./doc-format.js";
-import { EXPORT_FORMATS, type ExportFormat, exportDocument } from "./export.js";
+import { ColorPicker, PasswordDialog } from "./DocumentTools.js";
+import {
+  DEFAULT_FONT,
+  DEFAULT_FONT_SIZE,
+  DOC_FONT_SIZES,
+  DOC_FONTS,
+  documentExtensions,
+  fileNameFor,
+  fontNameOf,
+  HIGHLIGHT_COLORS,
+  hexOf,
+  pointsOf,
+  TEXT_COLORS,
+} from "./doc-format.js";
+import { EXPORT_FORMATS, type ExportFormat, exportDocument, PASSWORD_FORMATS } from "./export.js";
 
 export type SaveOutcome = "saved" | "conflict" | "error";
 type Status = "saved" | "dirty" | "saving" | "error" | "conflict";
+
+/** A document's own password: whether it has one, and setting or removing it. */
+export type PasswordBinding = {
+  locked: boolean;
+  /** Takes effect with the next save; null removes the password. */
+  set: (password: string | null) => Promise<void>;
+};
+
+type PasswordDialogState =
+  | { kind: "none" }
+  | { kind: "lock" }
+  | { kind: "export"; format: (typeof PASSWORD_FORMATS)[number] };
 
 /** Quiet time after the last keystroke before the document saves itself. */
 const AUTOSAVE_MS = 2500;
@@ -39,6 +64,7 @@ export function DocumentEditor({
   onSave,
   onClose,
   notes,
+  password,
 }: {
   initialTitle: string;
   initialContent: JSONContent;
@@ -46,6 +72,7 @@ export function DocumentEditor({
   onSave: (title: string, content: JSONContent) => Promise<SaveOutcome>;
   onClose: () => void;
   notes?: NotesBinding | undefined;
+  password?: PasswordBinding | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const [title, setTitle] = useState(initialTitle);
@@ -59,6 +86,7 @@ export function DocumentEditor({
   });
   const [status, setStatus] = useState<Status>("saved");
   const [exporting, setExporting] = useState(false);
+  const [passwordDialog, setPasswordDialog] = useState<PasswordDialogState>({ kind: "none" });
   const titleRef = useRef(title);
   titleRef.current = title;
   const timer = useRef<number | null>(null);
@@ -168,16 +196,25 @@ export function DocumentEditor({
     };
   }, [save, status]);
 
-  async function exportAs(format: ExportFormat) {
+  async function exportAs(format: ExportFormat, filePassword?: string) {
     if (!editor) return;
     setExporting(true);
     try {
       const name = titleRef.current.trim() || t("drive.doc.untitled");
-      const blob = await exportDocument(format, editor.getJSON(), name, i18n.language);
+      const blob = await exportDocument(format, editor.getJSON(), name, i18n.language, {
+        password: filePassword,
+      });
       saveBlob(blob, fileNameFor(name, format));
     } finally {
       setExporting(false);
     }
+  }
+
+  // A new password, or none, is written with a save straight away.
+  async function changePassword(next: string | null) {
+    if (!password) return;
+    await password.set(next);
+    await save();
   }
 
   async function close() {
@@ -185,11 +222,39 @@ export function DocumentEditor({
     onClose();
   }
 
-  const exportItems: MenuItem[] = EXPORT_FORMATS.map((format) => ({
-    label: t(`drive.doc.export.${format}`),
-    icon: "download" as const,
-    onSelect: () => void exportAs(format),
-  }));
+  const exportItems: MenuItem[] = EXPORT_FORMATS.flatMap((format) => [
+    {
+      label: t(`drive.doc.export.${format}`),
+      icon: "download" as const,
+      onSelect: () => void exportAs(format),
+    },
+    ...PASSWORD_FORMATS.filter((f) => f === format).map((f) => ({
+      label: t(`drive.doc.export.${f}Password`),
+      icon: "lock" as const,
+      onSelect: () => setPasswordDialog({ kind: "export", format: f }),
+    })),
+  ]);
+
+  const passwordItems: MenuItem[] = password?.locked
+    ? [
+        {
+          label: t("drive.doc.password.change"),
+          icon: "key",
+          onSelect: () => setPasswordDialog({ kind: "lock" }),
+        },
+        {
+          label: t("drive.doc.password.remove"),
+          icon: "unlock",
+          onSelect: () => void changePassword(null),
+        },
+      ]
+    : [
+        {
+          label: t("drive.doc.password.add"),
+          icon: "lock",
+          onSelect: () => setPasswordDialog({ kind: "lock" }),
+        },
+      ];
 
   return (
     <div className="flex min-h-screen flex-col bg-somnus-background">
@@ -218,9 +283,34 @@ export function DocumentEditor({
               className="w-full truncate rounded-md border border-transparent bg-transparent px-2 py-1 text-lg font-medium text-somnus-text hover:border-white/10 focus:border-somnus-primary focus:outline-none"
             />
           </label>
+          {password?.locked ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-somnus-primary/40 px-2 py-0.5 text-xs text-somnus-primary">
+              <Icon name="lock" className="h-3.5 w-3.5" />
+              {t("drive.doc.password.badge")}
+            </span>
+          ) : null}
           <span role="status" aria-live="polite" className="text-sm text-somnus-subtle">
             {readOnly ? t("drive.doc.readOnly") : t(`drive.doc.status.${status}`)}
           </span>
+          {password && !readOnly ? (
+            <Menu
+              label={t("drive.doc.password.menu")}
+              items={passwordItems}
+              trigger={({ onClick, expanded }) => (
+                <button
+                  type="button"
+                  onClick={onClick}
+                  aria-haspopup="menu"
+                  aria-expanded={expanded}
+                  title={t("drive.doc.password.menu")}
+                  aria-label={t("drive.doc.password.menu")}
+                  className="rounded-lg border border-white/15 p-1.5 text-somnus-text hover:bg-white/5"
+                >
+                  <Icon name={password.locked ? "lock" : "unlock"} className="h-4 w-4" />
+                </button>
+              )}
+            />
+          ) : null}
           {notes ? (
             <button
               type="button"
@@ -265,6 +355,33 @@ export function DocumentEditor({
         </div>
         {editor && !readOnly ? <Toolbar editor={editor} /> : null}
       </header>
+
+      {passwordDialog.kind === "lock" ? (
+        <PasswordDialog
+          title={t(password?.locked ? "drive.doc.password.change" : "drive.doc.password.add")}
+          intro={t("drive.doc.password.lockIntro")}
+          warning={t("drive.doc.password.lockWarning")}
+          submitLabel={t("drive.doc.password.apply")}
+          onClose={() => setPasswordDialog({ kind: "none" })}
+          onSubmit={async (value) => {
+            await changePassword(value);
+            setPasswordDialog({ kind: "none" });
+          }}
+        />
+      ) : null}
+      {passwordDialog.kind === "export" ? (
+        <PasswordDialog
+          title={t(`drive.doc.export.${passwordDialog.format}Password`)}
+          intro={t("drive.doc.password.exportIntro")}
+          warning={t("drive.doc.password.exportWarning")}
+          submitLabel={t("drive.doc.password.download")}
+          onClose={() => setPasswordDialog({ kind: "none" })}
+          onSubmit={async (value) => {
+            await exportAs(passwordDialog.format, value);
+            setPasswordDialog({ kind: "none" });
+          }}
+        />
+      ) : null}
 
       {status === "conflict" ? (
         <p
@@ -370,6 +487,16 @@ function Toolbar({ editor }: { editor: Editor }) {
       code: e.isActive("codeBlock"),
       link: e.isActive("link"),
       table: e.isActive("table"),
+      task: e.isActive("taskList"),
+      inList: e.isActive("listItem") || e.isActive("taskItem"),
+      sub: e.isActive("subscript"),
+      sup: e.isActive("superscript"),
+      font: fontNameOf(e.getAttributes("textStyle")["fontFamily"]) ?? DEFAULT_FONT,
+      size: pointsOf(e.getAttributes("textStyle")["fontSize"]) ?? DEFAULT_FONT_SIZE,
+      color: hexOf(e.getAttributes("textStyle")["color"]),
+      highlight: e.isActive("highlight")
+        ? (hexOf(e.getAttributes("highlight")["color"]) ?? HIGHLIGHT_COLORS[0])
+        : null,
       align:
         (["center", "right", "justify"] as const).find((a) => e.isActive({ textAlign: a })) ??
         "left",
@@ -431,6 +558,58 @@ function Toolbar({ editor }: { editor: Editor }) {
           <option value="h3">{t("drive.doc.tools.h3")}</option>
         </select>
       </label>
+      <label className="ml-1">
+        <span className="sr-only">{t("drive.doc.tools.font")}</span>
+        <select
+          value={state.font}
+          onChange={(event) => {
+            const font = DOC_FONTS.find((f) => f.name === event.target.value);
+            if (!font) return;
+            if (font.name === DEFAULT_FONT) chain().unsetFontFamily().run();
+            else chain().setFontFamily(font.css).run();
+          }}
+          className="w-36 rounded-md border border-white/10 bg-somnus-background px-2 py-1 text-sm text-somnus-text"
+        >
+          {!DOC_FONTS.some((f) => f.name === state.font) ? (
+            <option value={state.font}>{state.font}</option>
+          ) : null}
+          <optgroup label={t("drive.doc.tools.brandFonts")}>
+            {DOC_FONTS.filter((f) => f.brand).map((f) => (
+              <option key={f.name} value={f.name} style={{ fontFamily: f.css }}>
+                {f.name}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={t("drive.doc.tools.otherFonts")}>
+            {DOC_FONTS.filter((f) => !f.brand).map((f) => (
+              <option key={f.name} value={f.name} style={{ fontFamily: f.css }}>
+                {f.name}
+              </option>
+            ))}
+          </optgroup>
+        </select>
+      </label>
+      <label className="ml-1">
+        <span className="sr-only">{t("drive.doc.tools.size")}</span>
+        <select
+          value={String(state.size)}
+          onChange={(event) => {
+            const size = Number(event.target.value);
+            if (size === DEFAULT_FONT_SIZE) chain().unsetFontSize().run();
+            else chain().setFontSize(`${size}pt`).run();
+          }}
+          className="w-16 rounded-md border border-white/10 bg-somnus-background px-1 py-1 text-sm text-somnus-text"
+        >
+          {!DOC_FONT_SIZES.some((size) => size === state.size) ? (
+            <option value={String(state.size)}>{state.size}</option>
+          ) : null}
+          {DOC_FONT_SIZES.map((size) => (
+            <option key={size} value={String(size)}>
+              {size}
+            </option>
+          ))}
+        </select>
+      </label>
       <Divider />
       <ToolButton
         icon="bold"
@@ -455,6 +634,41 @@ function Toolbar({ editor }: { editor: Editor }) {
         label={t("drive.doc.tools.strike")}
         active={state.strike}
         onClick={() => chain().toggleStrike().run()}
+      />
+      <ToolButton
+        icon="subscript"
+        label={t("drive.doc.tools.subscript")}
+        active={state.sub}
+        onClick={() => chain().unsetSuperscript().toggleSubscript().run()}
+      />
+      <ToolButton
+        icon="superscript"
+        label={t("drive.doc.tools.superscript")}
+        active={state.sup}
+        onClick={() => chain().unsetSubscript().toggleSuperscript().run()}
+      />
+      <ColorPicker
+        icon="textColor"
+        label={t("drive.doc.tools.color")}
+        colors={TEXT_COLORS}
+        current={state.color}
+        noneLabel={t("drive.doc.tools.colorNone")}
+        onPick={(color) => chain().setColor(color).run()}
+        onNone={() => chain().unsetColor().run()}
+      />
+      <ColorPicker
+        icon="highlighter"
+        label={t("drive.doc.tools.highlight")}
+        colors={HIGHLIGHT_COLORS}
+        current={state.highlight}
+        noneLabel={t("drive.doc.tools.highlightNone")}
+        onPick={(color) => chain().setHighlight({ color }).run()}
+        onNone={() => chain().unsetHighlight().run()}
+      />
+      <ToolButton
+        icon="clearFormat"
+        label={t("drive.doc.tools.clear")}
+        onClick={() => chain().unsetAllMarks().clearNodes().run()}
       />
       <ToolButton
         icon="link"
@@ -504,6 +718,32 @@ function Toolbar({ editor }: { editor: Editor }) {
         onClick={() => chain().toggleOrderedList().run()}
       />
       <ToolButton
+        icon="checklist"
+        label={t("drive.doc.tools.taskList")}
+        active={state.task}
+        onClick={() => chain().toggleTaskList().run()}
+      />
+      <ToolButton
+        icon="outdent"
+        label={t("drive.doc.tools.outdent")}
+        disabled={!state.inList}
+        onClick={() =>
+          state.task
+            ? chain().liftListItem("taskItem").run()
+            : chain().liftListItem("listItem").run()
+        }
+      />
+      <ToolButton
+        icon="indent"
+        label={t("drive.doc.tools.indent")}
+        disabled={!state.inList}
+        onClick={() =>
+          state.task
+            ? chain().sinkListItem("taskItem").run()
+            : chain().sinkListItem("listItem").run()
+        }
+      />
+      <ToolButton
         icon="quote"
         label={t("drive.doc.tools.quote")}
         active={state.quote}
@@ -527,6 +767,7 @@ function Toolbar({ editor }: { editor: Editor }) {
         active={state.table}
         onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
       />
+
       {state.table ? (
         <span className="ml-1 flex flex-wrap items-center gap-1 text-xs">
           {(
