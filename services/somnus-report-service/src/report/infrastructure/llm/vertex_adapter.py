@@ -52,6 +52,9 @@ class VertexGeminiAdapter:
         generation: dict[str, Any] = {"temperature": request.temperature}
         if request.json_output:
             generation["responseMimeType"] = "application/json"
+        # How much the model thinks first: Gemini 3 takes a level, not a budget.
+        if request.reasoning_effort is not None:
+            generation["thinkingConfig"] = {"thinkingLevel": request.reasoning_effort.upper()}
         body = {
             "systemInstruction": {"parts": [{"text": request.system}]},
             "contents": [{"role": "user", "parts": [{"text": request.user}]}],

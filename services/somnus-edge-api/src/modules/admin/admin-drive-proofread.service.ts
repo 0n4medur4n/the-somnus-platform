@@ -25,6 +25,10 @@ export class AdminDriveProofreadService {
       correlationId: input.correlationId,
       headers: { [ACTOR_ID_HEADER]: input.actorId },
       body: input.body,
+      // The model takes seconds, more on a cold start: wait for it, and never
+      // ask twice (a retry would run, and bill, the same correction again).
+      timeoutMs: 50_000,
+      skipRetry: true,
     });
     const parsed = DriveProofreadResultSchema.safeParse(response.body);
     if (!parsed.success) {

@@ -31,7 +31,16 @@ export type Suggestion = {
 export type Chunk = { text: string; at: number[] };
 
 /** The document's paragraphs, grouped into requests that fit the limit. */
-export function chunksOf(doc: PmNode, limit = DRIVE_PROOFREAD_MAX_CHARS - 100): Chunk[] {
+/**
+ * About a page per request: Gemini answers one in a few seconds, and several go
+ * at once (see proofreadDocument).
+ */
+const CHUNK_CHARS = 1500;
+
+export function chunksOf(
+  doc: PmNode,
+  limit = Math.min(CHUNK_CHARS, DRIVE_PROOFREAD_MAX_CHARS - 100),
+): Chunk[] {
   const blocks: Chunk[] = [];
   doc.descendants((node, pos) => {
     if (!node.isTextblock) return true;
@@ -207,11 +216,21 @@ export async function proofreadDocument(
   onProgress: (done: number, total: number) => void,
 ): Promise<Suggestion[]> {
   const chunks = chunksOf(doc);
-  const out: Suggestion[] = [];
-  for (const [index, chunk] of chunks.entries()) {
-    onProgress(index, chunks.length);
-    out.push(...placeSuggestions(doc, chunk, await ask(chunk.text, lang)));
-  }
+  const found: Suggestion[][] = chunks.map(() => []);
+  let next = 0;
+  let done = 0;
+  onProgress(0, chunks.length);
+  // Three requests at a time: quick for a long document, gentle on the quota.
+  const lane = async () => {
+    while (next < chunks.length) {
+      const index = next++;
+      const chunk = chunks[index] as Chunk;
+      found[index] = placeSuggestions(doc, chunk, await ask(chunk.text, lang));
+      done += 1;
+      onProgress(Math.min(done, chunks.length - 1), chunks.length);
+    }
+  };
+  await Promise.all([lane(), lane(), lane()]);
   onProgress(chunks.length, chunks.length);
-  return out;
+  return found.flat();
 }

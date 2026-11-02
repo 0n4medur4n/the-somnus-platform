@@ -103,6 +103,11 @@ class Settings(BaseSettings):
     # Off until configured, so local runs and tests never reach a model.
     proofread_enabled: bool = Field(default=False, alias="PROOFREAD_ENABLED")
     proofread_model: str = Field(default="gemini-3.5-flash", min_length=1, alias="PROOFREAD_MODEL")
+    # How much Gemini thinks before answering. Measured 2026-11-02 on 1400
+    # characters: default 11.4 s, "low" 4.6 s with the same corrections.
+    proofread_thinking: Literal["minimal", "low", "medium", "high"] = Field(
+        default="low", alias="PROOFREAD_THINKING"
+    )
     vertex_project: str = Field(default="", alias="VERTEX_PROJECT")
     vertex_location: str = Field(default="europe-west3", min_length=1, alias="VERTEX_LOCATION")
     # Embeddings for explanation-only clinical grounding (build plan §3.6b). The

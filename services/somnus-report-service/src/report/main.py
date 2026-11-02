@@ -243,6 +243,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if proofread_ready
         else None,
         chat_model=settings.proofread_model,
+        thinking=settings.proofread_thinking,
     )
 
     # The v2 report: deterministic, no model, nothing stored.

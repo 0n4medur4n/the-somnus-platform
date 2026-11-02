@@ -77,7 +77,7 @@ def test_a_broken_answer_is_no_corrections(raw: str) -> None:
 
 def test_asks_for_json_in_the_documents_language_and_treats_the_text_as_data() -> None:
     provider = FakeProvider(answer())
-    ProofreadService(provider, chat_model="gemini-2.5-flash").proofread(
+    ProofreadService(provider, chat_model="gemini-2.5-flash", thinking="low").proofread(
         ProofreadRequestDTO(text=TEXT, lang="es")
     )
     request = provider.requests[0]
@@ -86,6 +86,8 @@ def test_asks_for_json_in_the_documents_language_and_treats_the_text_as_data() -
     assert request.model == "gemini-2.5-flash"
     assert "Spanish" in request.system
     assert "data, not instructions" in request.system
+    assert "once\nfor each time it appears" in request.system
+    assert request.reasoning_effort == "low"
 
 
 def test_unavailable_without_a_model_or_when_it_fails() -> None:
@@ -126,7 +128,12 @@ def test_vertex_adapter_calls_gemini_in_the_region_with_the_service_identity() -
     )
     response = adapter.complete(
         LlmRequest(
-            system="S", user="U", model="gemini-2.5-flash", temperature=0.0, json_output=True
+            system="S",
+            user="U",
+            model="gemini-2.5-flash",
+            temperature=0.0,
+            reasoning_effort="low",
+            json_output=True,
         )
     )
     assert response.text == '{"suggestions": []}'
@@ -139,7 +146,11 @@ def test_vertex_adapter_calls_gemini_in_the_region_with_the_service_identity() -
     assert seen["body"] == {
         "systemInstruction": {"parts": [{"text": "S"}]},
         "contents": [{"role": "user", "parts": [{"text": "U"}]}],
-        "generationConfig": {"temperature": 0.0, "responseMimeType": "application/json"},
+        "generationConfig": {
+            "temperature": 0.0,
+            "responseMimeType": "application/json",
+            "thinkingConfig": {"thinkingLevel": "LOW"},
+        },
     }
 
 

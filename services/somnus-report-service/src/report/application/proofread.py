@@ -37,7 +37,8 @@ something else.
 Answer with JSON only: {{"suggestions": [{{"original": "...", "replacement": "...",
 "reason": "..."}}]}}. "original" is the exact stretch of the text to change, copied
 character for character, as short as possible but unique enough to find (a word,
-or a few words around it). "reason" is a few words in {language}. No suggestions:
+or a few words around it). If the same error appears more than once, list it once
+for each time it appears. "reason" is a few words in {language}. No suggestions:
 {{"suggestions": []}}."""
 
 
@@ -47,11 +48,16 @@ class ProofreadUnavailableError(Exception):
 
 class ProofreadService:
     def __init__(
-        self, provider: LlmProvider | None, chat_model: str, temperature: float = 0.0
+        self,
+        provider: LlmProvider | None,
+        chat_model: str,
+        temperature: float = 0.0,
+        thinking: str | None = None,
     ) -> None:
         self._provider = provider
         self._model = chat_model
         self._temperature = temperature
+        self._thinking = thinking
 
     def proofread(self, body: ProofreadRequestDTO) -> ProofreadResultDTO:
         if self._provider is None:
@@ -64,6 +70,7 @@ class ProofreadService:
                     user=body.text,
                     model=self._model,
                     temperature=self._temperature,
+                    reasoning_effort=self._thinking,
                     json_output=True,
                 )
             )
