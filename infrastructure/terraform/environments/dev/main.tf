@@ -334,6 +334,7 @@ module "run_report" {
     # Proofreading Drive documents with Gemini on Vertex AI in the EU (ADR 0019),
     # with this service's own identity (roles/aiplatform.user below): no key.
     PROOFREAD_ENABLED = "true"
+    PROOFREAD_MODEL   = "gemini-3.5-flash"
     VERTEX_PROJECT    = var.project_id
     VERTEX_LOCATION   = var.region
   }

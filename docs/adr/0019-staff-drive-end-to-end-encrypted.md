@@ -320,7 +320,7 @@ raised later).
   with a model; the server still holds only ciphertext otherwise. The platform build plan's §5.7 sentence ("no LLM
   ... reads it") is to be read with this exception.
 - **Gemini on Vertex AI, in the EU, in our project.** The plan's provider abstraction lives in the report service
-  (§3.6), so the text goes edge-api -> report service -> Gemini (`gemini-2.5-flash`, `europe-west3`), with the report
+  (§3.6), so the text goes edge-api -> report service -> Gemini (`gemini-3.5-flash`, `europe-west3`), with the report
   service's own identity (`roles/aiplatform.user`, no key). §3.6 already names Gemini on Vertex as the EU adapter;
   this is that adapter, used for this alone. Nothing is logged or stored; a model failure is logged by its type.
 - **Proposals, not decisions.** The model answers with phrases to change; the report service finds each in the text by
@@ -331,4 +331,7 @@ raised later).
   anything (§15). The document's text is untrusted input to the model, so the worst a document can do is make it
   propose corrections that are shown, read and ignored.
 - **Limits:** 4000 characters per request, 100 suggestions per answer, 120 requests per 10 minutes per address.
+- **Model, checked live on 2026-11-02:** `gemini-2.5-flash` is not served to this project in any EU region (404);
+  `gemini-3.5-flash` answers in `europe-west3`, and on a test sentence found all five errors, each placed by the
+  report service. A one-off job with the report service's own identity got corrections back: the IAM grant works.
 
