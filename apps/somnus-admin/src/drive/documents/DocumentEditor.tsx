@@ -23,7 +23,7 @@ import {
   TEXT_COLORS,
 } from "./doc-format.js";
 import { EXPORT_FORMATS, type ExportFormat, exportDocument, PASSWORD_FORMATS } from "./export.js";
-import { DictationButton, ReadAloudButton, type VoiceBinding } from "./VoiceTools.js";
+import { type VoiceBinding, VoiceControls } from "./VoiceTools.js";
 
 export type SaveOutcome = "saved" | "conflict" | "error";
 type Status = "saved" | "dirty" | "saving" | "error" | "conflict";
@@ -774,8 +774,7 @@ function Toolbar({ editor, voice }: { editor: Editor; voice: VoiceBinding | unde
       {voice ? (
         <>
           <Divider />
-          <DictationButton editor={editor} voice={voice} />
-          <ReadAloudButton editor={editor} voice={voice} />
+          <VoiceControls editor={editor} voice={voice} />
         </>
       ) : null}
 

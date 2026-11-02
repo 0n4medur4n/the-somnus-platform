@@ -29,7 +29,7 @@ export type VoiceBinding = {
 
 const keepSelection = (event: { preventDefault: () => void }) => event.preventDefault();
 
-function langOf(language: string): DriveSpeechLang {
+export function langOf(language: string): DriveSpeechLang {
   const base = language.slice(0, 2).toLowerCase();
   return base === "en" || base === "ca" || base === "fr" ? base : "es";
 }
@@ -115,8 +115,16 @@ function StatusPill({
 }
 
 /** Dictation into the page, through AssemblyAI (EU). */
-export function DictationButton({ editor, voice }: { editor: Editor; voice: VoiceBinding }) {
-  const { t, i18n } = useTranslation();
+export function DictationButton({
+  editor,
+  voice,
+  lang,
+}: {
+  editor: Editor;
+  voice: VoiceBinding;
+  lang: DriveSpeechLang;
+}) {
+  const { t } = useTranslation();
   const [state, setState] = useState<"idle" | "starting" | "listening">("idle");
   const [interim, setInterim] = useState("");
   const [error, setError] = useState<DictationError | "unsupported" | null>(null);
@@ -135,7 +143,6 @@ export function DictationButton({ editor, voice }: { editor: Editor; voice: Voic
   async function begin() {
     setError(null);
     setState("starting");
-    const lang = langOf(i18n.language);
     const started = await startDictation({
       open: () => voice.dictation(lang),
       onInterim: (text) => alive.current && setInterim(text),
@@ -221,8 +228,16 @@ export function DictationButton({ editor, voice }: { editor: Editor; voice: Voic
  * Reads the document aloud with Google's voice: the selection if there is one,
  * otherwise from the paragraph the caret is in to the end.
  */
-export function ReadAloudButton({ editor, voice }: { editor: Editor; voice: VoiceBinding }) {
-  const { t, i18n } = useTranslation();
+export function ReadAloudButton({
+  editor,
+  voice,
+  lang,
+}: {
+  editor: Editor;
+  voice: VoiceBinding;
+  lang: DriveSpeechLang;
+}) {
+  const { t } = useTranslation();
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<ReadAloudError | null>(null);
   const [asking, setAsking] = useState(false);
@@ -250,7 +265,6 @@ export function ReadAloudButton({ editor, voice }: { editor: Editor; voice: Voic
     }
     const passages = passagesOf(texts);
     if (passages.length === 0) return;
-    const lang = langOf(i18n.language);
     setReading(true);
     session.current = startReadAloud({
       passages,
@@ -309,6 +323,37 @@ export function ReadAloudButton({ editor, voice }: { editor: Editor; voice: Voic
           }}
         />
       ) : null}
+    </>
+  );
+}
+
+/**
+ * The language to dictate and read in, which may differ from the console's:
+ * a document in Catalan, written by someone whose console is in Spanish. The
+ * names are each language's own.
+ */
+export function VoiceControls({ editor, voice }: { editor: Editor; voice: VoiceBinding }) {
+  const { t, i18n } = useTranslation();
+  const [lang, setLang] = useState<DriveSpeechLang>(() => langOf(i18n.language));
+  return (
+    <>
+      <label>
+        <span className="sr-only">{t("drive.doc.voiceLang.label")}</span>
+        <select
+          value={lang}
+          onChange={(event) => setLang(langOf(event.target.value))}
+          title={t("drive.doc.voiceLang.label")}
+          className="rounded-md border border-white/10 bg-somnus-background px-1 py-1 text-sm text-somnus-text"
+        >
+          {(["es", "ca", "en", "fr"] as const).map((code) => (
+            <option key={code} value={code}>
+              {t(`drive.doc.voiceLang.${code}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <DictationButton editor={editor} voice={voice} lang={lang} />
+      <ReadAloudButton editor={editor} voice={voice} lang={lang} />
     </>
   );
 }

@@ -817,6 +817,13 @@
           "unavailable": "La lectura en voz alta no está disponible ahora. Inténtalo más tarde.",
           "failed": "No se ha podido leer el texto. Vuelve a intentarlo."
         }
+      },
+      "voiceLang": {
+        "label": "Idioma del dictado y la lectura",
+        "es": "Español",
+        "ca": "Català",
+        "en": "English",
+        "fr": "Français"
       }
     },
     "sheet": {

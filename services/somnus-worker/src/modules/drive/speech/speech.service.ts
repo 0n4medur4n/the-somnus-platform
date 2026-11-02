@@ -85,7 +85,8 @@ export class SpeechService {
       fr: this.config.TTS_VOICE_FR,
     }[lang];
     const token = await this.accessToken();
-    const response = await this.http(`${this.config.TTS_ENDPOINT}/v1/text:synthesize`, {
+    const endpoint = lang === "ca" ? this.config.TTS_ENDPOINT_CA : this.config.TTS_ENDPOINT;
+    const response = await this.http(`${endpoint}/v1/text:synthesize`, {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
       body: JSON.stringify({

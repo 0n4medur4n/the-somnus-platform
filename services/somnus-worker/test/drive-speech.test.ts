@@ -87,15 +87,26 @@ describe("speech service", () => {
 
     expect(result).toEqual({ mime: "audio/mpeg", audio: "SUQzBAAA" });
     const [url, init] = http.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://texttospeech.googleapis.com/v1/text:synthesize");
+    expect(url).toBe("https://eu-texttospeech.googleapis.com/v1/text:synthesize");
     expect(init.headers).toEqual({
       authorization: "Bearer ya29.worker",
       "content-type": "application/json",
     });
     expect(JSON.parse(String(init.body))).toEqual({
       input: { text: "Hola, equipo." },
-      voice: { languageCode: "es-ES", name: "es-ES-Neural2-A" },
+      voice: { languageCode: "es-ES", name: "es-ES-Chirp3-HD-Kore" },
       audioConfig: { audioEncoding: "MP3" },
+    });
+  });
+
+  it("reads Catalan with its own voice, where Google serves it", async () => {
+    const http = vi.fn().mockResolvedValue(json({ audioContent: "SUQz" }));
+    await new SpeechService(configured, http, async () => "t").readAloud("Bon dia.", "ca");
+    const [url, init] = http.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://texttospeech.googleapis.com/v1/text:synthesize");
+    expect(JSON.parse(String(init.body)).voice).toEqual({
+      languageCode: "ca-ES",
+      name: "ca-ES-Standard-B",
     });
   });
 

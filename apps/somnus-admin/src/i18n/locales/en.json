@@ -817,6 +817,13 @@
           "unavailable": "Reading aloud isn't available right now. Try again later.",
           "failed": "The text couldn't be read. Try again."
         }
+      },
+      "voiceLang": {
+        "label": "Language for dictation and reading",
+        "es": "Español",
+        "ca": "Català",
+        "en": "English",
+        "fr": "Français"
       }
     },
     "sheet": {

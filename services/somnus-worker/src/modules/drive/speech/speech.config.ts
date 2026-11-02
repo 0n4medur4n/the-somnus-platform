@@ -21,11 +21,15 @@ export const SpeechConfigSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
-  TTS_ENDPOINT: z.url().default("https://texttospeech.googleapis.com"),
-  TTS_VOICE_ES: z.string().default("es-ES-Neural2-A"),
-  TTS_VOICE_EN: z.string().default("en-GB-Neural2-A"),
+  // Chirp 3: HD voices on the EU endpoint (owner decision 2026-11-02): the text
+  // is turned into speech in the EU.
+  TTS_ENDPOINT: z.url().default("https://eu-texttospeech.googleapis.com"),
+  // Catalan has no Chirp 3 voice; its one voice is served where Google serves it.
+  TTS_ENDPOINT_CA: z.url().default("https://texttospeech.googleapis.com"),
+  TTS_VOICE_ES: z.string().default("es-ES-Chirp3-HD-Kore"),
+  TTS_VOICE_EN: z.string().default("en-GB-Chirp3-HD-Kore"),
   TTS_VOICE_CA: z.string().default("ca-ES-Standard-B"),
-  TTS_VOICE_FR: z.string().default("fr-FR-Neural2-F"),
+  TTS_VOICE_FR: z.string().default("fr-FR-Chirp3-HD-Kore"),
 });
 
 export type SpeechConfig = z.infer<typeof SpeechConfigSchema>;

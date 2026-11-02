@@ -341,6 +341,27 @@ describe("voice in the editor", () => {
     expect(screen.getByRole("button", { name: t("drive.doc.readAloud.stop") })).toBeVisible();
   });
 
+  it("reads in the language chosen beside the buttons, Catalan included", async () => {
+    const user = userEvent.setup();
+    const readAloud = vi.fn().mockReturnValue(new Promise(() => {}));
+    renderWithProviders(
+      <DocumentEditor
+        initialTitle="Doc"
+        initialContent={content}
+        readOnly={false}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+        voice={{ dictation: vi.fn(), readAloud }}
+      />,
+    );
+    const select = screen.getByLabelText(t("drive.doc.voiceLang.label")) as HTMLSelectElement;
+    expect(select.value).toBe("es");
+    await user.selectOptions(select, "ca");
+    await user.click(screen.getByRole("button", { name: t("drive.doc.readAloud.start") }));
+    await user.click(screen.getByRole("button", { name: t("drive.doc.readAloud.accept") }));
+    await waitFor(() => expect(readAloud).toHaveBeenCalledWith(expect.any(String), "ca"));
+  });
+
   it("says so when the browser cannot dictate", async () => {
     const user = userEvent.setup();
     const dictation = vi.fn();
