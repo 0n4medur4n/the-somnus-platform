@@ -1197,7 +1197,7 @@
   "morpheoCases": {
     "title": "Morpheo cases",
     "intro": "Every Morpheo interview has a case number the person sees with their result and on their PDF. With it you can see exactly what they were asked, what they answered and what they were shown. A case carries no name, email or account.",
-    "warning": "Opening a case is an access to health data. It is recorded permanently with your identity, the date, the category and your justification, and that record is shown inside the case itself.",
+    "warning": "Opening a case is an access to health data. It is recorded permanently with your identity, the date, the category and your justification, and that record is shown inside the case itself. Do not write names or any detail that identifies the person in the justification: it is stored with the case.",
     "codeLabel": "Case number",
     "codeHint": "For example SOM-7K3F-Q9XA. Upper or lower case and dashes do not matter.",
     "open": "Open the case",

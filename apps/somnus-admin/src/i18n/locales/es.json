@@ -1197,7 +1197,7 @@
   "morpheoCases": {
     "title": "Casos de Morpheo",
     "intro": "Cada consulta de Morpheo tiene un número de caso que la persona ve con su resultado y en su PDF. Con ese número puedes ver exactamente qué se le preguntó, qué respondió y qué se le mostró. El caso no lleva nombre, correo ni cuenta.",
-    "warning": "Abrir un caso es un acceso a datos de salud. Queda registrado de forma permanente con tu identidad, la fecha, la categoría y tu justificación, y ese registro se muestra dentro del propio caso.",
+    "warning": "Abrir un caso es un acceso a datos de salud. Queda registrado de forma permanente con tu identidad, la fecha, la categoría y tu justificación, y ese registro se muestra dentro del propio caso. En la justificación no escribas nombres ni datos que identifiquen a la persona: se guarda junto al caso.",
     "codeLabel": "Número de caso",
     "codeHint": "Por ejemplo SOM-7K3F-Q9XA. Da igual mayúsculas, minúsculas o guiones.",
     "open": "Abrir el caso",
