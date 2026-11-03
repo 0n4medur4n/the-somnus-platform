@@ -138,6 +138,27 @@ export class FirebaseService {
     return first.generateSignInWithEmailLink(email, { url: continueUrl, handleCodeInApp: true });
   }
 
+  /**
+   * Deletes the sign-in account (email and identifier) from Firebase
+   * Authentication, in every accepted project: the identifier is random, so it
+   * names at most one account, and during a migration between projects the person
+   * may have been signed in against either. An account that is not there is the
+   * state wanted, not an error; any other failure is raised after every project
+   * has been tried, so one failure never leaves another project's copy behind.
+   */
+  async deleteUser(uid: string): Promise<void> {
+    let failure: unknown;
+    for (const client of this.authClients.values()) {
+      try {
+        await client.deleteUser(uid);
+      } catch (error) {
+        const code = (error as { code?: unknown }).code;
+        if (code !== "auth/user-not-found") failure = failure ?? error;
+      }
+    }
+    if (failure !== undefined) throw failure;
+  }
+
   get firestore(): Firestore {
     return this.firestoreClient;
   }

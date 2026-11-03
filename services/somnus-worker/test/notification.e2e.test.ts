@@ -21,6 +21,12 @@ class FakeStore implements DeliveryStore {
   async markSent(): Promise<void> {}
   async markFailed(): Promise<void> {}
   async markDeadLetter(): Promise<void> {}
+  async deleteForRecipient(): Promise<number> {
+    return 3;
+  }
+  async deleteCreatedBefore(): Promise<number> {
+    return 4;
+  }
 }
 
 class FakeProvider {

@@ -30,6 +30,7 @@ the consequences.
 | 0021 | Morpheo invitations and administrative user detail | Accepted | Addendum A, 15.2 |
 | 0022 | The one-page patient report, and sources authorised by the owner | Accepted | §14, §15, Addendum B §B4 |
 | 0024 | A case record for every Morpheo interview | Accepted | §13, §14, Addendum A §A2.2–§A2.4 |
+| 0025 | Account deletion leaves no sign-in data behind; no third-party AI reads patient text | Accepted | §13, §15 |
 
 ## Convention
 

@@ -6,6 +6,10 @@ import { renderEmail } from "./templates/render.js";
 /** Total delivery attempts before a task is parked in the dead-letter state. */
 export const MAX_ATTEMPTS = 5;
 
+/** The delivery log is kept this long unless configured otherwise. */
+export const DEFAULT_LOG_RETENTION_DAYS = 90;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export type ProcessOutcome = "sent" | "skipped" | "dead_letter";
 
 export type ProcessResult = {
@@ -29,7 +33,24 @@ export class NotificationService {
   constructor(
     private readonly deliveries: DeliveryStore,
     private readonly provider: EmailProvider,
+    private readonly logRetentionDays: number = DEFAULT_LOG_RETENTION_DAYS,
+    private readonly now: () => Date = () => new Date(),
   ) {}
+
+  /**
+   * Account deletion: forget every delivery record addressed to this email. The
+   * log holds the address and nothing clinical (§3.7); once the person is gone it
+   * has no reason to exist.
+   */
+  async eraseRecipient(email: string): Promise<{ deleted: number }> {
+    return { deleted: await this.deliveries.deleteForRecipient(email) };
+  }
+
+  /** The log's retention: records older than the configured number of days go. */
+  async purgeExpired(): Promise<{ deleted: number }> {
+    const cutoff = new Date(this.now().getTime() - this.logRetentionDays * MS_PER_DAY);
+    return { deleted: await this.deliveries.deleteCreatedBefore(cutoff) };
+  }
 
   async process(task: NotificationTask): Promise<ProcessResult> {
     const existing = await this.deliveries.findByIdempotencyKey(task.idempotencyKey);

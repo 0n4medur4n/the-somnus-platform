@@ -50,3 +50,21 @@ export const SignInLinkRequestSchema = z
   })
   .strict();
 export type SignInLinkRequest = z.infer<typeof SignInLinkRequestSchema>;
+
+/**
+ * `POST /internal/v1/notifications/recipient/erase` -- edge -> worker, at account
+ * deletion: forget every delivery record addressed to this email. The Notification
+ * module owns its log, so the edge names the address and the module erases.
+ */
+export const NotificationRecipientEraseRequestSchema = z
+  .object({ email: z.string().trim().email().max(320) })
+  .strict();
+export type NotificationRecipientEraseRequest = z.infer<
+  typeof NotificationRecipientEraseRequestSchema
+>;
+
+/** How many delivery records an erasure or the retention purge removed. */
+export const NotificationErasureResultSchema = z
+  .object({ deleted: z.number().int().nonnegative() })
+  .strict();
+export type NotificationErasureResult = z.infer<typeof NotificationErasureResultSchema>;

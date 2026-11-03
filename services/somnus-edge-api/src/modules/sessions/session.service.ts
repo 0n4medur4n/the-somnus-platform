@@ -127,6 +127,29 @@ export class SessionService {
   }
 
   /**
+   * Account deletion: everything this service holds about how the person signs in.
+   * Deletes every session document of the account (not just the current one, and
+   * not merely marked revoked: they hold the email) and then the Firebase
+   * Authentication account itself. Both are tried even if the first fails, and the
+   * first failure is raised, so a failure is never silent and never halves the work.
+   */
+  async eraseSignInIdentity(firebaseUid: string): Promise<void> {
+    let failure: unknown;
+    try {
+      const sessions = await this.collection.where("firebaseUid", "==", firebaseUid).get();
+      await Promise.all(sessions.docs.map((doc) => doc.ref.delete()));
+    } catch (error) {
+      failure = error;
+    }
+    try {
+      await this.firebase.deleteUser(firebaseUid);
+    } catch (error) {
+      failure = failure ?? error;
+    }
+    if (failure !== undefined) throw failure;
+  }
+
+  /**
    * Idempotent: revoking a missing or already-revoked session is a
    * no-op success. `DELETE /v1/sessions/current` clearing a cookie
    * whose session is already gone should not error.

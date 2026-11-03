@@ -13,6 +13,7 @@ const ACTOR = "018f0000-0000-7000-8000-000000000abc";
 const SESSION = {
   sessionId: "s1",
   firebaseUid: "f1",
+  email: "person@example.com",
   somnusUserId: ACTOR,
 } as unknown as SessionRecord;
 
@@ -21,7 +22,10 @@ const fakeResolver = { resolve: async () => ACTOR } as unknown as ActorResolver;
 
 /** Morpheo + session collaborators are unused by getMe/patchProfile; deleteAccount drives its own. */
 const { client: unusedMorpheo } = makeFakeIdentityClient(() => ({ status: 204 }));
-const noopSessions = { revoke: async () => undefined } as unknown as SessionService;
+const noopSessions = {
+  revoke: async () => undefined,
+  eraseSignInIdentity: async () => undefined,
+} as unknown as SessionService;
 /** The worker is reached only by deleteAccount (the staff Drive's erasure). */
 const { client: unusedWorker } = makeFakeIdentityClient(() => ({ status: 200, body: {} }));
 const NOW = "2026-10-19T10:00:00+00:00";
@@ -126,7 +130,7 @@ describe("MeService (composition)", () => {
     await expect(service.getMe(SESSION, "corr-1")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("erases the stored reports, then morpheo assessments, the account, then the session", async () => {
+  it("erases the stored reports, morpheo assessments, the emails sent, the account, then the sign-in identity", async () => {
     const order: string[] = [];
     const morpheo = makeFakeIdentityClient((req) => {
       order.push(`morpheo ${req.method} ${req.path}`);
@@ -162,18 +166,24 @@ describe("MeService (composition)", () => {
       expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
       return { status: 204 };
     });
-    const revoked: string[] = [];
+    const erasedSignIn: string[] = [];
     const sessions = {
-      revoke: async (id: string) => {
-        revoked.push(id);
+      eraseSignInIdentity: async (uid: string) => {
+        order.push("sessions eraseSignInIdentity");
+        erasedSignIn.push(uid);
       },
     } as unknown as SessionService;
     const photos = new InMemoryProfilePhotoStore();
     await photos.put(ACTOR, { bytes: Buffer.from("photo"), type: "image/webp" });
     const worker = makeFakeIdentityClient((req) => {
       order.push(`worker ${req.method} ${req.path}`);
-      expect(req.path).toBe("/internal/v1/drive/account/erase");
       expect(req.method).toBe("POST");
+      if (req.path === "/internal/v1/notifications/recipient/erase") {
+        // The address of the session, not anything the browser could send.
+        expect(JSON.parse(req.body ?? "{}")).toEqual({ email: "person@example.com" });
+        return { status: 200, body: { deleted: 4 } };
+      }
+      expect(req.path).toBe("/internal/v1/drive/account/erase");
       expect(req.headers[ACTOR_ID_HEADER]).toBe(ACTOR);
       return { status: 200, body: { erased: true, removedShares: 0 } };
     });
@@ -195,11 +205,14 @@ describe("MeService (composition)", () => {
       "report POST /internal/v1/reports/person/delete",
       "morpheo POST /internal/v1/maintenance/user-assessments/delete",
       "worker POST /internal/v1/drive/account/erase",
+      "worker POST /internal/v1/notifications/recipient/erase",
       "identity DELETE /v1/me",
+      "sessions eraseSignInIdentity",
     ]);
     // The profile photo goes with the account (right to erasure).
     expect(await photos.get(ACTOR)).toBeNull();
-    expect(revoked).toEqual(["s1"]);
+    // How the person signs in goes last, by the Firebase identifier of the session.
+    expect(erasedSignIn).toEqual(["f1"]);
   });
 
   it("does not call the report service for someone with no saved assessment", async () => {

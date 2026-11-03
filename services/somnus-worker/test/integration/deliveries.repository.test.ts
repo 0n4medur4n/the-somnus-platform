@@ -70,3 +70,26 @@ describe("DeliveriesRepository", () => {
     expect(row?.lastError).toBeNull();
   });
 });
+
+describe("DeliveriesRepository: what the log forgets", () => {
+  it("erases every record of an address, in any case, and leaves other people's", async () => {
+    await repo.create({ idempotencyKey: "erase:1", ...base, recipient: "Person@Example.com" });
+    await repo.create({ idempotencyKey: "erase:2", ...base, recipient: "person@example.com" });
+    await repo.create({ idempotencyKey: "erase:3", ...base, recipient: "other@example.com" });
+
+    expect(await repo.deleteForRecipient("PERSON@example.com")).toBe(2);
+
+    expect(await repo.findByIdempotencyKey("erase:1")).toBeNull();
+    expect(await repo.findByIdempotencyKey("erase:2")).toBeNull();
+    expect(await repo.findByIdempotencyKey("erase:3")).not.toBeNull();
+  });
+
+  it("deletes only records created before the cutoff", async () => {
+    await repo.create({ idempotencyKey: "old:1", ...base });
+    // The row was created just now: a cutoff in the past keeps it, one in the future takes it.
+    expect(await repo.deleteCreatedBefore(new Date(Date.now() - 86_400_000))).toBe(0);
+    expect(await repo.findByIdempotencyKey("old:1")).not.toBeNull();
+    expect(await repo.deleteCreatedBefore(new Date(Date.now() + 86_400_000))).toBe(1);
+    expect(await repo.findByIdempotencyKey("old:1")).toBeNull();
+  });
+});

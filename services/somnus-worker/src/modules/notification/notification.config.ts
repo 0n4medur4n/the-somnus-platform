@@ -12,6 +12,9 @@ export const NotificationConfigSchema = z.object({
   BREVO_SENDER_EMAIL: z.string().email().default("no-reply@somnus.example"),
   BREVO_SENDER_NAME: z.string().min(1).default("The Somnus"),
   CLOUD_TASKS_AUTH_TOKEN: z.string().default(""),
+  // How long a delivery record (it holds the recipient's email) is kept: the log
+  // is for diagnosing a failed send, which is a matter of days, not of years.
+  NOTIFICATION_LOG_RETENTION_DAYS: z.coerce.number().int().min(1).default(90),
 });
 
 export type NotificationConfig = z.infer<typeof NotificationConfigSchema>;

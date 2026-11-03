@@ -5,6 +5,7 @@ import { BrevoClient, type EmailProvider } from "./delivery/brevo.client.js";
 import { loadNotificationConfig } from "./notification.config.js";
 import { NotificationController } from "./notification.controller.js";
 import { NotificationService } from "./notification.service.js";
+import { NotificationRetentionController } from "./notification-retention.controller.js";
 
 export const EMAIL_PROVIDER = Symbol("EMAIL_PROVIDER");
 
@@ -15,7 +16,7 @@ export const EMAIL_PROVIDER = Symbol("EMAIL_PROVIDER");
  */
 @Module({
   imports: [NotificationDbModule],
-  controllers: [NotificationController],
+  controllers: [NotificationController, NotificationRetentionController],
   providers: [
     {
       provide: EMAIL_PROVIDER,
@@ -30,7 +31,11 @@ export const EMAIL_PROVIDER = Symbol("EMAIL_PROVIDER");
     {
       provide: NotificationService,
       useFactory: (deliveries: DeliveriesRepository, provider: EmailProvider) =>
-        new NotificationService(deliveries, provider),
+        new NotificationService(
+          deliveries,
+          provider,
+          loadNotificationConfig(process.env).NOTIFICATION_LOG_RETENTION_DAYS,
+        ),
       inject: [DeliveriesRepository, EMAIL_PROVIDER],
     },
   ],

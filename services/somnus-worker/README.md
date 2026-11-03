@@ -21,7 +21,7 @@ reached only through its public interface (ADR 0010):
   before they are visible) and refuses a member removal that does not rotate
   the folder key for exactly the remaining members and every node.
 
-Plus scheduled jobs (Cloud Scheduler): unclaimed-assessment and claim-token cleanup, and the 24-month deletion of Morpheo case records (`cleanup-funnel-cases`, ADR 0024; `FUNNEL_CASE_RETENTION_MONTHS`).
+Plus scheduled jobs (Cloud Scheduler): unclaimed-assessment and claim-token cleanup, and the 24-month deletion of Morpheo case records (`cleanup-funnel-cases`, ADR 0024; `FUNNEL_CASE_RETENTION_MONTHS`), and the 90-day purge of the notification delivery log (`/internal/v1/notifications/purge`, ADR 0025; `NOTIFICATION_LOG_RETENTION_DAYS`). Account deletion also erases a person's delivery records (`/internal/v1/notifications/recipient/erase`).
 
 ## Status
 

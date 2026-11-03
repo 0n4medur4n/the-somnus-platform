@@ -1,10 +1,12 @@
--- Privacy policy v4 and health-data processing policy v3 (ADR 0024): the case
--- record of every Morpheo interview -- what it holds, why, that it is kept 24
--- months from the day the interview started even if the interview or the
--- account is deleted (then unlinked from the person), and who can open it.
--- Each in es/en/ca/fr, as drafts for legal review, marked as such. The rest of
--- each text is the previous version's, unchanged. Inserts only: receipts given
--- against earlier versions keep pointing at them (build plan §13).
+-- Privacy policy v4 and health-data processing policy v3 (ADR 0024, ADR 0025):
+-- the case record of every Morpheo interview (what it holds, why, that it is kept
+-- 24 months even if the interview or the account is deleted, and who can open it);
+-- the real processors and where they run (TiDB Cloud on AWS, Google Cloud,
+-- Firebase, Brevo); the account data and technical logs; backups; the browser
+-- storage; and that no data goes to third-party AI. Each in es/en/ca/fr, as
+-- drafts for legal review, marked as such. The rest of each text is the previous
+-- version's, unchanged. Inserts only: receipts given against earlier versions keep
+-- pointing at them (build plan §13).
 INSERT INTO `legal_document_versions` (`id`, `legal_document_id`, `version`, `locale`, `content`) VALUES
   ('019fe7a0-0015-7000-8000-000000000015', '019f9452-3938-7296-b556-0f0ee4ff0c7c', 4, 'es', 'BORRADOR PENDIENTE DE REVISIÓN LEGAL. Este texto es una versión de trabajo para el entorno de pruebas y será sustituido por la versión aprobada antes del lanzamiento.
 
@@ -16,6 +18,9 @@ INSERT INTO `legal_document_versions` (`id`, `legal_document_id`, `version`, `lo
 - Datos de uso necesarios para la seguridad del servicio: sesión, registros técnicos y de auditoría.
 - Las respuestas de la evaluación del sueño se tratan aparte y solo con tu consentimiento expreso para datos de salud.
 - Un registro de cada evaluación Morpheo, bajo un número de caso aleatorio y sin tu nombre, correo ni cuenta: lo que se te preguntó, lo que respondiste y lo que se te mostró.
+- Si te registras como profesional: especialidad, número de colegiado, credenciales y la documentación que aportes para verificarte. Si te registras como madre, padre o tutor: la franja de edad del menor.
+- Registros técnicos: dirección IP, navegador y dirección que pides en cada visita, durante 30 días, solo para la seguridad y el funcionamiento del servicio.
+- Los avisos que te enviamos (enlaces de acceso, invitaciones): tu correo y el tipo de aviso, durante 90 días.
 
 ## 3. Para qué los usamos
 Para crear y mantener tu cuenta, darte acceso, mostrarte tus evaluaciones guardadas y proteger la plataforma. Con el género, la edad, el país y la ciudad elaboramos estadísticas agregadas para entender quién usa el servicio; nunca se usan para calcular tu orientación del sueño. Solo te enviamos comunicaciones comerciales si das tu consentimiento de comunicaciones, que es opcional y puedes retirar cuando quieras. No vendemos tus datos. Conservamos el registro de caso para poder acreditar, ante una reclamación, una auditoría o una autoridad, qué se preguntó, qué se respondió y qué se mostró.
@@ -24,16 +29,19 @@ Para crear y mantener tu cuenta, darte acceso, mostrarte tus evaluaciones guarda
 La ejecución del servicio que solicitas y, para los datos de salud, tu consentimiento explícito, que puedes retirar en cualquier momento. El registro de caso se conserva para la formulación, el ejercicio o la defensa de reclamaciones. [Base jurídica concreta: pendiente de confirmar por el área legal.]
 
 ## 5. Dónde se guardan y quién los trata
-En proveedores de infraestructura en la Unión Europea (Google Cloud, región de Fráncfort). [Lista completa de encargados del tratamiento: pendiente de revisión legal.]
+Tus datos se guardan en la Unión Europea: la base de datos, en TiDB Cloud (PingCAP) sobre Amazon Web Services, en Fráncfort; los servidores, archivos y colas, en Google Cloud, en Fráncfort. Las páginas se sirven con Firebase Hosting (Google). Para iniciar sesión usamos Firebase Authentication (Google), que guarda tu correo y un identificador de cuenta en centros de datos de Estados Unidos [amparo de la transferencia: cláusulas contractuales tipo o marco de privacidad UE-EE. UU., pendiente de confirmar por el área legal]. Los enlaces de acceso, las invitaciones y los avisos se envían con Brevo (Francia). Todos actúan como encargados del tratamiento bajo contrato [contratos de tratamiento de datos de Google Cloud, PingCAP y Brevo: pendientes de confirmar por el área legal]. No enviamos tus datos a ningún servicio de inteligencia artificial de terceros. [Lista completa de encargados del tratamiento: pendiente de revisión legal.]
 
 ## 6. Cuánto tiempo
-Mientras mantengas tu cuenta. Las evaluaciones anónimas que no se guardan en una cuenta se eliminan a los 30 días. Si eliminas tu cuenta, borramos tus datos salvo lo que la ley nos obligue a conservar. El registro de caso se conserva 24 meses desde que empezó la evaluación y después se elimina. Si eliminas tu cuenta, o si tu evaluación se elimina, el registro se mantiene durante ese plazo pero deja de estar ligado a ti; mientras tu evaluación siga guardada en tu cuenta, el registro sigue ligado a ella dentro del sistema.
+Mientras mantengas tu cuenta. Las evaluaciones anónimas que no se guardan en una cuenta se eliminan a los 30 días. Si eliminas tu cuenta, borramos tus datos salvo lo que la ley nos obligue a conservar. El registro de caso se conserva 24 meses desde que empezó la evaluación y después se elimina. Si eliminas tu cuenta, o si tu evaluación se elimina, el registro se mantiene durante ese plazo pero deja de estar ligado a ti; mientras tu evaluación siga guardada en tu cuenta, el registro sigue ligado a ella dentro del sistema. Al eliminar tu cuenta también borramos tu cuenta de acceso y tus sesiones. Las copias de seguridad de la base de datos se conservan [1 a 30 días, según el plan: pendiente de confirmar]; lo que se borra desaparece de ellas en ese plazo.
 
 ## 7. Tus derechos
 Puedes acceder, rectificar, suprimir y portar tus datos, oponerte o limitar su tratamiento y retirar tus consentimientos. También puedes reclamar ante la Agencia Española de Protección de Datos (www.aepd.es). Si pides la supresión de tus datos, el registro de caso se mantiene hasta que acabe su plazo de 24 meses, porque sirve para defender reclamaciones; ya no estará ligado a ti. [Fundamento legal: pendiente de confirmar por el área legal.]
 
 ## 8. Seguridad
-Las comunicaciones van cifradas, las fotos y los informes se guardan en almacenamiento privado y el personal de soporte no ve tus respuestas de salud salvo en casos justificados y registrados. Solo la superadministración de la plataforma puede abrir el registro de un caso, con el número de caso y una justificación escrita, y queda anotado quién lo abrió, cuándo y por qué.'),
+Las comunicaciones van cifradas, las fotos y los informes se guardan en almacenamiento privado y el personal de soporte no ve tus respuestas de salud salvo en casos justificados y registrados. Solo la superadministración de la plataforma puede abrir el registro de un caso, con el número de caso y una justificación escrita, y queda anotado quién lo abrió, cuándo y por qué.
+
+## 9. Cookies y almacenamiento del navegador
+Usamos una cookie de sesión y el almacenamiento local de tu navegador solo para lo estrictamente necesario: mantener tu sesión, recordar tu idioma y tu tema, retomar la entrevista que tengas empezada y completar el acceso por enlace. No usamos cookies de analítica ni de publicidad, ni scripts de terceros.'),
   ('019fe7a0-0016-7000-8000-000000000016', '019f9452-3938-7296-b556-0f0ee4ff0c7c', 4, 'en', 'DRAFT PENDING LEGAL REVIEW. This text is a working version for the test environment and will be replaced by the approved version before launch.
 
 ## 1. Data controller
@@ -44,6 +52,9 @@ Las comunicaciones van cifradas, las fotos y los informes se guardan en almacena
 - Usage data needed to keep the service secure: session, technical and audit logs.
 - Your answers to the sleep assessment are handled separately and only with your explicit consent for health data.
 - A record of each Morpheo assessment, under a random case number and without your name, email or account: what you were asked, what you answered and what you were shown.
+- If you register as a professional: specialty, licence number, credentials and the documents you provide to be verified. If you register as a parent or guardian: the minor''s age band.
+- Technical logs: IP address, browser and the address requested at each visit, kept for 30 days, only for the security and running of the service.
+- The messages we send you (access links, invitations): your email and the type of message, kept for 90 days.
 
 ## 3. What we use it for
 To create and maintain your account, give you access, show you your saved assessments and protect the platform. We use gender, age, country and city to produce aggregate statistics that help us understand who uses the service; they are never used to calculate your sleep guidance. We only send you marketing communications if you give your communications consent, which is optional and can be withdrawn at any time. We do not sell your data. We keep the case record so that we can show, in the event of a claim, an audit or an authority''s request, what was asked, what was answered and what was shown.
@@ -52,16 +63,19 @@ To create and maintain your account, give you access, show you your saved assess
 Performance of the service you request and, for health data, your explicit consent, which you can withdraw at any time. The case record is kept for the establishment, exercise or defence of legal claims. [Specific legal basis: to be confirmed by the legal team.]
 
 ## 5. Where it is stored and who processes it
-With infrastructure providers in the European Union (Google Cloud, Frankfurt region). [Full list of data processors: pending legal review.]
+Your data is stored in the European Union: the database at TiDB Cloud (PingCAP) on Amazon Web Services, in Frankfurt; the servers, files and queues at Google Cloud, in Frankfurt. The pages are served by Firebase Hosting (Google). To sign you in we use Firebase Authentication (Google), which stores your email and an account identifier in data centres in the United States [basis for the transfer: standard contractual clauses or the EU-US Data Privacy Framework, to be confirmed by the legal team]. Access links, invitations and notices are sent with Brevo (France). All of them act as data processors under contract [data processing agreements with Google Cloud, PingCAP and Brevo: to be confirmed by the legal team]. We do not send your data to any third-party artificial intelligence service. [Full list of data processors: pending legal review.]
 
 ## 6. How long
-For as long as you keep your account. Anonymous assessments that are not saved to an account are deleted after 30 days. If you delete your account, we erase your data except what the law requires us to keep. The case record is kept for 24 months from the day the assessment started and is then deleted. If you delete your account, or your assessment is deleted, the record is kept for that period but is no longer linked to you; while your assessment stays saved in your account, the record remains linked to it inside the system.
+For as long as you keep your account. Anonymous assessments that are not saved to an account are deleted after 30 days. If you delete your account, we erase your data except what the law requires us to keep. The case record is kept for 24 months from the day the assessment started and is then deleted. If you delete your account, or your assessment is deleted, the record is kept for that period but is no longer linked to you; while your assessment stays saved in your account, the record remains linked to it inside the system. When you delete your account we also delete your sign-in account and your sessions. Database backups are kept for [1 to 30 days, depending on the plan: to be confirmed]; what is deleted disappears from them within that period.
 
 ## 7. Your rights
 You can access, rectify, erase and port your data, object to or restrict its processing, and withdraw your consents. You can also lodge a complaint with the Spanish Data Protection Agency (www.aepd.es). If you ask for your data to be erased, the case record is kept until its 24-month period ends, because it serves to defend legal claims; it will no longer be linked to you. [Legal grounds: to be confirmed by the legal team.]
 
 ## 8. Security
-Communications are encrypted, photos and reports are kept in private storage, and support staff do not see your health answers except in justified and recorded cases. Only the platform''s super administration can open a case record, with the case number and a written justification, and who opened it, when and why is recorded.'),
+Communications are encrypted, photos and reports are kept in private storage, and support staff do not see your health answers except in justified and recorded cases. Only the platform''s super administration can open a case record, with the case number and a written justification, and who opened it, when and why is recorded.
+
+## 9. Cookies and browser storage
+We use a session cookie and your browser''s local storage only for what is strictly necessary: keeping you signed in, remembering your language and theme, resuming an interview you have started and completing sign-in by link. We use no analytics or advertising cookies and no third-party scripts.'),
   ('019fe7a0-0017-7000-8000-000000000017', '019f9452-3938-7296-b556-0f0ee4ff0c7c', 4, 'ca', 'ESBORRANY PENDENT DE REVISIÓ LEGAL. Aquest text és una versió de treball per a l''entorn de proves i se substituirà per la versió aprovada abans del llançament.
 
 ## 1. Responsable del tractament
@@ -72,6 +86,9 @@ Communications are encrypted, photos and reports are kept in private storage, an
 - Dades d''ús necessàries per a la seguretat del servei: sessió, registres tècnics i d''auditoria.
 - Les respostes de l''avaluació del son es tracten a part i només amb el teu consentiment exprés per a dades de salut.
 - Un registre de cada avaluació Morpheo, sota un número de cas aleatori i sense el teu nom, correu ni compte: el que se''t va preguntar, el que vas respondre i el que se''t va mostrar.
+- Si et registres com a professional: especialitat, número de col·legiat, credencials i la documentació que aportis per verificar-te. Si et registres com a mare, pare o tutor: la franja d''edat del menor.
+- Registres tècnics: adreça IP, navegador i adreça que demanes en cada visita, durant 30 dies, només per a la seguretat i el funcionament del servei.
+- Els avisos que t''enviem (enllaços d''accés, invitacions): el teu correu i el tipus d''avís, durant 90 dies.
 
 ## 3. Per a què les fem servir
 Per crear i mantenir el teu compte, donar-te accés, mostrar-te les teves avaluacions desades i protegir la plataforma. Amb el gènere, l''edat, el país i la ciutat elaborem estadístiques agregades per entendre qui fa servir el servei; mai no es fan servir per calcular la teva orientació del son. Només t''enviem comunicacions comercials si dones el teu consentiment de comunicacions, que és opcional i pots retirar quan vulguis. No venem les teves dades. Conservem el registre de cas per poder acreditar, davant una reclamació, una auditoria o una autoritat, què es va preguntar, què es va respondre i què es va mostrar.
@@ -80,16 +97,19 @@ Per crear i mantenir el teu compte, donar-te accés, mostrar-te les teves avalua
 L''execució del servei que sol·licites i, per a les dades de salut, el teu consentiment explícit, que pots retirar en qualsevol moment. El registre de cas es conserva per a la formulació, l''exercici o la defensa de reclamacions. [Base jurídica concreta: pendent de confirmar per l''àrea legal.]
 
 ## 5. On es desen i qui les tracta
-En proveïdors d''infraestructura a la Unió Europea (Google Cloud, regió de Frankfurt). [Llista completa d''encarregats del tractament: pendent de revisió legal.]
+Les teves dades es desen a la Unió Europea: la base de dades, a TiDB Cloud (PingCAP) sobre Amazon Web Services, a Frankfurt; els servidors, arxius i cues, a Google Cloud, a Frankfurt. Les pàgines es serveixen amb Firebase Hosting (Google). Per iniciar sessió fem servir Firebase Authentication (Google), que desa el teu correu i un identificador de compte en centres de dades dels Estats Units [empara de la transferència: clàusules contractuals tipus o marc de privacitat UE-EUA, pendent de confirmar per l''àrea legal]. Els enllaços d''accés, les invitacions i els avisos s''envien amb Brevo (França). Tots actuen com a encarregats del tractament sota contracte [contractes de tractament de dades de Google Cloud, PingCAP i Brevo: pendents de confirmar per l''àrea legal]. No enviem les teves dades a cap servei d''intel·ligència artificial de tercers. [Llista completa d''encarregats del tractament: pendent de revisió legal.]
 
 ## 6. Quant de temps
-Mentre mantinguis el teu compte. Les avaluacions anònimes que no es desen en un compte s''eliminen als 30 dies. Si elimines el teu compte, esborrem les teves dades excepte el que la llei ens obligui a conservar. El registre de cas es conserva 24 mesos des que va començar l''avaluació i després s''elimina. Si elimines el teu compte, o si la teva avaluació s''elimina, el registre es manté durant aquest termini però deixa d''estar lligat a tu; mentre la teva avaluació continuï desada al teu compte, el registre continua lligat a ella dins del sistema.
+Mentre mantinguis el teu compte. Les avaluacions anònimes que no es desen en un compte s''eliminen als 30 dies. Si elimines el teu compte, esborrem les teves dades excepte el que la llei ens obligui a conservar. El registre de cas es conserva 24 mesos des que va començar l''avaluació i després s''elimina. Si elimines el teu compte, o si la teva avaluació s''elimina, el registre es manté durant aquest termini però deixa d''estar lligat a tu; mentre la teva avaluació continuï desada al teu compte, el registre continua lligat a ella dins del sistema. En eliminar el teu compte també esborrem el teu compte d''accés i les teves sessions. Les còpies de seguretat de la base de dades es conserven [1 a 30 dies, segons el pla: pendent de confirmar]; el que s''esborra hi desapareix en aquest termini.
 
 ## 7. Els teus drets
 Pots accedir, rectificar, suprimir i portar les teves dades, oposar-te al seu tractament o limitar-lo i retirar els teus consentiments. També pots presentar una reclamació davant l''Agència Espanyola de Protecció de Dades (www.aepd.es). Si demanes la supressió de les teves dades, el registre de cas es manté fins que acabi el seu termini de 24 mesos, perquè serveix per defensar reclamacions; ja no estarà lligat a tu. [Fonament legal: pendent de confirmar per l''àrea legal.]
 
 ## 8. Seguretat
-Les comunicacions van xifrades, les fotos i els informes es desen en emmagatzematge privat i el personal de suport no veu les teves respostes de salut excepte en casos justificats i registrats. Només la superadministració de la plataforma pot obrir el registre d''un cas, amb el número de cas i una justificació escrita, i queda anotat qui l''ha obert, quan i per què.'),
+Les comunicacions van xifrades, les fotos i els informes es desen en emmagatzematge privat i el personal de suport no veu les teves respostes de salut excepte en casos justificats i registrats. Només la superadministració de la plataforma pot obrir el registre d''un cas, amb el número de cas i una justificació escrita, i queda anotat qui l''ha obert, quan i per què.
+
+## 9. Cookies i emmagatzematge del navegador
+Fem servir una cookie de sessió i l''emmagatzematge local del teu navegador només per al que és estrictament necessari: mantenir la teva sessió, recordar el teu idioma i el teu tema, reprendre l''entrevista que tinguis començada i completar l''accés per enllaç. No fem servir cookies d''analítica ni de publicitat, ni scripts de tercers.'),
   ('019fe7a0-0018-7000-8000-000000000018', '019f9452-3938-7296-b556-0f0ee4ff0c7c', 4, 'fr', 'PROJET EN ATTENTE DE RÉVISION JURIDIQUE. Ce texte est une version de travail pour l''environnement de test et sera remplacé par la version approuvée avant le lancement.
 
 ## 1. Responsable du traitement
@@ -100,6 +120,9 @@ Les comunicacions van xifrades, les fotos i els informes es desen en emmagatzema
 - Données d''utilisation nécessaires à la sécurité du service : session, journaux techniques et d''audit.
 - Les réponses à l''évaluation du sommeil sont traitées à part et uniquement avec votre consentement explicite pour les données de santé.
 - Un enregistrement de chaque évaluation Morpheo, sous un numéro de dossier aléatoire et sans votre nom, votre e-mail ni votre compte : ce qui vous a été demandé, ce que vous avez répondu et ce qui vous a été montré.
+- Si vous vous inscrivez en tant que professionnel : spécialité, numéro d''ordre, qualifications et documents que vous fournissez pour être vérifié. Si vous vous inscrivez en tant que parent ou tuteur : la tranche d''âge du mineur.
+- Journaux techniques : adresse IP, navigateur et adresse demandée à chaque visite, conservés 30 jours, uniquement pour la sécurité et le fonctionnement du service.
+- Les messages que nous vous envoyons (liens d''accès, invitations) : votre e-mail et le type de message, conservés 90 jours.
 
 ## 3. À quoi elles servent
 À créer et gérer votre compte, vous donner accès, vous montrer vos évaluations enregistrées et protéger la plateforme. Le genre, l''âge, le pays et la ville nous servent à établir des statistiques agrégées pour comprendre qui utilise le service ; ils ne servent jamais à calculer votre orientation sur le sommeil. Nous ne vous envoyons des communications commerciales que si vous donnez votre consentement aux communications, qui est facultatif et révocable à tout moment. Nous ne vendons pas vos données. Nous conservons l''enregistrement du dossier afin de pouvoir établir, en cas de réclamation, d''audit ou de demande d''une autorité, ce qui a été demandé, ce qui a été répondu et ce qui a été montré.
@@ -108,16 +131,19 @@ Les comunicacions van xifrades, les fotos i els informes es desen en emmagatzema
 L''exécution du service que vous demandez et, pour les données de santé, votre consentement explicite, que vous pouvez retirer à tout moment. L''enregistrement du dossier est conservé pour la constatation, l''exercice ou la défense de droits en justice. [Base juridique précise : à confirmer par le service juridique.]
 
 ## 5. Où elles sont conservées et qui les traite
-Chez des fournisseurs d''infrastructure dans l''Union européenne (Google Cloud, région de Francfort). [Liste complète des sous-traitants : en attente de révision juridique.]
+Vos données sont conservées dans l''Union européenne : la base de données, chez TiDB Cloud (PingCAP) sur Amazon Web Services, à Francfort ; les serveurs, fichiers et files d''attente, chez Google Cloud, à Francfort. Les pages sont servies par Firebase Hosting (Google). Pour vous connecter, nous utilisons Firebase Authentication (Google), qui conserve votre e-mail et un identifiant de compte dans des centres de données situés aux États-Unis [fondement du transfert : clauses contractuelles types ou cadre de protection des données UE-États-Unis, à confirmer par le service juridique]. Les liens d''accès, les invitations et les messages sont envoyés avec Brevo (France). Tous agissent comme sous-traitants sous contrat [contrats de sous-traitance de Google Cloud, PingCAP et Brevo : à confirmer par le service juridique]. Nous n''envoyons vos données à aucun service d''intelligence artificielle tiers. [Liste complète des sous-traitants : en attente de révision juridique.]
 
 ## 6. Combien de temps
-Tant que vous conservez votre compte. Les évaluations anonymes qui ne sont pas enregistrées dans un compte sont supprimées au bout de 30 jours. Si vous supprimez votre compte, nous effaçons vos données, sauf ce que la loi nous oblige à conserver. L''enregistrement du dossier est conservé 24 mois à compter du début de l''évaluation, puis supprimé. Si vous supprimez votre compte, ou si votre évaluation est supprimée, l''enregistrement est conservé pendant ce délai mais n''est plus lié à vous ; tant que votre évaluation reste enregistrée dans votre compte, l''enregistrement reste lié à celle-ci à l''intérieur du système.
+Tant que vous conservez votre compte. Les évaluations anonymes qui ne sont pas enregistrées dans un compte sont supprimées au bout de 30 jours. Si vous supprimez votre compte, nous effaçons vos données, sauf ce que la loi nous oblige à conserver. L''enregistrement du dossier est conservé 24 mois à compter du début de l''évaluation, puis supprimé. Si vous supprimez votre compte, ou si votre évaluation est supprimée, l''enregistrement est conservé pendant ce délai mais n''est plus lié à vous ; tant que votre évaluation reste enregistrée dans votre compte, l''enregistrement reste lié à celle-ci à l''intérieur du système. En supprimant votre compte, nous supprimons aussi votre compte de connexion et vos sessions. Les sauvegardes de la base de données sont conservées [1 à 30 jours, selon l''offre : à confirmer] ; ce qui est effacé en disparaît dans ce délai.
 
 ## 7. Vos droits
 Vous pouvez accéder à vos données, les rectifier, les effacer et les récupérer, vous opposer à leur traitement ou le limiter, et retirer vos consentements. Vous pouvez aussi introduire une réclamation auprès de l''Agence espagnole de protection des données (www.aepd.es). Si vous demandez l''effacement de vos données, l''enregistrement du dossier est conservé jusqu''à la fin de son délai de 24 mois, car il sert à défendre des droits en justice ; il ne sera plus lié à vous. [Fondement juridique : à confirmer par le service juridique.]
 
 ## 8. Sécurité
-Les communications sont chiffrées, les photos et les rapports sont conservés dans un stockage privé et le personnel d''assistance ne voit pas vos réponses de santé, sauf dans des cas justifiés et enregistrés. Seule la super-administration de la plateforme peut ouvrir l''enregistrement d''un dossier, avec le numéro de dossier et une justification écrite ; il est noté qui l''a ouvert, quand et pourquoi.'),
+Les communications sont chiffrées, les photos et les rapports sont conservés dans un stockage privé et le personnel d''assistance ne voit pas vos réponses de santé, sauf dans des cas justifiés et enregistrés. Seule la super-administration de la plateforme peut ouvrir l''enregistrement d''un dossier, avec le numéro de dossier et une justification écrite ; il est noté qui l''a ouvert, quand et pourquoi.
+
+## 9. Cookies et stockage du navigateur
+Nous utilisons un cookie de session et le stockage local de votre navigateur uniquement pour le strict nécessaire : maintenir votre session, retenir votre langue et votre thème, reprendre l''entretien commencé et terminer la connexion par lien. Nous n''utilisons ni cookies d''analyse ni cookies publicitaires, ni scripts tiers.'),
   ('019fe7a0-0019-7000-8000-000000000019', '019f9452-3939-77df-baca-8bb8440f7075', 3, 'es', 'BORRADOR PENDIENTE DE REVISIÓN LEGAL. Este texto es una versión de trabajo para el entorno de pruebas y será sustituido por la versión aprobada antes del lanzamiento.
 
 ## Consentimiento para el tratamiento de datos de salud
@@ -131,7 +157,7 @@ Tus respuestas a las preguntas de seguridad y a los motivos de consulta, y el re
 Únicamente para calcular tu orientación, mostrártela y guardarla en tu cuenta para que puedas consultarla después. El resultado lo calculan reglas clínicas fijas; ningún sistema de inteligencia artificial decide tu nivel de atención.
 
 ## Qué no hacemos
-No compartimos tus respuestas con terceros, no las usamos para publicidad y no se las mostramos a ningún profesional sin tu permiso expreso. La única excepción es el registro de caso, sin tu identidad: la superadministración de la plataforma puede abrirlo, con una justificación escrita que queda registrada, para atender una reclamación o una auditoría.
+No compartimos tus respuestas con terceros, no las usamos para publicidad y no se las mostramos a ningún profesional sin tu permiso expreso. La única excepción a lo anterior es el registro de caso, sin tu identidad: la superadministración de la plataforma puede abrirlo, con una justificación escrita que queda registrada, para atender una reclamación o una auditoría. Tu texto libre no se envía a ningún servicio de inteligencia artificial de terceros.
 
 ## Cuánto tiempo
 Mientras mantengas tu cuenta. Si no guardas una evaluación en tu cuenta, se elimina a los 30 días. Además, el registro de caso se conserva 24 meses desde que empezó la evaluación y después se elimina. Se mantiene aunque se borre tu evaluación o tu cuenta, pero entonces ya no está ligado a ti.
@@ -154,7 +180,7 @@ Your answers to the safety questions and about your reasons for seeking help, an
 Solely to calculate your guidance, show it to you and save it in your account so you can look at it later. The result is calculated by fixed clinical rules; no artificial intelligence system decides your level of care.
 
 ## What we do not do
-We do not share your answers with third parties, we do not use them for advertising and we do not show them to any professional without your express permission. The only exception is the case record, without your identity: the platform''s super administration may open it, with a written justification that is recorded, to deal with a claim or an audit.
+We do not share your answers with third parties, we do not use them for advertising and we do not show them to any professional without your express permission. The only exception to the above is the case record, without your identity: the platform''s super administration may open it, with a written justification that is recorded, to deal with a claim or an audit. Your free text is not sent to any third-party artificial intelligence service.
 
 ## How long
 For as long as you keep your account. If you do not save an assessment to your account, it is deleted after 30 days. The case record is also kept for 24 months from the day the assessment started and is then deleted. It is kept even if your assessment or your account is deleted, but it is then no longer linked to you.
@@ -177,7 +203,7 @@ Les teves respostes a les preguntes de seguretat i als motius de consulta, i el 
 Únicament per calcular la teva orientació, mostrar-te-la i desar-la al teu compte perquè la puguis consultar després. El resultat el calculen regles clíniques fixes; cap sistema d''intel·ligència artificial no decideix el teu nivell d''atenció.
 
 ## Què no fem
-No compartim les teves respostes amb tercers, no les fem servir per a publicitat i no les mostrem a cap professional sense el teu permís exprés. L''única excepció és el registre de cas, sense la teva identitat: la superadministració de la plataforma el pot obrir, amb una justificació escrita que queda registrada, per atendre una reclamació o una auditoria.
+No compartim les teves respostes amb tercers, no les fem servir per a publicitat i no les mostrem a cap professional sense el teu permís exprés. L''única excepció a l''anterior és el registre de cas, sense la teva identitat: la superadministració de la plataforma el pot obrir, amb una justificació escrita que queda registrada, per atendre una reclamació o una auditoria. El teu text lliure no s''envia a cap servei d''intel·ligència artificial de tercers.
 
 ## Quant de temps
 Mentre mantinguis el teu compte. Si no deses una avaluació al teu compte, s''elimina als 30 dies. A més, el registre de cas es conserva 24 mesos des que va començar l''avaluació i després s''elimina. Es manté tot i que s''esborri la teva avaluació o el teu compte, però aleshores ja no està lligat a tu.
@@ -200,7 +226,7 @@ Vos réponses aux questions de sécurité et sur les motifs de consultation, ain
 Uniquement pour calculer votre orientation, vous la montrer et l''enregistrer dans votre compte afin que vous puissiez la consulter plus tard. Le résultat est calculé par des règles cliniques fixes ; aucun système d''intelligence artificielle ne décide de votre niveau de prise en charge.
 
 ## Ce que nous ne faisons pas
-Nous ne partageons pas vos réponses avec des tiers, nous ne les utilisons pas à des fins publicitaires et nous ne les montrons à aucun professionnel sans votre autorisation expresse. La seule exception est l''enregistrement du dossier, sans votre identité : la super-administration de la plateforme peut l''ouvrir, avec une justification écrite qui est consignée, pour traiter une réclamation ou un audit.
+Nous ne partageons pas vos réponses avec des tiers, nous ne les utilisons pas à des fins publicitaires et nous ne les montrons à aucun professionnel sans votre autorisation expresse. La seule exception à ce qui précède est l''enregistrement du dossier, sans votre identité : la super-administration de la plateforme peut l''ouvrir, avec une justification écrite qui est consignée, pour traiter une réclamation ou un audit. Votre texte libre n''est envoyé à aucun service d''intelligence artificielle tiers.
 
 ## Combien de temps
 Tant que vous conservez votre compte. Si vous n''enregistrez pas une évaluation dans votre compte, elle est supprimée au bout de 30 jours. L''enregistrement du dossier est aussi conservé 24 mois à compter du début de l''évaluation, puis supprimé. Il est conservé même si votre évaluation ou votre compte est supprimé, mais il n''est alors plus lié à vous.

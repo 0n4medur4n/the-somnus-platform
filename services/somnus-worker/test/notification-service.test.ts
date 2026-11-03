@@ -54,6 +54,16 @@ class FakeStore implements DeliveryStore {
   async markDeadLetter(id: string, error: string): Promise<void> {
     this.dead.push({ id, error });
   }
+  erasedFor: string[] = [];
+  purgedBefore: Date[] = [];
+  async deleteForRecipient(email: string): Promise<number> {
+    this.erasedFor.push(email);
+    return 2;
+  }
+  async deleteCreatedBefore(cutoff: Date): Promise<number> {
+    this.purgedBefore.push(cutoff);
+    return 5;
+  }
 }
 
 class FakeProvider {
@@ -144,5 +154,36 @@ describe("NotificationService", () => {
     expect(result.outcome).toBe("dead_letter");
     expect(store.dead).toHaveLength(1);
     expect(store.failed).toHaveLength(0);
+  });
+});
+
+describe("what the delivery log forgets", () => {
+  it("erases every record of an address at account deletion", async () => {
+    const store = new FakeStore();
+    const result = await new NotificationService(store, new FakeProvider()).eraseRecipient(
+      "person@example.com",
+    );
+    expect(result).toEqual({ deleted: 2 });
+    expect(store.erasedFor).toEqual(["person@example.com"]);
+  });
+
+  it("purges records older than the retention, 90 days by default", async () => {
+    const store = new FakeStore();
+    const now = new Date("2026-11-03T12:00:00.000Z");
+    const result = await new NotificationService(
+      store,
+      new FakeProvider(),
+      undefined,
+      () => now,
+    ).purgeExpired();
+    expect(result).toEqual({ deleted: 5 });
+    expect(store.purgedBefore[0]?.toISOString()).toBe("2026-08-05T12:00:00.000Z");
+  });
+
+  it("honours a configured retention", async () => {
+    const store = new FakeStore();
+    const now = new Date("2026-11-03T12:00:00.000Z");
+    await new NotificationService(store, new FakeProvider(), 30, () => now).purgeExpired();
+    expect(store.purgedBefore[0]?.toISOString()).toBe("2026-10-04T12:00:00.000Z");
   });
 });

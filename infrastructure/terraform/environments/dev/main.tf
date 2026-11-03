@@ -284,19 +284,19 @@ module "run_morpheo" {
     LOG_LEVEL    = "info"
     LOG_FORMAT   = "json"
     SERVICE_NAME = "morpheo-service"
+    # The AI of v0.2 p. 14 is OFF (owner decision 2026-11-03: no paid AI, and no
+    # patient text leaves for a model). The interview asks every question. It
+    # also has no OPENAI_API_KEY mounted, so a flipped flag could not send
+    # anything either: both must be put back to turn it on.
+    AI_EXTRACTION_ENABLED = "false"
   }
   secret_env_vars = {
     DATABASE_URL = { secret_id = "morpheo-db-url", version = "latest" }
-    # The AI's extraction and risk screen (AI_EXTRACTION_ENABLED, on by
-    # default). The same key report uses; without it the interview asks
-    # every question.
-    OPENAI_API_KEY = { secret_id = "OPENAI_API_KEY", version = "latest" }
   }
   labels = { app = "somnus", service = "morpheo", env = var.env }
 
   depends_on = [
     module.project_apis_backend,
-    google_secret_manager_secret_iam_member.morpheo_openai_api_key,
   ]
 }
 
@@ -611,14 +611,9 @@ resource "google_secret_manager_secret_iam_member" "report_openai_api_key" {
   member    = module.sa_report.member
 }
 
-# morpheo reads the same key for the AI of v0.2 p. 14 (extraction from the
-# person's narrative and the risk screen).
-resource "google_secret_manager_secret_iam_member" "morpheo_openai_api_key" {
-  project   = var.project_id
-  secret_id = data.google_secret_manager_secret.openai_api_key.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = module.sa_morpheo.member
-}
+# morpheo no longer reads this key: its AI (extraction from the person's narrative
+# and the risk screen) was switched off on 2026-11-03, and the binding that let it
+# read the key went with it.
 
 # --- The reference corpus's database URL (Addendum B §B3) ---
 #
@@ -738,6 +733,27 @@ module "cleanup_funnel_cases" {
   depends_on = [module.project_apis_backend, module.iam_worker]
 }
 
+# --- Retention: the delivery log after 90 days (ADR 0025) ---
+#
+# The Notification module logs every email it sends, with the recipient's address,
+# to diagnose a failed delivery. That is a matter of days, so the log is purged at
+# 90 days (`NOTIFICATION_LOG_RETENTION_DAYS` in the worker). Account deletion
+# erases a person's records at once; this clears the rest.
+
+module "cleanup_notification_log" {
+  source                     = "../../modules/cloud-scheduler-job"
+  project_id                 = var.project_id
+  region                     = var.region
+  job_id                     = "cleanup-notification-log"
+  schedule                   = "0 4 * * *"
+  time_zone                  = "Europe/Madrid"
+  http_uri                   = "${module.run_worker.url}/internal/v1/notifications/purge"
+  oidc_service_account_email = module.sa_scheduler.email
+  oidc_audience              = module.run_worker.url
+
+  depends_on = [module.project_apis_backend, module.iam_worker]
+}
+
 module "edge_api_warm_ping" {
   source      = "../../modules/cloud-scheduler-job"
   project_id  = var.project_id
@@ -841,6 +857,33 @@ resource "google_firestore_database" "sessions" {
   deletion_policy         = "DELETE"
 
   depends_on = [module.project_apis_backend]
+}
+
+# --- Firestore documents expire (ADR 0025) ---
+#
+# A session document holds the person's email, and the store only ever rejected an
+# expired one on read: nothing deleted it, so every address that had ever signed in
+# stayed here. With a TTL policy Firestore deletes the document after `expiresAt`
+# (typically within a day of it). Account deletion removes the person's sessions
+# at once; this is what clears the ones nobody asked to erase.
+resource "google_firestore_field" "sessions_ttl" {
+  project    = var.project_id
+  database   = google_firestore_database.sessions.name
+  collection = "sessions"
+  field      = "expiresAt"
+
+  ttl_config {}
+}
+
+# The sign-in-link throttle keeps a hash of the address and the time of the last
+# link. It only matters for a minute; the policy removes it long after that.
+resource "google_firestore_field" "sign_in_link_throttle_ttl" {
+  project    = var.project_id
+  database   = google_firestore_database.sessions.name
+  collection = "sign_in_link_throttle"
+  field      = "lastSentAt"
+
+  ttl_config {}
 }
 
 # --- Cost guardrail (build plan §2) ---

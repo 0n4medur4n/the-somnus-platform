@@ -146,10 +146,15 @@ export class MeService {
    * (the report service knows them only by assessment id, so the edge names
    * them first), erase the user's assessments in Morpheo, erase their staff
    * Drive identity in the worker (ADR 0019 -- a no-op for anyone who never set it
-   * up), erase the profile photo from edge-api's own bucket, erase the identity
-   * account (and its isolated consent), then revoke the session so the cookie
-   * dies immediately.
+   * up), erase the emails the worker sent them (ADR 0025), erase the profile
+   * photo from edge-api's own bucket, erase the identity account (and its isolated
+   * consent), then erase how they sign in: every session document and the
+   * Firebase Authentication account, which also kills the cookie at once.
    * Each service owns and erases its own data (§7).
+   *
+   * The identity account goes after everything that can still fail, and the
+   * sign-in identity last: a failure before the identity account leaves the
+   * person able to try again.
    */
   async deleteAccount(
     session: SessionRecord | undefined,
@@ -182,11 +187,17 @@ export class MeService {
       correlationId,
       headers: { [ACTOR_ID_HEADER]: actorId },
     });
+    if (record.email) {
+      await this.worker.post("/internal/v1/notifications/recipient/erase", {
+        correlationId,
+        body: { email: record.email },
+      });
+    }
     await this.photos.remove(actorId);
     await this.identity.delete("/v1/me", {
       correlationId,
       headers: { [ACTOR_ID_HEADER]: actorId },
     });
-    await this.sessions.revoke(record.sessionId);
+    await this.sessions.eraseSignInIdentity(record.firebaseUid);
   }
 }

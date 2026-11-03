@@ -1,6 +1,6 @@
 import type { NotificationType, SupportedLocale } from "@somnus/api-contracts";
 import { UUIDv7 } from "@somnus/api-contracts";
-import { eq, sql } from "drizzle-orm";
+import { eq, lt, sql } from "drizzle-orm";
 import type { NotificationDb } from "../notification-db.client.js";
 import { notificationDeliveries } from "../schema/index.js";
 
@@ -26,6 +26,10 @@ export interface DeliveryStore {
   markSent(id: string, providerMessageId: string): Promise<void>;
   markFailed(id: string, error: string): Promise<void>;
   markDeadLetter(id: string, error: string): Promise<void>;
+  /** Every record addressed to this email, any case (account erasure). Returns how many. */
+  deleteForRecipient(email: string): Promise<number>;
+  /** Records created before the cutoff (the log's retention). Returns how many. */
+  deleteCreatedBefore(cutoff: Date): Promise<number>;
 }
 
 export class DeliveriesRepository implements DeliveryStore {
@@ -74,6 +78,20 @@ export class DeliveriesRepository implements DeliveryStore {
         attempts: sql`${notificationDeliveries.attempts} + 1`,
       })
       .where(eq(notificationDeliveries.id, id));
+  }
+
+  async deleteForRecipient(email: string): Promise<number> {
+    const result = await this.db
+      .delete(notificationDeliveries)
+      .where(sql`lower(${notificationDeliveries.recipient}) = ${email.trim().toLowerCase()}`);
+    return result[0].affectedRows ?? 0;
+  }
+
+  async deleteCreatedBefore(cutoff: Date): Promise<number> {
+    const result = await this.db
+      .delete(notificationDeliveries)
+      .where(lt(notificationDeliveries.createdAt, cutoff));
+    return result[0].affectedRows ?? 0;
   }
 
   /** Max attempts exhausted: park it in the dead-letter state. */
