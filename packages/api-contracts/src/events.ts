@@ -224,12 +224,19 @@ export const CONSOLE_2026_10_EVENT_TYPES: ReadonlyArray<string> = [
   "admin.corpus_web_page.fetched.v1",
 ];
 
+/**
+ * Free-text dictation in a Morpheo interview (owner decision 2026-11-03, ADR 0026).
+ * That a pass was issued. Never the words, never the audio.
+ */
+const FUNNEL_DICTATION_EVENT_TYPES: ReadonlyArray<string> = ["morpheo.dictation.started.v1"];
+
 const ALL_EVENT_TYPES: ReadonlyArray<string> = [
   ...INITIAL_EVENT_TYPES,
   ...PHASE_14_EVENT_TYPES,
   ...PHASE_15_EVENT_TYPES,
   ...DRIVE_EVENT_TYPES,
   ...CONSOLE_2026_10_EVENT_TYPES,
+  ...FUNNEL_DICTATION_EVENT_TYPES,
 ];
 
 export function isKnownEventType(value: string): value is EventType {

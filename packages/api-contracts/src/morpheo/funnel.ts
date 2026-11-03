@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DriveDictationRequestSchema, DriveDictationSessionSchema } from "../drive/speech.js";
 import { FREE_TEXT_MAX_LENGTH, findIdentifyingData } from "./identifying-data.js";
 
 /**
@@ -412,6 +413,17 @@ export type FunnelAnswerRequest = z.infer<typeof FunnelAnswerRequestSchema>;
 /** Go back to an answered step to change it (Z1 correction): it and everything after it go. */
 export const FunnelRewindRequestSchema = z.object({ key: z.string().min(1).max(64) }).strict();
 export type FunnelRewindRequest = z.infer<typeof FunnelRewindRequestSchema>;
+
+/**
+ * A one-minute pass to dictate a free-text answer (owner decision 2026-11-03,
+ * ADR 0026). Same shape as Drive dictation: the browser opens `url` and streams
+ * 16 kHz PCM straight to AssemblyAI in the EU. The audio never passes through
+ * our servers, and this schema is the allow-list for that URL.
+ */
+export const FunnelDictationRequestSchema = DriveDictationRequestSchema;
+export type FunnelDictationRequest = z.infer<typeof FunnelDictationRequestSchema>;
+export const FunnelDictationSessionSchema = DriveDictationSessionSchema;
+export type FunnelDictationSession = z.infer<typeof FunnelDictationSessionSchema>;
 
 /** Which assessment flow the app runs: one config change rolls v2 back to v1. */
 export const FunnelConfigResponseSchema = z.object({ activeFlow: z.enum(["v1", "v2"]) }).strict();

@@ -486,6 +486,33 @@
       "hint": "No escriba su nombre, teléfono, correo ni DNI.",
       "identifying": "Parece que ha escrito un correo, un teléfono o un DNI. Bórrelo para continuar: no los necesitamos."
     },
+    "dictation": {
+      "start": "Dictar",
+      "stop": "Parar el dictado",
+      "listening": "Escuchando…",
+      "starting": "Abriendo el micrófono…",
+      "lang": "Idioma del dictado",
+      "langs": {
+        "es": "Español",
+        "ca": "Català",
+        "en": "English",
+        "fr": "Français"
+      },
+      "noticeTitle": "El dictado sale de The Somnus",
+      "notice": "Lo que diga se envía a AssemblyAI, en la Unión Europea, solo para convertirlo en texto. El audio no se guarda aquí. El texto aparece en el cuadro y puede corregirlo antes de continuar.",
+      "warning": "No diga su nombre, teléfono, correo ni DNI.",
+      "commands": "Puede decir «coma», «punto» o «punto y aparte».",
+      "accept": "Dictar",
+      "cancel": "Ahora no",
+      "error": {
+        "denied": "El navegador no permite el micrófono. Permítalo desde el candado de la barra de direcciones.",
+        "noMicrophone": "No se ha encontrado un micrófono.",
+        "network": "No se ha podido conectar el dictado. Inténtelo de nuevo.",
+        "unavailable": "El dictado no está disponible ahora.",
+        "failed": "El dictado se ha detenido. Inténtelo de nuevo.",
+        "unsupported": "Este navegador no puede dictar."
+      }
+    },
     "duration": {
       "amount": "Cantidad",
       "unit": "Unidad"

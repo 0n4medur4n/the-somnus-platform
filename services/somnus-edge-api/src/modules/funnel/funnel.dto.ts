@@ -1,6 +1,7 @@
 import {
   FunnelAnswerRequestSchema,
   FunnelCreateRequestSchema,
+  FunnelDictationRequestSchema,
   FunnelRewindRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
@@ -12,3 +13,4 @@ import { createZodDto } from "nestjs-zod";
 export class FunnelCreateDto extends createZodDto(FunnelCreateRequestSchema) {}
 export class FunnelAnswerDto extends createZodDto(FunnelAnswerRequestSchema) {}
 export class FunnelRewindDto extends createZodDto(FunnelRewindRequestSchema) {}
+export class FunnelDictationDto extends createZodDto(FunnelDictationRequestSchema) {}

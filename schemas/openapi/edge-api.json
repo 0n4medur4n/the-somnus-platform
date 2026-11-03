@@ -2283,6 +2283,40 @@
         ]
       }
     },
+    "/v1/funnel/sessions/{sessionId}/dictation": {
+      "post": {
+        "operationId": "FunnelController_dictation",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FunnelDictationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "A one-minute pass to dictate the free-text step into AssemblyAI (EU).",
+        "tags": [
+          "funnel"
+        ]
+      }
+    },
     "/v1/funnel/sessions/{sessionId}/back": {
       "post": {
         "operationId": "FunnelController_back",
@@ -6037,6 +6071,23 @@
           "key"
         ],
         "additionalProperties": false
+      },
+      "FunnelDictationDto": {
+        "type": "object",
+        "properties": {
+          "lang": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr"
+            ]
+          }
+        },
+        "required": [
+          "lang"
+        ]
       },
       "FunnelRewindDto": {
         "type": "object",
