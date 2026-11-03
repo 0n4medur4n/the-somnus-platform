@@ -15,6 +15,8 @@ const noAuth: AuthHeaders = async () => ({});
 export interface MorpheoMaintenanceClient {
   deleteUnclaimedAssessments(before: string): Promise<MaintenanceDeleteResult>;
   deleteExpiredClaimTokens(before: string): Promise<MaintenanceDeleteResult>;
+  /** The case records of Morpheo interviews started before `before` (ADR 0024). */
+  deleteExpiredFunnelCases(before: string): Promise<MaintenanceDeleteResult>;
 }
 
 export class HttpMorpheoMaintenanceClient implements MorpheoMaintenanceClient {
@@ -29,6 +31,10 @@ export class HttpMorpheoMaintenanceClient implements MorpheoMaintenanceClient {
 
   deleteExpiredClaimTokens(before: string): Promise<MaintenanceDeleteResult> {
     return this.post("/internal/v1/maintenance/claim-tokens/delete", before);
+  }
+
+  deleteExpiredFunnelCases(before: string): Promise<MaintenanceDeleteResult> {
+    return this.post("/internal/v1/maintenance/funnel-cases/delete", before);
   }
 
   private async post(path: string, before: string): Promise<MaintenanceDeleteResult> {

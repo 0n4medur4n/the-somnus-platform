@@ -21,7 +21,7 @@ reached only through its public interface (ADR 0010):
   before they are visible) and refuses a member removal that does not rotate
   the folder key for exactly the remaining members and every node.
 
-Plus scheduled jobs (Cloud Scheduler): unclaimed-assessment and claim-token cleanup.
+Plus scheduled jobs (Cloud Scheduler): unclaimed-assessment and claim-token cleanup, and the 24-month deletion of Morpheo case records (`cleanup-funnel-cases`, ADR 0024; `FUNNEL_CASE_RETENTION_MONTHS`).
 
 ## Status
 

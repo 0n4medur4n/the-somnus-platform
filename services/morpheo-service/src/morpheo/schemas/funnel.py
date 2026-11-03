@@ -254,7 +254,8 @@ class FunnelStateDTO(ContractModel):
     history: list[FunnelHistoryItemDTO]
     owned: bool
     # The interview's case code (ADR 0024), shown to the person with the result.
-    case_code: str
+    # None once the case's retention period has ended and the interview remains.
+    case_code: str | None = None
 
 
 class FunnelCreateRequestDTO(ContractModel):

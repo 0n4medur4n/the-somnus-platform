@@ -345,10 +345,11 @@ export const FunnelStateSchema = z
     owned: z.boolean(),
     /**
      * The interview's case code (ADR 0024), shown with the result and on the PDF.
-     * Optional only so this edge accepts a morpheo that does not send it yet
-     * (deploy the edge first); morpheo always sends it.
+     * Optional so this edge accepts a morpheo that does not send it yet (deploy
+     * the edge first), and null once the case's retention period has ended while
+     * the person's own saved interview remains: it never gets a new case.
      */
-    caseCode: z.string().min(1).optional(),
+    caseCode: z.string().min(1).nullable().optional(),
   })
   .strict();
 export type FunnelState = z.infer<typeof FunnelStateSchema>;

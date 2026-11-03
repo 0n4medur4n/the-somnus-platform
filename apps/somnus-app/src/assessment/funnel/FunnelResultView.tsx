@@ -22,8 +22,8 @@ export function FunnelResultView({
   sessionId: string;
   owned: boolean;
   signedIn: boolean;
-  /** The interview's case number (ADR 0024); absent only from an older morpheo. */
-  caseCode?: string | undefined;
+  /** The interview's case number (ADR 0024); none from an older morpheo or after its retention. */
+  caseCode?: string | null | undefined;
 }) {
   const { t } = useTranslation();
   // Only an interview stopped at the age has no text (out of scope): never an

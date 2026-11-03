@@ -254,22 +254,29 @@ class FunnelService:
         stopped = Interview(self._a, answers).stopped()
         status = "paused" if stopped == S2_PAUSED else "stopped" if stopped else "finished"
         self._repo.set_status(session.id, status)
-        case = self._case(session)
-        if case.status == "open":
+        case = self._cases.for_session(session.id)
+        if case is not None and case.status == "open":
             self.record_closure(case, status, answers)
 
     def _reopen(self, session: FunnelSession) -> FunnelStateDTO:
         if session.status != "open":
             self._repo.set_status(session.id, "open")
-        self._cases.reopen(self._case(session))
+        case = self._cases.for_session(session.id)
+        if case is not None:
+            self._cases.reopen(case)
         answers = self._answers(session.id)
         self._settle(session, answers)
         return self._state(session, answers)
 
     # --- the case record (ADR 0024) ---
 
-    def _case(self, session: FunnelSession) -> FunnelCase:
-        """The interview's case; one is opened for an interview older than cases."""
+    def _open_case_for_older(self, session: FunnelSession) -> FunnelCase:
+        """A case for an interview older than cases, dated from the interview.
+
+        Only the backfill opens one after the fact. An interview whose case is
+        gone (its retention period ended, ADR 0024) stays without one: reading,
+        reopening or correcting it never starts a new case for it.
+        """
         case = self._cases.for_session(session.id)
         if case is None:
             self._cases.create(
@@ -319,8 +326,9 @@ class FunnelService:
             for h in self._history(answers, Interview(self._a, answers))
             if h.key in removed
         ]
-        if withdrawn:
-            self._cases.add_change(self._case(session).code, withdrawn)
+        case = self._cases.for_session(session.id)
+        if withdrawn and case is not None:
+            self._cases.add_change(case.code, withdrawn)
 
     def backfill_cases(self) -> tuple[int, int]:
         """Open a case for every interview older than cases; a closed one gets a
@@ -330,7 +338,7 @@ class FunnelService:
         """
         opened = unrebuilt = 0
         for session in self._repo.without_case():
-            case = self._case(session)
+            case = self._open_case_for_older(session)
             opened += 1
             if session.status == "open":
                 continue
@@ -777,6 +785,7 @@ class FunnelService:
 
     def _state(self, session: FunnelSession, answers: dict[str, Answer]) -> FunnelStateDTO:
         iv = Interview(self._a, answers)
+        case = self._cases.for_session(session.id)
         step = next_step(self._a, answers, self._registry)
         status: FunnelStatus = "open"
         result = None
@@ -791,5 +800,5 @@ class FunnelService:
             result=result,
             history=self._history(answers, iv),
             owned=session.owner_id is not None,
-            case_code=self._case(session).code,
+            case_code=None if case is None else case.code,
         )

@@ -26,4 +26,12 @@ export class MaintenanceController {
   cleanupClaimTokens(): Promise<MaintenanceDeleteResult> {
     return this.service.cleanupExpiredClaimTokens();
   }
+
+  @Post("cleanup-funnel-cases")
+  @ApiOperation({
+    summary: "Delete Morpheo case records past their 24-month retention (ADR 0024).",
+  })
+  cleanupFunnelCases(): Promise<MaintenanceDeleteResult> {
+    return this.service.cleanupFunnelCases();
+  }
 }

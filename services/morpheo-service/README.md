@@ -191,7 +191,7 @@ account erasure) keeps its case and only clears `session_id`.
 | POST | `/internal/v1/funnel/cases/stats` | edge, `admin_statistics_read`: counts only |
 | POST | `/internal/v1/funnel/cases/open` | edge, `admin_morpheo_case_read`: needs `X-Somnus-Actor-Id`, a category and a justification; the access is written first |
 | POST | `/internal/v1/maintenance/funnel-cases/backfill` | once after the migration: a case for every older interview (`reconstructed`) |
-| POST | `/internal/v1/maintenance/funnel-cases/delete` | the legal retention period, once the owner sets it; nothing calls it yet |
+| POST | `/internal/v1/maintenance/funnel-cases/delete` | the worker's daily `cleanup-funnel-cases` job: cases started more than 24 months ago (ADR 0024) |
 
 ## Docker
 

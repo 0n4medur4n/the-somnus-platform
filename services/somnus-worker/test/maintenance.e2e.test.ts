@@ -13,6 +13,9 @@ class FakeClient implements MorpheoMaintenanceClient {
   async deleteExpiredClaimTokens(_before: string): Promise<MaintenanceDeleteResult> {
     return { deleted: 3 };
   }
+  async deleteExpiredFunnelCases(_before: string): Promise<MaintenanceDeleteResult> {
+    return { deleted: 1 };
+  }
 }
 
 describe("maintenance jobs (e2e)", () => {
@@ -47,5 +50,14 @@ describe("maintenance jobs (e2e)", () => {
       url: "/internal/v1/jobs/cleanup-claim-tokens",
     });
     expect(response.json()).toEqual({ deleted: 3 });
+  });
+
+  it("runs the case-record cleanup (24 months, ADR 0024)", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/internal/v1/jobs/cleanup-funnel-cases",
+    });
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({ deleted: 1 });
   });
 });

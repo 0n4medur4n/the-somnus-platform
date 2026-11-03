@@ -36,6 +36,7 @@ export const MORPHEO_MAINTENANCE_CLIENT = Symbol("MORPHEO_MAINTENANCE_CLIENT");
           morpheo,
           config.UNCLAIMED_ASSESSMENT_TTL_DAYS,
           config.CLAIM_TOKEN_TTL_HOURS,
+          config.FUNNEL_CASE_RETENTION_MONTHS,
         );
       },
       inject: [CLOCK, MORPHEO_MAINTENANCE_CLIENT],

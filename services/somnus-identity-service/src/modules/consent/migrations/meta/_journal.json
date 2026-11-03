@@ -36,6 +36,13 @@
       "when": 1792175320380,
       "tag": "0004_legal_v3_profile_and_marketing",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1793707200000,
+      "tag": "0005_legal_v4_case_records",
+      "breakpoints": true
     }
   ]
 }

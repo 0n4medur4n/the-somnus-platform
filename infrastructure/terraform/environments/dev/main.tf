@@ -715,6 +715,29 @@ module "cleanup_claim_tokens" {
   depends_on = [module.project_apis_backend, module.iam_worker]
 }
 
+# --- Retention: Morpheo case records after 24 months (ADR 0024) ---
+#
+# Every interview has a case record that outlives the interview itself. The
+# owner decided on 2026-11-03 to keep it 24 months from the day the interview
+# started; the privacy policy and the DPIA say the same. Daily, the worker
+# computes the cutoff (calendar months, UTC) and asks Morpheo, which owns the
+# data, to delete the cases started before it, with everything recorded about
+# them. The period itself lives in the worker (FUNNEL_CASE_RETENTION_MONTHS).
+
+module "cleanup_funnel_cases" {
+  source                     = "../../modules/cloud-scheduler-job"
+  project_id                 = var.project_id
+  region                     = var.region
+  job_id                     = "cleanup-funnel-cases"
+  schedule                   = "45 3 * * *"
+  time_zone                  = "Europe/Madrid"
+  http_uri                   = "${module.run_worker.url}/internal/v1/jobs/cleanup-funnel-cases"
+  oidc_service_account_email = module.sa_scheduler.email
+  oidc_audience              = module.run_worker.url
+
+  depends_on = [module.project_apis_backend, module.iam_worker]
+}
+
 module "edge_api_warm_ping" {
   source      = "../../modules/cloud-scheduler-job"
   project_id  = var.project_id

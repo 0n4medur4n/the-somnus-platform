@@ -299,3 +299,34 @@ def test_retention_deletes_a_case_and_everything_recorded_about_it(client: TestC
         for model in (FunnelCaseRecord, FunnelCaseChange, FunnelCaseAccess):
             assert list(db.scalars(select(model).where(model.case_code == code))) == []
     assert _open(client, code).status_code == 404
+
+
+def test_an_interview_whose_case_has_expired_never_gets_a_new_one(client: TestClient) -> None:
+    # A signed-in person keeps their saved result after the case's 24 months
+    # (ADR 0024): reading it, reopening it or correcting it must not start a case.
+    start = client.post(
+        f"{BASE}/sessions", json={"consentGiven": True}, headers={"X-Somnus-Actor-Id": "user-9"}
+    ).json()
+    headers = {"X-Somnus-Actor-Id": "user-9"}
+    closed = client.post(
+        f"{BASE}/sessions/{start['sessionId']}/answers",
+        json={"key": "AGE", "value": 15},
+        headers=headers,
+    ).json()
+    assert closed["status"] == "stopped" and CODE.match(closed["caseCode"])
+
+    cutoff = (datetime.now(UTC) + timedelta(days=1)).isoformat()
+    deleted = client.post("/internal/v1/maintenance/funnel-cases/delete", json={"before": cutoff})
+    assert deleted.json() == {"deleted": 1}
+
+    again = client.get(f"{BASE}/sessions/{start['sessionId']}", headers=headers).json()
+    assert again["caseCode"] is None and again["status"] == "stopped"
+    back = client.post(f"{BASE}/sessions/{start['sessionId']}/back", headers=headers)
+    assert back.status_code == 200 and back.json()["caseCode"] is None
+    client.post(
+        f"{BASE}/sessions/{start['sessionId']}/answers",
+        json={"key": "AGE", "value": 15},
+        headers=headers,
+    )
+    with _db(client) as db:
+        assert list(db.scalars(select(FunnelCase))) == []

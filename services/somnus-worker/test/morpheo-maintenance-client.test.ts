@@ -35,6 +35,17 @@ describe("HttpMorpheoMaintenanceClient", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/claim-tokens/delete");
   });
 
+  it("hits the funnel-cases path for the case-record cleanup", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ deleted: 0 }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    await new HttpMorpheoMaintenanceClient("http://morpheo:8080").deleteExpiredFunnelCases("x");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/maintenance/funnel-cases/delete");
+  });
+
   it("throws on a non-2xx morpheo response", async () => {
     vi.stubGlobal(
       "fetch",
