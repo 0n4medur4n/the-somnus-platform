@@ -14,6 +14,8 @@ import type {
   CurrentLegalDocumentsResponse,
   FunnelAnswerRequest,
   FunnelConfigResponse,
+  FunnelDictationRequest,
+  FunnelDictationSession,
   FunnelOwnSessions,
   FunnelState,
   Invitation,
@@ -166,6 +168,15 @@ export const edge = {
     api.post<FunnelState>(
       `/v1/funnel/sessions/${encodeURIComponent(sessionId)}/rewind${panelQuery(panel)}`,
       { key },
+    ),
+  /** A one-minute pass to dictate the free-text step. The audio does not come here. */
+  dictateFunnel: (
+    sessionId: string,
+    lang: FunnelDictationRequest["lang"],
+  ): Promise<FunnelDictationSession> =>
+    api.post<FunnelDictationSession>(
+      `/v1/funnel/sessions/${encodeURIComponent(sessionId)}/dictation`,
+      { lang },
     ),
   /** The person's own v2 report as a PDF (a download link; signed-in owners only). */
   funnelReportUrl: (sessionId: string, locale: SupportedLocale): string =>

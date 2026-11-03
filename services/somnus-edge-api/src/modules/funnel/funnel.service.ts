@@ -4,12 +4,16 @@ import {
   type FunnelConfigResponse,
   FunnelConfigResponseSchema,
   type FunnelCreateRequest,
+  type FunnelDictationRequest,
+  type FunnelDictationSession,
+  FunnelDictationSessionSchema,
   type FunnelOwnSessions,
   FunnelOwnSessionsSchema,
   type FunnelRewindRequest,
   type FunnelState,
   FunnelStateSchema,
   MeResponseSchema,
+  makeEvent,
   type ReportPdf,
   ReportPdfSchema,
   type SupportedLocale,
@@ -18,11 +22,16 @@ import type { CloudRunClient } from "@somnus/cloud-run-client";
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import type { ZodType } from "zod";
 import { correlationOf, requireSession } from "../../common/composition.util.js";
+import {
+  EDGE_EVENT_PUBLISHER,
+  type EventPublisher,
+} from "../../infrastructure/events/event-publisher.js";
 import { ACTOR_ID_HEADER } from "../../infrastructure/internal-clients/headers.js";
 import {
   IDENTITY_CLIENT,
   MORPHEO_CLIENT,
   REPORT_CLIENT,
+  WORKER_CLIENT,
 } from "../../infrastructure/internal-clients/internal-clients.module.js";
 import { ActorResolver } from "../sessions/actor-resolver.service.js";
 import type { SessionRecord } from "../sessions/session.service.js";
@@ -62,6 +71,8 @@ export class FunnelProxyService {
     @Inject(IDENTITY_CLIENT) private readonly identity: CloudRunClient,
     private readonly actorResolver: ActorResolver,
     @Inject(REPORT_CLIENT) private readonly report: CloudRunClient,
+    @Inject(WORKER_CLIENT) private readonly worker: CloudRunClient,
+    @Inject(EDGE_EVENT_PUBLISHER) private readonly events: EventPublisher,
   ) {}
 
   async config(rawCorrelationId?: string): Promise<FunnelConfigResponse> {
@@ -125,6 +136,56 @@ export class FunnelProxyService {
     rawCorrelationId?: string,
   ): Promise<FunnelState> {
     return this.forward("POST", `${this.path(sessionId)}/back`, session, panel, rawCorrelationId);
+  }
+
+  /**
+   * A pass so the browser can dictate the free-text step it is on (ADR 0026).
+   * The interview must be open on a free-text step — the same check as showing
+   * the box — before any token is minted. The audio goes from the browser to
+   * AssemblyAI; nothing here is logged, and the audit event records only that
+   * a pass was issued and in which language.
+   */
+  async dictation(
+    session: SessionRecord | undefined,
+    sessionId: string,
+    body: FunnelDictationRequest,
+    rawCorrelationId?: string,
+  ): Promise<FunnelDictationSession> {
+    const correlationId = correlationOf(rawCorrelationId);
+    const state = await this.get(session, sessionId, false, correlationId);
+    const type = state.status === "open" ? state.step?.type : undefined;
+    if (type !== "free_text" && type !== "yes_no_note") {
+      throw new SomnusError(
+        ErrorCode.VALIDATION_FAILED,
+        "Dictation is only for an open free-text step.",
+        { correlationId },
+      );
+    }
+    const response = await this.worker.post("/internal/v1/drive/speech/interview-dictation", {
+      correlationId,
+      body,
+      skipRetry: true,
+    });
+    const parsed = FunnelDictationSessionSchema.safeParse(response.body);
+    if (!parsed.success) {
+      throw new SomnusError(ErrorCode.INTERNAL, "Unexpected worker response.", { correlationId });
+    }
+    const actorId = await this.actorOf(session, correlationId);
+    try {
+      await this.events.publish(
+        makeEvent({
+          eventType: "morpheo.dictation.started.v1",
+          producer: "somnus-edge-api",
+          correlationId,
+          ...(actorId ? { actor: { type: "user", id: actorId } } : {}),
+          subject: { type: "funnel_session", id: sessionId },
+          data: { lang: body.lang },
+        }),
+      );
+    } catch {
+      // The pass is already minted. Auditing must not hide it from the person.
+    }
+    return parsed.data;
   }
 
   rewind(

@@ -35,6 +35,21 @@ export class SpeechController {
     return this.speech.dictationSession(body.lang);
   }
 
+  /**
+   * The same pass, for a Morpheo free-text answer (ADR 0026). Edge-api is the
+   * only caller, and only after it has checked that the interview is open on a
+   * free-text step. No Drive actor: an interview may be anonymous, and this
+   * route stores nothing — the audio never arrives here.
+   */
+  @Post("interview-dictation")
+  @HttpCode(200)
+  @ApiOperation({
+    summary: "A one-minute AssemblyAI pass for dictating a Morpheo free-text answer.",
+  })
+  interviewDictation(@Body() body: DriveDictationDto): Promise<DriveDictationSession> {
+    return this.speech.dictationSession(body.lang);
+  }
+
   @Post("read-aloud")
   @HttpCode(200)
   @ApiOperation({ summary: "A passage spoken by Google Cloud Text-to-Speech, as MP3." })

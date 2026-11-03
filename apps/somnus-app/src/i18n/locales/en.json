@@ -486,6 +486,33 @@
       "hint": "Do not write your name, phone number, email or ID number.",
       "identifying": "It looks like you wrote an email, a phone number or an ID number. Please delete it to continue: we don't need it."
     },
+    "dictation": {
+      "start": "Dictate",
+      "stop": "Stop dictation",
+      "listening": "Listening…",
+      "starting": "Opening the microphone…",
+      "lang": "Dictation language",
+      "langs": {
+        "es": "Español",
+        "ca": "Català",
+        "en": "English",
+        "fr": "Français"
+      },
+      "noticeTitle": "Dictation leaves The Somnus",
+      "notice": "What you say is sent to AssemblyAI, in the European Union, only to turn it into text. The audio is not kept here. The text appears in the box and you can correct it before continuing.",
+      "warning": "Do not say your name, phone number, email or ID number.",
+      "commands": "You can say “comma”, “full stop” or “new paragraph”.",
+      "accept": "Dictate",
+      "cancel": "Not now",
+      "error": {
+        "denied": "The browser will not allow the microphone. Allow it from the padlock in the address bar.",
+        "noMicrophone": "No microphone was found.",
+        "network": "Dictation could not connect. Please try again.",
+        "unavailable": "Dictation is not available right now.",
+        "failed": "Dictation stopped. Please try again.",
+        "unsupported": "This browser cannot dictate."
+      }
+    },
     "duration": {
       "amount": "Amount",
       "unit": "Unit"

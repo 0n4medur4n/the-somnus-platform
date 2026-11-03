@@ -486,6 +486,33 @@
       "hint": "No escrigui el seu nom, telèfon, correu ni DNI.",
       "identifying": "Sembla que ha escrit un correu, un telèfon o un DNI. Esborri'l per continuar: no el necessitem."
     },
+    "dictation": {
+      "start": "Dictar",
+      "stop": "Aturar el dictat",
+      "listening": "Escoltant…",
+      "starting": "Obrint el micròfon…",
+      "lang": "Idioma del dictat",
+      "langs": {
+        "es": "Español",
+        "ca": "Català",
+        "en": "English",
+        "fr": "Français"
+      },
+      "noticeTitle": "El dictat surt de The Somnus",
+      "notice": "El que digui s'envia a AssemblyAI, a la Unió Europea, només per convertir-ho en text. L'àudio no es desa aquí. El text apareix al quadre i el pot corregir abans de continuar.",
+      "warning": "No digui el seu nom, telèfon, correu ni DNI.",
+      "commands": "Pot dir «coma», «punt» o «punt i a part».",
+      "accept": "Dictar",
+      "cancel": "Ara no",
+      "error": {
+        "denied": "El navegador no permet el micròfon. Permeti'l des del cadenat de la barra d'adreces.",
+        "noMicrophone": "No s'ha trobat cap micròfon.",
+        "network": "No s'ha pogut connectar el dictat. Torni-ho a provar.",
+        "unavailable": "El dictat no està disponible ara.",
+        "failed": "El dictat s'ha aturat. Torni-ho a provar.",
+        "unsupported": "Aquest navegador no pot dictar."
+      }
+    },
     "duration": {
       "amount": "Quantitat",
       "unit": "Unitat"

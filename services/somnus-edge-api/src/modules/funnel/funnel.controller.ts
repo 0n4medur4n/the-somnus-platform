@@ -1,8 +1,20 @@
-import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from "@nestjs/common";
+import { RouteConfig } from "@nestjs/platform-fastify";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import {
   DEFAULT_LOCALE,
   type FunnelConfigResponse,
+  type FunnelDictationSession,
   type FunnelOwnSessions,
   type FunnelState,
   isSupportedLocale,
@@ -13,7 +25,12 @@ import { CurrentSession } from "../sessions/current-session.decorator.js";
 import { OptionalSessionGuard } from "../sessions/optional-session.guard.js";
 import { SessionGuard } from "../sessions/session.guard.js";
 import type { SessionRecord } from "../sessions/session.service.js";
-import { FunnelAnswerDto, FunnelCreateDto, FunnelRewindDto } from "./funnel.dto.js";
+import {
+  FunnelAnswerDto,
+  FunnelCreateDto,
+  FunnelDictationDto,
+  FunnelRewindDto,
+} from "./funnel.dto.js";
 import { FunnelProxyService } from "./funnel.service.js";
 
 /** `?panel=1`: the app asks for the team panel (kept only for internal roles). */
@@ -78,6 +95,21 @@ export class FunnelController {
     @CorrelationId() correlationId?: string,
   ): Promise<FunnelState> {
     return this.funnel.answer(session, sessionId, body, wantsPanel(panel), correlationId);
+  }
+
+  @Post("sessions/:sessionId/dictation")
+  @HttpCode(200)
+  @RouteConfig({ rateLimit: { max: 30, timeWindow: 10 * 60_000 } })
+  @ApiOperation({
+    summary: "A one-minute pass to dictate the free-text step into AssemblyAI (EU).",
+  })
+  dictation(
+    @CurrentSession() session: SessionRecord | undefined,
+    @Param("sessionId") sessionId: string,
+    @Body() body: FunnelDictationDto,
+    @CorrelationId() correlationId?: string,
+  ): Promise<FunnelDictationSession> {
+    return this.funnel.dictation(session, sessionId, body, correlationId);
   }
 
   @Post("sessions/:sessionId/back")

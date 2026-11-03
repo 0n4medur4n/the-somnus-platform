@@ -337,6 +337,7 @@ export function FunnelAssessment({
               <StepView
                 key={step.key}
                 step={step}
+                sessionId={interview.sessionId}
                 busy={busy}
                 onAnswer={answer}
                 onCorrect={() => setPhase("correct")}

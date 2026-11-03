@@ -486,6 +486,33 @@
       "hint": "N'écrivez ni votre nom, ni votre téléphone, ni votre e-mail, ni votre numéro d'identité.",
       "identifying": "Il semble que vous ayez écrit un e-mail, un téléphone ou un numéro d'identité. Effacez-le pour continuer : nous n'en avons pas besoin."
     },
+    "dictation": {
+      "start": "Dicter",
+      "stop": "Arrêter la dictée",
+      "listening": "Écoute…",
+      "starting": "Ouverture du microphone…",
+      "lang": "Langue de la dictée",
+      "langs": {
+        "es": "Español",
+        "ca": "Català",
+        "en": "English",
+        "fr": "Français"
+      },
+      "noticeTitle": "La dictée quitte The Somnus",
+      "notice": "Ce que vous dites est envoyé à AssemblyAI, dans l'Union européenne, uniquement pour le transformer en texte. L'audio n'est pas conservé ici. Le texte apparaît dans le champ et vous pouvez le corriger avant de continuer.",
+      "warning": "Ne dites ni votre nom, ni votre téléphone, ni votre e-mail, ni votre numéro d'identité.",
+      "commands": "Vous pouvez dire « virgule », « point » ou « à la ligne ».",
+      "accept": "Dicter",
+      "cancel": "Pas maintenant",
+      "error": {
+        "denied": "Le navigateur n'autorise pas le microphone. Autorisez-le depuis le cadenas de la barre d'adresse.",
+        "noMicrophone": "Aucun microphone n'a été trouvé.",
+        "network": "La dictée n'a pas pu se connecter. Réessayez.",
+        "unavailable": "La dictée n'est pas disponible pour le moment.",
+        "failed": "La dictée s'est arrêtée. Réessayez.",
+        "unsupported": "Ce navigateur ne peut pas dicter."
+      }
+    },
     "duration": {
       "amount": "Quantité",
       "unit": "Unité"

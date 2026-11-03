@@ -21,10 +21,12 @@ type Chosen = { decision: Decision; value?: FunnelExtractionDecisionBody["value"
  */
 export function ConfirmExtraction({
   step,
+  sessionId,
   busy,
   onAnswer,
 }: {
   step: FunnelStep;
+  sessionId: string;
   busy: boolean;
   onAnswer: (body: AnswerBody) => void;
 }) {
@@ -65,6 +67,7 @@ export function ConfirmExtraction({
             item={item}
             question={step.note ?? ""}
             choice={chosen[item.id]}
+            sessionId={sessionId}
             busy={busy}
             onChoose={(choice) => choose(item.id, choice)}
           />
@@ -83,12 +86,14 @@ function ExtractionItem({
   item,
   question,
   choice,
+  sessionId,
   busy,
   onChoose,
 }: {
   item: FunnelExtractionItem;
   question: string;
   choice: Chosen | undefined;
+  sessionId: string;
   busy: boolean;
   onChoose: (choice: Chosen) => void;
 }) {
@@ -127,6 +132,7 @@ function ExtractionItem({
             <SubmitLabelContext.Provider value={t("funnel.extraction.saveCorrection")}>
               <AnswerInput
                 step={asStep(item)}
+                sessionId={sessionId}
                 busy={busy}
                 onAnswer={(body) => {
                   if (body.value != null) onChoose({ decision: "corregido", value: body.value });

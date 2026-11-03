@@ -16,6 +16,17 @@ const failingResolver = {
 } as unknown as ActorResolver;
 
 const { client: unusedReport } = makeFakeIdentityClient(() => ({ status: 500 }));
+const { client: unusedWorker } = makeFakeIdentityClient(() => ({ status: 500 }));
+const silentEvents = { publish: async () => {} };
+
+function serviceOf(
+  morpheo: typeof unusedReport,
+  identity: typeof unusedReport,
+  actor: ActorResolver,
+  report: typeof unusedReport,
+) {
+  return new FunnelProxyService(morpheo, identity, actor, report, unusedWorker, silentEvents);
+}
 
 function state(): FunnelState {
   return {
@@ -74,7 +85,7 @@ function setup(roles: string[], actorResolver: ActorResolver = resolver) {
   return {
     morpheo,
     identity,
-    service: new FunnelProxyService(morpheo.client, identity.client, actorResolver, unusedReport),
+    service: serviceOf(morpheo.client, identity.client, actorResolver, unusedReport),
   };
 }
 
@@ -97,7 +108,7 @@ describe("FunnelProxyService", () => {
   it("never re-sends an interview answer: one stored twice reads as 'not the current step'", async () => {
     const morpheo = makeFakeIdentityClient(() => ({ status: 503, body: {} }));
     const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
-    const service = new FunnelProxyService(morpheo.client, identity.client, resolver, unusedReport);
+    const service = serviceOf(morpheo.client, identity.client, resolver, unusedReport);
     await expect(
       service.answer(undefined, "f-1", { key: "AGE", value: 52 }, false, "c1"),
     ).rejects.toBeDefined();
@@ -136,7 +147,7 @@ describe("FunnelProxyService", () => {
   it("refuses an unexpected morpheo response", async () => {
     const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: { nope: true } }));
     const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
-    const service = new FunnelProxyService(morpheo.client, identity.client, resolver, unusedReport);
+    const service = serviceOf(morpheo.client, identity.client, resolver, unusedReport);
     await expect(service.get(undefined, "f-1", false, "c1")).rejects.toMatchObject({
       code: "INTERNAL",
     });
@@ -277,12 +288,7 @@ describe("FunnelProxyService", () => {
         },
       };
     });
-    const service = new FunnelProxyService(
-      morpheo.client,
-      identity.client,
-      resolver,
-      report.client,
-    );
+    const service = serviceOf(morpheo.client, identity.client, resolver, report.client);
     const pdf = await service.reportPdf(SESSION, "f-1", "es", "c1");
     expect(pdf.templateVersion).toBe("report_v2");
   });
@@ -336,12 +342,7 @@ describe("FunnelProxyService", () => {
         },
       };
     });
-    const service = new FunnelProxyService(
-      morpheo.client,
-      identity.client,
-      resolver,
-      reportClient.client,
-    );
+    const service = serviceOf(morpheo.client, identity.client, resolver, reportClient.client);
     const pdf = await service.reportPdf(SESSION, "f-1", "es", "c1");
     expect(pdf.templateVersion).toBe("report_v3");
     expect(withoutPanel(finished).result?.report).toEqual(report);
@@ -370,12 +371,7 @@ describe("FunnelProxyService", () => {
     const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: finished }));
     const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
     const reportClient = makeFakeIdentityClient(() => ({ status: 503 }));
-    const service = new FunnelProxyService(
-      morpheo.client,
-      identity.client,
-      resolver,
-      reportClient.client,
-    );
+    const service = serviceOf(morpheo.client, identity.client, resolver, reportClient.client);
     await expect(service.reportPdf(SESSION, "f-1", "es", "c1")).rejects.toBeDefined();
     expect(reportClient.requests).toHaveLength(1);
   });
@@ -398,14 +394,14 @@ describe("FunnelProxyService", () => {
       return { status: 200, body: listed };
     });
     const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
-    const service = new FunnelProxyService(morpheo.client, identity.client, resolver, unusedReport);
+    const service = serviceOf(morpheo.client, identity.client, resolver, unusedReport);
     expect(await service.listOwn(SESSION, "c1")).toEqual(listed);
   });
 
   it("gives no list to someone who is not signed in", async () => {
     const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: { sessions: [] } }));
     const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
-    const service = new FunnelProxyService(morpheo.client, identity.client, resolver, unusedReport);
+    const service = serviceOf(morpheo.client, identity.client, resolver, unusedReport);
     await expect(service.listOwn(undefined, "c1")).rejects.toBeDefined();
     expect(morpheo.requests).toHaveLength(0);
   });
@@ -447,12 +443,7 @@ describe("FunnelProxyService", () => {
         },
       };
     });
-    const service = new FunnelProxyService(
-      morpheo.client,
-      identity.client,
-      resolver,
-      reportClient.client,
-    );
+    const service = serviceOf(morpheo.client, identity.client, resolver, reportClient.client);
     await service.reportPdf(SESSION, "f-1", "es", "c1");
   });
 
@@ -460,15 +451,58 @@ describe("FunnelProxyService", () => {
     const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: state() }));
     const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
     const report = makeFakeIdentityClient(() => ({ status: 500 }));
-    const service = new FunnelProxyService(
-      morpheo.client,
-      identity.client,
-      resolver,
-      report.client,
-    );
+    const service = serviceOf(morpheo.client, identity.client, resolver, report.client);
     await expect(service.reportPdf(SESSION, "f-1", "es", "c1")).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
     expect(report.requests).toHaveLength(0);
+  });
+
+  it("mints a dictation pass only for an open free-text step, and records no words", async () => {
+    const open = state();
+    if (!open.step) throw new Error("missing step");
+    open.step = {
+      ...open.step,
+      type: "free_text",
+      text: "Cuénteme, ¿qué le preocupa de su sueño?",
+    };
+    const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: open }));
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const pass = {
+      url: "wss://streaming.eu.assemblyai.com/v3/ws?token=t",
+      sampleRate: 16_000,
+      expiresInSeconds: 60,
+    };
+    const worker = makeFakeIdentityClient((req) => {
+      expect(req.path).toBe("/internal/v1/drive/speech/interview-dictation");
+      expect(JSON.parse(req.body ?? "{}")).toEqual({ lang: "es" });
+      return { status: 200, body: pass };
+    });
+    const published: Array<{ data?: unknown }> = [];
+    const service = new FunnelProxyService(
+      morpheo.client,
+      identity.client,
+      resolver,
+      unusedReport,
+      worker.client,
+      {
+        publish: async (event) => {
+          published.push(event);
+        },
+      },
+    );
+    expect(await service.dictation(undefined, "f-1", { lang: "es" }, "c1")).toEqual(pass);
+    expect(published).toHaveLength(1);
+    const recorded = JSON.stringify(published[0]);
+    expect(recorded).not.toContain("Cuénteme");
+    expect(recorded).not.toContain("token");
+    expect(recorded).toContain("morpheo.dictation.started.v1");
+  });
+
+  it("refuses dictation when the step is not free text", async () => {
+    const { service } = setup([]);
+    await expect(service.dictation(undefined, "f-1", { lang: "es" }, "c1")).rejects.toMatchObject({
+      code: "VALIDATION_FAILED",
+    });
   });
 });
