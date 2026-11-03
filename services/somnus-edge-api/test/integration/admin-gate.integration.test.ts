@@ -139,6 +139,8 @@ const CAPABILITIES_BY_ROLE: Record<string, string[]> = {
     // no separate clinical-review gate on it, which is exactly why no other role
     // may reach it.
     "admin_corpus_manage",
+    // ADR 0024 (owner decision 2026-11-03): one Morpheo case, super admin alone.
+    "admin_morpheo_case_read",
     "admin_drive",
   ],
 };
@@ -561,6 +563,20 @@ describe("admin console gate (/admin/v1/*)", () => {
         url: "/admin/v1/break-glass/reveal",
         capability: "admin_break_glass",
       },
+      // ADR 0024 -- Morpheo's case records. The counts sit with the other
+      // dashboards; opening one case is platform_super_admin's alone, so the
+      // parametrized run refuses every other internal role, break-glass holders
+      // included.
+      {
+        method: "POST",
+        url: "/admin/v1/morpheo/statistics",
+        capability: "admin_statistics_read",
+      },
+      {
+        method: "POST",
+        url: "/admin/v1/morpheo/cases/open",
+        capability: "admin_morpheo_case_read",
+      },
       // Addendum B Checkpoint 16.3 -- reference-corpus management. §B6 item 4
       // gives admin_corpus_manage to platform_super_admin alone, so the
       // parametrized run below refuses clinical_governance_reviewer and
@@ -656,6 +672,12 @@ describe("admin console gate (/admin/v1/*)", () => {
         subjectUserId: "018f0000-0000-7000-8000-0000000000fe",
         category: "safety",
         justification: "Safeguarding escalation raised by the on-call clinician this morning.",
+      },
+      "POST /admin/v1/morpheo/statistics": {},
+      "POST /admin/v1/morpheo/cases/open": {
+        caseCode: "SOM-7K3F-Q9XA",
+        category: "legal",
+        justification: "Formal complaint received this morning, file 12.",
       },
       "POST /admin/v1/corpus/documents/search": { limit: 5 },
       "POST /admin/v1/corpus/documents": {

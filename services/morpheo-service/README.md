@@ -177,6 +177,22 @@ tables land in Phase 10.2 per build plan §14. Every migration must be
 reversible, or explicitly documented as irreversible with a stated
 recovery path (build plan §8).
 
+## Case records (ADR 0024)
+
+Every v2 interview has a case (`funnel_cases`), with a random code the person
+sees with their result and in the PDF (`SOM-XXXX-XXXX`). Each closure freezes
+what was asked, answered and shown (`funnel_case_records`); answers taken back
+are kept as they read (`funnel_case_changes`); every console opening is recorded
+with who and why (`funnel_case_accesses`). Deleting an interview (30-day TTL,
+account erasure) keeps its case and only clears `session_id`.
+
+| Method | Path | Called by |
+|--------|------|-----------|
+| POST | `/internal/v1/funnel/cases/stats` | edge, `admin_statistics_read`: counts only |
+| POST | `/internal/v1/funnel/cases/open` | edge, `admin_morpheo_case_read`: needs `X-Somnus-Actor-Id`, a category and a justification; the access is written first |
+| POST | `/internal/v1/maintenance/funnel-cases/backfill` | once after the migration: a case for every older interview (`reconstructed`) |
+| POST | `/internal/v1/maintenance/funnel-cases/delete` | the legal retention period, once the owner sets it; nothing calls it yet |
+
 ## Docker
 
 Multi-stage, runs as the non-root `somnus` user, `python:3.13-slim`

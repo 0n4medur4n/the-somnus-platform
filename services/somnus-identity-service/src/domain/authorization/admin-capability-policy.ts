@@ -75,6 +75,11 @@ const CAPABILITY_ROLES: Readonly<Record<AdminCapability, ReadonlySet<RoleKey>>> 
     "platform_admin",
     "platform_super_admin",
   ]),
+  // One Morpheo case by its code (ADR 0024) -- super admin ONLY (owner
+  // decision 2026-11-03). Narrower than break-glass: the case carries no
+  // identity, but it is a whole interview of health answers, and opening it is
+  // the audit act this platform must be able to show.
+  admin_morpheo_case_read: new Set<RoleKey>(["platform_super_admin"]),
   // System health (service status, queue depths, error rates)
   admin_system_health: new Set<RoleKey>(["platform_admin", "platform_super_admin"]),
   // Reference-corpus management -- super admin ONLY (Addendum B §B5 Checkpoint

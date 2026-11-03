@@ -510,7 +510,9 @@
       "download": "Télécharger le rapport (PDF)",
       "notSaved": "Cette orientation n'est pas enregistrée dans votre compte.",
       "noReport": "Cette orientation n'a pas de rapport à télécharger.",
-      "signInHint": "Pour enregistrer l'orientation et télécharger le rapport, connectez-vous avant de commencer."
+      "signInHint": "Pour enregistrer l'orientation et télécharger le rapport, connectez-vous avant de commencer.",
+      "caseCode": "Numéro de dossier",
+      "caseCodeHint": "Conservez-le. Si vous avez besoin de nous interroger sur cette orientation, indiquez-nous ce numéro : il ne contient ni votre nom ni vos données."
     },
     "report": {
       "mostImportant": "L'essentiel",

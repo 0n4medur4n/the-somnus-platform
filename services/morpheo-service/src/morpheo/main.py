@@ -18,6 +18,7 @@ from sqlalchemy.orm import sessionmaker
 
 from morpheo.ai.factory import build_extractor
 from morpheo.api.assessment import router as assessment_router
+from morpheo.api.cases import router as cases_router
 from morpheo.api.funnel import register_funnel_errors
 from morpheo.api.funnel import router as funnel_router
 from morpheo.api.health import router as health_router
@@ -73,6 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(version_router)
     app.include_router(assessment_router)
     app.include_router(funnel_router)
+    app.include_router(cases_router)
     app.include_router(sources_router)
     app.include_router(maintenance_router)
 

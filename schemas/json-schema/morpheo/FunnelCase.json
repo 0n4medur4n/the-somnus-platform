@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "caseCode": {
+      "type": "string",
+      "pattern": "^SOM-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "finished",
+        "stopped",
+        "paused"
+      ]
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "closedAt": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "contentVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rulesVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "interviewDeleted": {
+      "type": "boolean"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "finished",
+              "stopped",
+              "paused"
+            ]
+          },
+          "reconstructed": {
+            "type": "boolean"
+          },
+          "contentVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rulesVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "answer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "question",
+                "answer"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "result": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "recordedAt",
+          "status",
+          "reconstructed",
+          "contentVersion",
+          "rulesVersion",
+          "history",
+          "result"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "changedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "withdrawn": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "answer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "question",
+                "answer"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "changedAt",
+          "withdrawn"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "accesses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "accessedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "actorId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "support",
+              "safety",
+              "legal",
+              "other"
+            ]
+          },
+          "justification": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessedAt",
+          "actorId",
+          "category",
+          "justification"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "caseCode",
+    "status",
+    "startedAt",
+    "closedAt",
+    "contentVersion",
+    "rulesVersion",
+    "interviewDeleted",
+    "records",
+    "changes",
+    "accesses"
+  ],
+  "additionalProperties": false
+}

@@ -52,6 +52,7 @@ export function EvaluationDetail() {
           sessionId={sessionId}
           owned={interview.data.owned}
           signedIn
+          caseCode={interview.data.caseCode}
         />
       ) : (
         <p role="status">{t("resultPage.unfinished")}</p>

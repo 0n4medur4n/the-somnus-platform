@@ -482,6 +482,56 @@
         ]
       }
     },
+    "/admin/v1/morpheo/statistics": {
+      "post": {
+        "operationId": "AdminMorpheoCasesController_statistics",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MorpheoCaseStatsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Counts over Morpheo's interviews (ADR 0024). Never a case or a person.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/v1/morpheo/cases/open": {
+      "post": {
+        "operationId": "AdminMorpheoCasesController_open",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MorpheoCaseOpenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "One Morpheo case by its code: questions, answers, results. Justification required.",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/v1/corpus/documents/search": {
       "post": {
         "operationId": "AdminCorpusController_search",
@@ -3065,6 +3115,52 @@
         },
         "required": [
           "subjectUserId",
+          "category",
+          "justification"
+        ],
+        "additionalProperties": false
+      },
+      "MorpheoCaseStatsDto": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MorpheoCaseOpenDto": {
+        "type": "object",
+        "properties": {
+          "caseCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "support",
+              "safety",
+              "legal",
+              "other"
+            ]
+          },
+          "justification": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "caseCode",
           "category",
           "justification"
         ],

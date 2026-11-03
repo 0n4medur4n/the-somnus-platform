@@ -59,7 +59,7 @@
     </section>
     {% endif %}
     <footer class="report-footer">
-      {{ strings.reference }}: {{ request.session_id }} · {{ strings.versions }}: {{ template_version }} / {{ request.rules_version }} / {{ request.content_version }}
+      {% if request.case_code %}{{ strings.caseCode }}: <strong>{{ request.case_code }}</strong> · {% endif %}{{ strings.reference }}: {{ request.session_id }} · {{ strings.versions }}: {{ template_version }} / {{ request.rules_version }} / {{ request.content_version }}
     </footer>
   </body>
 </html>

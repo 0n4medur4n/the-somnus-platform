@@ -18,7 +18,15 @@ from sqlalchemy.pool import StaticPool
 from morpheo.funnel.artifact import funnel_artifact
 from morpheo.funnel.interview import Answer, next_step
 from morpheo.funnel.vignettes import answer_request, load_vignettes, run_vignette, scripted_answer
-from morpheo.infrastructure.models import Base, FunnelAnswer, FunnelSession
+from morpheo.infrastructure.models import (
+    Base,
+    FunnelAnswer,
+    FunnelCase,
+    FunnelCaseAccess,
+    FunnelCaseChange,
+    FunnelCaseRecord,
+    FunnelSession,
+)
 from morpheo.instruments.definitions import load_registry
 from morpheo.main import create_app
 from morpheo.settings.config import Settings
@@ -34,7 +42,20 @@ def _client(**settings: Any) -> TestClient:
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
-    Base.metadata.create_all(engine, tables=[FunnelSession.__table__, FunnelAnswer.__table__])
+    Base.metadata.create_all(
+        engine,
+        tables=[
+            m.__table__
+            for m in (
+                FunnelSession,
+                FunnelAnswer,
+                FunnelCase,
+                FunnelCaseRecord,
+                FunnelCaseChange,
+                FunnelCaseAccess,
+            )
+        ],
+    )
     app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
     return TestClient(app)
 

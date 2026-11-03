@@ -49,6 +49,13 @@ export const ADMIN_CAPABILITIES = [
   "admin_consent_read",
   /** Break-glass: view an individual's clinical answers/results. Justification required. */
   "admin_break_glass",
+  /**
+   * Open one Morpheo case by its code (ADR 0024): the questions, answers and
+   * results of one interview, with no name, address or account attached.
+   * `platform_super_admin` alone (owner decision 2026-11-03), and justified like
+   * break-glass: morpheo records every opening with who and why.
+   */
+  "admin_morpheo_case_read",
   /** System health (service status, queue depths, error rates). */
   "admin_system_health",
   /**
@@ -84,6 +91,7 @@ export type AdminCapability = z.infer<typeof AdminCapabilitySchema>;
  */
 export const JUSTIFICATION_REQUIRED_CAPABILITIES: ReadonlySet<AdminCapability> = new Set([
   "admin_break_glass",
+  "admin_morpheo_case_read",
 ]);
 
 /** `POST /internal/v1/authorization/admin-check` — one capability, one decision. */

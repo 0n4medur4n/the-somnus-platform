@@ -209,3 +209,5 @@ class FunnelReportRequestDTO(ContractModel):
     instruments_note: str | None
     # The one-page report (REPORT_V3); absent: the v2 layout.
     report: FunnelReportDTO | None = None
+    # The interview's case number (ADR 0024), printed in the footer.
+    case_code: str | None = None

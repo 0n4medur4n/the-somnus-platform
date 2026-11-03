@@ -18,6 +18,8 @@ import { AdminDriveTranslateService } from "./admin-drive-translate.service.js";
 import { AdminInsightsController } from "./admin-insights.controller.js";
 import { AdminInsightsService } from "./admin-insights.service.js";
 import { AdminMeController } from "./admin-me.controller.js";
+import { AdminMorpheoCasesController } from "./admin-morpheo-cases.controller.js";
+import { AdminMorpheoCasesService } from "./admin-morpheo-cases.service.js";
 import { AdminOperationsController } from "./admin-operations.controller.js";
 import { AdminPlatformInvitationsController } from "./admin-platform-invitations.controller.js";
 import { AdminStaffInvitationsController } from "./admin-staff-invitations.controller.js";
@@ -39,6 +41,7 @@ import { AdminStaffInvitationsController } from "./admin-staff-invitations.contr
     AdminContentReviewController,
     AdminInsightsController,
     AdminBreakGlassController,
+    AdminMorpheoCasesController,
     AdminCorpusController,
     AdminDriveController,
     AdminStaffInvitationsController,
@@ -55,6 +58,8 @@ import { AdminStaffInvitationsController } from "./admin-staff-invitations.contr
     // Checkpoint 15.5: assessment results are morpheo's data (§7), so this
     // proxy targets morpheo rather than identity or the worker.
     AdminBreakGlassService,
+    // ADR 0024: Morpheo's case records are morpheo's data too (§7).
+    AdminMorpheoCasesService,
     // Checkpoint 16.3: the reference corpus lives in `somnus_content`, owned by
     // the report service's isolated corpus module (ADR 0010), so this proxy
     // targets the report service too.

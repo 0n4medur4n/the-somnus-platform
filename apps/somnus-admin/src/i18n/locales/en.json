@@ -100,7 +100,8 @@
     "breakGlass": "Break-glass access",
     "corpus": "Reference corpus",
     "corpusSources": "Clinical sources",
-    "drive": "Encrypted Drive"
+    "drive": "Encrypted Drive",
+    "morpheoCases": "Morpheo cases"
   },
   "users": {
     "title": "Users",
@@ -1191,6 +1192,84 @@
       "active": "Active membership",
       "inactive": "Inactive membership",
       "removed": "Removed membership"
+    }
+  },
+  "morpheoCases": {
+    "title": "Morpheo cases",
+    "intro": "Every Morpheo interview has a case number the person sees with their result and on their PDF. With it you can see exactly what they were asked, what they answered and what they were shown. A case carries no name, email or account.",
+    "warning": "Opening a case is an access to health data. It is recorded permanently with your identity, the date, the category and your justification, and that record is shown inside the case itself.",
+    "codeLabel": "Case number",
+    "codeHint": "For example SOM-7K3F-Q9XA. Upper or lower case and dashes do not matter.",
+    "open": "Open the case",
+    "startedAt": "Started",
+    "closedAt": "Ended",
+    "versions": "Versions",
+    "versionsValue": "content {{content}} · rules {{rules}}",
+    "interviewKept": "The original interview is still stored.",
+    "interviewDeleted": "The original interview has been deleted (30-day period or account deleted): this case is no longer linked to anyone.",
+    "noRecords": "This interview was never finished: no result was recorded.",
+    "recordTitle": "Closure {{index}} of {{total}}",
+    "reconstructed": "Reconstructed: this interview ended before cases existed. The result was recomputed with the current rules from its stored answers, and may differ from what the person saw.",
+    "shownTitle": "What they were shown",
+    "mainAction": "Main action",
+    "alerts": "Alerts",
+    "stoppedBy": "Stopped by",
+    "reportHeadline": "Report",
+    "answersTitle": "Questions and answers ({{count}})",
+    "changesTitle": "Answers the person changed",
+    "noChanges": "The person did not change any answer.",
+    "accessesTitle": "Who has opened this case",
+    "print": "Print or save as PDF",
+    "status": {
+      "open": "Unfinished",
+      "finished": "Finished",
+      "stopped": "Stopped",
+      "paused": "Paused"
+    }
+  },
+  "morpheoStats": {
+    "title": "Morpheo interviews",
+    "intro": "Counts over every interview, taken from Morpheo's cases. No number is linked to a person or a case.",
+    "started": "Interviews started",
+    "finished": "Finished",
+    "unfinished": "Unfinished",
+    "unfinishedHint": "Also: {{stopped}} stopped, {{paused}} paused",
+    "withAlerts": "With a safety alert",
+    "byTemplate": "By kind of guidance",
+    "byMainAction": "By main action",
+    "byAlert": "Safety alerts",
+    "noAlerts": "No interview has raised a safety alert.",
+    "byMonth": "By month",
+    "monthValue": "{{started}} started · {{closed}} closed",
+    "cases": "Interviews",
+    "empty": "No interview has finished yet.",
+    "footnote": "Each interview counts once per kind of guidance, even if it received several. Interviews from before cases are counted with their reconstructed result."
+  },
+  "outcome": {
+    "mainAction": {
+      "EMERGENCIA": "Emergency",
+      "ATENCION_MISMO_DIA": "Same-day care",
+      "EVALUACION_PRIORITARIA": "Priority assessment",
+      "CONSULTA_ESTUDIO": "Consultation or study",
+      "INFORMACION_INSUFICIENTE": "Not enough information",
+      "TERAPIA": "Therapy",
+      "HABITOS": "Habits",
+      "SIN_ORIENTACION": "No guidance"
+    },
+    "template": {
+      "T_INSOMNIO": "Insomnia",
+      "T_PIERNAS": "Restless legs",
+      "T_RESPIRACION": "Possible apnoea",
+      "T_COMBINADO": "Insomnia and possible apnoea",
+      "T_SOMNOLENCIA": "Sleepiness",
+      "T_HORARIO": "Schedule",
+      "T_NOCTURNO": "Night-time behaviours",
+      "T_PSG": "Assessment with possible polysomnography",
+      "T_HABITOS": "Habits (support and review)",
+      "T_RECIENTE": "Recent problem",
+      "T_INCOMPLETO": "Incomplete information",
+      "T_SEGURIDAD": "Interview stopped for safety",
+      "T_SIN_ORIENTACION": "No guidance"
     }
   }
 }

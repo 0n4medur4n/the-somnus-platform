@@ -179,6 +179,8 @@ export class FunnelProxyService {
         instrumentsNote: state.result.instrumentsNote,
         // The one-page report, when morpheo built one (REPORT_V3_ENABLED).
         ...(state.result.report ? { report: state.result.report } : {}),
+        // The case number (ADR 0024), for the footer, when morpheo sent one.
+        ...(state.caseCode ? { caseCode: state.caseCode } : {}),
       },
     });
     return this.parse(ReportPdfSchema, rendered.body, correlationId);

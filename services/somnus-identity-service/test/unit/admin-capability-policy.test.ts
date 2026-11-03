@@ -46,6 +46,9 @@ const EXPECTED: Readonly<Record<AdminCapability, ReadonlyArray<RoleKey>>> = {
   admin_audit_read: ["clinical_governance_reviewer", "platform_admin", "platform_super_admin"],
   admin_consent_read: ["support_agent", "platform_admin", "platform_super_admin"],
   admin_break_glass: ["clinical_governance_reviewer", "platform_admin", "platform_super_admin"],
+  // ADR 0024 (owner decision 2026-11-03): one Morpheo case by its code, super
+  // admin alone -- narrower than break-glass.
+  admin_morpheo_case_read: ["platform_super_admin"],
   admin_system_health: ["platform_admin", "platform_super_admin"],
   // Checkpoint 16.3 (Addendum B §B6 item 4): super admin alone. Narrower than
   // admin_content_review -- clinical_governance_reviewer does NOT hold this one,
@@ -183,6 +186,17 @@ describe("cells the addendum makes deliberately non-obvious", () => {
       "admin_verification_queue",
       "admin_drive",
     ]);
+  });
+
+  it("only platform_super_admin opens a Morpheo case (ADR 0024)", () => {
+    for (const role of INTERNAL_ROLE_KEYS) {
+      const decision = evaluateAdminCapability({
+        actorStatus: "active",
+        actorRoleKeys: [role],
+        capability: "admin_morpheo_case_read",
+      });
+      expect(decision.allowed).toBe(role === "platform_super_admin");
+    }
   });
 
   it("platform_super_admin holds every capability", () => {

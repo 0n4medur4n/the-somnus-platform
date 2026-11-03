@@ -16,6 +16,7 @@ export type ViewId =
   | "statistics"
   | "audit"
   | "breakGlass"
+  | "morpheoCases"
   | "drive";
 
 export type SectionDef = {
@@ -64,6 +65,8 @@ export const GROUPS: Array<{ key: string; sections: SectionDef[] }> = [
       // §A2.2: support_agent and professional_verifier are not on this row, so
       // for them the section is structurally absent rather than disabled.
       { id: "breakGlass", icon: "siren", capability: "admin_break_glass" },
+      // ADR 0024: one Morpheo case by its code, platform_super_admin alone.
+      { id: "morpheoCases", icon: "clipboard", capability: "admin_morpheo_case_read" },
     ],
   },
   {

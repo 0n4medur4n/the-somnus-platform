@@ -61,6 +61,10 @@ import type {
   DriveTranslateResult,
   DriveUploadStartRequest,
   DriveUploadStartResponse,
+  FunnelCase,
+  FunnelCaseOpenRequest,
+  FunnelCaseStats,
+  FunnelCaseStatsRequest,
   PlatformInvitationCreateRequest,
   PlatformInvitationCreateResponse,
   PlatformInvitationListResponse,
@@ -199,6 +203,13 @@ export const edge = {
   // fetching the record and explaining it afterwards.
   breakGlassReveal: (body: BreakGlassRevealRequest): Promise<BreakGlassRevealResponse> =>
     api.post<BreakGlassRevealResponse>("/admin/v1/break-glass/reveal", body),
+
+  // ADR 0024 -- Morpheo's case records. The counts are aggregate; opening one
+  // case carries its justification, like break-glass, and morpheo records it.
+  morpheoStatistics: (window: FunnelCaseStatsRequest = {}): Promise<FunnelCaseStats> =>
+    api.post<FunnelCaseStats>("/admin/v1/morpheo/statistics", window),
+  morpheoCaseOpen: (body: FunnelCaseOpenRequest): Promise<FunnelCase> =>
+    api.post<FunnelCase>("/admin/v1/morpheo/cases/open", body),
 
   // Addendum B Checkpoint 16.3 -- the reference corpus (admin_corpus_manage,
   // platform_super_admin only per §B6 item 4).

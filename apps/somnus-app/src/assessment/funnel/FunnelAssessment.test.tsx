@@ -267,6 +267,28 @@ describe("FunnelAssessment", () => {
     expect(screen.queryByTestId("team-panel")).toBeNull();
   });
 
+  it("shows the case number with the result, so the person can quote it (ADR 0024)", async () => {
+    const user = userEvent.setup();
+    edgeMock.startFunnel.mockResolvedValue(
+      state({ status: "finished", step: null, result: RESULT, caseCode: "SOM-7K3F-Q9XA" }),
+    );
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    expect(await screen.findByTestId("funnel-case-code")).toHaveTextContent("SOM-7K3F-Q9XA");
+    expect(screen.getByText(es("funnel.result.caseCodeHint"))).toBeVisible();
+  });
+
+  it("shows no case line when an older morpheo sends no case number", async () => {
+    const user = userEvent.setup();
+    edgeMock.startFunnel.mockResolvedValue(
+      state({ status: "finished", step: null, result: RESULT }),
+    );
+    renderWithProviders(<FunnelAssessment />);
+    await startInterview(user);
+    expect(await screen.findByText(RESULT.texts[0]?.text ?? "")).toBeVisible();
+    expect(screen.queryByTestId("funnel-case-code")).toBeNull();
+  });
+
   it("never shows an empty result or a PDF link when there is no text (a minor)", async () => {
     const user = userEvent.setup();
     const minor = {

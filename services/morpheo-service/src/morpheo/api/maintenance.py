@@ -10,8 +10,11 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from morpheo.api.dependencies import SessionDep
+from morpheo.api.funnel import FunnelServiceDep
 from morpheo.repositories.assessment import AssessmentRepository
+from morpheo.repositories.cases import CaseRepository
 from morpheo.repositories.funnel import FunnelRepository
+from morpheo.schemas.cases import FunnelCaseBackfillResultDTO
 from morpheo.schemas.maintenance import (
     AccountAssessmentsDeleteRequestDTO,
     MaintenanceDeleteRequestDTO,
@@ -59,3 +62,27 @@ def delete_user_assessments(
     # And every v2 interview that was theirs, with its answers.
     deleted += FunnelRepository(session).delete_owned_by(body.user_id)
     return MaintenanceDeleteResultDTO(deleted=deleted)
+
+
+@router.post(
+    "/funnel-cases/delete",
+    response_model=MaintenanceDeleteResultDTO,
+    summary="Delete case records started before the cutoff (the legal retention period, ADR 0024).",
+)
+def delete_funnel_cases(
+    body: MaintenanceDeleteRequestDTO, session: SessionDep
+) -> MaintenanceDeleteResultDTO:
+    # The period is the owner's legal decision; whoever calls computes the cutoff.
+    return MaintenanceDeleteResultDTO(
+        deleted=CaseRepository(session).delete_started_before(body.before)
+    )
+
+
+@router.post(
+    "/funnel-cases/backfill",
+    response_model=FunnelCaseBackfillResultDTO,
+    summary="Open a case for every interview older than case records (run once, ADR 0024).",
+)
+def backfill_funnel_cases(service: FunnelServiceDep) -> FunnelCaseBackfillResultDTO:
+    opened, unrebuilt = service.backfill_cases()
+    return FunnelCaseBackfillResultDTO(opened=opened, unrebuilt=unrebuilt)

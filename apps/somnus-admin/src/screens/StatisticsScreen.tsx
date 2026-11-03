@@ -1,7 +1,11 @@
-import type { Dashboards } from "@somnus/api-contracts";
+import type { Dashboards, FunnelCaseStats, FunnelCount } from "@somnus/api-contracts";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HBarChart } from "../components/charts/charts.js";
+import { ChartSkeleton } from "../components/ui/Skeleton.js";
+import { StatTile } from "../components/ui/ui.js";
 import { edge } from "../lib/edge.js";
+import { useOutcomeLabels } from "./outcome-labels.js";
 import { useAdminAction } from "./useAdminAction.js";
 
 /**
@@ -42,6 +46,8 @@ export function StatisticsScreen() {
         {t("stats.title")}
       </h2>
       <p className="text-sm text-somnus-subtle">{t("stats.intro")}</p>
+
+      <MorpheoStatistics />
 
       {error ? (
         <p role="alert" className="text-somnus-danger">
@@ -164,5 +170,126 @@ function Numbers({ entries }: { entries: ReadonlyArray<readonly [string, string 
         </div>
       ))}
     </dl>
+  );
+}
+
+/**
+ * Morpheo's interviews, counted from morpheo's case records (ADR 0024) rather
+ * than from the event export above, which carries none of them yet. Counts
+ * only: the response has no field that could hold a case code or a person, and
+ * the edge refuses one that tries.
+ */
+function MorpheoStatistics() {
+  const { t } = useTranslation();
+  const labels = useOutcomeLabels();
+  const { run, busy, error } = useAdminAction();
+  const [data, setData] = useState<FunnelCaseStats | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const result = await run(() => edge.morpheoStatistics({}));
+      if (result) setData(result);
+    })();
+  }, [run]);
+
+  const bars = (counts: ReadonlyArray<FunnelCount>, name: (code: string) => string) =>
+    counts.map((c) => ({
+      label: name(c.key),
+      value: c.count,
+      detail: `${name(c.key)} (${c.key})`,
+    }));
+
+  return (
+    <article
+      aria-labelledby="morpheo-stats-heading"
+      aria-busy={busy || undefined}
+      className="flex flex-col gap-4 rounded-lg border border-somnus-border p-4"
+    >
+      <h3 id="morpheo-stats-heading" className="text-base font-semibold text-somnus-text">
+        {t("morpheoStats.title")}
+      </h3>
+      <p className="text-sm text-somnus-subtle">{t("morpheoStats.intro")}</p>
+      {error ? (
+        <p role="alert" className="text-somnus-danger">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile
+          icon="clipboard"
+          label={t("morpheoStats.started")}
+          value={data?.started ?? 0}
+          loading={!data && busy}
+        />
+        <StatTile
+          icon="checkCircle"
+          tone="success"
+          label={t("morpheoStats.finished")}
+          value={data?.byStatus.finished ?? 0}
+          loading={!data && busy}
+        />
+        <StatTile
+          icon="clock"
+          label={t("morpheoStats.unfinished")}
+          hint={t("morpheoStats.unfinishedHint", {
+            stopped: data?.byStatus.stopped ?? 0,
+            paused: data?.byStatus.paused ?? 0,
+          })}
+          value={data?.byStatus.open ?? 0}
+          loading={!data && busy}
+        />
+        <StatTile
+          icon="siren"
+          tone="danger"
+          label={t("morpheoStats.withAlerts")}
+          value={data?.withAlerts ?? 0}
+          loading={!data && busy}
+        />
+      </div>
+
+      {!data && busy ? (
+        <ChartSkeleton />
+      ) : data && data.closed === 0 ? (
+        <p className="text-sm text-somnus-subtle">{t("morpheoStats.empty")}</p>
+      ) : data ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Panel title={t("morpheoStats.byTemplate")}>
+            <HBarChart
+              data={bars(data.byTemplate, labels.template)}
+              valueLabel={t("morpheoStats.cases")}
+            />
+          </Panel>
+          <Panel title={t("morpheoStats.byMainAction")}>
+            <HBarChart
+              data={bars(data.byMainAction, labels.mainAction)}
+              valueLabel={t("morpheoStats.cases")}
+            />
+          </Panel>
+          <Panel title={t("morpheoStats.byAlert")}>
+            {data.byAlert.length === 0 ? (
+              <p className="text-sm text-somnus-subtle">{t("morpheoStats.noAlerts")}</p>
+            ) : (
+              <HBarChart
+                data={bars(data.byAlert, labels.mainAction)}
+                valueLabel={t("morpheoStats.cases")}
+              />
+            )}
+          </Panel>
+          <Panel title={t("morpheoStats.byMonth")}>
+            <Numbers
+              entries={data.byMonth.map(
+                (m) =>
+                  [
+                    m.month,
+                    t("morpheoStats.monthValue", { started: m.started, closed: m.closed }),
+                  ] as const,
+              )}
+            />
+          </Panel>
+        </div>
+      ) : null}
+      <p className="text-xs text-somnus-subtle">{t("morpheoStats.footnote")}</p>
+    </article>
   );
 }

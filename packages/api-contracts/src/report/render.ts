@@ -148,6 +148,9 @@ export const FunnelReportRequestSchema = z
     instrumentsNote: z.string().nullable(),
     // The one-page report and the professional's page (REPORT_V3); absent: the v2 layout.
     report: FunnelReportSchema.nullable().optional(),
+    // The interview's case number (ADR 0024), printed in the footer. Optional so
+    // a report service that predates it keeps rendering: deploy it before the edge.
+    caseCode: z.string().min(1).nullable().optional(),
   })
   .strict();
 export type FunnelReportRequest = z.infer<typeof FunnelReportRequestSchema>;

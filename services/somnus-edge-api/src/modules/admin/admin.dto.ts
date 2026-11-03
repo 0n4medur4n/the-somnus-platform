@@ -15,6 +15,8 @@ import {
   CorpusRetireRequestSchema,
   CorpusSearchRequestSchema,
   CorpusWebPageRequestSchema,
+  FunnelCaseOpenRequestSchema,
+  FunnelCaseStatsRequestSchema,
 } from "@somnus/api-contracts";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
@@ -58,6 +60,15 @@ export class AdminDashboardWindowDto extends createZodDto(AdminDashboardWindowSc
  * driven into.
  */
 export class BreakGlassRevealDto extends createZodDto(BreakGlassRevealRequestSchema) {}
+
+/** Morpheo's case statistics (ADR 0024): a window, both ends optional. */
+export class MorpheoCaseStatsDto extends createZodDto(FunnelCaseStatsRequestSchema) {}
+
+/**
+ * Opening one Morpheo case (ADR 0024). Gated by the DTO exactly like
+ * break-glass: no category or a short justification never reaches the handler.
+ */
+export class MorpheoCaseOpenDto extends createZodDto(FunnelCaseOpenRequestSchema) {}
 
 /**
  * Reference-corpus management (Addendum B §B3 / Checkpoint 16.3).

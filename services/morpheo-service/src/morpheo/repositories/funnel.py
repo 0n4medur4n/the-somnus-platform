@@ -4,6 +4,7 @@ Answers are kept in the order given (the engine reads them in that order: the
 cross-cutting exception follows it). Going back removes the last answer;
 correcting one (Z1) removes it and everything after it, since later questions
 may no longer apply. No FK cascade (TiDB): dependents are deleted explicitly.
+Deleting an interview keeps its case record (ADR 0024), unlinked.
 """
 
 from __future__ import annotations
@@ -15,7 +16,8 @@ from typing import Any, cast
 from sqlalchemy import CursorResult, delete, select
 from sqlalchemy.orm import Session
 
-from morpheo.infrastructure.models import FunnelAnswer, FunnelSession
+from morpheo.infrastructure.models import FunnelAnswer, FunnelCase, FunnelSession
+from morpheo.repositories.cases import CaseRepository
 
 _SYNC = {"synchronize_session": False}
 
@@ -96,11 +98,24 @@ class FunnelRepository:
         )
         return list(self._s.scalars(stmt))
 
+    def without_case(self) -> list[FunnelSession]:
+        """Interviews older than case records (ADR 0024), oldest first."""
+        linked = select(FunnelCase.session_id).where(FunnelCase.session_id.is_not(None))
+        stmt = (
+            select(FunnelSession)
+            .where(FunnelSession.id.not_in(linked))
+            .order_by(FunnelSession.created_at)
+        )
+        return list(self._s.scalars(stmt))
+
     # --- retention ---
 
     def _delete_sessions(self, ids: list[str]) -> int:
         if not ids:
             return 0
+        # The case record stays for its legal retention period; only its link
+        # to the interview (and so to a person) goes, in the same commit.
+        CaseRepository(self._s).unlink_sessions(ids)
         self._s.execute(
             delete(FunnelAnswer).where(FunnelAnswer.session_id.in_(ids)), execution_options=_SYNC
         )

@@ -510,7 +510,9 @@
       "download": "Descargar informe (PDF)",
       "notSaved": "Esta orientación no está guardada en su cuenta.",
       "noReport": "Esta orientación no tiene un informe para descargar.",
-      "signInHint": "Para guardar la orientación y descargar el informe, inicie sesión antes de empezar."
+      "signInHint": "Para guardar la orientación y descargar el informe, inicie sesión antes de empezar.",
+      "caseCode": "Número de caso",
+      "caseCodeHint": "Guárdelo. Si alguna vez necesita consultarnos algo sobre esta orientación, indíquenos este número: no contiene su nombre ni sus datos."
     },
     "report": {
       "mostImportant": "Lo más importante",

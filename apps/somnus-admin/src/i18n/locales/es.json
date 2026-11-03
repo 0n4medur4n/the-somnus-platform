@@ -100,7 +100,8 @@
     "breakGlass": "Acceso de emergencia",
     "corpus": "Corpus de referencia",
     "corpusSources": "Fuentes clínicas",
-    "drive": "Drive cifrado"
+    "drive": "Drive cifrado",
+    "morpheoCases": "Casos de Morpheo"
   },
   "users": {
     "title": "Personas usuarias",
@@ -1191,6 +1192,84 @@
       "active": "Membresía activa",
       "inactive": "Membresía inactiva",
       "removed": "Membresía retirada"
+    }
+  },
+  "morpheoCases": {
+    "title": "Casos de Morpheo",
+    "intro": "Cada consulta de Morpheo tiene un número de caso que la persona ve con su resultado y en su PDF. Con ese número puedes ver exactamente qué se le preguntó, qué respondió y qué se le mostró. El caso no lleva nombre, correo ni cuenta.",
+    "warning": "Abrir un caso es un acceso a datos de salud. Queda registrado de forma permanente con tu identidad, la fecha, la categoría y tu justificación, y ese registro se muestra dentro del propio caso.",
+    "codeLabel": "Número de caso",
+    "codeHint": "Por ejemplo SOM-7K3F-Q9XA. Da igual mayúsculas, minúsculas o guiones.",
+    "open": "Abrir el caso",
+    "startedAt": "Empezó",
+    "closedAt": "Terminó",
+    "versions": "Versiones",
+    "versionsValue": "contenido {{content}} · reglas {{rules}}",
+    "interviewKept": "La consulta original sigue guardada.",
+    "interviewDeleted": "La consulta original ya se borró (plazo de 30 días o cuenta borrada): este caso ya no está ligado a nadie.",
+    "noRecords": "Esta consulta no llegó a terminar: no hay ningún resultado registrado.",
+    "recordTitle": "Cierre {{index}} de {{total}}",
+    "reconstructed": "Reconstruido: esta consulta terminó antes de que existieran los casos. El resultado se ha recalculado con las reglas actuales a partir de sus respuestas guardadas, y puede no coincidir con lo que la persona vio.",
+    "shownTitle": "Lo que se le mostró",
+    "mainAction": "Acción principal",
+    "alerts": "Alertas",
+    "stoppedBy": "Detenida por",
+    "reportHeadline": "Informe",
+    "answersTitle": "Preguntas y respuestas ({{count}})",
+    "changesTitle": "Respuestas que la persona cambió",
+    "noChanges": "La persona no cambió ninguna respuesta.",
+    "accessesTitle": "Quién ha abierto este caso",
+    "print": "Imprimir o guardar en PDF",
+    "status": {
+      "open": "Sin terminar",
+      "finished": "Terminada",
+      "stopped": "Detenida",
+      "paused": "En pausa"
+    }
+  },
+  "morpheoStats": {
+    "title": "Consultas de Morpheo",
+    "intro": "Cuentas sobre todas las consultas, sacadas de los casos de Morpheo. Ningún número está ligado a una persona ni a un caso.",
+    "started": "Consultas iniciadas",
+    "finished": "Terminadas",
+    "unfinished": "Sin terminar",
+    "unfinishedHint": "Además: {{stopped}} detenidas, {{paused}} en pausa",
+    "withAlerts": "Con alerta de seguridad",
+    "byTemplate": "Por tipo de orientación",
+    "byMainAction": "Por acción principal",
+    "byAlert": "Alertas de seguridad",
+    "noAlerts": "Ninguna consulta ha dado una alerta de seguridad.",
+    "byMonth": "Por mes",
+    "monthValue": "{{started}} iniciadas · {{closed}} cerradas",
+    "cases": "Consultas",
+    "empty": "Todavía no ha terminado ninguna consulta.",
+    "footnote": "Cada consulta cuenta una vez por tipo de orientación, aunque reciba varias. Las consultas anteriores a los casos se cuentan con su resultado reconstruido."
+  },
+  "outcome": {
+    "mainAction": {
+      "EMERGENCIA": "Emergencia",
+      "ATENCION_MISMO_DIA": "Atención el mismo día",
+      "EVALUACION_PRIORITARIA": "Evaluación prioritaria",
+      "CONSULTA_ESTUDIO": "Consulta o estudio",
+      "INFORMACION_INSUFICIENTE": "Información insuficiente",
+      "TERAPIA": "Terapia",
+      "HABITOS": "Hábitos",
+      "SIN_ORIENTACION": "Sin orientación"
+    },
+    "template": {
+      "T_INSOMNIO": "Insomnio",
+      "T_PIERNAS": "Piernas inquietas",
+      "T_RESPIRACION": "Posible apnea",
+      "T_COMBINADO": "Insomnio y posible apnea",
+      "T_SOMNOLENCIA": "Somnolencia",
+      "T_HORARIO": "Horario",
+      "T_NOCTURNO": "Conductas nocturnas",
+      "T_PSG": "Evaluación con posible polisomnografía",
+      "T_HABITOS": "Hábitos (apoyo y revisión)",
+      "T_RECIENTE": "Problema reciente",
+      "T_INCOMPLETO": "Información incompleta",
+      "T_SEGURIDAD": "Entrevista interrumpida por seguridad",
+      "T_SIN_ORIENTACION": "Sin orientación"
     }
   }
 }

@@ -357,6 +357,7 @@ export function FunnelAssessment({
                 sessionId={interview.sessionId}
                 owned={interview.owned}
                 signedIn={isAuthenticated}
+                caseCode={interview.caseCode}
               />
               <div>
                 <Button variant="secondary" onClick={restart}>

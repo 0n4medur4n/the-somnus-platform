@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "caseCode": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "support",
+        "safety",
+        "legal",
+        "other"
+      ]
+    },
+    "justification": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 500
+    }
+  },
+  "required": [
+    "caseCode",
+    "category",
+    "justification"
+  ],
+  "additionalProperties": false
+}

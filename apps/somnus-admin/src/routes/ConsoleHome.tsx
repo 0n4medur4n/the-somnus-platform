@@ -12,6 +12,7 @@ import { CorpusScreen } from "../screens/CorpusScreen.js";
 import { CorpusSourcesScreen } from "../screens/CorpusSourcesScreen.js";
 import { DashboardScreen } from "../screens/DashboardScreen.js";
 import { DeletionRequestsScreen } from "../screens/DeletionRequestsScreen.js";
+import { MorpheoCasesScreen } from "../screens/MorpheoCasesScreen.js";
 import { OrganizationsScreen } from "../screens/OrganizationsScreen.js";
 import { RolesScreen } from "../screens/RolesScreen.js";
 import { StatisticsScreen } from "../screens/StatisticsScreen.js";
@@ -99,6 +100,7 @@ export function ConsoleHome({ me }: { me: AdminMeResponse }) {
             <AuditViewerScreen canExport={held.has("admin_audit_export")} />
           ) : null}
           {view === "breakGlass" ? <BreakGlassScreen /> : null}
+          {view === "morpheoCases" ? <MorpheoCasesScreen /> : null}
           {/* §B3: draft, publish, retire. No delete control exists on either. */}
           {view === "corpus" ? <CorpusScreen /> : null}
           {view === "corpusSources" ? <CorpusSourcesScreen /> : null}

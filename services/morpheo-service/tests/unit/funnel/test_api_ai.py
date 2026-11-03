@@ -14,7 +14,15 @@ from sqlalchemy.pool import StaticPool
 from morpheo.ai.narrative import recorded_provider
 from morpheo.ai.pipeline import AiExtractor
 from morpheo.ai.provider import FailingProvider
-from morpheo.infrastructure.models import Base, FunnelAnswer, FunnelSession
+from morpheo.infrastructure.models import (
+    Base,
+    FunnelAnswer,
+    FunnelCase,
+    FunnelCaseAccess,
+    FunnelCaseChange,
+    FunnelCaseRecord,
+    FunnelSession,
+)
 from morpheo.main import create_app
 from morpheo.settings.config import Settings
 
@@ -29,7 +37,20 @@ def _client(extractor: AiExtractor | None) -> TestClient:
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
-    Base.metadata.create_all(engine, tables=[FunnelSession.__table__, FunnelAnswer.__table__])
+    Base.metadata.create_all(
+        engine,
+        tables=[
+            m.__table__
+            for m in (
+                FunnelSession,
+                FunnelAnswer,
+                FunnelCase,
+                FunnelCaseRecord,
+                FunnelCaseChange,
+                FunnelCaseAccess,
+            )
+        ],
+    )
     app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
     app.state.ai = extractor
     return TestClient(app)

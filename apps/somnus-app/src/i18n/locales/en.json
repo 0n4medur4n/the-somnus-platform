@@ -510,7 +510,9 @@
       "download": "Download report (PDF)",
       "notSaved": "This guidance is not saved to your account.",
       "noReport": "This guidance has no report to download.",
-      "signInHint": "To save the guidance and download the report, sign in before starting."
+      "signInHint": "To save the guidance and download the report, sign in before starting.",
+      "caseCode": "Case number",
+      "caseCodeHint": "Keep it. If you ever need to ask us about this guidance, give us this number: it does not contain your name or your details."
     },
     "report": {
       "mostImportant": "Most important",

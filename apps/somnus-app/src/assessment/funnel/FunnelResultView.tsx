@@ -16,11 +16,14 @@ export function FunnelResultView({
   sessionId,
   owned,
   signedIn,
+  caseCode,
 }: {
   result: FunnelResult;
   sessionId: string;
   owned: boolean;
   signedIn: boolean;
+  /** The interview's case number (ADR 0024); absent only from an older morpheo. */
+  caseCode?: string | undefined;
 }) {
   const { t } = useTranslation();
   // Only an interview stopped at the age has no text (out of scope): never an
@@ -75,6 +78,15 @@ export function FunnelResultView({
           {result.instrumentsNote ? (
             <p className="text-sm text-somnus-subtle">{result.instrumentsNote}</p>
           ) : null}
+        </div>
+      ) : null}
+      {caseCode ? (
+        <div className="flex flex-col gap-1 border-t border-somnus-muted/30 pt-4">
+          <p data-testid="funnel-case-code">
+            {t("funnel.result.caseCode")}:{" "}
+            <strong className="font-mono tracking-wide">{caseCode}</strong>
+          </p>
+          <p className="text-sm text-somnus-subtle">{t("funnel.result.caseCodeHint")}</p>
         </div>
       ) : null}
       <div className="flex flex-col gap-2 border-t border-somnus-muted/30 pt-4">

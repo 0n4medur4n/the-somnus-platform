@@ -5,6 +5,11 @@ answers in the order given, accepts an answer solely for the step the engine is
 serving now, checks it against that step's answer type, and turns the engine's
 step and result into the contract DTOs. Nothing here decides order, branches,
 rules or wording. Answers are health data: never logged.
+
+Every interview has a case (ADR 0024): opened with it, and on each closure it
+freezes what was asked, answered and shown; answers taken back are recorded
+as they read. The case is what an audit reads, long after the interview's
+own retention has deleted it.
 """
 
 from __future__ import annotations
@@ -37,8 +42,9 @@ from morpheo.funnel.interview import (
 )
 from morpheo.funnel.render import question_text
 from morpheo.funnel.rules import FunnelResult, evaluate
-from morpheo.infrastructure.models import FunnelAnswer, FunnelSession
+from morpheo.infrastructure.models import FunnelAnswer, FunnelCase, FunnelSession
 from morpheo.instruments.definitions import InstrumentRegistry
+from morpheo.repositories.cases import CaseRepository
 from morpheo.repositories.funnel import FunnelRepository
 from morpheo.schemas.funnel import (
     FunnelAiItemPanelDTO,
@@ -102,6 +108,7 @@ class FunnelService:
         informe: InformeArtifact | None = None,
     ) -> None:
         self._repo = FunnelRepository(session)
+        self._cases = CaseRepository(session)
         self._registry = registry
         self._ai = ai
         self._informe = informe
@@ -112,6 +119,7 @@ class FunnelService:
 
     def create(self, owner_id: str | None) -> FunnelStateDTO:
         session_id = self._repo.create(owner_id, self._a.content_version, self._a.rules_version)
+        self._cases.create(session_id, self._a.content_version, self._a.rules_version)
         state = self.state(session_id, owner_id)
         assert state is not None
         return state
@@ -193,6 +201,7 @@ class FunnelService:
             r for r in self._repo.answers(session_id) if not extraction.is_record_key(r.step_key)
         ]
         if rows:
+            self._withdraw(session, rows[-1].id)
             self._repo.delete_from(session_id, rows[-1].id)
         return self._reopen(session)
 
@@ -208,6 +217,7 @@ class FunnelService:
             row = next((r for r in rows if self._confirms(r, key)), None)
         if row is None:
             raise AnswerRejected("not_answered")
+        self._withdraw(session, row.id)
         self._repo.delete_from(session_id, row.id)
         return self._reopen(session)
 
@@ -244,13 +254,96 @@ class FunnelService:
         stopped = Interview(self._a, answers).stopped()
         status = "paused" if stopped == S2_PAUSED else "stopped" if stopped else "finished"
         self._repo.set_status(session.id, status)
+        case = self._case(session)
+        if case.status == "open":
+            self.record_closure(case, status, answers)
 
     def _reopen(self, session: FunnelSession) -> FunnelStateDTO:
         if session.status != "open":
             self._repo.set_status(session.id, "open")
+        self._cases.reopen(self._case(session))
         answers = self._answers(session.id)
         self._settle(session, answers)
         return self._state(session, answers)
+
+    # --- the case record (ADR 0024) ---
+
+    def _case(self, session: FunnelSession) -> FunnelCase:
+        """The interview's case; one is opened for an interview older than cases."""
+        case = self._cases.for_session(session.id)
+        if case is None:
+            self._cases.create(
+                session.id, session.content_version, session.rules_version, session.created_at
+            )
+            case = self._cases.for_session(session.id)
+            assert case is not None
+        return case
+
+    def record_closure(
+        self,
+        case: FunnelCase,
+        status: str,
+        answers: dict[str, Answer],
+        *,
+        reconstructed: bool = False,
+    ) -> None:
+        """Freeze what this closure asked, answered and showed, as the person saw it."""
+        result = evaluate(self._a, answers, self._registry)
+        iv = Interview(self._a, answers)
+        record = {
+            "status": status,
+            "contentVersion": self._a.content_version,
+            "rulesVersion": result.version_reglas,
+            "history": [
+                h.model_dump(by_alias=True, mode="json") for h in self._history(answers, iv)
+            ],
+            "result": self._result(result, answers).model_dump(by_alias=True, mode="json"),
+        }
+        summary = {
+            "main_action": result.accion_principal,
+            "stopped_by": result.stopped_by,
+            "categories": sorted({o.category for o in result.orientations}),
+            "templates": [o.template for o in result.orientations if o.template is not None],
+            "alerts": list(result.alerts),
+        }
+        self._cases.close(
+            case, status=status, summary=summary, record=record, reconstructed=reconstructed
+        )
+
+    def _withdraw(self, session: FunnelSession, first_answer_id: int) -> None:
+        """Record the answers about to be taken back, worded as the person saw them."""
+        removed = {r.step_key for r in self._repo.answers(session.id) if r.id >= first_answer_id}
+        answers = self._answers(session.id)
+        withdrawn = [
+            {"key": h.key, "question": h.question, "answer": h.answer}
+            for h in self._history(answers, Interview(self._a, answers))
+            if h.key in removed
+        ]
+        if withdrawn:
+            self._cases.add_change(self._case(session).code, withdrawn)
+
+    def backfill_cases(self) -> tuple[int, int]:
+        """Open a case for every interview older than cases; a closed one gets a
+        record rebuilt from its stored answers, marked as reconstructed.
+
+        Returns (cases opened, closed interviews whose result could not be rebuilt).
+        """
+        opened = unrebuilt = 0
+        for session in self._repo.without_case():
+            case = self._case(session)
+            opened += 1
+            if session.status == "open":
+                continue
+            try:
+                self.record_closure(
+                    case, session.status, self._answers(session.id), reconstructed=True
+                )
+            except (KeyError, ValueError):  # FunnelArtifactError is a ValueError
+                # Answers today's rules no longer read: the case says it closed,
+                # and records nothing rather than a result nobody was shown.
+                self._cases.mark_closed(case, session.status)
+                unrebuilt += 1
+        return opened, unrebuilt
 
     def _validate(
         self, step: Step, body: FunnelAnswerRequestDTO
@@ -698,4 +791,5 @@ class FunnelService:
             result=result,
             history=self._history(answers, iv),
             owned=session.owner_id is not None,
+            case_code=self._case(session).code,
         )

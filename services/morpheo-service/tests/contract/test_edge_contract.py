@@ -79,6 +79,11 @@ def test_all_schema_artifacts_are_present() -> None:
         "FunnelRewindRequest",
         "FunnelConfigResponse",
         "FunnelOwnSessions",
+        "FunnelCaseOpenRequest",
+        "FunnelCase",
+        "FunnelCaseStatsRequest",
+        "FunnelCaseStats",
+        "FunnelCaseBackfillResult",
     }
     present = {path.stem for path in SCHEMA_DIR.glob("*.json")}
     assert expected <= present
@@ -379,7 +384,15 @@ def test_every_v2_state_of_an_interview_conforms() -> None:
     from morpheo.funnel.artifact import funnel_artifact
     from morpheo.funnel.interview import Answer, next_step
     from morpheo.funnel.vignettes import answer_request, load_vignettes, scripted_answer
-    from morpheo.infrastructure.models import Base, FunnelAnswer, FunnelSession
+    from morpheo.infrastructure.models import (
+        Base,
+        FunnelAnswer,
+        FunnelCase,
+        FunnelCaseAccess,
+        FunnelCaseChange,
+        FunnelCaseRecord,
+        FunnelSession,
+    )
     from morpheo.main import create_app
     from morpheo.schemas.funnel import FunnelConfigResponseDTO
     from morpheo.settings.config import Settings
@@ -388,7 +401,20 @@ def test_every_v2_state_of_an_interview_conforms() -> None:
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
-    Base.metadata.create_all(engine, tables=[FunnelSession.__table__, FunnelAnswer.__table__])
+    Base.metadata.create_all(
+        engine,
+        tables=[
+            m.__table__
+            for m in (
+                FunnelSession,
+                FunnelAnswer,
+                FunnelCase,
+                FunnelCaseRecord,
+                FunnelCaseChange,
+                FunnelCaseAccess,
+            )
+        ],
+    )
     app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
     artifact = funnel_artifact()
     state_schema, answer_schema = _schema("FunnelState"), _schema("FunnelAnswerRequest")
@@ -415,6 +441,27 @@ def test_every_v2_state_of_an_interview_conforms() -> None:
                 answers[step.key] = answer
             jsonschema.validate(body, state_schema)
             assert body["result"]["texts"]
+
+            # Its case (ADR 0024), opened as the console does, validates too.
+            open_request = {
+                "caseCode": body["caseCode"],
+                "category": "legal",
+                "justification": "Reclamación formal recibida, expediente 12.",
+            }
+            jsonschema.validate(open_request, _schema("FunnelCaseOpenRequest"))
+            case = client.post(
+                "/internal/v1/funnel/cases/open",
+                json=open_request,
+                headers={"X-Somnus-Actor-Id": "admin-1"},
+            )
+            assert case.status_code == 200, case.text
+            jsonschema.validate(case.json(), _schema("FunnelCase"))
+
+        jsonschema.validate({}, _schema("FunnelCaseStatsRequest"))
+        stats = client.post("/internal/v1/funnel/cases/stats", json={})
+        jsonschema.validate(stats.json(), _schema("FunnelCaseStats"))
+        backfill = client.post("/internal/v1/maintenance/funnel-cases/backfill")
+        jsonschema.validate(backfill.json(), _schema("FunnelCaseBackfillResult"))
 
 
 def test_the_own_sessions_list_conforms() -> None:

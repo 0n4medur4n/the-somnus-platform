@@ -288,3 +288,78 @@ class FunnelAnswer(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
+
+
+# --- The case record of each v2 interview (ADR 0024). ---
+# A case is the audit trail of one interview, kept for the legal retention
+# period even after the interview itself is deleted (30-day TTL, account
+# erasure): deleting the interview only clears `session_id`, the one link to
+# a person. No owner id, name or address is ever stored here. The case code is
+# random, never derived from anything about the person.
+
+
+class FunnelCase(Base):
+    __tablename__ = "funnel_cases"
+
+    code: Mapped[str] = mapped_column(String(16), primary_key=True)
+    # No foreign key on purpose: the case outlives the interview.
+    session_id: Mapped[str | None] = mapped_column(String(36), nullable=True, unique=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    content_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    rules_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    # What the last closure showed, for the aggregate statistics (JSON lists).
+    main_action: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    stopped_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    categories_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    templates_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    alerts_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), index=True
+    )
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class FunnelCaseRecord(Base):
+    """What one closure of the interview showed, frozen. Never updated."""
+
+    __tablename__ = "funnel_case_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    case_code: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    # Questions as worded, answers as labelled, the result as shown. Health data.
+    record_json: Mapped[str] = mapped_column(Text, nullable=False)
+    # Rebuilt from the stored answers for an interview closed before cases
+    # existed: the current rules, not necessarily what the person saw.
+    reconstructed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+
+
+class FunnelCaseChange(Base):
+    """Answers the person took back (back, or Z1's correction), as they read."""
+
+    __tablename__ = "funnel_case_changes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    case_code: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    withdrawn_json: Mapped[str] = mapped_column(Text, nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+
+
+class FunnelCaseAccess(Base):
+    """Every time a case was opened in the console: who, when, and why."""
+
+    __tablename__ = "funnel_case_accesses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    case_code: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    actor_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    category: Mapped[str] = mapped_column(String(16), nullable=False)
+    justification: Mapped[str] = mapped_column(Text, nullable=False)
+    accessed_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )

@@ -299,3 +299,15 @@ def test_both_layouts_carry_the_morpheo_wordmark_inline() -> None:
     for document in (render_funnel_html(_request()), render_funnel_html(_report_request())):
         assert 'class="logo" src="data:image/png;base64,iVBOR' in document
         assert 'alt="Morpheo"' in document
+
+
+def _v3_request(**overrides: Any) -> FunnelReportRequestDTO:
+    return _request(report=REPORT, **overrides)
+
+
+@pytest.mark.parametrize("build", [_request, _v3_request], ids=["v2", "v3"])
+def test_the_case_number_is_printed_when_given_and_only_then(build: Any) -> None:
+    # ADR 0024: the person can quote it; an older edge sends none.
+    with_case = render_funnel_html(build(caseCode="SOM-7K3F-Q9XA"))
+    assert "Número de caso: <strong>SOM-7K3F-Q9XA</strong>" in with_case
+    assert "Número de caso" not in render_funnel_html(build())

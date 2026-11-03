@@ -510,7 +510,9 @@
       "download": "Descarregar l'informe (PDF)",
       "notSaved": "Aquesta orientació no està desada al seu compte.",
       "noReport": "Aquesta orientació no té cap informe per baixar.",
-      "signInHint": "Per desar l'orientació i descarregar l'informe, iniciï la sessió abans de començar."
+      "signInHint": "Per desar l'orientació i descarregar l'informe, iniciï la sessió abans de començar.",
+      "caseCode": "Número de cas",
+      "caseCodeHint": "Deseu-lo. Si mai ens heu de consultar res sobre aquesta orientació, indiqueu-nos aquest número: no conté el vostre nom ni les vostres dades."
     },
     "report": {
       "mostImportant": "El més important",

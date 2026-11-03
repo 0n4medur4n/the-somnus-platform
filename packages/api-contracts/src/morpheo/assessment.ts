@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CASE_CONTRACT_SCHEMAS } from "./cases.js";
 import { AssessmentContentResponseSchema, ClinicalSourcesResponseSchema } from "./content.js";
 import {
   AnswerKindSchema,
@@ -226,4 +227,6 @@ export const MORPHEO_CONTRACT_SCHEMAS = {
   OwnAssessmentsResponse: OwnAssessmentsResponseSchema,
   // The v2 interview (embudo v0.2).
   ...FUNNEL_CONTRACT_SCHEMAS,
+  // Its case records (ADR 0024).
+  ...CASE_CONTRACT_SCHEMAS,
 } as const;
