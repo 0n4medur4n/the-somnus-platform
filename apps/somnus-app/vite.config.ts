@@ -4,7 +4,48 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 import { checkHostingBundle, checkHostingText } from "../../scripts/check-hosting-bundle.mjs";
-import { HostingEnvSchema } from "./src/config/env-schema.js";
+import { HostingEnvSchema, SAME_ORIGIN } from "./src/config/env-schema.js";
+
+/**
+ * End-to-end only (E2E_SECURITY_HEADERS=1): `vite preview` answers with the
+ * headers firebase.json gives the app's "**" rule, so the Playwright suite runs
+ * the production bundle under the production Content-Security-Policy and fails
+ * on any violation. The one change is connect-src: the suite talks to a local
+ * edge-api and Auth emulator instead of the real endpoints.
+ */
+function e2eSecurityHeaders(): Plugin {
+  const config = JSON.parse(
+    readFileSync(new URL("../../firebase.json", import.meta.url), "utf8"),
+  ) as {
+    hosting: Array<{
+      target: string;
+      headers: Array<{ source: string; headers: Array<{ key: string; value: string }> }>;
+    }>;
+  };
+  const rule = config.hosting
+    .find((site) => site.target === "app")
+    ?.headers.find((entry) => entry.source === "**");
+  if (!rule) throw new Error("firebase.json: the app has no ** header rule");
+  const local = [process.env["VITE_EDGE_API_URL"], process.env["VITE_AUTH_EMULATOR_URL"]]
+    .filter((value): value is string => Boolean(value) && value !== SAME_ORIGIN)
+    .map((value) => new URL(value).origin);
+  return {
+    name: "somnus-e2e-security-headers",
+    configurePreviewServer(server) {
+      server.middlewares.use((_request, response, next) => {
+        for (const { key, value } of rule.headers) {
+          response.setHeader(
+            key,
+            key.toLowerCase() === "content-security-policy"
+              ? value.replace("connect-src ", `connect-src ${local.join(" ")} `)
+              : value,
+          );
+        }
+        next();
+      });
+    },
+  };
+}
 
 // The SPA is a static bundle deployed to Firebase Hosting; it talks only
 // to somnus-edge-api (build plan §5.2). Dev/preview ports match the
@@ -73,7 +114,12 @@ export default defineConfig(({ mode }) => {
           },
         }
       : {}),
-    plugins: [react(), tailwindcss(), ...(hosting ? [guard] : [])],
+    plugins: [
+      react(),
+      tailwindcss(),
+      ...(hosting ? [guard] : []),
+      ...(process.env["E2E_SECURITY_HEADERS"] === "1" ? [e2eSecurityHeaders()] : []),
+    ],
     server: { port: 5173, strictPort: true },
     preview: { port: 4173, strictPort: true },
     build: { outDir: "dist", sourcemap: !hosting },

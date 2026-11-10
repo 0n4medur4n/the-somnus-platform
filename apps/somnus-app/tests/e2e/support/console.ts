@@ -1,4 +1,4 @@
-import { type BrowserContext, test as base } from "@playwright/test";
+import { type BrowserContext, test as base, expect } from "@playwright/test";
 
 /**
  * Forwards the browser's console errors into the test's own output.
@@ -34,9 +34,46 @@ import { type BrowserContext, test as base } from "@playwright/test";
  */
 const wired = new WeakSet<BrowserContext>();
 
-function forward(context: BrowserContext): void {
+/**
+ * Content-Security-Policy violations seen by any page of the running test.
+ *
+ * The suite runs the production bundle under the production CSP (see the
+ * `webServer` in playwright.config.ts), so a violation is a real defect: a
+ * script, style, image or connection the policy in firebase.json does not allow.
+ * Each is recorded here and the `cspGuard` fixture below fails the test that
+ * caused it, in every spec, es and ca alike.
+ */
+const violations: string[] = [];
+
+export function cspViolations(): readonly string[] {
+  return violations;
+}
+
+/** For the guard's own self-test, which causes a violation on purpose. */
+export function clearCspViolations(): void {
+  violations.length = 0;
+}
+
+async function watchCsp(context: BrowserContext): Promise<void> {
+  await context.exposeFunction("__somnusCspViolation", (line: string) => {
+    violations.push(line);
+  });
+  await context.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (event) => {
+      // Directive and the blocked resource's origin/path only: never a script's text.
+      const blocked = event.blockedURI.split("?")[0] ?? "";
+      const where = event.sourceFile ? ` in ${event.sourceFile.split("?")[0]}` : "";
+      const report = (window as unknown as { __somnusCspViolation?: (line: string) => void })
+        .__somnusCspViolation;
+      report?.(`${event.violatedDirective} blocked ${blocked}${where} (${location.pathname})`);
+    });
+  });
+}
+
+async function forward(context: BrowserContext): Promise<void> {
   if (wired.has(context)) return;
   wired.add(context);
+  await watchCsp(context);
 
   context.on("console", (message) => {
     if (message.type() !== "error") return;
@@ -72,18 +109,32 @@ export function isConsoleForwarded(context: BrowserContext): boolean {
   return wired.has(context);
 }
 
-export const test = base.extend({
+export const test = base.extend<{ cspGuard: undefined }>({
   context: async ({ context }, use) => {
-    forward(context);
+    await forward(context);
     await use(context);
   },
+
+  // Runs for every test without being asked for. `browser` is worker-scoped and
+  // already needed, so it costs no extra context.
+  cspGuard: [
+    async ({ browser: _browser }, use) => {
+      clearCspViolations();
+      await use();
+      expect(
+        [...violations],
+        "Content-Security-Policy violations (production CSP in firebase.json)",
+      ).toEqual([]);
+    },
+    { auto: true },
+  ],
 
   browser: [
     async ({ browser }, use) => {
       const original = browser.newContext.bind(browser);
       browser.newContext = async (options) => {
         const context = await original(options);
-        forward(context);
+        await forward(context);
         return context;
       };
       try {
@@ -98,4 +149,4 @@ export const test = base.extend({
   ],
 });
 
-export { expect } from "@playwright/test";
+export { expect };

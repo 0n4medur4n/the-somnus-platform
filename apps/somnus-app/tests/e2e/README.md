@@ -14,7 +14,8 @@ just the SPA:
    `somnus_consent`).
 4. **edge-api** on `:8080`, pointed at the emulators and identity
    (`INTERNAL_AUTH_MODE=insecure-dev`, `IDENTITY_BASE_URL=http://localhost:3001`).
-5. **the SPA** dev server on `:5173`, built with
+5. **the SPA**: the production bundle, served by `vite preview` on `:5173` with the
+   security headers of `firebase.json` (see below), built with
    `VITE_AUTH_EMULATOR_URL=http://127.0.0.1:9099` and
    `VITE_EDGE_API_URL=http://localhost:8080` (Playwright starts this itself).
 
@@ -63,3 +64,13 @@ whose failure mode is silence needs its own test.
 fails on any violation — the same engine Lighthouse's accessibility category
 uses. `lighthouserc.json` additionally scores the public login screen at
 ≥ 0.95 (`pnpm dlx @lhci/cli autorun` with the SPA served on `:5173`).
+
+## Content-Security-Policy
+
+The suite does not use the Vite dev server. Playwright builds the SPA (`build:e2e`)
+and serves it with `vite preview`, answering with the headers `firebase.json`
+gives the app (`E2E_SECURITY_HEADERS=1`, `vite.config.ts`); only `connect-src`
+gains the local edge-api and Auth emulator origins. `support/console.ts` records
+every `securitypolicyviolation` and an automatic fixture fails the test that
+caused it, in every spec (es and ca). A new script, style, image or connection the
+policy does not allow therefore fails CI instead of the live site.

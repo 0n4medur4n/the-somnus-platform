@@ -30,11 +30,20 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm --filter @somnus/app dev",
+    // The production bundle under the production security headers (firebase.json),
+    // not the dev server: the dev server's HMR needs inline script and would
+    // violate the CSP, and would hide a real violation among the noise.
+    command:
+      "pnpm --filter @somnus/app build:e2e && pnpm --filter @somnus/app exec vite preview --port 5173",
     url: APP_URL,
     reuseExistingServer: !process.env["CI"],
-    timeout: 60_000,
+    timeout: 300_000,
     env: {
+      E2E_SECURITY_HEADERS: "1",
+      // The dev-only defaults are not in a built bundle, so say them here.
+      VITE_FIREBASE_API_KEY: process.env["VITE_FIREBASE_API_KEY"] ?? "demo-api-key",
+      VITE_FIREBASE_AUTH_DOMAIN:
+        process.env["VITE_FIREBASE_AUTH_DOMAIN"] ?? "somnus-dev-test.firebaseapp.com",
       VITE_EDGE_API_URL: process.env["VITE_EDGE_API_URL"] ?? "http://localhost:8080",
       VITE_AUTH_EMULATOR_URL: process.env["VITE_AUTH_EMULATOR_URL"] ?? "http://127.0.0.1:9099",
       VITE_FIREBASE_PROJECT_ID: process.env["VITE_FIREBASE_PROJECT_ID"] ?? "somnus-dev-test",
