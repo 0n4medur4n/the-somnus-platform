@@ -41,6 +41,9 @@ const TENANT_SCOPED_TABLES = [
   "sessionRevocations",
   "deletionRequests",
   "identityAuditEvents",
+  "passkeyCredentials",
+  "passkeyChallenges",
+  "passkeyUserHandles",
 ] as const;
 
 /**
@@ -89,6 +92,17 @@ const EXEMPTIONS = new Set([
   "account-deletion.repository.ts:findRequest",
   "account-deletion.repository.ts:resolveRequest",
   "role-assignments.repository.ts:hasAnyActiveHolder",
+
+  // Passkeys (ADR 0027). The credential id and the challenge are the
+  // unguessable keys a ceremony holds before it knows the user, and a
+  // usernameless challenge has no user. The expiry sweeps are cross-user
+  // on purpose, bounded, and return no credential material. The
+  // repositories still refuse a write whose user does not exist, and
+  // erasure deletes that user's rows, because the schema has no foreign keys.
+  "passkey-credentials.repository.ts:findByCredentialId",
+  "passkey-credentials.repository.ts:deleteExpiredPending",
+  "passkey-challenges.repository.ts:create",
+  "passkey-challenges.repository.ts:consume",
 ]);
 
 type ExtractedMethod = {

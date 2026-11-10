@@ -26,6 +26,9 @@ const EXPECTED_TABLES = [
   "session_revocations",
   "deletion_requests",
   "identity_audit_events",
+  "passkey_credentials",
+  "passkey_challenges",
+  "passkey_user_handles",
 ];
 
 async function listTables(db: Db): Promise<string[]> {
