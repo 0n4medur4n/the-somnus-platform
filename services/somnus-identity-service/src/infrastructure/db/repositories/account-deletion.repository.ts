@@ -8,6 +8,9 @@ import {
   individualProfiles,
   organizationInvitations,
   organizationMemberships,
+  passkeyChallenges,
+  passkeyCredentials,
+  passkeyUserHandles,
   platformInvitations,
   professionalCredentials,
   professionalProfiles,
@@ -115,6 +118,14 @@ export class AccountDeletionRepository {
       await tx.delete(roleAssignments).where(eq(roleAssignments.userId, userId));
       await tx.delete(professionalProfiles).where(eq(professionalProfiles.userId, userId));
       await tx.delete(individualProfiles).where(eq(individualProfiles.userId, userId));
+      // Passkeys are this person's authenticators (ADR 0027). No foreign
+      // key points at them (schema/index.ts), so erasure deletes them in
+      // this same transaction, before the user row. A challenge with no
+      // user id is usernameless and holds no personal data; it is not
+      // this user's and is left for the bounded expiry sweep.
+      await tx.delete(passkeyChallenges).where(eq(passkeyChallenges.userId, userId));
+      await tx.delete(passkeyCredentials).where(eq(passkeyCredentials.userId, userId));
+      await tx.delete(passkeyUserHandles).where(eq(passkeyUserHandles.userId, userId));
       await tx.delete(userIdentities).where(eq(userIdentities.userId, userId));
       await tx.delete(sessionRevocations).where(eq(sessionRevocations.userId, userId));
       await tx.delete(accountStatusHistory).where(eq(accountStatusHistory.userId, userId));
