@@ -104,39 +104,28 @@ async function get(url, attempts, delayMs) {
   throw new Error(`${url}: ${last instanceof Error ? last.message : "no answer"}`);
 }
 
-/** Checks every site; returns the list of problems (empty when all is well). */
-export async function checkLiveHeaders(config, options = {}) {
-  const { attempts = 6, delayMs = 20_000, sites = SITES } = options;
+async function checkOnce(config, sites) {
   const problems = [];
   for (const site of sites) {
     const expected = expectedHeaders(config, site.target);
     let assetUrl = null;
     for (const path of site.paths) {
       const label = `${site.origin}${path}`;
-      let result;
-      // A fresh deploy takes a moment to reach the CDN edge; retry before judging.
-      for (let round = 1; round <= attempts; round += 1) {
-        result = await get(label, 1, 0);
-        const found = compareHeaders(result.response.headers, expected, label);
-        if (found.length === 0 || round === attempts) {
-          problems.push(...found);
-          break;
-        }
-        await new Promise((done) => setTimeout(done, delayMs));
-      }
-      if (result && site.target === "marketing" && result.response.status === 200) {
-        const policy = metaPolicy(result.body);
+      const { response, body } = await get(label, 3, 2_000);
+      problems.push(...compareHeaders(response.headers, expected, label));
+      if (site.target === "marketing" && response.status === 200) {
+        const policy = metaPolicy(body);
         if (!policy) problems.push(`${label}: no <meta> Content-Security-Policy in the page`);
         else problems.push(...policyProblems(policy, label));
       }
-      if (result && !assetUrl) {
-        const found = ASSET_PATH.exec(result.body);
+      if (!assetUrl) {
+        const found = ASSET_PATH.exec(body);
         if (found?.[1]) assetUrl = `${site.origin}${found[1]}`;
       }
     }
     if (assetUrl) {
       // Proves rule order: the "**" rule says no-cache, the asset rule must win.
-      const { response } = await get(assetUrl, attempts, delayMs);
+      const { response } = await get(assetUrl, 3, 2_000);
       const cache = response.headers.get("cache-control") ?? "";
       const wanted = expectedAssetCache(config, site.target);
       if (cache.trim() !== wanted) {
@@ -149,10 +138,29 @@ export async function checkLiveHeaders(config, options = {}) {
   return problems;
 }
 
+/**
+ * Checks every site; returns the list of problems (empty when all is well).
+ * A fresh release takes a moment to reach every CDN edge, so a failing pass is
+ * repeated, whole, before it is believed.
+ */
+export async function checkLiveHeaders(config, options = {}) {
+  const { attempts = 6, delayMs = 20_000, sites = SITES } = options;
+  let problems = [];
+  for (let round = 1; round <= attempts; round += 1) {
+    problems = await checkOnce(config, sites);
+    if (problems.length === 0) return [];
+    if (round < attempts) await new Promise((done) => setTimeout(done, delayMs));
+  }
+  return problems;
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     const config = JSON.parse(readFileSync(resolve("firebase.json"), "utf8"));
-    const problems = await checkLiveHeaders(config);
+    const problems = await checkLiveHeaders(config, {
+      attempts: Number(process.env["LIVE_HEADERS_ATTEMPTS"] ?? 6),
+      delayMs: Number(process.env["LIVE_HEADERS_DELAY_MS"] ?? 20_000),
+    });
     if (problems.length > 0) {
       process.stderr.write(
         `Live header check FAILED:\n${problems.map((p) => `  - ${p}`).join("\n")}\n`,

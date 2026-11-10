@@ -631,6 +631,16 @@ jobs:
         if: github.event_name == 'push'
         run: pnpm exec firebase deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive
 
+      # Asks the live sites what they really send. firebase.json once promised
+      # security headers that no page ever received (the rule matched only URLs
+      # ending in .html), and nothing noticed for weeks. This fetches /, /login
+      # and /app on each custom domain and fails if any header firebase.json sets
+      # is missing or different, or if a hashed asset lost its immutable cache.
+      # It retries for a few minutes while the new release reaches the CDN.
+      - name: Verify the live security headers
+        if: github.event_name == 'push'
+        run: node scripts/check-live-headers.mjs
+
   morpheo-service:
     name: Morpheo service (ruff, mypy, pytest)
     runs-on: ubuntu-latest
