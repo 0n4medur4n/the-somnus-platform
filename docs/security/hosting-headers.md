@@ -77,9 +77,8 @@ form-action 'self'
 The enforced policy is not shown to be harmless. CI's full-stack E2E failed
 because `img-src` blocked `http://localhost:8090/v1/me/photo` on `/app/profile`.
 That URL is the suite's edge-api, not the page. On the live site the photo is
-`/v1/me/photo` on the page's own origin, which `'self'` allows. The suite's
-preview adds the local origins to `connect-src` and `img-src`; `firebase.json`
-does not. The app stays Report-Only until a browser pass on the live origin
+`/v1/me/photo` on the page's own origin, which `'self'` allows. The suite's preview adds the local origins to `connect-src` and the edge-api
+origin only to `img-src`; `firebase.json` does not. The app stays Report-Only until a browser pass on the live origin
 shows no violations.
 
 | Directive | Why |

@@ -70,8 +70,8 @@ uses. `lighthouserc.json` additionally scores the public login screen at
 The suite does not use the Vite dev server. Playwright builds the SPA (`build:e2e`)
 and serves it with `vite preview`, answering with the headers `firebase.json`
 gives the app (`E2E_SECURITY_HEADERS=1`, `vite.config.ts`). The preview adds the
-local edge-api and Auth emulator origins to `connect-src` and to `img-src`,
-because those calls leave the page's origin only inside this suite. The shipped
-policy is unchanged. `support/console.ts` records every `securitypolicyviolation`,
+local edge-api and Auth emulator origins to `connect-src`, and the edge-api
+origin only to `img-src`, because those calls leave the page's origin only
+inside this suite. The shipped policy is unchanged. `support/console.ts` records every `securitypolicyviolation`,
 including Report-Only, and an automatic fixture fails the test that caused it,
 in every spec (es and ca).

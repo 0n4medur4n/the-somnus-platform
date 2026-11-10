@@ -11,11 +11,10 @@ import { HostingEnvSchema, SAME_ORIGIN } from "./src/config/env-schema.js";
  * headers firebase.json gives the app's "**" rule. The suite fails on any
  * `securitypolicyviolation`, including one from a Report-Only policy.
  *
- * The shipped policy is not widened. The suite's API and Auth emulator are
- * other origins than the page, so this preview adds those origins to
- * `connect-src` and to `img-src` (the profile photo is an image, and CI
- * recorded `img-src` blocking `http://localhost:8090/v1/me/photo`). On the
- * live site that photo is same-origin through the Hosting rewrite.
+ * The shipped policy is not widened. connect-src gains the local edge-api and
+ * Auth emulator origins. img-src gains the edge-api origin only: the profile
+ * photo is an image, and CI recorded img-src blocking that origin. On the live
+ * site the photo is same-origin through the Hosting rewrite.
  */
 function e2eSecurityHeaders(): Plugin {
   const config = JSON.parse(
@@ -33,7 +32,8 @@ function e2eSecurityHeaders(): Plugin {
   const local = [process.env["VITE_EDGE_API_URL"], process.env["VITE_AUTH_EMULATOR_URL"]]
     .filter((value): value is string => Boolean(value) && value !== SAME_ORIGIN)
     .map((value) => new URL(value).origin);
-  const extra = local.join(" ");
+  const apiUrl = process.env["VITE_EDGE_API_URL"];
+  const apiOrigin = apiUrl && apiUrl !== SAME_ORIGIN ? new URL(apiUrl).origin : undefined;
   return {
     name: "somnus-e2e-security-headers",
     configurePreviewServer(server) {
@@ -42,13 +42,17 @@ function e2eSecurityHeaders(): Plugin {
           const name = key.toLowerCase();
           const policy =
             name === "content-security-policy" || name === "content-security-policy-report-only";
+          if (!policy) {
+            response.setHeader(key, value);
+            continue;
+          }
+          const withConnect =
+            local.length > 0
+              ? value.replace("connect-src ", `connect-src ${local.join(" ")} `)
+              : value;
           response.setHeader(
             key,
-            policy && extra.length > 0
-              ? value
-                  .replace("connect-src ", `connect-src ${extra} `)
-                  .replace("img-src ", `img-src ${extra} `)
-              : value,
+            apiOrigin ? withConnect.replace("img-src ", `img-src ${apiOrigin} `) : withConnect,
           );
         }
         next();
