@@ -32,16 +32,16 @@ const REQUIRED = [
 ];
 
 /**
- * Sites whose header CSP deliberately has no script-src / style-src, with the
- * reason. Growing this list needs the owner's decision.
+ * App and console ship the broad policy as Report-Only (ADR 0027 decision 16).
+ * `frame-ancestors` is a separate enforced header: browsers ignore it inside a
+ * Report-Only policy. Marketing stays on one enforced header.
  *
- * - admin: the Drive viewers run files inside `srcdoc` frames that inherit the
- *   page's policy and need inline script and eval (see docs/security/hosting-headers.md).
- * - marketing: Astro generates a per-page <meta> policy with the script and
- *   style hashes (apps/somnus-marketing tests assert it); a header policy with
- *   its own script-src would intersect with it and block the hashed scripts.
+ * The console's Report-Only policy carries candidate `default-src`, `script-src`
+ * and `style-src` so violations show up. Those three are never enforced here:
+ * the Drive viewers need inline script and eval.
  */
-const NO_SCRIPT_STYLE_IN_HEADER = ["admin", "marketing"];
+const REPORT_ONLY_SITES = ["app", "admin"];
+const ENFORCED_FRAME_ANCESTORS = "frame-ancestors 'none'";
 
 function site(target: string): Site {
   const found = config.hosting.find((entry) => entry.target === target);
@@ -82,12 +82,15 @@ describe("firebase.json security headers", () => {
     });
 
     it("no other rule overrides a security header", () => {
-      const protectedKeys = REQUIRED.filter((key) => key !== "cache-control");
+      const present = everyResponse(target);
+      const protectedKeys = [...REQUIRED, "content-security-policy-report-only"].filter(
+        (key) => key !== "cache-control" && present.has(key),
+      );
       for (const rule of site(target).headers.filter((entry) => entry.source !== "**")) {
         for (const { key, value } of rule.headers) {
           const lower = key.toLowerCase();
           if (!protectedKeys.includes(lower)) continue;
-          expect(value, `${rule.source} changes ${key}`).toBe(everyResponse(target).get(lower));
+          expect(value, `${rule.source} changes ${key}`).toBe(present.get(lower));
         }
       }
     });
@@ -106,51 +109,69 @@ describe("firebase.json security headers", () => {
     });
 
     it("has a CSP that denies framing, plugins and base-tag tricks", () => {
-      const csp = directives(everyResponse(target).get("content-security-policy") ?? "");
-      expect(csp.get("frame-ancestors")).toBe("'none'");
-      expect(csp.get("object-src")).toBe("'none'");
-      expect(csp.get("base-uri")).toBe("'self'");
-      expect(csp.get("form-action")).toBe("'self'");
-    });
-
-    it("has a CSP without unsafe-inline, unsafe-eval, wildcards or plain http", () => {
-      const policy = everyResponse(target).get("content-security-policy") ?? "";
-      expect(policy).not.toContain("unsafe-inline");
-      expect(policy).not.toContain("unsafe-eval");
-      expect(policy).not.toMatch(/(^|[\s;])\*(\s|;|$)/);
-      expect(policy).not.toMatch(/\bhttp:/);
-      expect(policy).not.toContain("script-src-attr");
-    });
-
-    it("keeps a script-src and style-src in the header unless the exception list says otherwise", () => {
-      const csp = directives(everyResponse(target).get("content-security-policy") ?? "");
-      if (NO_SCRIPT_STYLE_IN_HEADER.includes(target)) {
-        expect(csp.has("script-src")).toBe(false);
-        expect(csp.has("style-src")).toBe(false);
+      const headers = everyResponse(target);
+      if (REPORT_ONLY_SITES.includes(target)) {
+        expect(headers.get("content-security-policy")).toBe(ENFORCED_FRAME_ANCESTORS);
+        const report = directives(headers.get("content-security-policy-report-only") ?? "");
+        expect(report.has("frame-ancestors")).toBe(false);
+        expect(report.get("object-src")).toBe("'none'");
+        expect(report.get("base-uri")).toBe("'self'");
+        expect(report.get("form-action")).toBe("'self'");
       } else {
-        expect(csp.get("default-src")).toBe("'none'");
-        expect(csp.get("script-src")).toMatch(/^'self'/);
-        expect(csp.get("style-src")).toBe("'self'");
+        const csp = directives(headers.get("content-security-policy") ?? "");
+        expect(csp.get("frame-ancestors")).toBe("'none'");
+        expect(csp.get("object-src")).toBe("'none'");
+        expect(csp.get("base-uri")).toBe("'self'");
+        expect(csp.get("form-action")).toBe("'self'");
       }
     });
 
-    it("keeps the exception list as it was decided", () => {
-      expect(NO_SCRIPT_STYLE_IN_HEADER).toEqual(["admin", "marketing"]);
+    it("has a CSP without unsafe-inline, unsafe-eval, wildcards or plain http", () => {
+      const headers = everyResponse(target);
+      const policies = [headers.get("content-security-policy") ?? ""];
+      const reportOnly = headers.get("content-security-policy-report-only");
+      if (reportOnly !== undefined) policies.push(reportOnly);
+      for (const policy of policies) {
+        expect(policy).not.toContain("unsafe-inline");
+        expect(policy).not.toContain("unsafe-eval");
+        expect(policy).not.toMatch(/(^|[\s;])\*(\s|;|$)/);
+        expect(policy).not.toMatch(/\bhttp:/);
+        expect(policy).not.toContain("script-src-attr");
+      }
+    });
+
+    it("does not enforce script-src or style-src where the rollout says not to", () => {
+      const enforced = directives(everyResponse(target).get("content-security-policy") ?? "");
+      if (REPORT_ONLY_SITES.includes(target) || target === "marketing") {
+        expect(enforced.has("script-src")).toBe(false);
+        expect(enforced.has("style-src")).toBe(false);
+      }
     });
   });
 
-  it("allows the microphone to the two apps that dictate, and to nobody else", () => {
-    expect(everyResponse("app").get("permissions-policy")).toContain("microphone=(self)");
-    expect(everyResponse("admin").get("permissions-policy")).toContain("microphone=(self)");
-    expect(everyResponse("marketing").get("permissions-policy")).toContain("microphone=()");
-    for (const target of targets) {
-      expect(everyResponse(target).get("permissions-policy")).toContain("camera=()");
-      expect(everyResponse(target).get("permissions-policy")).toContain("geolocation=()");
+  it("ships app and console CSP as Report-Only, with frame-ancestors enforced alone", () => {
+    for (const target of REPORT_ONLY_SITES) {
+      const headers = everyResponse(target);
+      expect(headers.get("content-security-policy")).toBe(ENFORCED_FRAME_ANCESTORS);
+      expect(headers.has("content-security-policy-report-only")).toBe(true);
     }
+    expect(everyResponse("marketing").has("content-security-policy-report-only")).toBe(false);
   });
 
-  it("limits the app's network to its own origin, Firebase Auth and the dictation socket", () => {
-    const csp = directives(everyResponse("app").get("content-security-policy") ?? "");
+  it("allows the microphone to the two apps that dictate, and to nobody else", () => {
+    expect(everyResponse("app").get("permissions-policy")).toBe(
+      "geolocation=(), microphone=(self), camera=()",
+    );
+    expect(everyResponse("admin").get("permissions-policy")).toBe(
+      "geolocation=(), microphone=(self), camera=(), publickey-credentials-get=(self), publickey-credentials-create=(self)",
+    );
+    expect(everyResponse("marketing").get("permissions-policy")).toBe(
+      "geolocation=(), microphone=(), camera=()",
+    );
+  });
+
+  it("keeps the app's Report-Only network and script sources", () => {
+    const csp = directives(everyResponse("app").get("content-security-policy-report-only") ?? "");
     expect(csp.get("connect-src")?.split(" ").sort()).toEqual(
       [
         "'self'",
@@ -160,6 +181,22 @@ describe("firebase.json security headers", () => {
       ].sort(),
     );
     expect(csp.get("script-src")?.split(" ").sort()).toEqual(["'self'", "blob:"]);
+    expect(csp.get("style-src")).toBe("'self'");
+    expect(csp.get("default-src")).toBe("'none'");
+  });
+
+  it("puts the console script and style candidates only in Report-Only", () => {
+    const enforced = directives(everyResponse("admin").get("content-security-policy") ?? "");
+    const report = directives(
+      everyResponse("admin").get("content-security-policy-report-only") ?? "",
+    );
+    expect(enforced.has("script-src")).toBe(false);
+    expect(enforced.has("style-src")).toBe(false);
+    expect(enforced.has("default-src")).toBe(false);
+    expect(report.get("default-src")).toBe("'none'");
+    expect(report.get("script-src")).toBe("'self'");
+    expect(report.get("style-src")).toBe("'self'");
+    expect(report.has("frame-ancestors")).toBe(false);
   });
 
   it("keeps hashed assets immutable, after the ** rule so they win", () => {

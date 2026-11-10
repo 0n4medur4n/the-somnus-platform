@@ -14,7 +14,11 @@ import { pathToFileURL } from "node:url";
  *
  * firebase.json is the single source of truth: the expected headers are the
  * ones its `**` rule sets for the site, so a header added there is checked here
- * without touching this file.
+ * without touching this file. App and console set both
+ * `Content-Security-Policy` (enforced `frame-ancestors 'none'` only) and
+ * `Content-Security-Policy-Report-Only`. Each name is compared exactly. A
+ * missing or different value fails this process. Nothing here rolls a deploy
+ * back.
  */
 
 export const SITES = [

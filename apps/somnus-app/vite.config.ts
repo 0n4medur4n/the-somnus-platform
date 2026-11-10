@@ -8,10 +8,14 @@ import { HostingEnvSchema, SAME_ORIGIN } from "./src/config/env-schema.js";
 
 /**
  * End-to-end only (E2E_SECURITY_HEADERS=1): `vite preview` answers with the
- * headers firebase.json gives the app's "**" rule, so the Playwright suite runs
- * the production bundle under the production Content-Security-Policy and fails
- * on any violation. The one change is connect-src: the suite talks to a local
- * edge-api and Auth emulator instead of the real endpoints.
+ * headers firebase.json gives the app's "**" rule. The suite fails on any
+ * `securitypolicyviolation`, including one from a Report-Only policy.
+ *
+ * The shipped policy is not widened. The suite's API and Auth emulator are
+ * other origins than the page, so this preview adds those origins to
+ * `connect-src` and to `img-src` (the profile photo is an image, and CI
+ * recorded `img-src` blocking `http://localhost:8090/v1/me/photo`). On the
+ * live site that photo is same-origin through the Hosting rewrite.
  */
 function e2eSecurityHeaders(): Plugin {
   const config = JSON.parse(
@@ -29,15 +33,21 @@ function e2eSecurityHeaders(): Plugin {
   const local = [process.env["VITE_EDGE_API_URL"], process.env["VITE_AUTH_EMULATOR_URL"]]
     .filter((value): value is string => Boolean(value) && value !== SAME_ORIGIN)
     .map((value) => new URL(value).origin);
+  const extra = local.join(" ");
   return {
     name: "somnus-e2e-security-headers",
     configurePreviewServer(server) {
       server.middlewares.use((_request, response, next) => {
         for (const { key, value } of rule.headers) {
+          const name = key.toLowerCase();
+          const policy =
+            name === "content-security-policy" || name === "content-security-policy-report-only";
           response.setHeader(
             key,
-            key.toLowerCase() === "content-security-policy"
-              ? value.replace("connect-src ", `connect-src ${local.join(" ")} `)
+            policy && extra.length > 0
+              ? value
+                  .replace("connect-src ", `connect-src ${extra} `)
+                  .replace("img-src ", `img-src ${extra} `)
               : value,
           );
         }

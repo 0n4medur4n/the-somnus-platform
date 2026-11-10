@@ -29,11 +29,12 @@ fails if any header is missing or if an asset lost its immutable cache.
 
 | Header | app | console | marketing |
 |---|---|---|---|
-| Content-Security-Policy | full | partial (see below) | header + per-page `<meta>` |
+| Content-Security-Policy | `frame-ancestors 'none'` only | `frame-ancestors 'none'` only | header + per-page `<meta>` |
+| Content-Security-Policy-Report-Only | the rest of the policy | the rest, plus candidate `default-src` / `script-src` / `style-src` | none |
 | X-Content-Type-Options | nosniff | nosniff | nosniff |
 | X-Frame-Options | DENY | DENY | DENY |
 | Referrer-Policy | strict-origin-when-cross-origin | same | same |
-| Permissions-Policy | `geolocation=(), microphone=(self), camera=()` | same | `geolocation=(), microphone=(), camera=()` |
+| Permissions-Policy | `geolocation=(), microphone=(self), camera=()` | that, plus `publickey-credentials-get=(self)` and `publickey-credentials-create=(self)` | `geolocation=(), microphone=(), camera=()` |
 | Cross-Origin-Opener-Policy | same-origin | same-origin | same-origin |
 | Strict-Transport-Security | `max-age=31536000; includeSubDomains` | same | `max-age=31536000` |
 | Cache-Control (HTML) | no-cache | no-cache | no-cache |
@@ -48,7 +49,16 @@ fails if any header is missing or if an asset lost its immutable cache.
 
 ## CSP, directive by directive
 
-### somnus-app (full policy in the header)
+### somnus-app (Report-Only, with framing enforced)
+
+ADR 0027 decision 16 stages the broad policy. Browsers ignore `frame-ancestors`
+inside a Report-Only policy, so that one directive is its own enforced header:
+
+```
+Content-Security-Policy: frame-ancestors 'none'
+```
+
+`X-Frame-Options: DENY` stays. Everything else is `Content-Security-Policy-Report-Only`:
 
 ```
 default-src 'none'
@@ -62,8 +72,15 @@ frame-src   'none'
 object-src  'none'
 base-uri    'self'
 form-action 'self'
-frame-ancestors 'none'
 ```
+
+The enforced policy is not shown to be harmless. CI's full-stack E2E failed
+because `img-src` blocked `http://localhost:8090/v1/me/photo` on `/app/profile`.
+That URL is the suite's edge-api, not the page. On the live site the photo is
+`/v1/me/photo` on the page's own origin, which `'self'` allows. The suite's
+preview adds the local origins to `connect-src` and `img-src`; `firebase.json`
+does not. The app stays Report-Only until a browser pass on the live origin
+shows no violations.
 
 | Directive | Why |
 |---|---|
@@ -76,7 +93,7 @@ frame-ancestors 'none'
 | `manifest-src 'self'` | Future web app manifest. |
 | `frame-src 'none'`, `object-src 'none'` | The app embeds nothing. |
 | `base-uri`, `form-action 'self'` | Stops an injected `<base>` or `<form>` redirecting traffic. |
-| `frame-ancestors 'none'` | Nobody may frame the app (paired with `X-Frame-Options: DENY`). |
+| `frame-ancestors 'none'` | Enforced on its own header, paired with `X-Frame-Options: DENY`. A Report-Only policy does not enforce it. |
 
 One code change was needed for this: Zod 4 probes `new Function("")` to compile schemas, which an
 `unsafe-eval`-free policy refuses on every load. `apps/somnus-app/src/lib/zod-config.ts` sets
@@ -95,36 +112,41 @@ The header carries the rest: `img-src 'self' data:`, `font-src 'self'`, `connect
 would block the hashed inline scripts. `apps/somnus-marketing/tests/csp.test.ts` checks every built
 page covers all of its inline code.
 
-### somnus-admin: partial policy (owner decision, 2026-11-10)
+### somnus-admin (Report-Only first, ADR 0027 decision 16)
 
-The header has everything except `default-src`, `script-src` and `style-src`: `connect-src`
-(self, the two Google hosts, the dictation socket), `img-src`, `font-src`, `media-src`, `worker-src`,
-`manifest-src`, `object-src 'none'`, `base-uri`, `form-action`, `frame-ancestors 'none'`.
+Enforced header, and only this:
 
-Why not a full policy: the Drive viewers (HTML files, PDFs, spreadsheets, annotated pages) run inside
-`<iframe sandbox srcdoc>` frames (`html-view.ts`, `PdfFrame.tsx`, `SheetFrame.tsx`, `annotated-page.ts`).
-A `srcdoc` frame **inherits the embedding page's policy** and adds its own. Those frames need inline
-script, inline style and `eval` (a user's HTML file is a program; pdf.js and the spreadsheet engine
-start from `eval`). Tested in Chromium: with `script-src 'self'` on the console, a frame's script never
-runs. So a strict `script-src` on the console page forbids the Drive viewers, and the alternative is
-`unsafe-inline`/`unsafe-eval` on the whole console. Neither is acceptable.
+```
+Content-Security-Policy: frame-ancestors 'none'
+```
 
-Decision: keep the partial policy. It already blocks exfiltration through `connect-src` and framing.
-The strict policy is a known gap (see "Known gaps").
+`X-Frame-Options` stays `DENY`. `Permissions-Policy` is
+`geolocation=(), microphone=(self), camera=(), publickey-credentials-get=(self), publickey-credentials-create=(self)`.
+Dictation keeps `microphone=(self)`.
 
-Known way to close it: move the viewer frames to their own documents under a path with its own, looser
-header rule (for example `/viewer/**`), sandboxed and fed by `postMessage`. The console page then gets the
-strict policy. It needs a change in five Drive components (`html-view.ts`, `PdfFrame.tsx`, `SheetFrame.tsx`,
-`annotated-page.ts`, and the Markdown/DOCX preview pages) and a manual check of every viewer.
+`Content-Security-Policy-Report-Only` carries the previous connect, image, font,
+media, worker and document directives, and three candidates that are not
+enforced: `default-src 'none'`, `script-src 'self'`, `style-src 'self'`. There
+is no `frame-ancestors` in the Report-Only policy. `connect-src` still names
+`'self'`, `https://identitytoolkit.googleapis.com`, `https://securetoken.googleapis.com`
+and `wss://streaming.eu.assemblyai.com`. Those hosts are a hypothesis for the
+browser test: the console source does not name the two Google hosts.
+
+The Drive viewers (HTML, PDF, spreadsheet, annotated page) run in `srcdoc`
+frames that inherit the page policy and need inline script and `eval`. An
+enforced `script-src 'self'` stops them. This PR does not enforce `script-src`
+or `style-src`. The candidates are there so the browser console shows the
+violations during the check. Enforce the broad policy only after sign-in and
+the email-link callback show none.
 
 ## Checks in CI
 
 * `tests/hosting-headers.test.ts`: parses `firebase.json`; fails if a site loses a required header, if
-  another rule overrides one, if a CSP gains `unsafe-inline`/`unsafe-eval`/`*`/`http:`, or if the list of
-  sites that carry no `script-src` in the header grows.
+  another rule overrides one, if either CSP gains `unsafe-inline`/`unsafe-eval`/`*`/`http:`, if app or
+  console enforce anything beyond `frame-ancestors 'none'`, or if the console passkey permissions drop.
 * `apps/somnus-marketing/tests/csp.test.ts`: every built page's inline code is hashed.
-* Playwright (`apps/somnus-app/tests/e2e`): the suite runs the production bundle under the production
-  policy and fails the test that causes any `securitypolicyviolation` (es and ca).
+* Playwright (`apps/somnus-app/tests/e2e`): the suite runs the production bundle under the app's
+  headers and fails the test that causes any `securitypolicyviolation`, Report-Only included.
 * `scripts/check-live-headers.mjs`, after `deploy-hosting` on push to main: `/`, `/login`, `/app` on each
   custom domain.
 
@@ -154,16 +176,17 @@ Hosting emulator; check it on a preview channel when the first service worker is
    create a blob without already running, so the risk is low, but it is a wider source than `'self'`.
    Fix: ship the worklet as a static same-origin file and load it by URL, then drop `blob:`. Not done here
    because it changes the audio path and could not be tested with a real microphone.
-2. **The console has no strict `script-src` / `style-src`.** Reason and the way to close it are in the
-   somnus-admin section above. Until then an injected script in the console is not stopped by CSP.
+2. **The console does not enforce `script-src` or `style-src`.** The candidates live in the Report-Only
+   policy so the browser check can see them. An injected script is not stopped until that policy is
+   enforced, after sign-in and the email-link callback show no violations.
 3. **The `sw.js` and `manifest.webmanifest` rewrites** (serve the file, else a real 404, never `index.html`)
    and their `no-cache` rule were only tested in the Hosting emulator, which does not apply custom headers.
    Check them on a preview channel when the first service worker is added.
 4. **Staging and production** (`infrastructure/terraform/modules/environment`) do not set `COOKIE_SECRET` or
    `COOKIE_SECURE`. With the fail-closed edge-api configuration an edge-api started there without them
    refuses to start. Fill them in before those environments are used.
-5. **The full Playwright suite was not run locally** (no Docker, so no MySQL). The CSP guard and its
-   self-test ran; the other specs run against the production bundle under the production policy for the
-   first time in CI, and may reveal a violation that nothing else exercised.
+5. **CI's full Playwright run failed once** on `tests/e2e/morpheo-space.spec.ts:91`: the profile image
+   was not visible, and the CSP guard reported `img-src` blocking the suite's edge origin. The shipped
+   `img-src` stayed `'self'`. The preview now adds that origin for the suite only.
 6. **The app's `test:coverage` suite is load-sensitive.** On a busy machine the same tests time out at the
    default 5 s on `origin/main` too (see the S1 closing report); not caused by this work, not fixed here.

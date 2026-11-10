@@ -19,8 +19,13 @@ describe("check-live-headers", () => {
   it("expects headers for every site from firebase.json", () => {
     for (const site of SITES) {
       const expected = expectedHeaders(config, site.target);
-      expect(expected.has("content-security-policy")).toBe(true);
+      expect(expected.get("content-security-policy")).toBeTruthy();
       expect(expected.has("x-frame-options")).toBe(true);
+      const staged = site.target === "app" || site.target === "admin";
+      expect(expected.has("content-security-policy-report-only")).toBe(staged);
+      if (staged) {
+        expect(expected.get("content-security-policy")).toBe("frame-ancestors 'none'");
+      }
     }
   });
 
@@ -45,9 +50,11 @@ describe("check-live-headers", () => {
     const live = headersOf("app");
     live.delete("x-frame-options");
     live.delete("content-security-policy");
+    live.delete("content-security-policy-report-only");
     const problems = compareHeaders(live, expectedHeaders(config, "app"), "app /login");
     expect(problems).toContain("app /login: missing x-frame-options");
     expect(problems).toContain("app /login: missing content-security-policy");
+    expect(problems).toContain("app /login: missing content-security-policy-report-only");
   });
 
   it("fails when a header has a different value", () => {

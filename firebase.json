@@ -107,8 +107,12 @@
           "source": "**",
           "headers": [
             {
+              "key": "Content-Security-Policy-Report-Only",
+              "value": "default-src 'none'; script-src 'self' blob:; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com wss://streaming.eu.assemblyai.com; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+            },
+            {
               "key": "Content-Security-Policy",
-              "value": "default-src 'none'; script-src 'self' blob:; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com wss://streaming.eu.assemblyai.com; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+              "value": "frame-ancestors 'none'"
             },
             {
               "key": "X-Content-Type-Options",
@@ -199,8 +203,12 @@
           "source": "**",
           "headers": [
             {
+              "key": "Content-Security-Policy-Report-Only",
+              "value": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com wss://streaming.eu.assemblyai.com; img-src 'self' data: blob:; font-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+            },
+            {
               "key": "Content-Security-Policy",
-              "value": "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com wss://streaming.eu.assemblyai.com; img-src 'self' data: blob:; font-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+              "value": "frame-ancestors 'none'"
             },
             {
               "key": "X-Content-Type-Options",
@@ -216,7 +224,7 @@
             },
             {
               "key": "Permissions-Policy",
-              "value": "geolocation=(), microphone=(self), camera=()"
+              "value": "geolocation=(), microphone=(self), camera=(), publickey-credentials-get=(self), publickey-credentials-create=(self)"
             },
             {
               "key": "Cross-Origin-Opener-Policy",
