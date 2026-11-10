@@ -10,8 +10,10 @@ import { HostingEnvSchema, SAME_ORIGIN } from "./src/config/env-schema.js";
  * End-to-end only (E2E_SECURITY_HEADERS=1): `vite preview` answers with the
  * headers firebase.json gives the app's "**" rule, so the Playwright suite runs
  * the production bundle under the production Content-Security-Policy and fails
- * on any violation. The one change is connect-src: the suite talks to a local
- * edge-api and Auth emulator instead of the real endpoints.
+ * on any violation. Two changes, both because the suite talks to a local
+ * edge-api and Auth emulator instead of the real endpoints: connect-src gets
+ * their origins, and img-src gets the edge-api origin only (the profile photo
+ * is an <img> on /v1/me/photo; on the live site it is same-origin).
  */
 function e2eSecurityHeaders(): Plugin {
   const config = JSON.parse(
@@ -29,16 +31,21 @@ function e2eSecurityHeaders(): Plugin {
   const local = [process.env["VITE_EDGE_API_URL"], process.env["VITE_AUTH_EMULATOR_URL"]]
     .filter((value): value is string => Boolean(value) && value !== SAME_ORIGIN)
     .map((value) => new URL(value).origin);
+  const apiUrl = process.env["VITE_EDGE_API_URL"];
+  const apiOrigin = apiUrl && apiUrl !== SAME_ORIGIN ? new URL(apiUrl).origin : undefined;
   return {
     name: "somnus-e2e-security-headers",
     configurePreviewServer(server) {
       server.middlewares.use((_request, response, next) => {
         for (const { key, value } of rule.headers) {
+          if (key.toLowerCase() !== "content-security-policy") {
+            response.setHeader(key, value);
+            continue;
+          }
+          const withApi = value.replace("connect-src ", `connect-src ${local.join(" ")} `);
           response.setHeader(
             key,
-            key.toLowerCase() === "content-security-policy"
-              ? value.replace("connect-src ", `connect-src ${local.join(" ")} `)
-              : value,
+            apiOrigin ? withApi.replace("img-src ", `img-src ${apiOrigin} `) : withApi,
           );
         }
         next();
