@@ -40,8 +40,9 @@ fails if any header is missing or if an asset lost its immutable cache.
 | X-Robots-Tag | | noindex, nofollow | |
 
 * COOP `same-origin` is safe because sign-in is the email link (no popup, no `window.opener`).
-* HSTS on the apex (`thesomnus.com`) has no `includeSubDomains`: the old rule had it, but it would
-  commit every subdomain of the company to HTTPS for a year and nobody has listed them. Owner decision.
+* HSTS on the apex (`thesomnus.com`) has no `includeSubDomains` (owner decision, 2026-11-10): the old
+  rule had it, but it would commit every subdomain of the company to HTTPS for a year and nobody has
+  listed them. Revisit once a subdomain inventory exists.
 * `Cache-Control: no-cache` (not `public, max-age=0`): the `**` rule also reaches `/v1/**` responses
   forwarded to edge-api, which are per-person; nothing there should be marked public.
 
@@ -94,7 +95,7 @@ The header carries the rest: `img-src 'self' data:`, `font-src 'self'`, `connect
 would block the hashed inline scripts. `apps/somnus-marketing/tests/csp.test.ts` checks every built
 page covers all of its inline code.
 
-### somnus-admin: partial policy, owner decision pending
+### somnus-admin: partial policy (owner decision, 2026-11-10)
 
 The header has everything except `default-src`, `script-src` and `style-src`: `connect-src`
 (self, the two Google hosts, the dictation socket), `img-src`, `font-src`, `media-src`, `worker-src`,
@@ -106,14 +107,15 @@ A `srcdoc` frame **inherits the embedding page's policy** and adds its own. Thos
 script, inline style and `eval` (a user's HTML file is a program; pdf.js and the spreadsheet engine
 start from `eval`). Tested in Chromium: with `script-src 'self'` on the console, a frame's script never
 runs. So a strict `script-src` on the console page forbids the Drive viewers, and the alternative is
-`unsafe-inline`/`unsafe-eval` on the whole console. Neither is acceptable without a decision.
+`unsafe-inline`/`unsafe-eval` on the whole console. Neither is acceptable.
 
-Options (for the owner):
+Decision: keep the partial policy. It already blocks exfiltration through `connect-src` and framing.
+The strict policy is a known gap (see "Known gaps").
 
-1. Keep the partial policy (it already blocks exfiltration through `connect-src` and framing).
-2. Move the frames to their own documents under a path with its own, looser header rule
-   (for example `/viewer/**`), sandboxed, fed by `postMessage`. The console page then gets the strict
-   policy. Needs a change in five Drive components and a visual check of every viewer.
+Known way to close it: move the viewer frames to their own documents under a path with its own, looser
+header rule (for example `/viewer/**`), sandboxed and fed by `postMessage`. The console page then gets the
+strict policy. It needs a change in five Drive components (`html-view.ts`, `PdfFrame.tsx`, `SheetFrame.tsx`,
+`annotated-page.ts`, and the Markdown/DOCX preview pages) and a manual check of every viewer.
 
 ## Checks in CI
 
@@ -144,3 +146,24 @@ Hosting emulator; check it on a preview channel when the first service worker is
 | Text reader | Text only: nothing. Rendering Markdown/HTML needs a sanitizer and classes, not `style=""` attributes (`style-src 'self'` blocks them). Custom reading fonts: ship them (`font-src 'self'`). |
 | Audio later (Siren) | `media-src 'self' blob:` plus the bucket origin if media is served from storage; `connect-src` for range requests. |
 | Hardening to consider | `require-trusted-types-for 'script'` once the app has no DOM-string sinks. |
+
+## Known gaps
+
+1. **`blob:` in the app's `script-src`.** It exists only for the dictation worklet, built from a string and
+   loaded with `audioWorklet.addModule(blobUrl)` (`dictation.ts`). Script injected into the page cannot
+   create a blob without already running, so the risk is low, but it is a wider source than `'self'`.
+   Fix: ship the worklet as a static same-origin file and load it by URL, then drop `blob:`. Not done here
+   because it changes the audio path and could not be tested with a real microphone.
+2. **The console has no strict `script-src` / `style-src`.** Reason and the way to close it are in the
+   somnus-admin section above. Until then an injected script in the console is not stopped by CSP.
+3. **The `sw.js` and `manifest.webmanifest` rewrites** (serve the file, else a real 404, never `index.html`)
+   and their `no-cache` rule were only tested in the Hosting emulator, which does not apply custom headers.
+   Check them on a preview channel when the first service worker is added.
+4. **Staging and production** (`infrastructure/terraform/modules/environment`) do not set `COOKIE_SECRET` or
+   `COOKIE_SECURE`. With the fail-closed edge-api configuration an edge-api started there without them
+   refuses to start. Fill them in before those environments are used.
+5. **The full Playwright suite was not run locally** (no Docker, so no MySQL). The CSP guard and its
+   self-test ran; the other specs run against the production bundle under the production policy for the
+   first time in CI, and may reveal a violation that nothing else exercised.
+6. **The app's `test:coverage` suite is load-sensitive.** On a busy machine the same tests time out at the
+   default 5 s on `origin/main` too (see the S1 closing report); not caused by this work, not fixed here.

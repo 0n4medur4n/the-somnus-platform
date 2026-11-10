@@ -22,9 +22,11 @@ first-party and never needs `None`. `Lax` is also what the deployed service alre
 changes nothing for anyone. `Strict` would probably also work for the SPA's own requests and
 is a candidate, but it changes what a cross-site top-level navigation carries and was not exercised in
 real browsers (Safari, iOS in-app browsers). CSRF is covered independently by the session-bound token
-on every state-changing route. Recommendation: stay on `Lax`; try `Strict` on a preview channel first.
+on every state-changing route. Decision (owner, 2026-11-10): `SameSite` stays `Lax`. `Strict` is to be
+tested in a Hosting preview channel (real browsers, including Safari and iOS in-app browsers, with the
+emailed sign-in link) before it is considered.
 
-### `__Host-` prefix: no
+### `__Host-` prefix: not used (owner decision, 2026-11-10)
 
 `__Host-` would enforce Secure, `Path=/` and no Domain at the browser, which this cookie already has.
 But Firebase Hosting forwards **only** a cookie named `__session` to Cloud Run (documented Firebase
