@@ -10,6 +10,7 @@
 export * from "./access.schema.js";
 export * from "./audit.schema.js";
 export * from "./organizations.schema.js";
+export * from "./passkeys.schema.js";
 export * from "./platform-invitations.schema.js";
 export * from "./roles.schema.js";
 export * from "./users.schema.js";

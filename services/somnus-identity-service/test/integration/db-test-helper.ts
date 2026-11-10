@@ -40,6 +40,9 @@ const TABLES_IN_DELETE_ORDER = [
   schema.professionalCredentials,
   schema.professionalProfiles,
   schema.individualProfiles,
+  schema.passkeyChallenges,
+  schema.passkeyCredentials,
+  schema.passkeyUserHandles,
   schema.userIdentities,
   schema.users,
 ];
