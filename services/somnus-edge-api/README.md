@@ -148,10 +148,13 @@ startup:
 | `FIREBASE_AUTH_EMULATOR_HOST` | (unset) | Set → firebase-admin uses the Auth emulator. |
 | `FIRESTORE_EMULATOR_HOST` | (unset) | Set → Firestore client uses the emulator. |
 | `SESSION_COOKIE_NAME` | `__session` | The only name Firebase Hosting forwards (ADR 0016). |
-| `COOKIE_SECRET` | dev fallback | Signs the session cookie and keys the CSRF token; **required in prod**. |
+| `NODE_ENV` | (unset) | Only `development` and `test` count as local. Anything else, or nothing, is treated as deployed (the image sets `production`). |
+| `COOKIE_SECRET` | dev fallback, local only | Signs the session cookie and keys the CSRF token. Outside local the service **refuses to start** unless it is set, at least 32 bytes, and not a development default or placeholder. |
+| `COOKIE_SECRET_PREVIOUS` | (unset) | Rotation: the retired secret. Cookies and CSRF tokens made with it still verify; only `COOKIE_SECRET` signs. See `docs/security/session-cookies.md`. |
 | `SESSION_TTL_SECONDS` | `604800` (7d) | |
-| `COOKIE_SECURE` | `false` | `true` in every deployed env. |
-| `COOKIE_SAMESITE` | `lax` | |
+| `COOKIE_SECURE` | `false` | `true` in every deployed env; deployed, `false` is refused at startup. |
+| `COOKIE_SAMESITE` | `lax` | `lax` or `strict`; deployed, `none` is refused. |
+| `COOKIE_DOMAIN` | (unset) | Deployed, setting it is refused: the cookie is host-only. |
 | `CORS_ORIGINS` | localhost dev origins | Comma-separated Hosting origins. |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | `100` / `60000` | Global, keyed by client IP; `/health/live` counts too. Nothing in terraform, the deploy workflows or compose overrides these, so the defaults **are** the deployed limit. The Playwright stack raises `RATE_LIMIT_MAX` for itself (`scripts/e2e-stack.mjs`) because the whole suite shares one IP; `tests/e2e-rate-limit.test.ts` fails if that harness value ever stops diverging from this default. |
 | `BODY_LIMIT_BYTES` | `65536` | |
