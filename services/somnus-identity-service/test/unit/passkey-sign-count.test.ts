@@ -22,4 +22,11 @@ describe("evaluateSignCount (ADR 0027 decision 7)", () => {
   it("treats a received count of zero as ok even when the stored count is not", () => {
     expect(evaluateSignCount(4, 0)).toBe("ok");
   });
+
+  it("handles the maximum uint32 sign count", () => {
+    const max = 4294967295;
+    expect(evaluateSignCount(max - 1, max)).toBe("ok");
+    expect(evaluateSignCount(max, max)).toBe("regression");
+    expect(evaluateSignCount(max, max - 1)).toBe("regression");
+  });
 });

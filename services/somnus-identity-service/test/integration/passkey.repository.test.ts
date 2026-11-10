@@ -2,6 +2,7 @@ import { UUIDv7 } from "@somnus/api-contracts";
 import { count, eq, isNull } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  evaluateSignCount,
   PasskeyChallengeInvalid,
   PasskeyCredentialIdConflict,
   PasskeyUserNotFound,
@@ -31,6 +32,27 @@ function bytes(length: number, seed: number): Buffer {
   const buffer = Buffer.alloc(length);
   for (let i = 0; i < length; i++) buffer[i] = (seed + i) & 0xff;
   return buffer;
+}
+
+/** 0xFF, 0xFE and 0x80 are not valid UTF-8 on their own. */
+function nonUtf8(length: number): Buffer {
+  const buffer = Buffer.alloc(length);
+  for (let i = 0; i < length; i++) buffer[i] = (0x80 + i) & 0xff;
+  buffer[0] = 0xff;
+  buffer[1] = 0xfe;
+  buffer[2] = 0x80;
+  return buffer;
+}
+
+function everyByteValue(): Buffer {
+  const buffer = Buffer.alloc(256);
+  for (let i = 0; i < 256; i++) buffer[i] = i;
+  return buffer;
+}
+
+function expectSameBytes(actual: unknown, expected: Buffer) {
+  expect(Buffer.isBuffer(actual)).toBe(true);
+  expect(Buffer.compare(actual as Buffer, expected)).toBe(0);
 }
 
 describe("passkey data model (ADR 0027, task 2.1)", () => {
@@ -463,6 +485,70 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
       await expect(handles.getOrCreateForUser({ userId: UUIDv7() })).rejects.toBeInstanceOf(
         PasskeyUserNotFound,
       );
+    });
+  });
+
+  describe("byte columns and sign count", () => {
+    it("stores and reads back non-UTF-8 bytes for every passkey byte column, and finds the credential by those bytes", async () => {
+      const owner = await user("bytes@example.com");
+      const credentialId = everyByteValue();
+      const publicKey = everyByteValue();
+      const aaguid = nonUtf8(16);
+      const challenge = nonUtf8(32);
+      const binding = nonUtf8(32);
+      binding[31] = 0x00;
+      const handle = nonUtf8(32);
+      handle[31] = 0xff;
+
+      await credentials.create({
+        userId: owner,
+        credentialId,
+        publicKey,
+        coseAlgorithm: -7,
+        transports: null,
+        aaguid,
+        backupEligible: false,
+        backupState: false,
+        name: "Bytes",
+        pendingExpiresAt: null,
+      });
+      const found = await credentials.findByCredentialId(credentialId);
+      expect(found?.userId).toBe(owner);
+      expectSameBytes(found?.credentialId, credentialId);
+      expectSameBytes(found?.publicKey, publicKey);
+      expectSameBytes(found?.aaguid, aaguid);
+
+      await db.insert(passkeyUserHandles).values({ id: UUIDv7(), userId: owner, handle });
+      expectSameBytes(await handles.getOrCreateForUser({ userId: owner }), handle);
+
+      await challenges.create({
+        challenge,
+        purpose: "authentication",
+        userId: owner,
+        sessionBindingHash: binding,
+        expiresAt: future(),
+      });
+      const stored = await db
+        .select()
+        .from(passkeyChallenges)
+        .where(eq(passkeyChallenges.challenge, challenge));
+      expect(stored).toHaveLength(1);
+      expectSameBytes(stored[0]?.challenge, challenge);
+      expectSameBytes(stored[0]?.sessionBindingHash, binding);
+    });
+
+    it("stores and reads back the maximum uint32 sign count", async () => {
+      const owner = await user("counter@example.com");
+      const max = 4294967295;
+      const { credentialId } = await pendingCredential(owner, 210, future());
+      expect(await credentials.activate({ userId: owner }, credentialId, new Date())).toBe(true);
+      expect(await credentials.recordUse({ userId: owner }, credentialId, max, new Date())).toBe(
+        true,
+      );
+      expect((await credentials.findByCredentialId(credentialId))?.signCount).toBe(max);
+      expect(evaluateSignCount(max - 1, max)).toBe("ok");
+      expect(evaluateSignCount(max, max)).toBe("regression");
+      expect(evaluateSignCount(max, max - 1)).toBe("regression");
     });
   });
 
