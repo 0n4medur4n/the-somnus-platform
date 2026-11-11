@@ -14,10 +14,15 @@ import {
 } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { makeEvent, type UUIDv7 } from "@somnus/api-contracts";
-import { evaluateSignCount, PasskeyCredentialIdConflict } from "../../domain/passkey/passkey.js";
+import {
+  evaluateSignCount,
+  PasskeyCredentialIdConflict,
+  PasskeyPendingLimit,
+} from "../../domain/passkey/passkey.js";
 import {
   type AuthenticatorDataView,
   attestedAaguid,
+  attestedCredentialAlgorithm,
   attestedCredentialId,
   authenticatorDataProblem,
   classifyUnconsumedChallenge,
@@ -213,6 +218,10 @@ export class PasskeyWebAuthnService {
         flags && !flags.ok ? flags.code : "client_data",
       );
     }
+    const embeddedAlgorithm = attestedCredentialAlgorithm(authData);
+    if (embeddedAlgorithm !== null && !isAllowedCoseAlgorithm(embeddedAlgorithm)) {
+      return this.fail(correlationId, "registration", userId, null, "algorithm");
+    }
 
     let verified: Awaited<ReturnType<typeof verifyRegistrationResponse>>;
     try {
@@ -282,21 +291,30 @@ export class PasskeyWebAuthnService {
       );
     }
     const now = new Date();
+    await this.handles.getOrCreateForUser({ userId });
     try {
-      await this.credentials.create({
-        userId,
-        credentialId,
-        publicKey,
-        coseAlgorithm: algorithm,
-        signCount: flags.view.signCount,
-        transports: knownTransports(parsed.response.transports),
-        aaguid: attestedAaguid(authData),
-        backupEligible: flags.view.be,
-        backupState: flags.view.bs,
-        name: UNNAMED_PASSKEY,
-        pendingExpiresAt: new Date(now.getTime() + config.pendingTtlSeconds * 1000),
-      });
+      await this.credentials.createUnderPendingCap(
+        { userId },
+        {
+          userId,
+          credentialId,
+          publicKey,
+          coseAlgorithm: algorithm,
+          signCount: flags.view.signCount,
+          transports: knownTransports(parsed.response.transports),
+          aaguid: attestedAaguid(authData),
+          backupEligible: flags.view.be,
+          backupState: flags.view.bs,
+          name: UNNAMED_PASSKEY,
+          pendingExpiresAt: new Date(now.getTime() + config.pendingTtlSeconds * 1000),
+        },
+        config.maxPendingCredentials,
+        now,
+      );
     } catch (error) {
+      if (error instanceof PasskeyPendingLimit) {
+        return this.fail(correlationId, "registration", userId, credentialIdText, "pending_limit");
+      }
       if (error instanceof PasskeyCredentialIdConflict) {
         return this.fail(
           correlationId,
@@ -348,7 +366,7 @@ export class PasskeyWebAuthnService {
     const now = new Date();
     const stored = credential.signCount;
     const received = view.signCount;
-    const nextCount = received === 0 ? stored : received;
+    const nextCount = received;
     const pending = credential.activatedAt === null;
     const wrote = pending
       ? await this.credentials.completePendingSignIn(
@@ -403,7 +421,7 @@ export class PasskeyWebAuthnService {
     const now = new Date();
     const stored = credential.signCount;
     const received = view.signCount;
-    const nextCount = received === 0 ? stored : received;
+    const nextCount = received;
     const wrote = await this.credentials.recordUse(
       { userId },
       credential.credentialId,
@@ -633,10 +651,11 @@ export class PasskeyWebAuthnService {
 
     let verified: Awaited<ReturnType<typeof verifyAuthenticationResponse>>;
     try {
-      // counter 0 disables the library's own regression check. That check
-      // throws when the received count is 0 and the stored count is not,
-      // which evaluateSignCount treats as ok (ADR 0027 decision 7). The
-      // conditional update below is what makes one of two equal counters win.
+      // counter 0 disables the library's own regression check, which treats a
+      // received 0 as harmless whenever the value it was given is 0. The rule
+      // that matters is evaluateSignCount: a received 0 is a regression when
+      // the stored count is above zero. The conditional update applies that
+      // same rule and is what makes one of two equal counters win.
       // expectedOrigin is one string. expectedTopOrigin is omitted: a true
       // crossOrigin without topOrigin is not rejected by 14.1.0, so
       // inspectClientData rejected it first.

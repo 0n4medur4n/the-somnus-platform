@@ -1,11 +1,13 @@
 import { UUIDv7 } from "@somnus/api-contracts";
 import { and, count, eq, gt, inArray, isNotNull, isNull, lt } from "drizzle-orm";
 import {
+  evaluateSignCount,
   PasskeyCredentialExpiryRequired,
   PasskeyCredentialIdConflict,
+  PasskeyPendingLimit,
 } from "../../../domain/passkey/passkey.js";
 import type { Db } from "../db.client.js";
-import { passkeyCredentials } from "../schema/index.js";
+import { passkeyCredentials, passkeyUserHandles } from "../schema/index.js";
 import type { UserScope } from "../tenant-scope.js";
 import { assertPasskeyUser } from "./passkey-user.js";
 
@@ -32,6 +34,17 @@ export type PasskeyCredentialRecord = typeof passkeyCredentials.$inferSelect;
 
 export interface PasskeyCredentialStore {
   create(input: NewPasskeyCredential): Promise<UUIDv7>;
+  /**
+   * Insert a pending credential only while the user is under the cap.
+   * The user's handle row is locked for the count and the insert, so two
+   * concurrent registrations cannot both pass a count of 2.
+   */
+  createUnderPendingCap(
+    scope: UserScope,
+    input: NewPasskeyCredential,
+    maxPending: number,
+    now: Date,
+  ): Promise<UUIDv7>;
   findByCredentialId(credentialId: Buffer): Promise<PasskeyCredentialRecord | null>;
   listByUser(scope: UserScope): Promise<PasskeyCredentialRecord[]>;
   countActiveByUser(scope: UserScope): Promise<number>;
@@ -76,6 +89,39 @@ export interface PasskeyCredentialStore {
   deleteExpiredPending(limit: number): Promise<number>;
 }
 
+function requirePendingExpiry(pendingExpiresAt: Date): void {
+  if (!(pendingExpiresAt instanceof Date) || Number.isNaN(pendingExpiresAt.getTime())) {
+    throw new PasskeyCredentialExpiryRequired();
+  }
+}
+
+async function insertCredential(
+  db: Pick<Db, "insert">,
+  input: NewPasskeyCredential,
+): Promise<UUIDv7> {
+  const id = UUIDv7();
+  try {
+    await db.insert(passkeyCredentials).values({
+      id,
+      credentialId: input.credentialId,
+      userId: input.userId,
+      publicKey: input.publicKey,
+      coseAlgorithm: input.coseAlgorithm,
+      signCount: input.signCount ?? 0,
+      transports: input.transports,
+      aaguid: input.aaguid,
+      backupEligible: input.backupEligible,
+      backupState: input.backupState,
+      name: input.name,
+      pendingExpiresAt: input.pendingExpiresAt,
+    });
+  } catch (error: unknown) {
+    if (isDuplicateEntry(error)) throw new PasskeyCredentialIdConflict();
+    throw error;
+  }
+  return id;
+}
+
 function isDuplicateEntry(error: unknown): boolean {
   let current: unknown = error;
   for (let depth = 0; depth < 5; depth++) {
@@ -105,32 +151,47 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
   constructor(private readonly db: Db) {}
 
   async create(input: NewPasskeyCredential): Promise<UUIDv7> {
-    const pendingExpiresAt = input.pendingExpiresAt;
-    if (!(pendingExpiresAt instanceof Date) || Number.isNaN(pendingExpiresAt.getTime())) {
-      throw new PasskeyCredentialExpiryRequired();
-    }
+    requirePendingExpiry(input.pendingExpiresAt);
     await assertPasskeyUser(this.db, input.userId);
-    const id = UUIDv7();
-    try {
-      await this.db.insert(passkeyCredentials).values({
-        id,
-        credentialId: input.credentialId,
-        userId: input.userId,
-        publicKey: input.publicKey,
-        coseAlgorithm: input.coseAlgorithm,
-        signCount: input.signCount ?? 0,
-        transports: input.transports,
-        aaguid: input.aaguid,
-        backupEligible: input.backupEligible,
-        backupState: input.backupState,
-        name: input.name,
-        pendingExpiresAt: input.pendingExpiresAt,
-      });
-    } catch (error: unknown) {
-      if (isDuplicateEntry(error)) throw new PasskeyCredentialIdConflict();
-      throw error;
-    }
-    return id;
+    return insertCredential(this.db, input);
+  }
+
+  /**
+   * The cap is enforced here, not only when options are built. Registration
+   * options create the handle row; this locks that row, counts unexpired
+   * pending credentials, and inserts in the same transaction. No new column
+   * or migration: the existing handle row is the lock.
+   */
+  async createUnderPendingCap(
+    scope: UserScope,
+    input: NewPasskeyCredential,
+    maxPending: number,
+    now: Date,
+  ): Promise<UUIDv7> {
+    requirePendingExpiry(input.pendingExpiresAt);
+    if (input.userId !== scope.userId) throw new PasskeyPendingLimit();
+    await assertPasskeyUser(this.db, input.userId);
+    return this.db.transaction(async (tx) => {
+      await tx
+        .select({ id: passkeyUserHandles.id })
+        .from(passkeyUserHandles)
+        .where(eq(passkeyUserHandles.userId, scope.userId))
+        .for("update");
+      const rows = await tx
+        .select({ total: count() })
+        .from(passkeyCredentials)
+        .where(
+          and(
+            eq(passkeyCredentials.userId, scope.userId),
+            isNull(passkeyCredentials.activatedAt),
+            isNull(passkeyCredentials.revokedAt),
+            isNull(passkeyCredentials.lockedAt),
+            gt(passkeyCredentials.pendingExpiresAt, now),
+          ),
+        );
+      if (Number(rows[0]?.total ?? 0) >= maxPending) throw new PasskeyPendingLimit();
+      return insertCredential(tx, input);
+    });
   }
 
   /**
@@ -235,6 +296,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     signCount: number,
     now: Date,
   ): Promise<boolean> {
+    if (evaluateSignCount(expectedSignCount, signCount) !== "ok") return false;
     const updated = await this.db
       .update(passkeyCredentials)
       .set({ activatedAt: now, lastUsedAt: now, signCount })
@@ -260,6 +322,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     usedAt: Date,
     expectedLastUsedAt: Date | null,
   ): Promise<boolean> {
+    if (evaluateSignCount(expectedSignCount, signCount) !== "ok") return false;
     const updated = await this.db
       .update(passkeyCredentials)
       .set({ signCount, lastUsedAt: usedAt })

@@ -169,6 +169,17 @@ export function attestedCredentialId(authData: Buffer): Buffer | null {
   return Buffer.from(authData.subarray(start, start + credentialLength));
 }
 
+/** COSE alg of the credential public key inside attested authenticator data. */
+export function attestedCredentialAlgorithm(authData: Buffer): number | null {
+  const credentialId = attestedCredentialId(authData);
+  if (!credentialId) return null;
+  const decoded = readCbor(authData, 55 + credentialId.length);
+  if (!decoded || !(decoded.value instanceof Map)) return null;
+  const algorithm = decoded.value.get(3);
+  if (typeof algorithm !== "number" || !Number.isInteger(algorithm)) return null;
+  return algorithm;
+}
+
 export function attestedAaguid(authData: Buffer): Buffer | null {
   const view = readAuthenticatorData(authData);
   if (!view?.at || authData.length < 53) return null;

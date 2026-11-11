@@ -20,13 +20,15 @@ export type ConsumedPasskeyChallenge = {
 };
 
 /**
- * A non-zero received count that is not greater than the stored count is a
- * regression. A received count of zero is ok, including when the stored
- * count is also zero: synced passkeys often report zero forever, and a zero
- * that stays zero does not lock the credential.
+ * A received count of zero is ok only when the stored count is also zero:
+ * synced passkeys often report zero forever, and a zero that stays zero does
+ * not lock the credential. A received zero against a stored count above zero
+ * is a regression: a cloned authenticator could otherwise send zero forever
+ * and never be detected. Any other received count must be greater than the
+ * stored count.
  */
 export function evaluateSignCount(stored: number, received: number): SignCountVerdict {
-  if (received === 0) return "ok";
+  if (received === 0 && stored === 0) return "ok";
   if (received > stored) return "ok";
   return "regression";
 }
@@ -49,6 +51,14 @@ export class PasskeyChallengeInvalid extends Error {
   constructor() {
     super("A passkey challenge or its session binding must be 32 bytes.");
     this.name = "PasskeyChallengeInvalid";
+  }
+}
+
+/** The user already holds the maximum number of unexpired pending credentials. */
+export class PasskeyPendingLimit extends Error {
+  constructor() {
+    super("The pending passkey limit has been reached.");
+    this.name = "PasskeyPendingLimit";
   }
 }
 

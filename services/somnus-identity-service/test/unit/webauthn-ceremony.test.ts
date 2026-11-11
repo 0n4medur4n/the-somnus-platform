@@ -62,6 +62,43 @@ describe("software authenticator", () => {
     expect(asserted.verified).toBe(true);
     expect(asserted.authenticationInfo.newCounter).toBe(1);
   });
+
+  it.each(["RS256", "EdDSA"] as const)(
+    "produces a %s registration and assertion the server library accepts",
+    async (algorithm) => {
+      const authenticator = createSoftwareAuthenticator(randomBytes(32), algorithm);
+      const challenge = randomBytes(32).toString("base64url");
+      const registered = await verifyRegistrationResponse({
+        response: registrationResponse(authenticator, { origin: ORIGIN, rpId: RP_ID, challenge }),
+        expectedChallenge: challenge,
+        expectedOrigin: ORIGIN,
+        expectedRPID: RP_ID,
+        requireUserVerification: true,
+        supportedAlgorithmIDs: [-7, -8, -257],
+      });
+      expect(registered.verified).toBe(true);
+      if (!registered.verified) return;
+      const next = randomBytes(32).toString("base64url");
+      const asserted = await verifyAuthenticationResponse({
+        response: authenticationResponse(authenticator, {
+          origin: ORIGIN,
+          rpId: RP_ID,
+          challenge: next,
+          signCount: 1,
+        }),
+        expectedChallenge: next,
+        expectedOrigin: ORIGIN,
+        expectedRPID: RP_ID,
+        requireUserVerification: true,
+        credential: {
+          id: registered.registrationInfo.credential.id,
+          publicKey: registered.registrationInfo.credential.publicKey,
+          counter: 0,
+        },
+      });
+      expect(asserted.verified).toBe(true);
+    },
+  );
 });
 
 describe("inspectClientData", () => {

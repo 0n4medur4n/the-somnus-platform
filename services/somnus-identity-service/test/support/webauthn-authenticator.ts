@@ -1,8 +1,16 @@
-import { createHash, generateKeyPairSync, type KeyObject, randomBytes, sign } from "node:crypto";
+import {
+  constants,
+  createHash,
+  generateKeyPairSync,
+  type KeyObject,
+  randomBytes,
+  sign,
+} from "node:crypto";
 
 /**
  * A software authenticator for tests. It lives under test support and is
- * not imported by production code. ES256, attestation none, no browser.
+ * not imported by production code. ES256, RS256 and Ed25519, attestation
+ * none, no browser.
  *
  * clientDataJSON carries type, challenge, origin and crossOrigin.
  * authenticatorData carries rpIdHash, the UP/UV/BE/BS flags and the counter.
@@ -29,18 +37,19 @@ export type CeremonyShape = {
   backupState?: boolean;
 };
 
-export function createSoftwareAuthenticator(handle: Buffer): SoftwareAuthenticator {
-  const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
-  const jwk = publicKey.export({ format: "jwk" });
-  if (typeof jwk.x !== "string" || typeof jwk.y !== "string") {
-    throw new Error("software authenticator did not export a P-256 key");
-  }
+export type AuthenticatorAlgorithm = "ES256" | "RS256" | "EdDSA";
+
+export function createSoftwareAuthenticator(
+  handle: Buffer,
+  algorithm: AuthenticatorAlgorithm = "ES256",
+): SoftwareAuthenticator {
+  const { publicKey, privateKey } = generateKey(algorithm);
   return {
     credentialId: randomBytes(16),
     handle,
     aaguid: Buffer.from("00112233445566778899aabbccddeeff", "hex"),
     privateKey,
-    cosePublicKey: coseEs256(Buffer.from(jwk.x, "base64url"), Buffer.from(jwk.y, "base64url")),
+    cosePublicKey: cosePublicKey(algorithm, publicKey),
   };
 }
 
@@ -75,13 +84,9 @@ export function authenticationResponse(
 ) {
   const client = clientData("webauthn.get", shape);
   const data = authenticatorData(authenticator, shape, false);
-  const signature = sign(
-    "sha256",
+  const signature = signAssertion(
+    authenticator.privateKey,
     Buffer.concat([data, createHash("sha256").update(client).digest()]),
-    {
-      key: authenticator.privateKey,
-      dsaEncoding: "der",
-    },
   );
   const userHandle =
     shape.userHandle === null ? undefined : b64(shape.userHandle ?? authenticator.handle);
@@ -138,6 +143,75 @@ function authenticatorData(
   return Buffer.concat(parts);
 }
 
+function generateKey(algorithm: AuthenticatorAlgorithm): {
+  publicKey: KeyObject;
+  privateKey: KeyObject;
+} {
+  if (algorithm === "RS256") {
+    return generateKeyPairSync("rsa", { modulusLength: 2048 });
+  }
+  if (algorithm === "EdDSA") return generateKeyPairSync("ed25519");
+  return generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+}
+
+function cosePublicKey(algorithm: AuthenticatorAlgorithm, publicKey: KeyObject): Buffer {
+  const jwk = publicKey.export({ format: "jwk" });
+  if (algorithm === "RS256") {
+    if (typeof jwk.n !== "string" || typeof jwk.e !== "string") {
+      throw new Error("software authenticator did not export an RSA key");
+    }
+    return coseRs256(Buffer.from(jwk.n, "base64url"), Buffer.from(jwk.e, "base64url"));
+  }
+  if (algorithm === "EdDSA") {
+    if (typeof jwk.x !== "string") {
+      throw new Error("software authenticator did not export an Ed25519 key");
+    }
+    return coseEd25519(Buffer.from(jwk.x, "base64url"));
+  }
+  if (typeof jwk.x !== "string" || typeof jwk.y !== "string") {
+    throw new Error("software authenticator did not export a P-256 key");
+  }
+  return coseEs256(Buffer.from(jwk.x, "base64url"), Buffer.from(jwk.y, "base64url"));
+}
+
+function signAssertion(key: KeyObject, payload: Buffer): Buffer {
+  if (key.asymmetricKeyType === "ed25519") return sign(null, payload, key);
+  if (key.asymmetricKeyType === "rsa") {
+    return sign("sha256", payload, { key, padding: constants.RSA_PKCS1_PADDING });
+  }
+  return sign("sha256", payload, { key, dsaEncoding: "der" });
+}
+
+/** COSE RSA key, canonical integer order: kty, alg, n, e. Algorithm -257. */
+function coseRs256(modulus: Buffer, exponent: Buffer): Buffer {
+  return Buffer.concat([
+    header(5, 4),
+    header(0, 1),
+    header(0, 3),
+    header(0, 3),
+    negative(257),
+    header(1, 0),
+    bytes(modulus),
+    header(1, 1),
+    bytes(exponent),
+  ]);
+}
+
+/** COSE OKP key, canonical integer order: kty, alg, crv, x. Algorithm -8, Ed25519. */
+function coseEd25519(x: Buffer): Buffer {
+  return Buffer.concat([
+    header(5, 4),
+    header(0, 1),
+    header(0, 1),
+    header(0, 3),
+    header(1, 7),
+    header(1, 0),
+    header(0, 6),
+    header(1, 1),
+    bytes(x),
+  ]);
+}
+
 /** COSE EC2 key, canonical integer order: kty, alg, crv, x, y. */
 function coseEs256(x: Buffer, y: Buffer): Buffer {
   return Buffer.concat([
@@ -153,6 +227,10 @@ function coseEs256(x: Buffer, y: Buffer): Buffer {
     header(1, 2),
     bytes(y),
   ]);
+}
+
+function negative(distance: number): Buffer {
+  return header(1, distance - 1);
 }
 
 function header(major: number, value: number): Buffer {

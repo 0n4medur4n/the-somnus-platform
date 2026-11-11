@@ -601,4 +601,401 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     ).toBeNull();
     expect((await signIn(zero.authenticator, 0)).result.ok).toBe(true);
   });
+
+  it("locks a credential whose stored counter is above zero when the assertion sends zero", async () => {
+    const enrolled = await enroll("zero-clone@example.com");
+    expect((await signIn(enrolled.authenticator, 5)).result.ok).toBe(true);
+    events.splice(0, events.length);
+    const again = await signIn(enrolled.authenticator, 0);
+    expect(again.result).toEqual({ ok: false });
+    expect(events.some((event) => event.eventType === PASSKEY_EVENTS.locked)).toBe(true);
+    expect(events.some((event) => event.data["reason"] === "sign_count")).toBe(true);
+    const row = await credentials.findByCredentialId(enrolled.authenticator.credentialId);
+    expect(row?.lockedAt).not.toBeNull();
+    expect(row?.signCount).toBe(5);
+  });
+
+  it("registers and signs in with RS256 and EdDSA, and refuses an unlisted algorithm", async () => {
+    for (const algorithm of ["RS256", "EdDSA"] as const) {
+      const userId = await person(`${algorithm.toLowerCase()}@example.com`);
+      const options = await service.registrationOptions(userId, "corr");
+      expect(options.ok).toBe(true);
+      if (!options.ok) continue;
+      const authenticator = createSoftwareAuthenticator(
+        Buffer.from(options.options.user.id, "base64url"),
+        algorithm,
+      );
+      const registered = await service.verifyRegistration(
+        userId,
+        registrationResponse(authenticator, {
+          origin: ORIGIN,
+          rpId: RP_ID,
+          challenge: options.options.challenge,
+        }),
+        "corr",
+      );
+      expect(registered.ok, algorithm).toBe(true);
+      expect(
+        (await credentials.findByCredentialId(authenticator.credentialId))?.coseAlgorithm,
+      ).toBe(algorithm === "RS256" ? -257 : -8);
+      expect((await signIn(authenticator, 1)).result.ok, algorithm).toBe(true);
+    }
+
+    const userId = await person("unlisted-alg@example.com");
+    const started = await startRegistration(userId);
+    const response = registerResponse(started.authenticator, started.options.challenge);
+    const attestation = Buffer.from(response.response.attestationObject, "base64url");
+    let algAt = -1;
+    for (let index = 0; index < attestation.length - 1; index++) {
+      if (attestation[index] === 0x03 && attestation[index + 1] === 0x26) algAt = index;
+    }
+    expect(algAt).toBeGreaterThan(-1);
+    attestation[algAt + 1] = 0x0a;
+    response.response.attestationObject = attestation.toString("base64url");
+    expect(await service.verifyRegistration(userId, response, "corr")).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("algorithm");
+    expect(await credentials.findByCredentialId(started.authenticator.credentialId)).toBeNull();
+  });
+
+  it("stores at most three pending credentials when four registrations finish together", async () => {
+    const userId = await person("cap-race@example.com");
+    const started = [];
+    for (let index = 0; index < 4; index++) started.push(await startRegistration(userId));
+    const results = await Promise.all(
+      started.map((item) =>
+        service.verifyRegistration(
+          userId,
+          registerResponse(item.authenticator, item.options.challenge),
+          "corr",
+        ),
+      ),
+    );
+    expect(results.filter((result) => result.ok)).toHaveLength(3);
+    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    expect(await credentials.countPendingByUser({ userId }, new Date())).toBe(3);
+    expect(events.some((event) => event.data["reason"] === "pending_limit")).toBe(true);
+  });
+
+  it("refuses a missing user, a missing Firebase uid, another user's step-up, and a malformed body", async () => {
+    expect(await service.registrationOptions(UUIDv7(), "corr")).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("user_missing");
+
+    const userId = await users.create({ email: "no-firebase@example.com" });
+    const started = await startRegistration(userId);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(started.authenticator, started.options.challenge),
+          "corr",
+        )
+      ).ok,
+    ).toBe(true);
+    const attempt = await signIn(started.authenticator, 1);
+    expect(attempt.result).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("firebase_uid_missing");
+    expect(
+      (await credentials.findByCredentialId(started.authenticator.credentialId))?.activatedAt,
+    ).toBeNull();
+
+    const owner = await enroll("step-owner@example.com");
+    expect((await signIn(owner.authenticator, 1)).result.ok).toBe(true);
+    const stranger = await enroll("step-stranger@example.com");
+    const step = await service.stepUpOptions(owner.userId, "corr");
+    expect(step.ok).toBe(true);
+    if (!step.ok) return;
+    expect(
+      await service.verifyStepUp(
+        owner.userId,
+        authenticationResponse(stranger.authenticator, {
+          origin: ORIGIN,
+          rpId: RP_ID,
+          challenge: step.options.challenge,
+          signCount: 1,
+        }),
+        "corr",
+      ),
+    ).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("credential_user");
+
+    expect(await service.verifyRegistration(owner.userId, { type: "public-key" }, "corr")).toEqual({
+      ok: false,
+    });
+    expect(events.at(-1)?.data["reason"]).toBe("client_data");
+    expect(
+      await service.verifyAuthentication(
+        { id: "abc", rawId: "abc", type: "public-key", response: { clientDataJSON: "" } },
+        "corr",
+      ),
+    ).toEqual({ ok: false });
+  });
+
+  it("lets one of two simultaneous regressions lock the credential", async () => {
+    const enrolled = await enroll("double-regression@example.com");
+    expect((await signIn(enrolled.authenticator, 1)).result.ok).toBe(true);
+    const first = await service.authenticationOptions("corr");
+    const second = await service.authenticationOptions("corr");
+    expect(first.ok && second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+    const results = await Promise.all(
+      [first.options.challenge, second.options.challenge].map((challenge) =>
+        service.verifyAuthentication(
+          authenticationResponse(enrolled.authenticator, {
+            origin: ORIGIN,
+            rpId: RP_ID,
+            challenge,
+            signCount: 1,
+          }),
+          "corr",
+        ),
+      ),
+    );
+    expect(results.every((result) => result.ok === false)).toBe(true);
+    expect(events.filter((event) => event.eventType === PASSKEY_EVENTS.locked)).toHaveLength(1);
+    expect(
+      (await credentials.findByCredentialId(enrolled.authenticator.credentialId))?.lockedAt,
+    ).not.toBeNull();
+  });
+
+  it("moves the use time forward when the stored use time is not earlier", async () => {
+    const enrolled = await enroll("same-second@example.com");
+    expect((await signIn(enrolled.authenticator, 0)).result.ok).toBe(true);
+    await db
+      .update(passkeyCredentials)
+      .set({ lastUsedAt: new Date(Date.now() + 60_000) })
+      .where(eq(passkeyCredentials.credentialId, enrolled.authenticator.credentialId));
+    expect((await signIn(enrolled.authenticator, 0)).result.ok).toBe(true);
+    await db
+      .update(passkeyCredentials)
+      .set({ lastUsedAt: null })
+      .where(eq(passkeyCredentials.credentialId, enrolled.authenticator.credentialId));
+    expect((await signIn(enrolled.authenticator, 1)).result.ok).toBe(true);
+  });
+
+  it("refuses a replayed bad ceremony, a reused assertion, and a broken signature", async () => {
+    const userId = await person("replay@example.com");
+    const started = await startRegistration(userId);
+    const badRegistration = registerResponse(started.authenticator, started.options.challenge, {
+      origin: "https://evil.example",
+    });
+    expect(await service.verifyRegistration(userId, badRegistration, "corr")).toEqual({
+      ok: false,
+    });
+    expect(await service.verifyRegistration(userId, badRegistration, "corr")).toEqual({
+      ok: false,
+    });
+    expect(events.at(-1)?.data["reason"]).toBe("challenge_rejected");
+
+    const enrolled = await enroll("replay-auth@example.com");
+    const badSignIn = await signIn(enrolled.authenticator, 1, { origin: "https://evil.example" });
+    expect(badSignIn.result).toEqual({ ok: false });
+    expect(await service.verifyAuthentication(badSignIn.response, "corr")).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("challenge_rejected");
+
+    const reused = await signIn(enrolled.authenticator, 1);
+    expect(reused.result.ok).toBe(true);
+    expect(await service.verifyAuthentication(reused.response, "corr")).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("challenge_rejected");
+
+    const fresh = await service.authenticationOptions("corr");
+    expect(fresh.ok).toBe(true);
+    if (!fresh.ok) return;
+    const forged = authenticationResponse(enrolled.authenticator, {
+      origin: ORIGIN,
+      rpId: RP_ID,
+      challenge: fresh.options.challenge,
+      signCount: 2,
+    });
+    const signature = Buffer.from(forged.response.signature, "base64url");
+    signature[signature.length - 1] ^= 0x01;
+    forged.response.signature = signature.toString("base64url");
+    expect(await service.verifyAuthentication(forged, "corr")).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("verification_rejected");
+    expect(
+      (await credentials.findByCredentialId(enrolled.authenticator.credentialId))?.lockedAt,
+    ).toBeNull();
+  });
+
+  it("refuses a suspended account during a ceremony and a credential whose algorithm was replaced", async () => {
+    const userId = await person("mid-ceremony@example.com");
+    const started = await startRegistration(userId);
+    await users.setStatus(userId, "suspended");
+    expect(
+      await service.verifyRegistration(
+        userId,
+        registerResponse(started.authenticator, started.options.challenge),
+        "corr",
+      ),
+    ).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("account_not_active");
+    expect(await credentials.findByCredentialId(started.authenticator.credentialId)).toBeNull();
+
+    const enrolled = await enroll("stored-alg@example.com");
+    expect((await signIn(enrolled.authenticator, 1)).result.ok).toBe(true);
+    await users.setStatus(enrolled.userId, "suspended");
+    expect(await service.stepUpOptions(enrolled.userId, "corr")).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("account_not_active");
+    await users.setStatus(enrolled.userId, "active");
+
+    await db
+      .update(passkeyCredentials)
+      .set({ coseAlgorithm: 10 })
+      .where(eq(passkeyCredentials.credentialId, enrolled.authenticator.credentialId));
+    const rejected = await signIn(enrolled.authenticator, 2);
+    expect(rejected.result).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("algorithm");
+    expect(
+      (await credentials.findByCredentialId(enrolled.authenticator.credentialId))?.lockedAt,
+    ).toBeNull();
+  });
+
+  it("lets one of two simultaneous step-ups win and one duplicate credential id lose", async () => {
+    const enrolled = await enroll("step-race@example.com");
+    expect((await signIn(enrolled.authenticator, 1)).result.ok).toBe(true);
+    const first = await service.stepUpOptions(enrolled.userId, "corr");
+    const second = await service.stepUpOptions(enrolled.userId, "corr");
+    expect(first.ok && second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+    const results = await Promise.all(
+      [first.options.challenge, second.options.challenge].map((challenge) =>
+        service.verifyStepUp(
+          enrolled.userId,
+          authenticationResponse(enrolled.authenticator, {
+            origin: ORIGIN,
+            rpId: RP_ID,
+            challenge,
+            signCount: 2,
+          }),
+          "corr",
+        ),
+      ),
+    );
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    expect(events.some((event) => event.data["reason"] === "counter_race")).toBe(true);
+
+    const userId = await person("duplicate-race@example.com");
+    const options = await Promise.all([
+      service.registrationOptions(userId, "corr"),
+      service.registrationOptions(userId, "corr"),
+    ]);
+    expect(options[0]?.ok && options[1]?.ok).toBe(true);
+    if (!options[0]?.ok || !options[1]?.ok) return;
+    const authenticator = createSoftwareAuthenticator(
+      Buffer.from(options[0].options.user.id, "base64url"),
+    );
+    const stored = await Promise.all(
+      options.map((item) =>
+        service.verifyRegistration(
+          userId,
+          item.ok
+            ? registerResponse(authenticator, item.options.challenge)
+            : registerResponse(authenticator, ""),
+          "corr",
+        ),
+      ),
+    );
+    expect(stored.filter((result) => result.ok)).toHaveLength(1);
+    expect(stored.filter((result) => !result.ok)).toHaveLength(1);
+    expect(events.some((event) => event.data["reason"] === "credential_duplicate")).toBe(true);
+  });
+
+  it("refuses malformed ceremony bodies and ignores unknown transports", async () => {
+    const userId = await person("malformed@example.com");
+    const bodies: unknown[] = [
+      null,
+      { type: "public-key", response: {} },
+      { type: "password", response: {} },
+      { type: "public-key", id: 1, response: {} },
+      { type: "public-key", id: "abc", rawId: 1, response: {} },
+      {
+        type: "public-key",
+        id: "abc",
+        rawId: "abc",
+        response: { clientDataJSON: 1, attestationObject: "abc" },
+      },
+      {
+        type: "public-key",
+        id: "abc",
+        rawId: "abc",
+        response: { clientDataJSON: "abc", attestationObject: 1 },
+      },
+      {
+        type: "public-key",
+        id: "abc",
+        rawId: "abc",
+        response: { clientDataJSON: "!!!!", attestationObject: "abc" },
+      },
+    ];
+    for (const body of bodies) {
+      expect(await service.verifyRegistration(userId, body, "   ")).toEqual({ ok: false });
+    }
+    const assertions: unknown[] = [
+      "nope",
+      { type: "password", response: {} },
+      { type: "public-key", id: 1, response: {} },
+      {
+        type: "public-key",
+        id: "abc",
+        rawId: "abc",
+        response: { clientDataJSON: 1, authenticatorData: "abc", signature: "abc" },
+      },
+      {
+        type: "public-key",
+        id: "abc",
+        rawId: "abc",
+        response: { clientDataJSON: "abc", authenticatorData: "abc", signature: 1 },
+      },
+    ];
+    for (const body of assertions) {
+      expect(await service.verifyAuthentication(body, "corr")).toEqual({ ok: false });
+    }
+
+    const started = await startRegistration(userId);
+    const bogus = registerResponse(started.authenticator, started.options.challenge);
+    bogus.response.transports = ["not-a-transport"];
+    expect((await service.verifyRegistration(userId, bogus, "corr")).ok).toBe(true);
+    expect(
+      (await credentials.findByCredentialId(started.authenticator.credentialId))?.transports,
+    ).toBeNull();
+
+    const again = await startRegistration(userId);
+    const named = registerResponse(again.authenticator, again.options.challenge);
+    named.response.transports = ["internal"];
+    expect((await service.verifyRegistration(userId, named, "corr")).ok).toBe(true);
+    const listed = await service.registrationOptions(userId, "corr");
+    expect(listed.ok).toBe(true);
+    if (listed.ok) {
+      expect(listed.options.excludeCredentials?.some((item) => item.transports?.length)).toBe(true);
+    }
+
+    const broken = await startRegistration(userId);
+    const attestation = registerResponse(broken.authenticator, broken.options.challenge);
+    const packed = Buffer.from(attestation.response.attestationObject, "base64url");
+    const fmtAt = packed.indexOf(Buffer.from("none", "utf8"));
+    expect(fmtAt).toBeGreaterThan(-1);
+    packed.set(Buffer.from("pack", "utf8"), fmtAt);
+    attestation.response.attestationObject = packed.toString("base64url");
+    expect(await service.verifyRegistration(userId, attestation, "corr")).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("verification_rejected");
+    expect(await credentials.findByCredentialId(broken.authenticator.credentialId)).toBeNull();
+
+    const short = await startRegistration(userId);
+    const clipped = registerResponse(short.authenticator, short.options.challenge);
+    clipped.response.attestationObject = Buffer.from("too-short").toString("base64url");
+    expect(await service.verifyRegistration(userId, clipped, "corr")).toEqual({ ok: false });
+
+    const missingHandle = await enroll("no-handle@example.com");
+    const handle = await signIn(missingHandle.authenticator, 1, { userHandle: null });
+    expect(handle.result).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("user_handle");
+
+    const active = await enroll("past-use@example.com");
+    expect((await signIn(active.authenticator, 1)).result.ok).toBe(true);
+    await db
+      .update(passkeyCredentials)
+      .set({ lastUsedAt: new Date(Date.now() - 5_000) })
+      .where(eq(passkeyCredentials.credentialId, active.authenticator.credentialId));
+    expect((await signIn(active.authenticator, 2)).result.ok).toBe(true);
+  });
 });
