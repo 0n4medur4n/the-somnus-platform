@@ -63,6 +63,7 @@ export default defineConfig({
       include: [
         "src/infrastructure/db/repositories/**/*.ts",
         "src/domain/**/*.ts",
+        "src/modules/passkeys/**/*.ts",
         "src/modules/consent/db/repositories/**/*.ts",
         "src/modules/consent/consent.service.ts",
         "src/modules/platform-invitations/platform-invitations.service.ts",

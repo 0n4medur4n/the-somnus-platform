@@ -23,6 +23,12 @@ export type NewPasskeyChallenge = {
   expiresAt: Date;
 };
 
+export type PasskeyChallengeBinding = {
+  purpose: PasskeyChallengePurpose;
+  userId: UUIDv7 | null;
+  expiresAt: Date;
+};
+
 export interface PasskeyChallengeStore {
   create(input: NewPasskeyChallenge): Promise<UUIDv7>;
   consume(
@@ -31,6 +37,7 @@ export interface PasskeyChallengeStore {
     userId?: UUIDv7,
     sessionBindingHash?: Buffer,
   ): Promise<ConsumedPasskeyChallenge | null>;
+  findBinding(challenge: Buffer): Promise<PasskeyChallengeBinding | null>;
 }
 
 /**
@@ -108,5 +115,25 @@ export class PasskeyChallengesRepository implements PasskeyChallengeStore {
       userId: userId ?? null,
       sessionBindingHash: sessionBindingHash ?? null,
     };
+  }
+
+  /**
+   * Deliberately NOT user-scoped: used only after `consume` matched
+   * nothing, to classify the audit code. The challenge bytes are the
+   * key the caller already holds. This returns no challenge bytes.
+   */
+  async findBinding(challenge: Buffer): Promise<PasskeyChallengeBinding | null> {
+    const rows = await this.db
+      .select({
+        purpose: passkeyChallenges.purpose,
+        userId: passkeyChallenges.userId,
+        expiresAt: passkeyChallenges.expiresAt,
+      })
+      .from(passkeyChallenges)
+      .where(eq(passkeyChallenges.challenge, challenge))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return null;
+    return { purpose: row.purpose, userId: row.userId, expiresAt: row.expiresAt };
   }
 }

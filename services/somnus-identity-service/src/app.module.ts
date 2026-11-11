@@ -19,6 +19,7 @@ import { InvitationsModule } from "./modules/invitations/invitations.module.js";
 import { MeModule } from "./modules/me/me.module.js";
 import { MembershipsModule } from "./modules/memberships/memberships.module.js";
 import { OrganizationsModule } from "./modules/organizations/organizations.module.js";
+import { PasskeyModule } from "./modules/passkeys/passkey.module.js";
 import { PlatformInvitationsModule } from "./modules/platform-invitations/platform-invitations.module.js";
 import { StaffInvitationsModule } from "./modules/staff-invitations/staff-invitations.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
@@ -52,6 +53,7 @@ export const ROOT_LOGGER: Logger = createLogger({
     InvitationsModule,
     StaffInvitationsModule,
     PlatformInvitationsModule,
+    PasskeyModule,
     VerificationCasesModule,
     AccessGrantsModule,
     AccountModule,

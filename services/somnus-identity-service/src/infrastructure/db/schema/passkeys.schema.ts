@@ -78,11 +78,11 @@ export const passkeyCredentials = mysqlTable(
     name: varchar("name", { length: 120 }).notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     /**
-     * Proposal, to confirm with the owner: an unactivated credential is
-     * unusable once this instant has passed, and `deleteExpiredPending`
-     * removes it. Null means the deadline has not been set yet (task 2.2
-     * is what sets it). Activation of a pending row refuses a deadline
-     * that is already past.
+     * An unactivated credential is unusable once this instant has passed,
+     * and `deleteExpiredPending` removes it. The repository requires the
+     * value on every insert and refuses to activate a pending row whose
+     * deadline is missing or already past. The column stays nullable only
+     * so migration 0008, already on main, is not rewritten.
      */
     pendingExpiresAt: timestamp("pending_expires_at"),
     activatedAt: timestamp("activated_at"),

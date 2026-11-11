@@ -1,6 +1,9 @@
 import { UUIDv7 } from "@somnus/api-contracts";
-import { and, count, eq, gt, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
-import { PasskeyCredentialIdConflict } from "../../../domain/passkey/passkey.js";
+import { and, count, eq, gt, inArray, isNotNull, isNull, lt } from "drizzle-orm";
+import {
+  PasskeyCredentialExpiryRequired,
+  PasskeyCredentialIdConflict,
+} from "../../../domain/passkey/passkey.js";
 import type { Db } from "../db.client.js";
 import { passkeyCredentials } from "../schema/index.js";
 import type { UserScope } from "../tenant-scope.js";
@@ -19,7 +22,10 @@ export type NewPasskeyCredential = {
   backupEligible: boolean;
   backupState: boolean;
   name: string;
-  pendingExpiresAt: Date | null;
+  /** Required. A missing or invalid deadline is refused before insert. */
+  pendingExpiresAt: Date;
+  /** The counter reported at registration. Omitted means zero. */
+  signCount?: number;
 };
 
 export type PasskeyCredentialRecord = typeof passkeyCredentials.$inferSelect;
@@ -29,14 +35,41 @@ export interface PasskeyCredentialStore {
   findByCredentialId(credentialId: Buffer): Promise<PasskeyCredentialRecord | null>;
   listByUser(scope: UserScope): Promise<PasskeyCredentialRecord[]>;
   countActiveByUser(scope: UserScope): Promise<number>;
+  countPendingByUser(scope: UserScope, now: Date): Promise<number>;
   activate(scope: UserScope, credentialId: Buffer, now: Date): Promise<boolean>;
+  /**
+   * Pending to active, and the new counter, in one conditional update.
+   * The stored counter must still be `expectedSignCount`. A second
+   * concurrent call matches nothing.
+   */
+  completePendingSignIn(
+    scope: UserScope,
+    credentialId: Buffer,
+    expectedSignCount: number,
+    signCount: number,
+    now: Date,
+  ): Promise<boolean>;
+  /**
+   * One conditional update of an active credential. The stored counter
+   * and `last_used_at` must still be the values the caller read, so two
+   * requests that observed the same counter cannot both succeed.
+   */
   recordUse(
     scope: UserScope,
     credentialId: Buffer,
+    expectedSignCount: number,
     signCount: number,
     usedAt: Date,
+    expectedLastUsedAt: Date | null,
   ): Promise<boolean>;
   lock(scope: UserScope, credentialId: Buffer, lockedAt: Date): Promise<boolean>;
+  /** Lock a pending or active credential only while its counter is unchanged. */
+  lockAtSignCount(
+    scope: UserScope,
+    credentialId: Buffer,
+    expectedSignCount: number,
+    lockedAt: Date,
+  ): Promise<boolean>;
   revoke(scope: UserScope, credentialId: Buffer, revokedAt: Date): Promise<boolean>;
   revokeAllForUser(scope: UserScope, revokedAt: Date): Promise<UUIDv7[]>;
   rename(scope: UserScope, credentialId: Buffer, name: string): Promise<boolean>;
@@ -72,6 +105,10 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
   constructor(private readonly db: Db) {}
 
   async create(input: NewPasskeyCredential): Promise<UUIDv7> {
+    const pendingExpiresAt = input.pendingExpiresAt;
+    if (!(pendingExpiresAt instanceof Date) || Number.isNaN(pendingExpiresAt.getTime())) {
+      throw new PasskeyCredentialExpiryRequired();
+    }
     await assertPasskeyUser(this.db, input.userId);
     const id = UUIDv7();
     try {
@@ -81,7 +118,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
         userId: input.userId,
         publicKey: input.publicKey,
         coseAlgorithm: input.coseAlgorithm,
-        signCount: 0,
+        signCount: input.signCount ?? 0,
         transports: input.transports,
         aaguid: input.aaguid,
         backupEligible: input.backupEligible,
@@ -133,11 +170,29 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     return Number(rows[0]?.total ?? 0);
   }
 
+  /** Unexpired, not activated, not revoked, not locked. Expired rows do not count. */
+  async countPendingByUser(scope: UserScope, now: Date): Promise<number> {
+    const rows = await this.db
+      .select({ total: count() })
+      .from(passkeyCredentials)
+      .where(
+        and(
+          eq(passkeyCredentials.userId, scope.userId),
+          isNull(passkeyCredentials.activatedAt),
+          isNull(passkeyCredentials.revokedAt),
+          isNull(passkeyCredentials.lockedAt),
+          gt(passkeyCredentials.pendingExpiresAt, now),
+        ),
+      );
+    return Number(rows[0]?.total ?? 0);
+  }
+
   /**
    * Pending to active in one conditional update. A second call on an
    * already-active credential changes nothing (the timestamps stay) and
-   * still reports success. Revoked, locked, expired-pending, and another
-   * user's credential are refused. The read below does not write.
+   * still reports success. Revoked, locked, expired-pending, a missing
+   * deadline, and another user's credential are refused. The read below
+   * does not write.
    */
   async activate(scope: UserScope, credentialId: Buffer, now: Date): Promise<boolean> {
     const updated = await this.db
@@ -150,10 +205,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
           isNull(passkeyCredentials.activatedAt),
           isNull(passkeyCredentials.revokedAt),
           isNull(passkeyCredentials.lockedAt),
-          or(
-            isNull(passkeyCredentials.pendingExpiresAt),
-            gt(passkeyCredentials.pendingExpiresAt, now),
-          ),
+          gt(passkeyCredentials.pendingExpiresAt, now),
         ),
       );
     if ((updated[0].affectedRows ?? 0) === 1) return true;
@@ -176,16 +228,50 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     return row?.activatedAt != null && row.revokedAt == null && row.lockedAt == null;
   }
 
+  async completePendingSignIn(
+    scope: UserScope,
+    credentialId: Buffer,
+    expectedSignCount: number,
+    signCount: number,
+    now: Date,
+  ): Promise<boolean> {
+    const updated = await this.db
+      .update(passkeyCredentials)
+      .set({ activatedAt: now, lastUsedAt: now, signCount })
+      .where(
+        and(
+          eq(passkeyCredentials.userId, scope.userId),
+          eq(passkeyCredentials.credentialId, credentialId),
+          isNull(passkeyCredentials.activatedAt),
+          isNull(passkeyCredentials.revokedAt),
+          isNull(passkeyCredentials.lockedAt),
+          gt(passkeyCredentials.pendingExpiresAt, now),
+          eq(passkeyCredentials.signCount, expectedSignCount),
+        ),
+      );
+    return (updated[0].affectedRows ?? 0) === 1;
+  }
+
   async recordUse(
     scope: UserScope,
     credentialId: Buffer,
+    expectedSignCount: number,
     signCount: number,
     usedAt: Date,
+    expectedLastUsedAt: Date | null,
   ): Promise<boolean> {
     const updated = await this.db
       .update(passkeyCredentials)
       .set({ signCount, lastUsedAt: usedAt })
-      .where(isActiveSql(scope, credentialId));
+      .where(
+        and(
+          isActiveSql(scope, credentialId),
+          eq(passkeyCredentials.signCount, expectedSignCount),
+          expectedLastUsedAt === null
+            ? isNull(passkeyCredentials.lastUsedAt)
+            : eq(passkeyCredentials.lastUsedAt, expectedLastUsedAt),
+        ),
+      );
     return (updated[0].affectedRows ?? 0) === 1;
   }
 
@@ -194,6 +280,32 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
       .update(passkeyCredentials)
       .set({ lockedAt })
       .where(and(isActiveSql(scope, credentialId), isNull(passkeyCredentials.lockedAt)));
+    return (updated[0].affectedRows ?? 0) === 1;
+  }
+
+  /**
+   * Locks the credential the ceremony just judged, pending or active, and
+   * only while the counter is still the one it read. A concurrent update
+   * that moved the counter is left alone.
+   */
+  async lockAtSignCount(
+    scope: UserScope,
+    credentialId: Buffer,
+    expectedSignCount: number,
+    lockedAt: Date,
+  ): Promise<boolean> {
+    const updated = await this.db
+      .update(passkeyCredentials)
+      .set({ lockedAt })
+      .where(
+        and(
+          eq(passkeyCredentials.userId, scope.userId),
+          eq(passkeyCredentials.credentialId, credentialId),
+          isNull(passkeyCredentials.revokedAt),
+          isNull(passkeyCredentials.lockedAt),
+          eq(passkeyCredentials.signCount, expectedSignCount),
+        ),
+      );
     return (updated[0].affectedRows ?? 0) === 1;
   }
 

@@ -51,3 +51,11 @@ export class PasskeyChallengeInvalid extends Error {
     this.name = "PasskeyChallengeInvalid";
   }
 }
+
+/** Creating a credential without `pending_expires_at` is refused (task 2.2). */
+export class PasskeyCredentialExpiryRequired extends Error {
+  constructor() {
+    super("A passkey credential requires a pending expiry.");
+    this.name = "PasskeyCredentialExpiryRequired";
+  }
+}

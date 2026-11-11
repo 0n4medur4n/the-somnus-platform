@@ -328,6 +328,11 @@ Enforced two ways (`src/infrastructure/db/tenant-scope.ts`):
 |---|---|
 | `DATABASE_URL` | `mysql://root:rootpw@127.0.0.1:3306/somnus_identity` |
 | `DB_POOL_SIZE` | `5` (ceiling only -- `mysql2` pools do not eagerly open connections, build plan §2) |
+| `WEBAUTHN_RP_ID` | unset. The process still boots. A passkey ceremony refuses to operate until this and `WEBAUTHN_ORIGIN` are set. |
+| `WEBAUTHN_ORIGIN` | unset. Production accepts only `https://console.thesomnus.com` with rpId `console.thesomnus.com`. Development and test may instead use one `http://localhost` or `http://127.0.0.1` origin, with an optional port, and rpId `localhost`. |
+| `WEBAUTHN_CHALLENGE_TTL_SECONDS` | `300` when unset. Any other value refuses to operate. |
+| `WEBAUTHN_PENDING_TTL_SECONDS` | `86400` when unset. Any other value refuses to operate. |
+| `WEBAUTHN_MAX_PENDING_CREDENTIALS` | `3` when unset. Any other value refuses to operate. |
 
 ### Migrations
 
