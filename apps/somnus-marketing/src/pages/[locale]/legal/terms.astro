@@ -1,6 +1,11 @@
 ---
-import BaseLayout from "../../../layouts/BaseLayout.astro";
+import LegalArticle from "../../../components/LegalArticle.astro";
 import { LOCALES, t } from "../../../i18n/ui";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import termsCa from "../../../../../../docs/legal/ca/terms.md?raw";
+import termsEn from "../../../../../../docs/legal/en/terms.md?raw";
+import termsEs from "../../../../../../docs/legal/es/terms.md?raw";
+import termsFr from "../../../../../../docs/legal/fr/terms.md?raw";
 
 export function getStaticPaths() {
   return LOCALES.map((locale) => ({ params: { locale } }));
@@ -9,7 +14,8 @@ export function getStaticPaths() {
 type Locale = (typeof LOCALES)[number];
 const { locale } = Astro.params as { locale: Locale };
 
-const lastUpdated = t(locale, "legal.lastUpdated", { date: "2026-07-21" });
+const lastUpdated = t(locale, "legal.lastUpdated", { date: "2026-11-11" });
+const markdown = { es: termsEs, en: termsEn, ca: termsCa, fr: termsFr }[locale];
 ---
 
 <BaseLayout
@@ -21,6 +27,6 @@ const lastUpdated = t(locale, "legal.lastUpdated", { date: "2026-07-21" });
   <article class="prose prose-invert mx-auto max-w-3xl py-16">
     <h1 class="font-display text-3xl text-text">{t(locale, "legal.terms.title")}</h1>
     <p class="mt-2 text-sm text-muted">{lastUpdated}</p>
-    <p class="mt-8 text-muted">{t(locale, "legal.terms.body")}</p>
+    <LegalArticle markdown={markdown} />
   </article>
 </BaseLayout>
