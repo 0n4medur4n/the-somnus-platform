@@ -1,7 +1,9 @@
 import { randomBytes } from "node:crypto";
+import { Logger } from "@nestjs/common";
 import { type EventEnvelope, UUIDv7 } from "@somnus/api-contracts";
 import { eq } from "drizzle-orm";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import * as ceremony from "../../src/domain/passkey/webauthn-ceremony.js";
 import { isPasskeyFailureCode } from "../../src/domain/passkey/webauthn-ceremony.js";
 import { PasskeyChallengesRepository } from "../../src/infrastructure/db/repositories/passkey-challenges.repository.js";
 import { PasskeyCredentialsRepository } from "../../src/infrastructure/db/repositories/passkey-credentials.repository.js";
@@ -10,11 +12,13 @@ import { UsersRepository } from "../../src/infrastructure/db/repositories/users.
 import {
   passkeyChallenges,
   passkeyCredentials,
+  passkeyUserHandles,
   roleAssignments,
 } from "../../src/infrastructure/db/schema/index.js";
 import type { EventPublisher } from "../../src/infrastructure/events/event-publisher.js";
 import {
   PASSKEY_EVENTS,
+  PASSKEY_SIZE_LIMITS,
   PasskeyWebAuthnService,
 } from "../../src/modules/passkeys/passkey-webauthn.service.js";
 import { WebAuthnConfigError } from "../../src/modules/passkeys/webauthn.config.js";
@@ -89,7 +93,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
   }
 
   async function startRegistration(userId: string) {
-    const options = await service.registrationOptions(userId as UUIDv7, "corr");
+    const options = await service.registrationOptions(userId as UUIDv7, "corr", { kind: "first" });
     expect(options.ok).toBe(true);
     if (!options.ok) throw new Error("registration options were refused");
     const handle = Buffer.from(options.options.user.id, "base64url");
@@ -114,7 +118,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     const userId = await person(email);
     const started = await startRegistration(userId);
     const response = registerResponse(started.authenticator, started.options.challenge);
-    const verified = await service.verifyRegistration(userId, response, "corr");
+    const verified = await service.verifyRegistration(userId, response, "corr", { kind: "first" });
     expect(verified.ok).toBe(true);
     expectClean([
       started.options.challenge,
@@ -203,7 +207,9 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     const cross = registerResponse(started.authenticator, started.options.challenge, {
       crossOrigin: true,
     });
-    expect(await service.verifyRegistration(userId, cross, "corr")).toEqual({ ok: false });
+    expect(await service.verifyRegistration(userId, cross, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
     expect(events.some((event) => event.data["reason"] === "cross_origin")).toBe(true);
 
     const enrolled = await enroll("top@example.com");
@@ -236,8 +242,12 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     const owner = await person("reuse@example.com");
     const started = await startRegistration(owner);
     const response = registerResponse(started.authenticator, started.options.challenge);
-    expect((await service.verifyRegistration(owner, response, "corr")).ok).toBe(true);
-    expect(await service.verifyRegistration(owner, response, "corr")).toEqual({ ok: false });
+    expect((await service.verifyRegistration(owner, response, "corr", { kind: "first" })).ok).toBe(
+      true,
+    );
+    expect(await service.verifyRegistration(owner, response, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
     expect(events.at(-1)?.data["reason"]).toBe("challenge_rejected");
     expectClean([
       started.options.challenge,
@@ -256,6 +266,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
         owner,
         registerResponse(started.authenticator, started.options.challenge),
         "corr",
+        { kind: "first" },
       ),
     ).toEqual({ ok: false });
     expect(events.at(-1)?.data["reason"]).toBe("challenge_expired");
@@ -267,6 +278,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
         other,
         registerResponse(foreign.authenticator, foreign.options.challenge),
         "corr",
+        { kind: "first" },
       ),
     ).toEqual({ ok: false });
     expect(events.at(-1)?.data["reason"]).toBe("challenge_user");
@@ -285,6 +297,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
           challenge: nameless.options.challenge,
         }),
         "corr",
+        { kind: "first" },
       ),
     ).toEqual({ ok: false });
     expect(events.at(-1)?.data["reason"]).toBe("challenge_purpose");
@@ -296,7 +309,9 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     const response = registerResponse(started.authenticator, started.options.challenge, {
       userVerified: false,
     });
-    expect(await service.verifyRegistration(userId, response, "corr")).toEqual({ ok: false });
+    expect(await service.verifyRegistration(userId, response, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
     expect(events.at(-1)?.data["reason"]).toBe("user_verification");
     expect(await credentials.findByCredentialId(started.authenticator.credentialId)).toBeNull();
   });
@@ -390,6 +405,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
           expiredUser,
           registerResponse(started.authenticator, started.options.challenge),
           "corr",
+          { kind: "first" },
         )
       ).ok,
     ).toBe(true);
@@ -409,13 +425,52 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
 
     const holder = await enroll("holder-step@example.com");
     expect((await signIn(holder.authenticator, 1)).result.ok).toBe(true);
-    const second = await startRegistration(holder.userId);
+    const proofOptions = await service.stepUpOptions(holder.userId, "corr");
+    expect(proofOptions.ok).toBe(true);
+    if (!proofOptions.ok) return;
+    const proof = await service.verifyStepUp(
+      holder.userId,
+      authenticationResponse(holder.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: proofOptions.options.challenge,
+        signCount: 2,
+      }),
+      "corr",
+    );
+    expect(proof.ok).toBe(true);
+    if (!proof.ok) return;
+    const secondOptions = await service.registrationOptions(holder.userId, "corr", {
+      kind: "additional",
+      stepUp: {
+        userId: holder.userId,
+        credentialId: proof.credentialId,
+        verifiedAt: proof.verifiedAt,
+      },
+    });
+    expect(secondOptions.ok).toBe(true);
+    if (!secondOptions.ok) return;
+    const secondAuthenticator = createSoftwareAuthenticator(
+      Buffer.from(secondOptions.options.user.id, "base64url"),
+    );
     expect(
       (
         await service.verifyRegistration(
           holder.userId,
-          registerResponse(second.authenticator, second.options.challenge),
+          registrationResponse(secondAuthenticator, {
+            origin: ORIGIN,
+            rpId: RP_ID,
+            challenge: secondOptions.options.challenge,
+          }),
           "corr",
+          {
+            kind: "additional",
+            stepUp: {
+              userId: holder.userId,
+              credentialId: proof.credentialId,
+              verifiedAt: proof.verifiedAt,
+            },
+          },
         )
       ).ok,
     ).toBe(true);
@@ -424,7 +479,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     if (!step.ok) return;
     const stepped = await service.verifyStepUp(
       holder.userId,
-      authenticationResponse(second.authenticator, {
+      authenticationResponse(secondAuthenticator, {
         origin: ORIGIN,
         rpId: RP_ID,
         challenge: step.options.challenge,
@@ -434,7 +489,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     );
     expect(stepped).toEqual({ ok: false });
     expect(
-      (await credentials.findByCredentialId(second.authenticator.credentialId))?.activatedAt,
+      (await credentials.findByCredentialId(secondAuthenticator.credentialId))?.activatedAt,
     ).toBeNull();
   });
 
@@ -448,25 +503,32 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
             userId,
             registerResponse(started.authenticator, started.options.challenge),
             "corr",
+            { kind: "first" },
           )
         ).ok,
       ).toBe(true);
     }
-    expect(await service.registrationOptions(userId, "corr")).toEqual({ ok: false });
+    expect(await service.registrationOptions(userId, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
     expect(events.at(-1)?.data["reason"]).toBe("pending_limit");
     expect(await credentials.countPendingByUser({ userId }, new Date())).toBe(3);
 
     const duplicateUser = await person("duplicate@example.com");
     const started = await startRegistration(duplicateUser);
     const response = registerResponse(started.authenticator, started.options.challenge);
-    expect((await service.verifyRegistration(duplicateUser, response, "corr")).ok).toBe(true);
+    expect(
+      (await service.verifyRegistration(duplicateUser, response, "corr", { kind: "first" })).ok,
+    ).toBe(true);
     const next = await startRegistration(duplicateUser);
     const replay = registrationResponse(started.authenticator, {
       origin: ORIGIN,
       rpId: RP_ID,
       challenge: next.options.challenge,
     });
-    expect(await service.verifyRegistration(duplicateUser, replay, "corr")).toEqual({ ok: false });
+    expect(
+      await service.verifyRegistration(duplicateUser, replay, "corr", { kind: "first" }),
+    ).toEqual({ ok: false });
     expect(events.at(-1)?.data["reason"]).toBe("credential_duplicate");
   });
 
@@ -481,7 +543,9 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
 
     const suspended = await person("suspended@example.com");
     await users.setStatus(suspended, "suspended");
-    expect(await service.registrationOptions(suspended, "corr")).toEqual({ ok: false });
+    expect(await service.registrationOptions(suspended, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
     const deleted = await enroll("deleted@example.com");
     await users.setStatus(deleted.userId, "deleted");
     expect((await signIn(deleted.authenticator, 1)).result).toEqual({ ok: false });
@@ -504,9 +568,9 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
       for (const item of cases) {
         process.env["WEBAUTHN_ORIGIN"] = item.WEBAUTHN_ORIGIN;
         process.env["WEBAUTHN_RP_ID"] = item.WEBAUTHN_RP_ID;
-        await expect(service.registrationOptions(UUIDv7(), "corr")).rejects.toBeInstanceOf(
-          WebAuthnConfigError,
-        );
+        await expect(
+          service.registrationOptions(UUIDv7(), "corr", { kind: "first" }),
+        ).rejects.toBeInstanceOf(WebAuthnConfigError);
       }
       delete process.env["WEBAUTHN_ORIGIN"];
       delete process.env["WEBAUTHN_RP_ID"];
@@ -540,7 +604,9 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     expect(started.options.excludeCredentials).toEqual([]);
 
     const response = registerResponse(started.authenticator, started.options.challenge);
-    const registered = await service.verifyRegistration(userId, response, "corr");
+    const registered = await service.verifyRegistration(userId, response, "corr", {
+      kind: "first",
+    });
     expect(registered.ok).toBe(true);
     if (!registered.ok) return;
     expect(Object.keys(registered).sort()).toEqual(["credentialId", "ok"]);
@@ -618,7 +684,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
   it("registers and signs in with RS256 and EdDSA, and refuses an unlisted algorithm", async () => {
     for (const algorithm of ["RS256", "EdDSA"] as const) {
       const userId = await person(`${algorithm.toLowerCase()}@example.com`);
-      const options = await service.registrationOptions(userId, "corr");
+      const options = await service.registrationOptions(userId, "corr", { kind: "first" });
       expect(options.ok).toBe(true);
       if (!options.ok) continue;
       const authenticator = createSoftwareAuthenticator(
@@ -633,6 +699,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
           challenge: options.options.challenge,
         }),
         "corr",
+        { kind: "first" },
       );
       expect(registered.ok, algorithm).toBe(true);
       expect(
@@ -652,7 +719,9 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     expect(algAt).toBeGreaterThan(-1);
     attestation[algAt + 1] = 0x0a;
     response.response.attestationObject = attestation.toString("base64url");
-    expect(await service.verifyRegistration(userId, response, "corr")).toEqual({ ok: false });
+    expect(await service.verifyRegistration(userId, response, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
     expect(events.at(-1)?.data["reason"]).toBe("algorithm");
     expect(await credentials.findByCredentialId(started.authenticator.credentialId)).toBeNull();
   });
@@ -667,6 +736,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
           userId,
           registerResponse(item.authenticator, item.options.challenge),
           "corr",
+          { kind: "first" },
         ),
       ),
     );
@@ -677,7 +747,9 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
   });
 
   it("refuses a missing user, a missing Firebase uid, another user's step-up, and a malformed body", async () => {
-    expect(await service.registrationOptions(UUIDv7(), "corr")).toEqual({ ok: false });
+    expect(await service.registrationOptions(UUIDv7(), "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
     expect(events.at(-1)?.data["reason"]).toBe("user_missing");
 
     const userId = await users.create({ email: "no-firebase@example.com" });
@@ -688,6 +760,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
           userId,
           registerResponse(started.authenticator, started.options.challenge),
           "corr",
+          { kind: "first" },
         )
       ).ok,
     ).toBe(true);
@@ -718,7 +791,11 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     ).toEqual({ ok: false });
     expect(events.at(-1)?.data["reason"]).toBe("credential_user");
 
-    expect(await service.verifyRegistration(owner.userId, { type: "public-key" }, "corr")).toEqual({
+    expect(
+      await service.verifyRegistration(owner.userId, { type: "public-key" }, "corr", {
+        kind: "first",
+      }),
+    ).toEqual({
       ok: false,
     });
     expect(events.at(-1)?.data["reason"]).toBe("client_data");
@@ -778,10 +855,14 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     const badRegistration = registerResponse(started.authenticator, started.options.challenge, {
       origin: "https://evil.example",
     });
-    expect(await service.verifyRegistration(userId, badRegistration, "corr")).toEqual({
+    expect(
+      await service.verifyRegistration(userId, badRegistration, "corr", { kind: "first" }),
+    ).toEqual({
       ok: false,
     });
-    expect(await service.verifyRegistration(userId, badRegistration, "corr")).toEqual({
+    expect(
+      await service.verifyRegistration(userId, badRegistration, "corr", { kind: "first" }),
+    ).toEqual({
       ok: false,
     });
     expect(events.at(-1)?.data["reason"]).toBe("challenge_rejected");
@@ -825,6 +906,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
         userId,
         registerResponse(started.authenticator, started.options.challenge),
         "corr",
+        { kind: "first" },
       ),
     ).toEqual({ ok: false });
     expect(events.at(-1)?.data["reason"]).toBe("account_not_active");
@@ -876,8 +958,8 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
 
     const userId = await person("duplicate-race@example.com");
     const options = await Promise.all([
-      service.registrationOptions(userId, "corr"),
-      service.registrationOptions(userId, "corr"),
+      service.registrationOptions(userId, "corr", { kind: "first" }),
+      service.registrationOptions(userId, "corr", { kind: "first" }),
     ]);
     expect(options[0]?.ok && options[1]?.ok).toBe(true);
     if (!options[0]?.ok || !options[1]?.ok) return;
@@ -892,6 +974,7 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
             ? registerResponse(authenticator, item.options.challenge)
             : registerResponse(authenticator, ""),
           "corr",
+          { kind: "first" },
         ),
       ),
     );
@@ -928,7 +1011,9 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
       },
     ];
     for (const body of bodies) {
-      expect(await service.verifyRegistration(userId, body, "   ")).toEqual({ ok: false });
+      expect(await service.verifyRegistration(userId, body, "   ", { kind: "first" })).toEqual({
+        ok: false,
+      });
     }
     const assertions: unknown[] = [
       "nope",
@@ -954,7 +1039,9 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     const started = await startRegistration(userId);
     const bogus = registerResponse(started.authenticator, started.options.challenge);
     bogus.response.transports = ["not-a-transport"];
-    expect((await service.verifyRegistration(userId, bogus, "corr")).ok).toBe(true);
+    expect((await service.verifyRegistration(userId, bogus, "corr", { kind: "first" })).ok).toBe(
+      true,
+    );
     expect(
       (await credentials.findByCredentialId(started.authenticator.credentialId))?.transports,
     ).toBeNull();
@@ -962,8 +1049,10 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     const again = await startRegistration(userId);
     const named = registerResponse(again.authenticator, again.options.challenge);
     named.response.transports = ["internal"];
-    expect((await service.verifyRegistration(userId, named, "corr")).ok).toBe(true);
-    const listed = await service.registrationOptions(userId, "corr");
+    expect((await service.verifyRegistration(userId, named, "corr", { kind: "first" })).ok).toBe(
+      true,
+    );
+    const listed = await service.registrationOptions(userId, "corr", { kind: "first" });
     expect(listed.ok).toBe(true);
     if (listed.ok) {
       expect(listed.options.excludeCredentials?.some((item) => item.transports?.length)).toBe(true);
@@ -976,14 +1065,18 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     expect(fmtAt).toBeGreaterThan(-1);
     packed.set(Buffer.from("pack", "utf8"), fmtAt);
     attestation.response.attestationObject = packed.toString("base64url");
-    expect(await service.verifyRegistration(userId, attestation, "corr")).toEqual({ ok: false });
+    expect(
+      await service.verifyRegistration(userId, attestation, "corr", { kind: "first" }),
+    ).toEqual({ ok: false });
     expect(events.at(-1)?.data["reason"]).toBe("verification_rejected");
     expect(await credentials.findByCredentialId(broken.authenticator.credentialId)).toBeNull();
 
     const short = await startRegistration(userId);
     const clipped = registerResponse(short.authenticator, short.options.challenge);
     clipped.response.attestationObject = Buffer.from("too-short").toString("base64url");
-    expect(await service.verifyRegistration(userId, clipped, "corr")).toEqual({ ok: false });
+    expect(await service.verifyRegistration(userId, clipped, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
 
     const missingHandle = await enroll("no-handle@example.com");
     const handle = await signIn(missingHandle.authenticator, 1, { userHandle: null });
@@ -997,5 +1090,398 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
       .set({ lastUsedAt: new Date(Date.now() - 5_000) })
       .where(eq(passkeyCredentials.credentialId, active.authenticator.credentialId));
     expect((await signIn(active.authenticator, 2)).result.ok).toBe(true);
+  });
+
+  it("refuses an id that differs from rawId and fields larger than the ceremony caps", async () => {
+    const userId = await person("caps@example.com");
+    const mismatched = await startRegistration(userId);
+    const mismatch = registerResponse(mismatched.authenticator, mismatched.options.challenge);
+    mismatch.rawId = "AAAA";
+    expect(await service.verifyRegistration(userId, mismatch, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
+    expect(events.at(-1)?.data["reason"]).toBe("client_data");
+
+    const tooLong = (maxBytes: number) => {
+      const groups = Math.floor(maxBytes / 3);
+      const rest = maxBytes % 3;
+      return "A".repeat(groups * 4 + (rest === 0 ? 0 : rest + 1) + 1);
+    };
+    const client = await startRegistration(userId);
+    const clientBody = registerResponse(client.authenticator, client.options.challenge);
+    clientBody.response.clientDataJSON = tooLong(PASSKEY_SIZE_LIMITS.clientDataJson);
+    expect(await service.verifyRegistration(userId, clientBody, "corr", { kind: "first" })).toEqual(
+      { ok: false },
+    );
+    expect(events.at(-1)?.data["reason"]).toBe("client_data");
+
+    const attestation = await startRegistration(userId);
+    const attestationBody = registerResponse(
+      attestation.authenticator,
+      attestation.options.challenge,
+    );
+    attestationBody.response.attestationObject = tooLong(PASSKEY_SIZE_LIMITS.attestationObject);
+    expect(
+      await service.verifyRegistration(userId, attestationBody, "corr", { kind: "first" }),
+    ).toEqual({ ok: false });
+
+    const identifier = await startRegistration(userId);
+    const identifierBody = registerResponse(identifier.authenticator, identifier.options.challenge);
+    const longId = tooLong(PASSKEY_SIZE_LIMITS.credentialId);
+    identifierBody.id = longId;
+    identifierBody.rawId = longId;
+    expect(
+      await service.verifyRegistration(userId, identifierBody, "corr", { kind: "first" }),
+    ).toEqual({ ok: false });
+
+    const enrolled = await enroll("caps-auth@example.com");
+    const options = await service.authenticationOptions("corr");
+    expect(options.ok).toBe(true);
+    if (!options.ok) return;
+    const assertion = authenticationResponse(enrolled.authenticator, {
+      origin: ORIGIN,
+      rpId: RP_ID,
+      challenge: options.options.challenge,
+      signCount: 1,
+    });
+    assertion.response.authenticatorData = tooLong(PASSKEY_SIZE_LIMITS.authenticatorData);
+    expect(await service.verifyAuthentication(assertion, "corr")).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("client_data");
+
+    const signatureOptions = await service.authenticationOptions("corr");
+    expect(signatureOptions.ok).toBe(true);
+    if (!signatureOptions.ok) return;
+    const signed = authenticationResponse(enrolled.authenticator, {
+      origin: ORIGIN,
+      rpId: RP_ID,
+      challenge: signatureOptions.options.challenge,
+      signCount: 1,
+    });
+    signed.response.signature = tooLong(PASSKEY_SIZE_LIMITS.signature);
+    expect(await service.verifyAuthentication(signed, "corr")).toEqual({ ok: false });
+
+    const handleOptions = await service.authenticationOptions("corr");
+    expect(handleOptions.ok).toBe(true);
+    if (!handleOptions.ok) return;
+    const handled = authenticationResponse(enrolled.authenticator, {
+      origin: ORIGIN,
+      rpId: RP_ID,
+      challenge: handleOptions.options.challenge,
+      signCount: 1,
+    });
+    handled.response.userHandle = tooLong(PASSKEY_SIZE_LIMITS.userHandle);
+    expect(await service.verifyAuthentication(handled, "corr")).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("client_data");
+  });
+
+  it("refuses a first registration once an active credential exists, and allows one with only pending credentials", async () => {
+    const userId = await person("pending-only@example.com");
+    const first = await startRegistration(userId);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(first.authenticator, first.options.challenge),
+          "corr",
+          { kind: "first" },
+        )
+      ).ok,
+    ).toBe(true);
+    const second = await startRegistration(userId);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(second.authenticator, second.options.challenge),
+          "corr",
+          { kind: "first" },
+        )
+      ).ok,
+    ).toBe(true);
+    const third = await service.registrationOptions(userId, "corr", { kind: "first" });
+    expect(third.ok).toBe(true);
+
+    const active = await enroll("already-active@example.com");
+    expect((await signIn(active.authenticator, 1)).result.ok).toBe(true);
+    expect(await service.registrationOptions(active.userId, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
+    expect(events.at(-1)?.data["reason"]).toBe("enrollment");
+  });
+
+  it("refuses an additional registration without a fresh step-up of that user's active credential", async () => {
+    const owner = await enroll("additional-owner@example.com");
+    expect((await signIn(owner.authenticator, 1)).result.ok).toBe(true);
+    expect(
+      await service.registrationOptions(owner.userId, "corr", { kind: "additional" } as never),
+    ).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("enrollment");
+
+    const step = await service.stepUpOptions(owner.userId, "corr");
+    expect(step.ok).toBe(true);
+    if (!step.ok) return;
+    const proved = await service.verifyStepUp(
+      owner.userId,
+      authenticationResponse(owner.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: step.options.challenge,
+        signCount: 2,
+      }),
+      "corr",
+    );
+    expect(proved.ok).toBe(true);
+    if (!proved.ok) return;
+
+    const stale = {
+      kind: "additional" as const,
+      stepUp: {
+        userId: owner.userId,
+        credentialId: proved.credentialId,
+        verifiedAt: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
+      },
+    };
+    expect(await service.registrationOptions(owner.userId, "corr", stale)).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("enrollment");
+
+    const future = {
+      kind: "additional" as const,
+      stepUp: {
+        userId: owner.userId,
+        credentialId: proved.credentialId,
+        verifiedAt: new Date(Date.now() + 60_000).toISOString(),
+      },
+    };
+    expect(await service.registrationOptions(owner.userId, "corr", future)).toEqual({
+      ok: false,
+    });
+
+    const stranger = await enroll("additional-stranger@example.com");
+    expect((await signIn(stranger.authenticator, 1)).result.ok).toBe(true);
+    const foreign = await service.stepUpOptions(stranger.userId, "corr");
+    expect(foreign.ok).toBe(true);
+    if (!foreign.ok) return;
+    const foreignProof = await service.verifyStepUp(
+      stranger.userId,
+      authenticationResponse(stranger.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: foreign.options.challenge,
+        signCount: 2,
+      }),
+      "corr",
+    );
+    expect(foreignProof.ok).toBe(true);
+    if (!foreignProof.ok) return;
+    expect(
+      await service.registrationOptions(owner.userId, "corr", {
+        kind: "additional",
+        stepUp: {
+          userId: owner.userId,
+          credentialId: foreignProof.credentialId,
+          verifiedAt: foreignProof.verifiedAt,
+        },
+      }),
+    ).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("enrollment");
+
+    expect(
+      await credentials.revoke(
+        { userId: owner.userId },
+        owner.authenticator.credentialId,
+        new Date(),
+      ),
+    ).toBe(true);
+    expect(
+      await service.registrationOptions(owner.userId, "corr", {
+        kind: "additional",
+        stepUp: {
+          userId: owner.userId,
+          credentialId: proved.credentialId,
+          verifiedAt: proved.verifiedAt,
+        },
+      }),
+    ).toEqual({ ok: false });
+
+    const locked = await enroll("additional-locked@example.com");
+    expect((await signIn(locked.authenticator, 1)).result.ok).toBe(true);
+    const lockedStep = await service.stepUpOptions(locked.userId, "corr");
+    expect(lockedStep.ok).toBe(true);
+    if (!lockedStep.ok) return;
+    const lockedProof = await service.verifyStepUp(
+      locked.userId,
+      authenticationResponse(locked.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: lockedStep.options.challenge,
+        signCount: 2,
+      }),
+      "corr",
+    );
+    expect(lockedProof.ok).toBe(true);
+    if (!lockedProof.ok) return;
+    expect(
+      await credentials.lock(
+        { userId: locked.userId },
+        locked.authenticator.credentialId,
+        new Date(),
+      ),
+    ).toBe(true);
+    expect(
+      await service.registrationOptions(locked.userId, "corr", {
+        kind: "additional",
+        stepUp: {
+          userId: locked.userId,
+          credentialId: lockedProof.credentialId,
+          verifiedAt: lockedProof.verifiedAt,
+        },
+      }),
+    ).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("enrollment");
+  });
+
+  it("refuses a first registration when a credential is activated after the options were built", async () => {
+    const userId = await person("activated-between@example.com");
+    const pending = await startRegistration(userId);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(pending.authenticator, pending.options.challenge),
+          "corr",
+          { kind: "first" },
+        )
+      ).ok,
+    ).toBe(true);
+    const next = await startRegistration(userId);
+    expect((await signIn(pending.authenticator, 1)).result.ok).toBe(true);
+    expect(
+      await service.verifyRegistration(
+        userId,
+        registerResponse(next.authenticator, next.options.challenge),
+        "corr",
+        { kind: "first" },
+      ),
+    ).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("enrollment");
+    expect(await credentials.findByCredentialId(next.authenticator.credentialId)).toBeNull();
+  });
+
+  it("allows a step-up without a user handle, and never writes a handle during verification", async () => {
+    const enrolled = await enroll("step-no-handle@example.com");
+    expect((await signIn(enrolled.authenticator, 1)).result.ok).toBe(true);
+    const step = await service.stepUpOptions(enrolled.userId, "corr");
+    expect(step.ok).toBe(true);
+    if (!step.ok) return;
+    expect(
+      (
+        await service.verifyStepUp(
+          enrolled.userId,
+          authenticationResponse(enrolled.authenticator, {
+            origin: ORIGIN,
+            rpId: RP_ID,
+            challenge: step.options.challenge,
+            signCount: 2,
+            userHandle: null,
+          }),
+          "corr",
+        )
+      ).ok,
+    ).toBe(true);
+    const mismatch = await service.stepUpOptions(enrolled.userId, "corr");
+    expect(mismatch.ok).toBe(true);
+    if (!mismatch.ok) return;
+    expect(
+      await service.verifyStepUp(
+        enrolled.userId,
+        authenticationResponse(enrolled.authenticator, {
+          origin: ORIGIN,
+          rpId: RP_ID,
+          challenge: mismatch.options.challenge,
+          signCount: 3,
+          userHandle: randomBytes(32),
+        }),
+        "corr",
+      ),
+    ).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("user_handle");
+
+    await db.delete(passkeyUserHandles).where(eq(passkeyUserHandles.userId, enrolled.userId));
+    const attempt = await signIn(enrolled.authenticator, 4);
+    expect(attempt.result).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("user_handle");
+    expect(
+      await db
+        .select()
+        .from(passkeyUserHandles)
+        .where(eq(passkeyUserHandles.userId, enrolled.userId)),
+    ).toHaveLength(0);
+  });
+
+  it("burns the challenge and returns a failure when parsing throws", async () => {
+    const userId = await person("parser-throw@example.com");
+    const started = await startRegistration(userId);
+    const response = registerResponse(started.authenticator, started.options.challenge);
+    const spy = vi.spyOn(ceremony, "extractAttestedAuthenticatorData").mockImplementation(() => {
+      throw new Error("parser blew up");
+    });
+    try {
+      await expect(
+        service.verifyRegistration(userId, response, "corr", { kind: "first" }),
+      ).resolves.toEqual({ ok: false });
+    } finally {
+      spy.mockRestore();
+    }
+    expect(events.at(-1)?.data["reason"]).toBe("client_data");
+    expect(await service.verifyRegistration(userId, response, "corr", { kind: "first" })).toEqual({
+      ok: false,
+    });
+    expect(events.at(-1)?.data["reason"]).toBe("challenge_rejected");
+  });
+
+  it("keeps a successful ceremony when the audit publisher throws or never resolves", async () => {
+    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+    try {
+      const throwing = new PasskeyWebAuthnService(credentials, challenges, handles, users, {
+        publish: async () => {
+          throw new Error("challenge-must-not-be-logged");
+        },
+      });
+      const thrownUser = await person("audit-throw@example.com");
+      const thrown = await startRegistration(thrownUser);
+      expect(
+        (
+          await throwing.verifyRegistration(
+            thrownUser,
+            registerResponse(thrown.authenticator, thrown.options.challenge),
+            "corr",
+            { kind: "first" },
+          )
+        ).ok,
+      ).toBe(true);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith("passkey audit publish failed");
+
+      warn.mockClear();
+      const hanging = new PasskeyWebAuthnService(credentials, challenges, handles, users, {
+        publish: () => new Promise(() => undefined),
+      });
+      const hungUser = await person("audit-hang@example.com");
+      const hung = await startRegistration(hungUser);
+      expect(
+        (
+          await hanging.verifyRegistration(
+            hungUser,
+            registerResponse(hung.authenticator, hung.options.challenge),
+            "corr",
+            { kind: "first" },
+          )
+        ).ok,
+      ).toBe(true);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith("passkey audit publish failed");
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

@@ -4,6 +4,8 @@ import {
   evaluateSignCount,
   PasskeyCredentialExpiryRequired,
   PasskeyCredentialIdConflict,
+  PasskeyCredentialScopeMismatch,
+  PasskeyHandleLockUnavailable,
   PasskeyPendingLimit,
 } from "../../../domain/passkey/passkey.js";
 import type { Db } from "../db.client.js";
@@ -95,6 +97,11 @@ function requirePendingExpiry(pendingExpiresAt: Date): void {
   }
 }
 
+/** Drop milliseconds so the stored instant and a later comparison are the same second. */
+function wholeSecond(value: Date): Date {
+  return new Date(Math.floor(value.getTime() / 1000) * 1000);
+}
+
 async function insertCredential(
   db: Pick<Db, "insert">,
   input: NewPasskeyCredential,
@@ -169,14 +176,15 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     now: Date,
   ): Promise<UUIDv7> {
     requirePendingExpiry(input.pendingExpiresAt);
-    if (input.userId !== scope.userId) throw new PasskeyPendingLimit();
+    if (input.userId !== scope.userId) throw new PasskeyCredentialScopeMismatch();
     await assertPasskeyUser(this.db, input.userId);
     return this.db.transaction(async (tx) => {
-      await tx
+      const locked = await tx
         .select({ id: passkeyUserHandles.id })
         .from(passkeyUserHandles)
         .where(eq(passkeyUserHandles.userId, scope.userId))
         .for("update");
+      if (locked.length === 0) throw new PasskeyHandleLockUnavailable();
       const rows = await tx
         .select({ total: count() })
         .from(passkeyCredentials)
@@ -256,9 +264,10 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
    * does not write.
    */
   async activate(scope: UserScope, credentialId: Buffer, now: Date): Promise<boolean> {
+    const instant = wholeSecond(now);
     const updated = await this.db
       .update(passkeyCredentials)
-      .set({ activatedAt: now, lastUsedAt: now })
+      .set({ activatedAt: instant, lastUsedAt: instant })
       .where(
         and(
           eq(passkeyCredentials.userId, scope.userId),
@@ -266,7 +275,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
           isNull(passkeyCredentials.activatedAt),
           isNull(passkeyCredentials.revokedAt),
           isNull(passkeyCredentials.lockedAt),
-          gt(passkeyCredentials.pendingExpiresAt, now),
+          gt(passkeyCredentials.pendingExpiresAt, instant),
         ),
       );
     if ((updated[0].affectedRows ?? 0) === 1) return true;
@@ -297,9 +306,10 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     now: Date,
   ): Promise<boolean> {
     if (evaluateSignCount(expectedSignCount, signCount) !== "ok") return false;
+    const instant = wholeSecond(now);
     const updated = await this.db
       .update(passkeyCredentials)
-      .set({ activatedAt: now, lastUsedAt: now, signCount })
+      .set({ activatedAt: instant, lastUsedAt: instant, signCount })
       .where(
         and(
           eq(passkeyCredentials.userId, scope.userId),
@@ -307,7 +317,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
           isNull(passkeyCredentials.activatedAt),
           isNull(passkeyCredentials.revokedAt),
           isNull(passkeyCredentials.lockedAt),
-          gt(passkeyCredentials.pendingExpiresAt, now),
+          gt(passkeyCredentials.pendingExpiresAt, instant),
           eq(passkeyCredentials.signCount, expectedSignCount),
         ),
       );
@@ -323,9 +333,10 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     expectedLastUsedAt: Date | null,
   ): Promise<boolean> {
     if (evaluateSignCount(expectedSignCount, signCount) !== "ok") return false;
+    const instant = wholeSecond(usedAt);
     const updated = await this.db
       .update(passkeyCredentials)
-      .set({ signCount, lastUsedAt: usedAt })
+      .set({ signCount, lastUsedAt: instant })
       .where(
         and(
           isActiveSql(scope, credentialId),
@@ -341,7 +352,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
   async lock(scope: UserScope, credentialId: Buffer, lockedAt: Date): Promise<boolean> {
     const updated = await this.db
       .update(passkeyCredentials)
-      .set({ lockedAt })
+      .set({ lockedAt: wholeSecond(lockedAt) })
       .where(and(isActiveSql(scope, credentialId), isNull(passkeyCredentials.lockedAt)));
     return (updated[0].affectedRows ?? 0) === 1;
   }
@@ -359,7 +370,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
   ): Promise<boolean> {
     const updated = await this.db
       .update(passkeyCredentials)
-      .set({ lockedAt })
+      .set({ lockedAt: wholeSecond(lockedAt) })
       .where(
         and(
           eq(passkeyCredentials.userId, scope.userId),

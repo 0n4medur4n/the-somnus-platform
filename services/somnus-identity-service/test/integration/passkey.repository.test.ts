@@ -6,6 +6,8 @@ import {
   PasskeyChallengeInvalid,
   PasskeyCredentialExpiryRequired,
   PasskeyCredentialIdConflict,
+  PasskeyCredentialScopeMismatch,
+  PasskeyHandleLockUnavailable,
   PasskeyUserNotFound,
 } from "../../src/domain/passkey/passkey.js";
 import { AccountDeletionRepository } from "../../src/infrastructure/db/repositories/account-deletion.repository.js";
@@ -687,6 +689,82 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
       expect(keptBytes.some((value) => value.equals(nameless))).toBe(true);
       expect(keptBytes.some((value) => value.equals(ownChallenge))).toBe(false);
       expect(await credentials.findByCredentialId(ownCredential.credentialId)).toBeNull();
+    });
+
+    it("stores activatedAt, lastUsedAt and lockedAt as the truncated second", async () => {
+      const owner = await user("millis@example.com");
+      const { credentialId } = await pendingCredential(owner, 90, future());
+      const base = Math.floor(Date.now() / 1000) * 1000;
+      const withMillis = new Date(base + 900);
+      expect(await credentials.activate({ userId: owner }, credentialId, withMillis)).toBe(true);
+      const activated = await credentials.findByCredentialId(credentialId);
+      expect(activated?.activatedAt?.getTime()).toBe(base);
+      expect(activated?.lastUsedAt?.getTime()).toBe(base);
+      const later = new Date(base + 1000 + 900);
+      expect(
+        await credentials.recordUse(
+          { userId: owner },
+          credentialId,
+          0,
+          1,
+          later,
+          activated?.lastUsedAt ?? null,
+        ),
+      ).toBe(true);
+      const used = await credentials.findByCredentialId(credentialId);
+      expect(used?.lastUsedAt?.getTime()).toBe(base + 1000);
+      const lockedAt = new Date(base + 2000 + 900);
+      expect(await credentials.lock({ userId: owner }, credentialId, lockedAt)).toBe(true);
+      const locked = await credentials.findByCredentialId(credentialId);
+      expect(locked?.lockedAt?.getTime()).toBe(base + 2000);
+    });
+
+    it("refuses a pending-cap insert when the user has no handle row to lock", async () => {
+      const owner = await user("no-handle-lock@example.com");
+      await expect(
+        credentials.createUnderPendingCap(
+          { userId: owner },
+          {
+            userId: owner,
+            credentialId: bytes(32, 91),
+            publicKey: bytes(64, 92),
+            coseAlgorithm: -7,
+            transports: null,
+            aaguid: bytes(16, 93),
+            backupEligible: false,
+            backupState: false,
+            name: "",
+            pendingExpiresAt: future(),
+          },
+          3,
+          new Date(),
+        ),
+      ).rejects.toBeInstanceOf(PasskeyHandleLockUnavailable);
+    });
+
+    it("refuses a pending-cap insert whose scope is a different user", async () => {
+      const owner = await user("scope-owner@example.com");
+      const other = await user("scope-other@example.com");
+      await handles.getOrCreateForUser({ userId: owner });
+      await expect(
+        credentials.createUnderPendingCap(
+          { userId: other },
+          {
+            userId: owner,
+            credentialId: bytes(32, 94),
+            publicKey: bytes(64, 95),
+            coseAlgorithm: -7,
+            transports: null,
+            aaguid: bytes(16, 96),
+            backupEligible: false,
+            backupState: false,
+            name: "",
+            pendingExpiresAt: future(),
+          },
+          3,
+          new Date(),
+        ),
+      ).rejects.toBeInstanceOf(PasskeyCredentialScopeMismatch);
     });
   });
 });

@@ -46,11 +46,12 @@ export type WebAuthnConfig = {
 const LOCAL_ENVIRONMENTS = new Set(["development", "test"]);
 
 /**
- * One local origin, http only, host localhost or 127.0.0.1, optional port
- * 1–65535 with no leading zero. No path, no trailing dot, no list.
+ * One local origin, http only, host localhost, optional port 1–65535 with
+ * no leading zero. An IP address is not a relying party id, so 127.0.0.1
+ * is refused. No path, no trailing dot, no list.
  */
 function isLocalOrigin(origin: string): boolean {
-  const match = /^http:\/\/(localhost|127\.0\.0\.1)(?::(\d{1,5}))?$/.exec(origin);
+  const match = /^http:\/\/localhost(?::(\d{1,5}))?$/.exec(origin);
   if (!match) return false;
   const port = match[2];
   if (port === undefined) return true;
@@ -77,8 +78,8 @@ function durationProblem(env: NodeJS.ProcessEnv): boolean {
  * Production (and anything that is not development or test, including an
  * unset NODE_ENV) accepts exactly one origin and one rpId. Localhost, http,
  * a wildcard, a trailing dot, a port, a path and a list all fail that
- * exact comparison. Development and test may also use a single localhost
- * origin with rpId `localhost`.
+ * exact comparison. Development and test may also use a single
+ * `http://localhost` origin, with an optional port, and rpId `localhost`.
  */
 export function loadWebAuthnConfig(env: NodeJS.ProcessEnv = process.env): WebAuthnConfig {
   const rpId = env["WEBAUTHN_RP_ID"];

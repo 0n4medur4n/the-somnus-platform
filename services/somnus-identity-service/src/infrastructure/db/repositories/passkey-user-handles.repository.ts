@@ -8,6 +8,8 @@ import { assertPasskeyUser } from "./passkey-user.js";
 
 export interface PasskeyUserHandleStore {
   getOrCreateForUser(scope: UserScope): Promise<Buffer>;
+  /** Read the handle. Does not create a row. */
+  findForUser(scope: UserScope): Promise<Buffer | null>;
 }
 
 async function readHandle(db: Db, scope: UserScope): Promise<Buffer | null> {
@@ -43,5 +45,9 @@ export class PasskeyUserHandlesRepository implements PasskeyUserHandleStore {
     const stored = await readHandle(this.db, scope);
     if (!stored) throw new Error("passkey user handle was not stored");
     return stored;
+  }
+
+  async findForUser(scope: UserScope): Promise<Buffer | null> {
+    return readHandle(this.db, scope);
   }
 }

@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import type {
   AuthenticationResponseJSON,
   PublicKeyCredentialCreationOptionsJSON,
@@ -17,6 +17,8 @@ import { makeEvent, type UUIDv7 } from "@somnus/api-contracts";
 import {
   evaluateSignCount,
   PasskeyCredentialIdConflict,
+  PasskeyCredentialScopeMismatch,
+  PasskeyHandleLockUnavailable,
   PasskeyPendingLimit,
 } from "../../domain/passkey/passkey.js";
 import {
@@ -73,6 +75,30 @@ export const PASSKEY_EVENTS = {
 
 const WEBAUTHN_TRANSPORTS = new Set(["ble", "hybrid", "internal", "nfc", "usb", "smart-card"]);
 const UNNAMED_PASSKEY = "";
+const STEP_UP_MAX_AGE_MS = 5 * 60 * 1000;
+const AUDIT_PUBLISH_TIMEOUT_MS = 2_000;
+
+/** Byte caps applied to ceremony fields before any base64url decode. */
+export const PASSKEY_SIZE_LIMITS = {
+  credentialId: 1023,
+  userHandle: 64,
+  signature: 1024,
+  clientDataJson: 2048,
+  authenticatorData: 4096,
+  attestationObject: 8192,
+} as const;
+
+/**
+ * How a registration is allowed (ADR 0027 decisions 9 and 11).
+ * `first` is only for an account with no active passkey. `additional`
+ * requires a step-up the service itself just verified.
+ */
+export type PasskeyEnrollmentAuthorization =
+  | { kind: "first" }
+  | {
+      kind: "additional";
+      stepUp: { userId: UUIDv7; credentialId: string; verifiedAt: string };
+    };
 
 export type PasskeyCeremonyFailure = { readonly ok: false };
 
@@ -119,6 +145,8 @@ type CheckedAssertion = {
 
 @Injectable()
 export class PasskeyWebAuthnService {
+  private readonly logger = new Logger(PasskeyWebAuthnService.name);
+
   constructor(
     private readonly credentials: PasskeyCredentialsRepository,
     private readonly challenges: PasskeyChallengesRepository,
@@ -130,11 +158,19 @@ export class PasskeyWebAuthnService {
   async registrationOptions(
     userId: UUIDv7,
     correlationId: string,
+    authorization: PasskeyEnrollmentAuthorization,
   ): Promise<PasskeyRegistrationOptionsResult> {
     const config = this.config();
     const account = await this.activeAccount(userId, "registration", correlationId);
     if (!account.ok) return account;
     const now = new Date();
+    const enrollment = this.enrollmentFailure(
+      userId,
+      authorization,
+      await this.activeCredentials(userId),
+      now,
+    );
+    if (enrollment) return this.fail(correlationId, "registration", userId, null, enrollment);
     await this.credentials.deleteExpiredPending(PASSKEY_PENDING_CLEANUP_LIMIT);
     const pending = await this.credentials.countPendingByUser({ userId }, now);
     if (pending >= config.maxPendingCredentials) {
@@ -173,10 +209,14 @@ export class PasskeyWebAuthnService {
     userId: UUIDv7,
     response: unknown,
     correlationId: string,
+    authorization: PasskeyEnrollmentAuthorization,
   ): Promise<PasskeyRegistrationResult> {
     const config = this.config();
     const parsed = asRegistration(response);
-    const clientData = parsed ? bytesFromBase64Url(parsed.response.clientDataJSON) : null;
+    if (!parsed || !registrationWithinLimits(parsed)) {
+      return this.fail(correlationId, "registration", userId, null, "client_data");
+    }
+    const clientData = bytesFromBase64Url(parsed.response.clientDataJSON);
     const client = clientData
       ? inspectClientData(clientData, { type: "webauthn.create", origin: config.origin })
       : { ok: false as const, code: "client_data" as const, challenge: null };
@@ -190,14 +230,8 @@ export class PasskeyWebAuthnService {
       if (rejected) return rejected;
       return this.fail(correlationId, "registration", userId, null, client.code);
     }
-    if (!parsed || !client.ok) {
-      return this.fail(
-        correlationId,
-        "registration",
-        userId,
-        null,
-        client.ok ? "client_data" : client.code,
-      );
+    if (!client.ok) {
+      return this.fail(correlationId, "registration", userId, null, client.code);
     }
     const rejected = await this.consumeOrClassify(
       client.challenge,
@@ -206,9 +240,15 @@ export class PasskeyWebAuthnService {
       correlationId,
     );
     if (rejected) return rejected;
-    const attestation = bytesFromBase64Url(parsed.response.attestationObject);
-    const authData = attestation ? extractAttestedAuthenticatorData(attestation) : null;
-    const flags = authData ? authenticatorDataProblem(authData, config.rpId) : null;
+    let authData: Buffer | null;
+    let flags: ReturnType<typeof authenticatorDataProblem> | null;
+    try {
+      const attestation = bytesFromBase64Url(parsed.response.attestationObject);
+      authData = attestation ? extractAttestedAuthenticatorData(attestation) : null;
+      flags = authData ? authenticatorDataProblem(authData, config.rpId) : null;
+    } catch {
+      return this.fail(correlationId, "registration", userId, null, "client_data");
+    }
     if (!authData || !flags?.ok) {
       return this.fail(
         correlationId,
@@ -291,7 +331,15 @@ export class PasskeyWebAuthnService {
       );
     }
     const now = new Date();
-    await this.handles.getOrCreateForUser({ userId });
+    const enrollment = this.enrollmentFailure(
+      userId,
+      authorization,
+      await this.activeCredentials(userId),
+      now,
+    );
+    if (enrollment) {
+      return this.fail(correlationId, "registration", userId, credentialIdText, enrollment);
+    }
     try {
       await this.credentials.createUnderPendingCap(
         { userId },
@@ -323,6 +371,12 @@ export class PasskeyWebAuthnService {
           credentialIdText,
           "credential_duplicate",
         );
+      }
+      if (error instanceof PasskeyHandleLockUnavailable) {
+        return this.fail(correlationId, "registration", userId, credentialIdText, "user_handle");
+      }
+      if (error instanceof PasskeyCredentialScopeMismatch) {
+        return this.fail(correlationId, "registration", userId, credentialIdText, "enrollment");
       }
       throw error;
     }
@@ -530,7 +584,10 @@ export class PasskeyWebAuthnService {
   ): Promise<{ ok: true; checked: CheckedAssertion } | PasskeyCeremonyFailure> {
     const config = this.config();
     const parsed = asAuthentication(response);
-    const clientData = parsed ? bytesFromBase64Url(parsed.response.clientDataJSON) : null;
+    if (!parsed || !authenticationWithinLimits(parsed)) {
+      return this.fail(input.correlationId, input.purpose, input.boundUserId, null, "client_data");
+    }
+    const clientData = bytesFromBase64Url(parsed.response.clientDataJSON);
     const client = clientData
       ? inspectClientData(clientData, { type: "webauthn.get", origin: config.origin })
       : { ok: false as const, code: "client_data" as const, challenge: null };
@@ -544,14 +601,8 @@ export class PasskeyWebAuthnService {
       if (rejected) return rejected;
       return this.fail(input.correlationId, input.purpose, input.boundUserId, null, client.code);
     }
-    if (!parsed || !client.ok) {
-      return this.fail(
-        input.correlationId,
-        input.purpose,
-        input.boundUserId,
-        null,
-        client.ok ? "client_data" : client.code,
-      );
+    if (!client.ok) {
+      return this.fail(input.correlationId, input.purpose, input.boundUserId, null, client.code);
     }
     const rejected = await this.consumeOrClassify(
       client.challenge,
@@ -560,8 +611,14 @@ export class PasskeyWebAuthnService {
       input.correlationId,
     );
     if (rejected) return rejected;
-    const authData = bytesFromBase64Url(parsed.response.authenticatorData);
-    const flags = authData ? authenticatorDataProblem(authData, config.rpId) : null;
+    let authData: Buffer | null;
+    let flags: ReturnType<typeof authenticatorDataProblem> | null;
+    try {
+      authData = bytesFromBase64Url(parsed.response.authenticatorData);
+      flags = authData ? authenticatorDataProblem(authData, config.rpId) : null;
+    } catch {
+      return this.fail(input.correlationId, input.purpose, input.boundUserId, null, "client_data");
+    }
     if (!authData || !flags?.ok) {
       return this.fail(
         input.correlationId,
@@ -641,11 +698,30 @@ export class PasskeyWebAuthnService {
     }
     const account = await this.activeAccount(holder, input.purpose, input.correlationId);
     if (!account.ok) return account;
-    const presented = parsed.response.userHandle
-      ? bytesFromBase64Url(parsed.response.userHandle)
-      : null;
-    const storedHandle = await this.handles.getOrCreateForUser({ userId: holder });
-    if (!presented || !sameBytes(presented, storedHandle)) {
+    let presented: Buffer | null;
+    try {
+      presented = parsed.response.userHandle
+        ? bytesFromBase64Url(parsed.response.userHandle)
+        : null;
+    } catch {
+      return this.fail(input.correlationId, input.purpose, holder, credentialIdText, "client_data");
+    }
+    const storedHandle = await this.handles.findForUser({ userId: holder });
+    if (!storedHandle) {
+      return this.fail(input.correlationId, input.purpose, holder, credentialIdText, "user_handle");
+    }
+    const handleMatches = presented !== null && sameBytes(presented, storedHandle);
+    if (input.purpose === "step_up") {
+      if (presented !== null && !handleMatches) {
+        return this.fail(
+          input.correlationId,
+          input.purpose,
+          holder,
+          credentialIdText,
+          "user_handle",
+        );
+      }
+    } else if (!handleMatches) {
       return this.fail(input.correlationId, input.purpose, holder, credentialIdText, "user_handle");
     }
 
@@ -767,8 +843,8 @@ export class PasskeyWebAuthnService {
         ? { type: "passkey", id: input.credentialId }
         : { type: "passkey", id: input.purpose };
     const correlationId = input.correlationId.trim() || "passkey";
-    try {
-      await this.events.publish(
+    const published = this.events
+      .publish(
         makeEvent({
           eventType: input.eventType,
           producer: "somnus-identity-service",
@@ -777,21 +853,66 @@ export class PasskeyWebAuthnService {
           ...(input.userId ? { actor: { type: "user", id: input.userId } } : {}),
           data,
         }),
+      )
+      .then(
+        () => "ok" as const,
+        () => "failed" as const,
       );
-    } catch {
-      // The ceremony result is the database write. A publisher failure must
-      // not turn a verified assertion into an error, and the caught value is
-      // discarded because library and transport errors can echo a challenge.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<"timeout">((resolve) => {
+      timer = setTimeout(() => resolve("timeout"), AUDIT_PUBLISH_TIMEOUT_MS);
+    });
+    const outcome = await Promise.race([published, timeout]);
+    if (timer !== undefined) clearTimeout(timer);
+    if (outcome !== "ok") this.logger.warn("passkey audit publish failed");
+  }
+
+  private async activeCredentials(userId: UUIDv7): Promise<PasskeyCredentialRecord[]> {
+    const rows = await this.credentials.listByUser({ userId });
+    return rows.filter(
+      (row) => row.activatedAt !== null && row.revokedAt === null && row.lockedAt === null,
+    );
+  }
+
+  /**
+   * `first` requires zero active credentials. `additional` requires a
+   * step-up for this user, at most five minutes old, of an active
+   * credential. Pending credentials satisfy neither rule.
+   */
+  private enrollmentFailure(
+    userId: UUIDv7,
+    authorization: PasskeyEnrollmentAuthorization,
+    active: PasskeyCredentialRecord[],
+    now: Date,
+  ): PasskeyFailureCode | null {
+    if (authorization.kind === "first") return active.length === 0 ? null : "enrollment";
+    if (authorization.kind !== "additional") return "enrollment";
+    const stepUp = authorization.stepUp;
+    if (
+      stepUp === undefined ||
+      stepUp.userId !== userId ||
+      typeof stepUp.credentialId !== "string" ||
+      typeof stepUp.verifiedAt !== "string"
+    ) {
+      return "enrollment";
     }
+    const verifiedAt = Date.parse(stepUp.verifiedAt);
+    if (Number.isNaN(verifiedAt)) return "enrollment";
+    const age = now.getTime() - verifiedAt;
+    if (age < 0 || age > STEP_UP_MAX_AGE_MS) return "enrollment";
+    const matches = active.some(
+      (row) => isoBase64URL.fromBuffer(uint8(row.credentialId)) === stepUp.credentialId,
+    );
+    return matches ? null : "enrollment";
   }
 }
 
 function laterInstant(previous: Date | null, now: Date): Date {
-  if (previous === null) return now;
-  const previousSecond = Math.floor(previous.getTime() / 1000);
   const nowSecond = Math.floor(now.getTime() / 1000);
+  if (previous === null) return new Date(nowSecond * 1000);
+  const previousSecond = Math.floor(previous.getTime() / 1000);
   if (nowSecond <= previousSecond) return new Date((previousSecond + 1) * 1000);
-  return now;
+  return new Date(nowSecond * 1000);
 }
 
 function knownTransports(value: unknown): string[] | null {
@@ -815,21 +936,60 @@ function uint8(value: Uint8Array): Uint8Array<ArrayBuffer> {
   return copy;
 }
 
+function maxBase64UrlLength(maxBytes: number): number {
+  const groups = Math.floor(maxBytes / 3);
+  const rest = maxBytes % 3;
+  return groups * 4 + (rest === 0 ? 0 : rest + 1);
+}
+
+function withinEncodedLimit(value: string, maxBytes: number): boolean {
+  return value.length <= maxBase64UrlLength(maxBytes);
+}
+
+function registrationWithinLimits(parsed: RegistrationResponseJSON): boolean {
+  return (
+    withinEncodedLimit(parsed.id, PASSKEY_SIZE_LIMITS.credentialId) &&
+    withinEncodedLimit(parsed.rawId, PASSKEY_SIZE_LIMITS.credentialId) &&
+    withinEncodedLimit(parsed.response.clientDataJSON, PASSKEY_SIZE_LIMITS.clientDataJson) &&
+    withinEncodedLimit(parsed.response.attestationObject, PASSKEY_SIZE_LIMITS.attestationObject)
+  );
+}
+
+function authenticationWithinLimits(parsed: AuthenticationResponseJSON): boolean {
+  const handle = parsed.response.userHandle;
+  const handleOk =
+    handle === undefined ||
+    (typeof handle === "string" && withinEncodedLimit(handle, PASSKEY_SIZE_LIMITS.userHandle));
+  return (
+    handleOk &&
+    withinEncodedLimit(parsed.id, PASSKEY_SIZE_LIMITS.credentialId) &&
+    withinEncodedLimit(parsed.rawId, PASSKEY_SIZE_LIMITS.credentialId) &&
+    withinEncodedLimit(parsed.response.clientDataJSON, PASSKEY_SIZE_LIMITS.clientDataJson) &&
+    withinEncodedLimit(parsed.response.authenticatorData, PASSKEY_SIZE_LIMITS.authenticatorData) &&
+    withinEncodedLimit(parsed.response.signature, PASSKEY_SIZE_LIMITS.signature)
+  );
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function bytesFromBase64Url(value: unknown): Buffer | null {
-  if (typeof value !== "string" || value.length === 0 || !isoBase64URL.isBase64URL(value))
+  try {
+    if (typeof value !== "string" || value.length === 0 || !isoBase64URL.isBase64URL(value)) {
+      return null;
+    }
+    const bytes = Buffer.from(isoBase64URL.toBuffer(value));
+    return bytes.length > 0 ? bytes : null;
+  } catch {
     return null;
-  const bytes = Buffer.from(isoBase64URL.toBuffer(value));
-  return bytes.length > 0 ? bytes : null;
+  }
 }
 
 function asRegistration(value: unknown): RegistrationResponseJSON | null {
   if (!isRecord(value) || !isRecord(value["response"])) return null;
-  if (value["type"] !== "public-key") return null;
   if (typeof value["id"] !== "string" || typeof value["rawId"] !== "string") return null;
+  if (value["id"] !== value["rawId"] || value["type"] !== "public-key") return null;
   const response = value["response"];
   if (typeof response["clientDataJSON"] !== "string") return null;
   if (typeof response["attestationObject"] !== "string") return null;
@@ -838,8 +998,8 @@ function asRegistration(value: unknown): RegistrationResponseJSON | null {
 
 function asAuthentication(value: unknown): AuthenticationResponseJSON | null {
   if (!isRecord(value) || !isRecord(value["response"])) return null;
-  if (value["type"] !== "public-key") return null;
   if (typeof value["id"] !== "string" || typeof value["rawId"] !== "string") return null;
+  if (value["id"] !== value["rawId"] || value["type"] !== "public-key") return null;
   const response = value["response"];
   if (typeof response["clientDataJSON"] !== "string") return null;
   if (typeof response["authenticatorData"] !== "string") return null;

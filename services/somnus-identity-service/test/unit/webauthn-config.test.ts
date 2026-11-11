@@ -23,6 +23,23 @@ describe("loadWebAuthnConfig", () => {
     expect(config.rpName).toBe("The Somnus");
   });
 
+  it("refuses 127.0.0.1 because an address cannot be a relying party id", () => {
+    expect(() =>
+      loadWebAuthnConfig({
+        NODE_ENV: "development",
+        WEBAUTHN_RP_ID: "localhost",
+        WEBAUTHN_ORIGIN: "http://127.0.0.1:5174",
+      }),
+    ).toThrow(WebAuthnConfigError);
+    expect(() =>
+      loadWebAuthnConfig({
+        NODE_ENV: "test",
+        WEBAUTHN_RP_ID: "127.0.0.1",
+        WEBAUTHN_ORIGIN: "http://localhost:5174",
+      }),
+    ).toThrow(WebAuthnConfigError);
+  });
+
   it("accepts one localhost origin only in development and test", () => {
     for (const nodeEnv of ["development", "test"]) {
       const config = loadWebAuthnConfig({
@@ -33,12 +50,6 @@ describe("loadWebAuthnConfig", () => {
       expect(config.origin).toBe("http://localhost:5174");
       expect(config.rpId).toBe("localhost");
     }
-    const loopback = loadWebAuthnConfig({
-      NODE_ENV: "development",
-      WEBAUTHN_RP_ID: "localhost",
-      WEBAUTHN_ORIGIN: "http://127.0.0.1:5174",
-    });
-    expect(loopback.rpId).toBe("localhost");
   });
 
   it("refuses to operate when the variables are missing", () => {

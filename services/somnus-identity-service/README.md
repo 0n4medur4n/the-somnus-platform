@@ -329,10 +329,24 @@ Enforced two ways (`src/infrastructure/db/tenant-scope.ts`):
 | `DATABASE_URL` | `mysql://root:rootpw@127.0.0.1:3306/somnus_identity` |
 | `DB_POOL_SIZE` | `5` (ceiling only -- `mysql2` pools do not eagerly open connections, build plan §2) |
 | `WEBAUTHN_RP_ID` | unset. The process still boots. A passkey ceremony refuses to operate until this and `WEBAUTHN_ORIGIN` are set. |
-| `WEBAUTHN_ORIGIN` | unset. Production accepts only `https://console.thesomnus.com` with rpId `console.thesomnus.com`. Development and test may instead use one `http://localhost` or `http://127.0.0.1` origin, with an optional port, and rpId `localhost`. |
+| `WEBAUTHN_ORIGIN` | unset. Production accepts only `https://console.thesomnus.com` with rpId `console.thesomnus.com`. Development and test may instead use one `http://localhost` origin, with an optional port, and rpId `localhost`. `127.0.0.1` is refused: an address cannot be a relying party id. |
 | `WEBAUTHN_CHALLENGE_TTL_SECONDS` | `300` when unset. Any other value refuses to operate. |
 | `WEBAUTHN_PENDING_TTL_SECONDS` | `86400` when unset. Any other value refuses to operate. |
 | `WEBAUTHN_MAX_PENDING_CREDENTIALS` | `3` when unset. Any other value refuses to operate. |
+
+Ceremony fields are rejected with audit reason `client_data` before they are decoded, when the base64url text is longer than the encoding of these byte caps: credential id 1023, user handle 64, signature 1024, clientDataJSON 2048, authenticatorData 4096, attestationObject 8192. The clientDataJSON cap is the length of the raw JSON text.
+
+### Requirements for the routes of task 2.4
+
+The HTTP routes are not in this service. When they are added:
+
+- `userId` comes from the session and never from the request body.
+- The route applies "internal role or pending invitation" before `registrationOptions`. `kind: "first"` is only for an account whose verified email-link sign-in is under 10 minutes old.
+- Rate limits are per IP. `authenticationOptions` creates a challenge row on every call and has no session, so live challenges need a cap.
+- The maximum request body is 16 KB.
+- Every exception, `WebAuthnConfigError` included, is mapped to one generic response.
+- Run a smoke test of `SELECT ... FOR UPDATE` on TiDB before relying on the pending cap there. The cap locks the user's handle row.
+- A synced passkey whose counter stays zero cannot be clone-detected. Two sign-ins that race while the counter stays zero can fail with `counter_race`.
 
 ### Migrations
 

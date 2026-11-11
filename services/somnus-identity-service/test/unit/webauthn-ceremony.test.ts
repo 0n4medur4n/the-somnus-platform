@@ -3,6 +3,7 @@ import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simpl
 import { describe, expect, it } from "vitest";
 import {
   attestedAaguid,
+  attestedCredentialAlgorithm,
   attestedCredentialId,
   authenticatorDataProblem,
   classifyUnconsumedChallenge,
@@ -11,6 +12,7 @@ import {
   inspectClientData,
   isAllowedCoseAlgorithm,
   isPasskeyFailureCode,
+  readAuthenticatorData,
   rpIdHashMatches,
   sameBytes,
 } from "../../src/domain/passkey/webauthn-ceremony.js";
@@ -22,6 +24,37 @@ import {
 
 const ORIGIN = "https://console.thesomnus.com";
 const RP_ID = "console.thesomnus.com";
+
+describe("CBOR reader", () => {
+  it("rejects a repeated map key and a nest deeper than 8 without throwing", () => {
+    const duplicate = Buffer.from([0xa2, 0x03, 0x26, 0x03, 0x26]);
+    expect(() => coseAlgorithm(duplicate)).not.toThrow();
+    expect(coseAlgorithm(duplicate)).toBeNull();
+
+    const nested = (count: number) => {
+      let current = Buffer.from([0x00]);
+      for (let index = 0; index < count; index++) {
+        current = Buffer.concat([Buffer.from([0x81]), current]);
+      }
+      return Buffer.concat([Buffer.from([0xa2, 0x03, 0x26, 0x00]), current]);
+    };
+    expect(coseAlgorithm(nested(7))).toBe(-7);
+    expect(coseAlgorithm(nested(8))).toBeNull();
+
+    expect(() => coseAlgorithm(Buffer.from([0xff, 0x1a]))).not.toThrow();
+    expect(coseAlgorithm(Buffer.from([0xff]))).toBeNull();
+    expect(extractAttestedAuthenticatorData(Buffer.alloc(0))).toBeNull();
+    expect(attestedCredentialAlgorithm(Buffer.alloc(4))).toBeNull();
+    expect(readAuthenticatorData(Buffer.alloc(2))).toBeNull();
+    expect(() =>
+      inspectClientData(Buffer.from("{"), { type: "webauthn.get", origin: ORIGIN }),
+    ).not.toThrow();
+    expect(inspectClientData(Buffer.from("{"), { type: "webauthn.get", origin: ORIGIN }).ok).toBe(
+      false,
+    );
+    expect(authenticatorDataProblem(Buffer.alloc(2), RP_ID).ok).toBe(false);
+  });
+});
 
 describe("software authenticator", () => {
   it("produces a registration and an assertion the server library accepts", async () => {

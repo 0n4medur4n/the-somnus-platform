@@ -62,6 +62,22 @@ export class PasskeyPendingLimit extends Error {
   }
 }
 
+/** The pending-cap insert had no handle row to lock, so it did not insert. */
+export class PasskeyHandleLockUnavailable extends Error {
+  constructor() {
+    super("Passkey registration refused because the user handle could not be locked.");
+    this.name = "PasskeyHandleLockUnavailable";
+  }
+}
+
+/** The credential's user and the scope user are not the same. */
+export class PasskeyCredentialScopeMismatch extends Error {
+  constructor() {
+    super("Passkey registration refused because the scope does not match the user.");
+    this.name = "PasskeyCredentialScopeMismatch";
+  }
+}
+
 /** Creating a credential without `pending_expires_at` is refused (task 2.2). */
 export class PasskeyCredentialExpiryRequired extends Error {
   constructor() {
