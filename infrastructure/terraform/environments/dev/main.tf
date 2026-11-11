@@ -290,19 +290,18 @@ module "run_morpheo" {
     LOG_LEVEL    = "info"
     LOG_FORMAT   = "json"
     SERVICE_NAME = "morpheo-service"
-    # The AI of v0.2 p. 14 is OFF (owner decision 2026-11-03: no paid AI, and no
-    # patient text leaves for a model). The interview asks every question. It
-    # also has no OPENAI_API_KEY mounted, so a flipped flag could not send
-    # anything either: both must be put back to turn it on.
-    AI_EXTRACTION_ENABLED = "false"
   }
   secret_env_vars = {
     DATABASE_URL = { secret_id = "morpheo-db-url", version = "latest" }
+    # Extraction is on by the code default (AI_EXTRACTION_ENABLED is unset).
+    # The OpenAI endpoint is the code default. The same key report uses.
+    OPENAI_API_KEY = { secret_id = "OPENAI_API_KEY", version = "latest" }
   }
   labels = { app = "somnus", service = "morpheo", env = var.env }
 
   depends_on = [
     module.project_apis_backend,
+    google_secret_manager_secret_iam_member.morpheo_openai_api_key,
   ]
 }
 
@@ -339,10 +338,13 @@ module "run_report" {
     CORPUS_FILES_BUCKET = module.corpus_files_bucket.bucket_name
     # Proofreading Drive documents with Gemini on Vertex AI in the EU (ADR 0019),
     # with this service's own identity (roles/aiplatform.user below): no key.
-    PROOFREAD_ENABLED = "true"
-    PROOFREAD_MODEL   = "gemini-3.5-flash"
-    VERTEX_PROJECT    = var.project_id
-    VERTEX_LOCATION   = var.region
+    # Drive translation is on. Proofread thinking is low.
+    PROOFREAD_ENABLED  = "true"
+    PROOFREAD_MODEL    = "gemini-3.5-flash"
+    PROOFREAD_THINKING = "low"
+    TRANSLATE_ENABLED  = "true"
+    VERTEX_PROJECT     = var.project_id
+    VERTEX_LOCATION    = var.region
   }
   # OPENAI_API_KEY: embeddings, and the AI wording job
   # (`python -m report.jobs.generate_rewrites`, GPT-6 Luna at xhigh effort -- the
@@ -385,6 +387,8 @@ module "run_worker" {
   # ADR 0008's private-ingress intent stays UNMET pending the connectivity
   # decision noted there.
   ingress = "INGRESS_TRAFFIC_ALL"
+  # CPU is billed only during requests. This is the live cost setting.
+  cpu_idle = true
   env_vars = {
     LOG_LEVEL            = "info"
     SERVICE_NAME         = "somnus-worker"
@@ -623,17 +627,16 @@ removed {
 #
 # Least privilege, and narrower than the project: `local.baseline_roles` grants
 # no Secret Manager access to any runtime service account, and this does not
-# change that. It grants ONE service account read on ONE secret -- the same shape
-# the seven database/cookie secrets already have, which were granted by hand.
+# change that. Each binding grants one service account read on one secret -- the
+# same shape the seven database/cookie secrets already have, which were granted
+# by hand.
 #
-# Only the report service embeds: the Index A batch job (Checkpoint 11.3/16.0)
+# The report service embeds: the Index A batch job (Checkpoint 11.3/16.0)
 # and the Index B corpus indexer (Checkpoint 16.4) both read OPENAI_API_KEY
-# through `report.settings.config`. No other service has any use for it, so no
-# other service account is named here.
+# through `report.settings.config`. Morpheo reads the same key: extraction is
+# on by the code default, and the OpenAI endpoint is the code default.
 #
 # The secret itself is referenced, never created -- see the secrets note above.
-# This is the one binding that does not exist yet, so it is the one thing in this
-# change that a plan should propose.
 data "google_secret_manager_secret" "openai_api_key" {
   project   = var.project_id
   secret_id = "OPENAI_API_KEY"
@@ -646,9 +649,14 @@ resource "google_secret_manager_secret_iam_member" "report_openai_api_key" {
   member    = module.sa_report.member
 }
 
-# morpheo no longer reads this key: its AI (extraction from the person's narrative
-# and the risk screen) was switched off on 2026-11-03, and the binding that let it
-# read the key went with it.
+# Morpheo reads the same key. Extraction is on by the code default
+# (AI_EXTRACTION_ENABLED is unset). The OpenAI endpoint is the code default.
+resource "google_secret_manager_secret_iam_member" "morpheo_openai_api_key" {
+  project   = var.project_id
+  secret_id = data.google_secret_manager_secret.openai_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = module.sa_morpheo.member
+}
 
 # --- The reference corpus's database URL (Addendum B §B3) ---
 #
@@ -745,6 +753,7 @@ module "cleanup_claim_tokens" {
   depends_on = [module.project_apis_backend, module.iam_worker]
 }
 
+# Not live, deletes data, pending review.
 # --- Retention: Morpheo case records after 24 months (ADR 0024) ---
 #
 # Every interview has a case record that outlives the interview itself. The
@@ -755,6 +764,8 @@ module "cleanup_claim_tokens" {
 # them. The period itself lives in the worker (FUNNEL_CASE_RETENTION_MONTHS).
 
 module "cleanup_funnel_cases" {
+  count = var.cleanup_funnel_cases_enabled ? 1 : 0
+
   source                     = "../../modules/cloud-scheduler-job"
   project_id                 = var.project_id
   region                     = var.region
@@ -768,6 +779,7 @@ module "cleanup_funnel_cases" {
   depends_on = [module.project_apis_backend, module.iam_worker]
 }
 
+# Not live, deletes data, pending review.
 # --- Retention: the delivery log after 90 days (ADR 0025) ---
 #
 # The Notification module logs every email it sends, with the recipient's address,
@@ -776,6 +788,8 @@ module "cleanup_funnel_cases" {
 # erases a person's records at once; this clears the rest.
 
 module "cleanup_notification_log" {
+  count = var.cleanup_notification_log_enabled ? 1 : 0
+
   source                     = "../../modules/cloud-scheduler-job"
   project_id                 = var.project_id
   region                     = var.region
@@ -906,7 +920,9 @@ resource "google_firestore_database" "sessions" {
 # stayed here. With a TTL policy Firestore deletes the document after `expiresAt`
 # (typically within a day of it). Account deletion removes the person's sessions
 # at once; this is what clears the ones nobody asked to erase.
+# Not live, deletes data, pending review.
 resource "google_firestore_field" "sessions_ttl" {
+  count      = var.sessions_ttl_enabled ? 1 : 0
   project    = var.project_id
   database   = google_firestore_database.sessions.name
   collection = "sessions"
@@ -917,7 +933,9 @@ resource "google_firestore_field" "sessions_ttl" {
 
 # The sign-in-link throttle keeps a hash of the address and the time of the last
 # link. It only matters for a minute; the policy removes it long after that.
+# Not live, deletes data, pending review.
 resource "google_firestore_field" "sign_in_link_throttle_ttl" {
+  count      = var.sign_in_link_throttle_ttl_enabled ? 1 : 0
   project    = var.project_id
   database   = google_firestore_database.sessions.name
   collection = "sign_in_link_throttle"
