@@ -10,6 +10,9 @@ const SITE_URL = "https://thesomnus.com";
 export default defineConfig({
   site: SITE_URL,
   output: "static",
+  // A <meta> policy per page with the hash of every inline script and style.
+  // scripts/csp-hashes.mjs adds the style="" attributes after the build.
+  security: { csp: true },
   integrations: [react()],
   i18n: {
     defaultLocale: "es",

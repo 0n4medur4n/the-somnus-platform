@@ -78,3 +78,34 @@ describe("csrfTokenMatches", () => {
     expect(csrfTokenMatches("", KEY, token)).toBe(false);
   });
 });
+
+describe("csrfTokenMatches during a secret rotation", () => {
+  const OLD = "retired-cookie-secret-0123456789ab";
+  const NEW = "current-cookie-secret-0123456789ab";
+
+  it("accepts a token minted with the retired secret while it is still listed", () => {
+    const token = csrfTokenFor(SESSION, OLD);
+    expect(csrfTokenMatches(SESSION, [NEW, OLD], token)).toBe(true);
+  });
+
+  it("accepts a token minted with the current secret", () => {
+    expect(csrfTokenMatches(SESSION, [NEW, OLD], csrfTokenFor(SESSION, NEW))).toBe(true);
+  });
+
+  it("refuses the retired secret's token once it is no longer listed", () => {
+    expect(csrfTokenMatches(SESSION, [NEW], csrfTokenFor(SESSION, OLD))).toBe(false);
+  });
+
+  it("refuses a token of any other secret, another session, or nothing", () => {
+    expect(
+      csrfTokenMatches(
+        SESSION,
+        [NEW, OLD],
+        csrfTokenFor(SESSION, "another-secret-0123456789abcdef"),
+      ),
+    ).toBe(false);
+    expect(csrfTokenMatches(SESSION, [NEW, OLD], csrfTokenFor(`${SESSION}x`, NEW))).toBe(false);
+    expect(csrfTokenMatches(SESSION, [NEW, OLD], undefined)).toBe(false);
+    expect(csrfTokenMatches("", [NEW, OLD], csrfTokenFor("", NEW))).toBe(false);
+  });
+});

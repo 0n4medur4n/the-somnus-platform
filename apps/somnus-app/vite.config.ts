@@ -4,7 +4,62 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 import { checkHostingBundle, checkHostingText } from "../../scripts/check-hosting-bundle.mjs";
-import { HostingEnvSchema } from "./src/config/env-schema.js";
+import { HostingEnvSchema, SAME_ORIGIN } from "./src/config/env-schema.js";
+
+/**
+ * End-to-end only (E2E_SECURITY_HEADERS=1): `vite preview` answers with the
+ * headers firebase.json gives the app's "**" rule. The suite fails on any
+ * `securitypolicyviolation`, including one from a Report-Only policy.
+ *
+ * The shipped policy is not widened. connect-src gains the local edge-api and
+ * Auth emulator origins. img-src gains the edge-api origin only: the profile
+ * photo is an image, and CI recorded img-src blocking that origin. On the live
+ * site the photo is same-origin through the Hosting rewrite.
+ */
+function e2eSecurityHeaders(): Plugin {
+  const config = JSON.parse(
+    readFileSync(new URL("../../firebase.json", import.meta.url), "utf8"),
+  ) as {
+    hosting: Array<{
+      target: string;
+      headers: Array<{ source: string; headers: Array<{ key: string; value: string }> }>;
+    }>;
+  };
+  const rule = config.hosting
+    .find((site) => site.target === "app")
+    ?.headers.find((entry) => entry.source === "**");
+  if (!rule) throw new Error("firebase.json: the app has no ** header rule");
+  const local = [process.env["VITE_EDGE_API_URL"], process.env["VITE_AUTH_EMULATOR_URL"]]
+    .filter((value): value is string => Boolean(value) && value !== SAME_ORIGIN)
+    .map((value) => new URL(value).origin);
+  const apiUrl = process.env["VITE_EDGE_API_URL"];
+  const apiOrigin = apiUrl && apiUrl !== SAME_ORIGIN ? new URL(apiUrl).origin : undefined;
+  return {
+    name: "somnus-e2e-security-headers",
+    configurePreviewServer(server) {
+      server.middlewares.use((_request, response, next) => {
+        for (const { key, value } of rule.headers) {
+          const name = key.toLowerCase();
+          const policy =
+            name === "content-security-policy" || name === "content-security-policy-report-only";
+          if (!policy) {
+            response.setHeader(key, value);
+            continue;
+          }
+          const withConnect =
+            local.length > 0
+              ? value.replace("connect-src ", `connect-src ${local.join(" ")} `)
+              : value;
+          response.setHeader(
+            key,
+            apiOrigin ? withConnect.replace("img-src ", `img-src ${apiOrigin} `) : withConnect,
+          );
+        }
+        next();
+      });
+    },
+  };
+}
 
 // The SPA is a static bundle deployed to Firebase Hosting; it talks only
 // to somnus-edge-api (build plan §5.2). Dev/preview ports match the
@@ -73,7 +128,12 @@ export default defineConfig(({ mode }) => {
           },
         }
       : {}),
-    plugins: [react(), tailwindcss(), ...(hosting ? [guard] : [])],
+    plugins: [
+      react(),
+      tailwindcss(),
+      ...(hosting ? [guard] : []),
+      ...(process.env["E2E_SECURITY_HEADERS"] === "1" ? [e2eSecurityHeaders()] : []),
+    ],
     server: { port: 5173, strictPort: true },
     preview: { port: 4173, strictPort: true },
     build: { outDir: "dist", sourcemap: !hosting },

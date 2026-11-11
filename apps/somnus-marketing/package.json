@@ -6,7 +6,7 @@
   "description": "The Somnus — static marketing site (Astro). Localized in es/en/ca/fr. Deployed to Firebase Hosting.",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/csp-hashes.mjs",
     "preview": "astro preview",
     "check": "astro check",
     "typecheck": "astro check",

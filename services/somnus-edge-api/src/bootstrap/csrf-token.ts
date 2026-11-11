@@ -48,15 +48,25 @@ export function csrfTokenFor(sessionId: string, cookieSecret: string): string {
  * An empty session id (no cookie, or a forged one) is refused outright: the
  * HMAC of "" is a perfectly valid-looking token, and nothing should depend on
  * it merely never having been issued.
+ *
+ * `cookieSecrets` may hold the retired secret of a rotation after the current
+ * one: a token minted before the rotation stays valid until the SPA asks for a
+ * fresh one. Tokens are only ever minted with the current secret.
  */
 export function csrfTokenMatches(
   sessionId: string,
-  cookieSecret: string,
+  cookieSecrets: string | readonly string[],
   presented: string | undefined,
 ): boolean {
   if (sessionId.length === 0) return false;
   if (typeof presented !== "string" || presented.length === 0) return false;
-  const expected = Buffer.from(csrfTokenFor(sessionId, cookieSecret));
   const actual = Buffer.from(presented);
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
+  const secrets = typeof cookieSecrets === "string" ? [cookieSecrets] : cookieSecrets;
+  let matched = false;
+  // Every secret is always tried, so the time taken does not reveal which one matched.
+  for (const secret of secrets) {
+    const expected = Buffer.from(csrfTokenFor(sessionId, secret));
+    if (actual.length === expected.length && timingSafeEqual(actual, expected)) matched = true;
+  }
+  return matched;
 }

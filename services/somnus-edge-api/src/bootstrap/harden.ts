@@ -76,8 +76,10 @@ export async function applyHardening(
 
   // Signs the session cookie. The CSRF token is derived from the same secret
   // (through a label-specific key, see csrf-token.ts), so there is no second
-  // cookie to register.
-  await app.register(cookie, { secret: config.COOKIE_SECRET });
+  // cookie to register. During a rotation the list holds the current secret
+  // first and the retired one second: @fastify/cookie signs only with the first
+  // and accepts a signature made with any of them.
+  await app.register(cookie, { secret: config.COOKIE_SECRETS });
 
   await app.register(cors, {
     origin: config.CORS_ORIGINS,
@@ -118,7 +120,7 @@ export async function applyHardening(
       // CSRF rejections (see csrf-state.ts). It is cleared only when the token
       // verifies.
       markCsrfCheckPending(req);
-      if (csrfTokenMatches(sessionIdOf(req, config), config.COOKIE_SECRET, csrfHeaderOf(req))) {
+      if (csrfTokenMatches(sessionIdOf(req, config), config.COOKIE_SECRETS, csrfHeaderOf(req))) {
         markCsrfCheckPassed(req);
         done();
         return;
