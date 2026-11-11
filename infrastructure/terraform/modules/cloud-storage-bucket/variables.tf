@@ -29,7 +29,13 @@ variable "versioning" {
 }
 
 variable "soft_delete_retention_seconds" {
-  description = "How long Cloud Storage keeps a deleted object recoverable. null keeps Google's default (7 days); 0 turns soft delete off, so a delete is final -- what personal data under the right to erasure needs."
+  description = "How long Cloud Storage keeps a deleted object recoverable. null keeps Google's default (7 days); 0 turns soft delete off. A non-zero value is a recovery window, not versioning, and applies only to objects deleted after it takes effect."
+  type        = number
+  default     = null
+}
+
+variable "delete_live_objects_after_days" {
+  description = "When set, add a lifecycle rule that deletes live objects older than this many days. Null adds no rule, so the archived-version rule stays the only one."
   type        = number
   default     = null
 }

@@ -23,6 +23,7 @@ resource "google_storage_bucket" "this" {
 
   # Old noncurrent versions age out; current objects are governed by
   # each service's own retention logic, not a blanket bucket rule.
+  # This rule is unconditional: callers do not replace it.
   lifecycle_rule {
     condition {
       num_newer_versions = 5
@@ -31,6 +32,31 @@ resource "google_storage_bucket" "this" {
     action {
       type = "Delete"
     }
+  }
+
+  # Opt-in. Null (the default) adds nothing, so existing buckets keep the
+  # archived-version rule above and no other.
+  dynamic "lifecycle_rule" {
+    for_each = var.delete_live_objects_after_days == null ? [] : [var.delete_live_objects_after_days]
+    content {
+      condition {
+        age        = lifecycle_rule.value
+        with_state = "LIVE"
+      }
+      action {
+        type = "Delete"
+      }
+    }
+  }
+
+  # Literal on purpose. Terraform reads lifecycle before it evaluates
+  # expressions, so prevent_destroy cannot be a variable. Every bucket
+  # this module creates is protected, including the reports bucket and
+  # the staging and production copies of reports and profile photos, not
+  # only the three dev buckets named on 2026-11-11. A plan that would
+  # destroy one fails.
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
