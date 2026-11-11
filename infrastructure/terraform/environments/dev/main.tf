@@ -68,6 +68,12 @@ locals {
     "roles/monitoring.metricWriter",
     "roles/cloudtrace.agent",
   ]
+
+  # 30 days. Soft delete, not versioning: a deleted or overwritten object
+  # stays recoverable, and only if it is deleted after this takes effect.
+  # ADR 0019 said a deletion is final; this is a recovery window, and the
+  # ADR is amended in a separate docs change.
+  object_recovery_seconds = 2592000
 }
 
 module "project_apis_backend" {
@@ -470,10 +476,12 @@ module "reports_bucket" {
 
 # --- Storage: profile photos (build plan §9 "controlled attachments") ---
 #
-# Personal data under the right to erasure: no versioning and no soft delete,
-# so removing a photo -- or the account -- removes it for good. Only edge-api
-# reads and writes it; the SPA reaches a photo through an authenticated
-# edge-api route, never the bucket.
+# Personal data under the right to erasure: no versioning. Soft delete keeps
+# a deleted or overwritten object for 30 days. ADR 0018 said a removal is
+# final; this is a recovery window, and the ADR is amended in a separate
+# docs change. It applies only to objects deleted after it takes effect.
+# The lifecycle rule is unchanged. Only edge-api reads and writes it; the
+# SPA reaches a photo through an authenticated edge-api route, never the bucket.
 module "profile_photos_bucket" {
   source                        = "../../modules/cloud-storage-bucket"
   project_id                    = var.project_id
@@ -481,7 +489,7 @@ module "profile_photos_bucket" {
   bucket_name                   = "${var.project_id}-profile-photos"
   writer_members                = [module.sa_edge_api.member]
   versioning                    = false
-  soft_delete_retention_seconds = 0
+  soft_delete_retention_seconds = local.object_recovery_seconds
 
   depends_on = [module.project_apis_backend]
 }
@@ -490,10 +498,11 @@ module "profile_photos_bucket" {
 #
 # End-to-end encrypted in the admin console: the bucket holds ciphertext,
 # public keys and folder manifests, nothing the platform can read. No database
-# (the owner chose against TiDB for it) and no secret. No versioning and no
-# soft delete: a folder owner's permanent delete, a key reset or an account
-# erasure removes the objects for good, and nothing deleted keeps costing.
-# Only the worker reads and writes it.
+# (the owner chose against TiDB for it) and no secret. No versioning. Soft
+# delete keeps a deleted or overwritten object for 30 days: ADR 0019 said a
+# deletion is final; this is a recovery window, and the ADR is amended in a
+# separate docs change. It applies only to objects deleted after it takes
+# effect. The lifecycle rule is unchanged. Only the worker reads and writes it.
 module "staff_drive_bucket" {
   source                        = "../../modules/cloud-storage-bucket"
   project_id                    = var.project_id
@@ -501,7 +510,7 @@ module "staff_drive_bucket" {
   bucket_name                   = "${var.project_id}-staff-drive"
   writer_members                = [module.sa_worker.member]
   versioning                    = false
-  soft_delete_retention_seconds = 0
+  soft_delete_retention_seconds = local.object_recovery_seconds
 
   depends_on = [module.project_apis_backend]
 }
@@ -509,18 +518,44 @@ module "staff_drive_bucket" {
 # --- Storage: reference-corpus originals (owner decision 2026-10-18) ---
 #
 # The PDF and Word files admins upload to the corpus, kept as uploaded so they
-# can be viewed and downloaded again. Admin-authored and not re-derivable, so
-# Google's default soft delete stays on (deleted objects recoverable for 7 days);
-# no versioning, because every object name carries its SHA-256 and is written
-# once. Only the report service's corpus module reads and writes it; the
-# console downloads through edge-api, never from the bucket.
+# can be viewed and downloaded again. Admin-authored and not re-derivable. No
+# versioning, because every object name carries its SHA-256 and is written
+# once. Soft delete is 30 days, not Google's 7-day default: ADR 0019 said a
+# deletion is final; this is a recovery window, and the ADR is amended in a
+# separate docs change. It applies only to objects deleted after it takes
+# effect. The lifecycle rule is unchanged. Only the report service's corpus
+# module reads and writes it; the console downloads through edge-api, never
+# from the bucket.
 module "corpus_files_bucket" {
-  source         = "../../modules/cloud-storage-bucket"
-  project_id     = var.project_id
-  region         = var.region
-  bucket_name    = "${var.project_id}-corpus-files"
-  writer_members = [module.sa_report.member]
-  versioning     = false
+  source                        = "../../modules/cloud-storage-bucket"
+  project_id                    = var.project_id
+  region                        = var.region
+  bucket_name                   = "${var.project_id}-corpus-files"
+  writer_members                = [module.sa_report.member]
+  versioning                    = false
+  soft_delete_retention_seconds = local.object_recovery_seconds
+
+  depends_on = [module.project_apis_backend]
+}
+
+# --- Storage: database exports (owner decision 2026-11-11) ---
+#
+# Dump files. No service account and no IAM binding: how TiDB Cloud
+# authenticates to Cloud Storage is unverified and is decided later.
+# Versioning stays off. Soft delete keeps a deleted or overwritten object
+# for 30 days: ADR 0019 said a deletion is final; this is a recovery window,
+# and the ADR is amended in a separate docs change. It applies only to
+# objects deleted after it takes effect. Live objects older than 90 days
+# are deleted. Labels are unset, as on every other bucket this module
+# creates. force_destroy stays the module default, false.
+module "db_exports_bucket" {
+  source                         = "../../modules/cloud-storage-bucket"
+  project_id                     = var.project_id
+  region                         = var.region
+  bucket_name                    = "${var.project_id}-db-exports"
+  versioning                     = false
+  soft_delete_retention_seconds  = local.object_recovery_seconds
+  delete_live_objects_after_days = 90
 
   depends_on = [module.project_apis_backend]
 }
@@ -850,11 +885,16 @@ resource "google_firestore_database" "sessions" {
   location_id = var.region
   type        = "FIRESTORE_NATIVE"
 
-  # Sessions are short-lived by design and hold no record of clinical value, so
-  # the documented `terraform destroy` path in the dev runbook stays usable.
-  # Staging and production should NOT copy this without a deliberate decision.
-  delete_protection_state = "DELETE_PROTECTION_DISABLED"
+  # Sessions hold no clinical record, so point-in-time recovery and backup
+  # schedules stay off (owner decision 2026-11-11). Delete protection is on,
+  # and prevent_destroy makes a plan that would destroy this database fail.
+  # deletion_policy stays DELETE: the protection is what blocks the destroy.
+  delete_protection_state = "DELETE_PROTECTION_ENABLED"
   deletion_policy         = "DELETE"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 
   depends_on = [module.project_apis_backend]
 }
