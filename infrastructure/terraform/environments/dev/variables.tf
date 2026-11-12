@@ -60,3 +60,27 @@ variable "ops_alert_email" {
   type        = string
   default     = "thesomnus.web@gmail.com"
 }
+
+variable "sessions_ttl_enabled" {
+  description = "Create the Firestore TTL on sessions.expiresAt. Not live, deletes data, pending review."
+  type        = bool
+  default     = false
+}
+
+variable "sign_in_link_throttle_ttl_enabled" {
+  description = "Create the Firestore TTL on sign_in_link_throttle.lastSentAt. Not live, deletes data, pending review."
+  type        = bool
+  default     = false
+}
+
+variable "cleanup_funnel_cases_enabled" {
+  description = "Create the cleanup-funnel-cases scheduler job. Not live, deletes data, pending review."
+  type        = bool
+  default     = false
+}
+
+variable "cleanup_notification_log_enabled" {
+  description = "Create the cleanup-notification-log scheduler job. Not live, deletes data, pending review."
+  type        = bool
+  default     = false
+}
