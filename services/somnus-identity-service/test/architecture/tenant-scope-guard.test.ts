@@ -103,6 +103,7 @@ const EXEMPTIONS = new Set([
   "passkey-credentials.repository.ts:deleteExpiredPending",
   "passkey-challenges.repository.ts:create",
   "passkey-challenges.repository.ts:consume",
+  "passkey-challenges.repository.ts:findBinding",
 ]);
 
 type ExtractedMethod = {

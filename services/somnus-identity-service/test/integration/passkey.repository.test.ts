@@ -1,12 +1,19 @@
 import { UUIDv7 } from "@somnus/api-contracts";
 import { count, eq, isNull } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   evaluateSignCount,
+  PasskeyActiveCredentialPresent,
   PasskeyChallengeInvalid,
+  PasskeyCredentialExpiryRequired,
   PasskeyCredentialIdConflict,
+  PasskeyCredentialScopeMismatch,
+  PasskeyHandleLockUnavailable,
   PasskeyUserNotFound,
 } from "../../src/domain/passkey/passkey.js";
+import { loadDbConfig } from "../../src/infrastructure/db/db.config.js";
 import { AccountDeletionRepository } from "../../src/infrastructure/db/repositories/account-deletion.repository.js";
 import {
   PASSKEY_CHALLENGE_CLEANUP_LIMIT,
@@ -18,6 +25,7 @@ import {
 } from "../../src/infrastructure/db/repositories/passkey-credentials.repository.js";
 import { PasskeyUserHandlesRepository } from "../../src/infrastructure/db/repositories/passkey-user-handles.repository.js";
 import { UsersRepository } from "../../src/infrastructure/db/repositories/users.repository.js";
+import * as schema from "../../src/infrastructure/db/schema/index.js";
 import {
   passkeyChallenges,
   passkeyCredentials,
@@ -32,6 +40,21 @@ function bytes(length: number, seed: number): Buffer {
   const buffer = Buffer.alloc(length);
   for (let i = 0; i < length; i++) buffer[i] = (seed + i) & 0xff;
   return buffer;
+}
+
+function credentialSelects(queries: string[]): string[] {
+  return queries.filter((query) => {
+    const text = query.toLowerCase();
+    return text.startsWith("select") && text.includes("passkey_credentials");
+  });
+}
+
+function endsWithForUpdate(query: string): boolean {
+  return query
+    .trim()
+    .replace(/;+\s*$/, "")
+    .toLowerCase()
+    .endsWith("for update");
 }
 
 /** 0xFF, 0xFE and 0x80 are not valid UTF-8 on their own. */
@@ -71,7 +94,7 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
     return users.create({ email });
   }
 
-  async function pendingCredential(userId: string, seed: number, pendingExpiresAt: Date | null) {
+  async function pendingCredential(userId: string, seed: number, pendingExpiresAt: Date) {
     const credentialId = bytes(32, seed);
     credentialId[0] = 0x00;
     credentialId[1] = 0xff;
@@ -241,6 +264,44 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
   });
 
   describe("credentials", () => {
+    it("refuses to create a credential with no pending expiry", async () => {
+      const owner = await user("no-expiry@example.com");
+      await expect(
+        credentials.create({
+          userId: owner,
+          credentialId: bytes(16, 1),
+          publicKey: bytes(8, 2),
+          coseAlgorithm: -7,
+          transports: null,
+          aaguid: null,
+          backupEligible: false,
+          backupState: false,
+          name: "Sin plazo",
+          pendingExpiresAt: null as unknown as Date,
+        }),
+      ).rejects.toBeInstanceOf(PasskeyCredentialExpiryRequired);
+    });
+
+    it("refuses to activate a pending credential that has no expiry", async () => {
+      const owner = await user("null-expiry@example.com");
+      const credentialId = bytes(16, 7);
+      await db.insert(passkeyCredentials).values({
+        id: UUIDv7(),
+        credentialId,
+        userId: owner,
+        publicKey: bytes(8, 1),
+        coseAlgorithm: -7,
+        signCount: 0,
+        transports: null,
+        aaguid: null,
+        backupEligible: false,
+        backupState: false,
+        name: "Sin plazo",
+        pendingExpiresAt: null,
+      });
+      expect(await credentials.activate({ userId: owner }, credentialId, new Date())).toBe(false);
+    });
+
     it("rejects a second insert of the same credential id", async () => {
       const first = await user("first@example.com");
       const second = await user("second@example.com");
@@ -287,7 +348,7 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
       expect(revoked?.revokedAt).not.toBeNull();
       expect(revoked?.activatedAt).toEqual(activated?.activatedAt);
 
-      const locked = await pendingCredential(owner, 41, null);
+      const locked = await pendingCredential(owner, 41, future());
       const lockedAt = now;
       expect(await credentials.activate({ userId: owner }, locked.credentialId, now)).toBe(true);
       expect(await credentials.lock({ userId: owner }, locked.credentialId, lockedAt)).toBe(true);
@@ -373,9 +434,21 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
       const owner = await user("use@example.com");
       const { credentialId } = await pendingCredential(owner, 70, future());
       const usedAt = future();
-      expect(await credentials.recordUse({ userId: owner }, credentialId, 2, usedAt)).toBe(false);
+      expect(await credentials.recordUse({ userId: owner }, credentialId, 0, 2, usedAt, null)).toBe(
+        false,
+      );
       expect(await credentials.activate({ userId: owner }, credentialId, past())).toBe(true);
-      expect(await credentials.recordUse({ userId: owner }, credentialId, 2, usedAt)).toBe(true);
+      const activated = await credentials.findByCredentialId(credentialId);
+      expect(
+        await credentials.recordUse(
+          { userId: owner },
+          credentialId,
+          0,
+          2,
+          usedAt,
+          activated?.lastUsedAt ?? null,
+        ),
+      ).toBe(true);
       const used = await credentials.findByCredentialId(credentialId);
       expect(used?.signCount).toBe(2);
       expect(used?.lastUsedAt).not.toBeNull();
@@ -388,7 +461,21 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
       const owner = await user("pending@example.com");
       for (let i = 0; i < 4; i++) await pendingCredential(owner, 80 + i, past());
       const futurePending = await pendingCredential(owner, 90, future());
-      const noDeadline = await pendingCredential(owner, 91, null);
+      const noDeadlineId = UUIDv7();
+      await db.insert(passkeyCredentials).values({
+        id: noDeadlineId,
+        credentialId: bytes(16, 91),
+        userId: owner,
+        publicKey: bytes(8, 1),
+        coseAlgorithm: -7,
+        signCount: 0,
+        transports: null,
+        aaguid: null,
+        backupEligible: false,
+        backupState: false,
+        name: "Sin plazo",
+        pendingExpiresAt: null,
+      });
       const active = await pendingCredential(owner, 92, future());
       expect(await credentials.activate({ userId: owner }, active.credentialId, new Date())).toBe(
         true,
@@ -412,7 +499,7 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
       );
       expect(expiredPending).toHaveLength(2);
       expect(left.map((row) => row.id)).toEqual(
-        expect.arrayContaining([futurePending.id, noDeadline.id, active.id, stillPendingActive.id]),
+        expect.arrayContaining([futurePending.id, noDeadlineId, active.id, stillPendingActive.id]),
       );
 
       const before = Number(
@@ -455,7 +542,7 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
     });
 
     it("refuses a credential for a user that does not exist", async () => {
-      await expect(pendingCredential(UUIDv7(), 110, null)).rejects.toBeInstanceOf(
+      await expect(pendingCredential(UUIDv7(), 110, future())).rejects.toBeInstanceOf(
         PasskeyUserNotFound,
       );
     });
@@ -510,7 +597,7 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
         backupEligible: false,
         backupState: false,
         name: "Bytes",
-        pendingExpiresAt: null,
+        pendingExpiresAt: future(),
       });
       const found = await credentials.findByCredentialId(credentialId);
       expect(found?.userId).toBe(owner);
@@ -542,9 +629,17 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
       const max = 4294967295;
       const { credentialId } = await pendingCredential(owner, 210, future());
       expect(await credentials.activate({ userId: owner }, credentialId, new Date())).toBe(true);
-      expect(await credentials.recordUse({ userId: owner }, credentialId, max, new Date())).toBe(
-        true,
-      );
+      const activated = await credentials.findByCredentialId(credentialId);
+      expect(
+        await credentials.recordUse(
+          { userId: owner },
+          credentialId,
+          0,
+          max,
+          new Date(),
+          activated?.lastUsedAt ?? null,
+        ),
+      ).toBe(true);
       expect((await credentials.findByCredentialId(credentialId))?.signCount).toBe(max);
       expect(evaluateSignCount(max - 1, max)).toBe("ok");
       expect(evaluateSignCount(max, max)).toBe("regression");
@@ -614,6 +709,249 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
       expect(keptBytes.some((value) => value.equals(nameless))).toBe(true);
       expect(keptBytes.some((value) => value.equals(ownChallenge))).toBe(false);
       expect(await credentials.findByCredentialId(ownCredential.credentialId)).toBeNull();
+    });
+
+    it("stores activatedAt, lastUsedAt and lockedAt as the truncated second", async () => {
+      const owner = await user("millis@example.com");
+      const { credentialId } = await pendingCredential(owner, 90, future());
+      const base = Math.floor(Date.now() / 1000) * 1000;
+      const withMillis = new Date(base + 900);
+      expect(await credentials.activate({ userId: owner }, credentialId, withMillis)).toBe(true);
+      const activated = await credentials.findByCredentialId(credentialId);
+      expect(activated?.activatedAt?.getTime()).toBe(base);
+      expect(activated?.lastUsedAt?.getTime()).toBe(base);
+      const later = new Date(base + 1000 + 900);
+      expect(
+        await credentials.recordUse(
+          { userId: owner },
+          credentialId,
+          0,
+          1,
+          later,
+          activated?.lastUsedAt ?? null,
+        ),
+      ).toBe(true);
+      const used = await credentials.findByCredentialId(credentialId);
+      expect(used?.lastUsedAt?.getTime()).toBe(base + 1000);
+      const lockedAt = new Date(base + 2000 + 900);
+      expect(await credentials.lock({ userId: owner }, credentialId, lockedAt)).toBe(true);
+      const locked = await credentials.findByCredentialId(credentialId);
+      expect(locked?.lockedAt?.getTime()).toBe(base + 2000);
+    });
+
+    it("refuses a sign count that does not increase and writes nothing", async () => {
+      const owner = await user("sign-guard@example.com");
+      const pending = await pendingCredential(owner, 97, future());
+      await db
+        .update(passkeyCredentials)
+        .set({ signCount: 5 })
+        .where(eq(passkeyCredentials.credentialId, pending.credentialId));
+      for (const received of [0, 5, 3]) {
+        const result = await credentials.completePendingSignIn(
+          { userId: owner },
+          pending.credentialId,
+          5,
+          received,
+          new Date(),
+        );
+        expect(result.activated).toBe(false);
+        expect(result.revokedCredentials).toEqual([]);
+      }
+      const stillPending = await credentials.findByCredentialId(pending.credentialId);
+      expect(stillPending?.activatedAt).toBeNull();
+      expect(stillPending?.signCount).toBe(5);
+
+      expect(await credentials.activate({ userId: owner }, pending.credentialId, past())).toBe(
+        true,
+      );
+      await db
+        .update(passkeyCredentials)
+        .set({ signCount: 5 })
+        .where(eq(passkeyCredentials.credentialId, pending.credentialId));
+      const active = await credentials.findByCredentialId(pending.credentialId);
+      for (const received of [0, 5, 3]) {
+        expect(
+          await credentials.recordUse(
+            { userId: owner },
+            pending.credentialId,
+            5,
+            received,
+            new Date(),
+            active?.lastUsedAt ?? null,
+          ),
+        ).toBe(false);
+      }
+      const after = await credentials.findByCredentialId(pending.credentialId);
+      expect(after?.signCount).toBe(5);
+      expect(after?.lastUsedAt?.getTime()).toBe(active?.lastUsedAt?.getTime());
+    });
+
+    it("fails closed when the first sign-in has no handle row to lock", async () => {
+      const owner = await user("no-handle-activate@example.com");
+      const pending = await pendingCredential(owner, 98, future());
+      await expect(
+        credentials.completePendingSignIn(
+          { userId: owner },
+          pending.credentialId,
+          0,
+          1,
+          new Date(),
+        ),
+      ).rejects.toBeInstanceOf(PasskeyHandleLockUnavailable);
+      const row = await credentials.findByCredentialId(pending.credentialId);
+      expect(row?.activatedAt).toBeNull();
+      expect(row?.revokedAt).toBeNull();
+      expect(row?.signCount).toBe(0);
+    });
+
+    it("refuses a first-mode insert when an active credential is already stored", async () => {
+      const owner = await user("active-blocks-first@example.com");
+      await db.insert(passkeyUserHandles).values({
+        id: UUIDv7(),
+        userId: owner,
+        handle: bytes(32, 94),
+      });
+      const existing = await pendingCredential(owner, 95, future());
+      expect(await credentials.activate({ userId: owner }, existing.credentialId, new Date())).toBe(
+        true,
+      );
+      await expect(
+        credentials.createUnderPendingCap(
+          { userId: owner },
+          {
+            userId: owner,
+            credentialId: bytes(32, 96),
+            publicKey: bytes(64, 97),
+            coseAlgorithm: -7,
+            transports: null,
+            aaguid: null,
+            backupEligible: false,
+            backupState: false,
+            name: "",
+            pendingExpiresAt: future(),
+          },
+          3,
+          new Date(),
+          true,
+        ),
+      ).rejects.toBeInstanceOf(PasskeyActiveCredentialPresent);
+      expect(await credentials.listByUser({ userId: owner })).toHaveLength(1);
+    });
+
+    it("refuses a pending-cap insert when the user has no handle row to lock", async () => {
+      const owner = await user("no-handle-lock@example.com");
+      await expect(
+        credentials.createUnderPendingCap(
+          { userId: owner },
+          {
+            userId: owner,
+            credentialId: bytes(32, 91),
+            publicKey: bytes(64, 92),
+            coseAlgorithm: -7,
+            transports: null,
+            aaguid: bytes(16, 93),
+            backupEligible: false,
+            backupState: false,
+            name: "",
+            pendingExpiresAt: future(),
+          },
+          3,
+          new Date(),
+          false,
+        ),
+      ).rejects.toBeInstanceOf(PasskeyHandleLockUnavailable);
+    });
+
+    it("refuses a pending-cap insert whose scope is a different user", async () => {
+      const owner = await user("scope-owner@example.com");
+      const other = await user("scope-other@example.com");
+      await handles.getOrCreateForUser({ userId: owner });
+      await expect(
+        credentials.createUnderPendingCap(
+          { userId: other },
+          {
+            userId: owner,
+            credentialId: bytes(32, 94),
+            publicKey: bytes(64, 95),
+            coseAlgorithm: -7,
+            transports: null,
+            aaguid: bytes(16, 96),
+            backupEligible: false,
+            backupState: false,
+            name: "",
+            pendingExpiresAt: future(),
+          },
+          3,
+          new Date(),
+          false,
+        ),
+      ).rejects.toBeInstanceOf(PasskeyCredentialScopeMismatch);
+    });
+
+    it("reads active, pending and other-pending credentials with FOR UPDATE", async () => {
+      const queries: string[] = [];
+      const config = loadDbConfig(process.env);
+      const pool = mysql.createPool({
+        uri: config.DATABASE_URL,
+        connectionLimit: 2,
+        ...(config.DB_SSL ? { ssl: { minVersion: "TLSv1.2" as const } } : {}),
+      });
+      try {
+        const logged = drizzle(pool, {
+          schema,
+          mode: "default",
+          logger: {
+            logQuery(query: string) {
+              queries.push(query);
+            },
+          },
+        });
+        const loggedCredentials = new PasskeyCredentialsRepository(logged);
+        const owner = await user("locked-read@example.com");
+        const credentialId = bytes(32, 97);
+        await db.insert(passkeyUserHandles).values({
+          id: UUIDv7(),
+          userId: owner,
+          handle: bytes(32, 98),
+        });
+        queries.splice(0, queries.length);
+        await loggedCredentials.createUnderPendingCap(
+          { userId: owner },
+          {
+            userId: owner,
+            credentialId,
+            publicKey: bytes(64, 99),
+            coseAlgorithm: -7,
+            transports: null,
+            aaguid: null,
+            backupEligible: false,
+            backupState: false,
+            name: "",
+            pendingExpiresAt: future(),
+          },
+          3,
+          new Date(),
+          true,
+        );
+        const registered = credentialSelects(queries);
+        expect(registered.length).toBeGreaterThanOrEqual(2);
+        expect(registered.every(endsWithForUpdate)).toBe(true);
+
+        queries.splice(0, queries.length);
+        const completed = await loggedCredentials.completePendingSignIn(
+          { userId: owner },
+          credentialId,
+          0,
+          1,
+          new Date(),
+        );
+        expect(completed.activated).toBe(true);
+        const activated = credentialSelects(queries);
+        expect(activated.length).toBeGreaterThanOrEqual(2);
+        expect(activated.every(endsWithForUpdate)).toBe(true);
+      } finally {
+        await pool.end();
+      }
     });
   });
 });

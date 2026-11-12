@@ -123,6 +123,16 @@ export class UsersRepository {
     return id;
   }
 
+  /** The Firebase uid linked to this user, or null when identity has not linked one. */
+  async findFirebaseUid(userId: UUIDv7): Promise<string | null> {
+    const rows = await this.db
+      .select({ providerUserId: userIdentities.providerUserId })
+      .from(userIdentities)
+      .where(and(eq(userIdentities.userId, userId), eq(userIdentities.provider, "firebase")))
+      .limit(1);
+    return rows[0]?.providerUserId ?? null;
+  }
+
   async findByProviderUserId(providerUserId: string) {
     const rows = await this.db
       .select()

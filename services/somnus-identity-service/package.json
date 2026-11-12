@@ -27,6 +27,7 @@
     "@nestjs/core": "11.1.28",
     "@nestjs/platform-fastify": "11.1.28",
     "@nestjs/swagger": "11.4.6",
+    "@simplewebauthn/server": "14.1.0",
     "@somnus/api-contracts": "workspace:*",
     "@somnus/config": "workspace:*",
     "@somnus/errors": "workspace:*",

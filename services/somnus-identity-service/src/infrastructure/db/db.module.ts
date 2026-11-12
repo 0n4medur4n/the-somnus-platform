@@ -16,6 +16,9 @@ import {
   StaffInvitationsRepository,
   UsersRepository,
 } from "./repositories/index.js";
+import { PasskeyChallengesRepository } from "./repositories/passkey-challenges.repository.js";
+import { PasskeyCredentialsRepository } from "./repositories/passkey-credentials.repository.js";
+import { PasskeyUserHandlesRepository } from "./repositories/passkey-user-handles.repository.js";
 
 export const DB = Symbol("DB");
 
@@ -42,6 +45,21 @@ export const DB = Symbol("DB");
       },
     },
     { provide: UsersRepository, useFactory: (db: Db) => new UsersRepository(db), inject: [DB] },
+    {
+      provide: PasskeyCredentialsRepository,
+      useFactory: (db: Db) => new PasskeyCredentialsRepository(db),
+      inject: [DB],
+    },
+    {
+      provide: PasskeyChallengesRepository,
+      useFactory: (db: Db) => new PasskeyChallengesRepository(db),
+      inject: [DB],
+    },
+    {
+      provide: PasskeyUserHandlesRepository,
+      useFactory: (db: Db) => new PasskeyUserHandlesRepository(db),
+      inject: [DB],
+    },
     {
       provide: AccountDeletionRepository,
       useFactory: (db: Db) => new AccountDeletionRepository(db),
@@ -93,6 +111,9 @@ export const DB = Symbol("DB");
   exports: [
     DB,
     UsersRepository,
+    PasskeyCredentialsRepository,
+    PasskeyChallengesRepository,
+    PasskeyUserHandlesRepository,
     AccountDeletionRepository,
     IndividualProfilesRepository,
     ProfessionalProfilesRepository,
