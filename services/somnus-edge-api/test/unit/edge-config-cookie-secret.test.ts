@@ -5,6 +5,7 @@ import {
   DEVELOPMENT_COOKIE_SECRET,
   EdgeConfigSchema,
   loadEdgeConfig,
+  PRODUCTION_CONSOLE_ORIGIN,
 } from "../../src/config/edge-config.js";
 
 /**
@@ -205,5 +206,41 @@ describe("loadEdgeConfig at startup", () => {
 
   it("starts with a strong secret", () => {
     expect(start(deployed()).outcome).toBe("started");
+  });
+
+  it("starts when CONSOLE_ORIGIN is missing and uses the production origin", () => {
+    expect(start(deployed()).outcome).toBe("started");
+    expect(EdgeConfigSchema.parse(deployed()).CONSOLE_ORIGIN).toBe(PRODUCTION_CONSOLE_ORIGIN);
+    expect(PRODUCTION_CONSOLE_ORIGIN).toBe("https://console.thesomnus.com");
+  });
+});
+
+describe("console origin", () => {
+  it("uses the production origin in development and test when the variable is missing", () => {
+    expect(EdgeConfigSchema.parse({ NODE_ENV: "development" }).CONSOLE_ORIGIN).toBe(
+      PRODUCTION_CONSOLE_ORIGIN,
+    );
+    expect(EdgeConfigSchema.parse({ NODE_ENV: "test" }).CONSOLE_ORIGIN).toBe(
+      PRODUCTION_CONSOLE_ORIGIN,
+    );
+  });
+
+  it("keeps a configured origin exactly, including a local one", () => {
+    const local = "http://localhost:5174";
+    expect(EdgeConfigSchema.parse({ NODE_ENV: "test", CONSOLE_ORIGIN: local }).CONSOLE_ORIGIN).toBe(
+      local,
+    );
+    expect(
+      EdgeConfigSchema.parse({
+        NODE_ENV: "development",
+        CONSOLE_ORIGIN: " https://Console.thesomnus.com ",
+      }).CONSOLE_ORIGIN,
+    ).toBe(" https://Console.thesomnus.com ");
+  });
+
+  it("refuses an empty CONSOLE_ORIGIN", () => {
+    expect(problems({ NODE_ENV: "test", CONSOLE_ORIGIN: "" }).join("\n")).toContain(
+      "CONSOLE_ORIGIN",
+    );
   });
 });

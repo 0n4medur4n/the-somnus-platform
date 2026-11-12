@@ -1,11 +1,12 @@
-import { Body, Controller, Delete, Get, HttpCode, Post, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { CsrfTokenResponse, SessionResponse } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
-import type { FastifyReply } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { csrfTokenFor } from "../../bootstrap/csrf-token.js";
 import { type EdgeConfig, loadEdgeConfig } from "../../config/edge-config.js";
 import { FirebaseService } from "../../infrastructure/firebase/firebase.service.js";
+import { classifySessionClient, EMAIL_LINK_AMR, presentedOrigin } from "./classify-session.js";
 import { CurrentSession } from "./current-session.decorator.js";
 import { SessionCreateDto } from "./session.dto.js";
 import { SessionGuard } from "./session.guard.js";
@@ -42,6 +43,7 @@ export class SessionsController {
   @ApiOperation({ summary: "Exchange a Firebase ID token for a session cookie." })
   async create(
     @Body() body: SessionCreateDto,
+    @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<SessionResponse> {
     let firebaseUid: string;
@@ -60,11 +62,22 @@ export class SessionsController {
       });
     }
 
+    // The only place a session is created. Origin is classified here, where
+    // the request is, and stored once. Referer is not consulted.
+    const now = new Date();
     const session = await this.sessions.create({
       firebaseUid,
       email,
       emailVerified,
       ttlSeconds: this.config.SESSION_TTL_SECONDS,
+      now,
+      client: classifySessionClient(
+        presentedOrigin(request.headers.origin),
+        this.config.CONSOLE_ORIGIN,
+      ),
+      amr: [EMAIL_LINK_AMR],
+      authTime: now,
+      stepUpAt: null,
     });
 
     reply.setCookie(
