@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { UUIDv7 } from "@somnus/api-contracts";
 import { Timestamp } from "firebase-admin/firestore";
 import { FirebaseService } from "../../infrastructure/firebase/firebase.service.js";
+import { type SessionClient } from "./classify-session.js";
 
 /** Firestore collection holding server-side sessions (build plan §9: short-lived session lookup). */
 const SESSIONS_COLLECTION = "sessions";
@@ -19,6 +20,18 @@ export type SessionRecord = {
   // brand-new session has only the Firebase identity; edge-api asks
   // identity for the Somnus id once and caches it here.
   somnusUserId: string | null;
+  /**
+   * Recorded when the session is created. Absent on documents written
+   * before that. A reader does not invent them and does not write them
+   * back: a missing `client` is not an app session and not a console one.
+   */
+  client?: SessionClient;
+  /** How the person signed in. `email_link` for the current sign-in route. */
+  amr?: readonly string[];
+  /** When that sign-in was verified. Not moved by a later read or by step-up. */
+  authTime?: Date;
+  /** Null until a step-up is recorded. Absent on older documents. */
+  stepUpAt?: Date | null;
 };
 
 type SessionDoc = {
@@ -29,6 +42,10 @@ type SessionDoc = {
   expiresAt: Timestamp;
   revokedAt: Timestamp | null;
   somnusUserId?: string | null;
+  client?: SessionClient;
+  amr?: string[];
+  authTime?: Timestamp;
+  stepUpAt?: Timestamp | null;
 };
 
 /**
@@ -64,10 +81,15 @@ export class SessionService {
     emailVerified?: boolean;
     ttlSeconds: number;
     now?: Date;
+    client: SessionClient;
+    amr: readonly string[];
+    authTime: Date;
+    stepUpAt: Date | null;
   }): Promise<SessionRecord> {
     const now = input.now ?? new Date();
     const expiresAt = new Date(now.getTime() + input.ttlSeconds * 1000);
     const sessionId = UUIDv7();
+    const amr = [...input.amr];
     const doc: SessionDoc = {
       firebaseUid: input.firebaseUid,
       email: input.email,
@@ -76,6 +98,10 @@ export class SessionService {
       expiresAt: Timestamp.fromDate(expiresAt),
       revokedAt: null,
       somnusUserId: null,
+      client: input.client,
+      amr,
+      authTime: Timestamp.fromDate(input.authTime),
+      stepUpAt: input.stepUpAt === null ? null : Timestamp.fromDate(input.stepUpAt),
     };
     await this.collection.doc(sessionId).set(doc);
     return {
@@ -87,13 +113,19 @@ export class SessionService {
       expiresAt,
       revokedAt: null,
       somnusUserId: null,
+      client: input.client,
+      amr,
+      authTime: input.authTime,
+      stepUpAt: input.stepUpAt,
     };
   }
 
   /**
    * Memoize the resolved internal Somnus user id on the session
    * (build plan §20 Checkpoint 8.2). Idempotent: writing the same id
-   * again is harmless. A no-op if the session no longer exists.
+   * again is harmless. A no-op if the session no longer exists. The
+   * update names only `somnusUserId`, so client, amr, authTime and
+   * stepUpAt stay as they were written at creation.
    */
   async setSomnusUserId(sessionId: string, somnusUserId: string): Promise<void> {
     const ref = this.collection.doc(sessionId);
@@ -110,10 +142,19 @@ export class SessionService {
   async validate(sessionId: string, now: Date = new Date()): Promise<SessionRecord | null> {
     const snapshot = await this.collection.doc(sessionId).get();
     if (!snapshot.exists) return null;
-    const data = snapshot.data() as SessionDoc;
+    const raw = snapshot.data();
+    if (raw === undefined) return null;
+    const data = raw as SessionDoc;
     if (data.revokedAt !== null) return null;
     const expiresAt = data.expiresAt.toDate();
     if (expiresAt.getTime() <= now.getTime()) return null;
+    // Older documents have none of these. A value that is not the shape
+    // written at creation is ignored, not rejected: the session keeps
+    // working, and this read does not write the document back.
+    const client = recordedClient(raw["client"]);
+    const amr = recordedAmr(raw["amr"]);
+    const authTime = recordedTime(raw["authTime"]);
+    const stepUpAt = recordedStepUp(raw["stepUpAt"]);
     return {
       sessionId,
       firebaseUid: data.firebaseUid,
@@ -123,6 +164,10 @@ export class SessionService {
       expiresAt,
       revokedAt: null,
       somnusUserId: data.somnusUserId ?? null,
+      ...(client === undefined ? {} : { client }),
+      ...(amr === undefined ? {} : { amr }),
+      ...(authTime === undefined ? {} : { authTime }),
+      ...(stepUpAt === undefined ? {} : { stepUpAt }),
     };
   }
 
@@ -162,4 +207,32 @@ export class SessionService {
     if (data.revokedAt !== null) return;
     await ref.update({ revokedAt: Timestamp.fromDate(now) });
   }
+}
+
+function recordedClient(value: unknown): SessionClient | undefined {
+  if (value === "console" || value === "app") return value;
+  return undefined;
+}
+
+function recordedAmr(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const amr: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== "string") return undefined;
+    amr.push(entry);
+  }
+  return amr;
+}
+
+function recordedTime(value: unknown): Date | undefined {
+  if (value instanceof Timestamp) return value.toDate();
+  return undefined;
+}
+
+/** Null is a recorded "no step-up". Absent stays absent. Anything else is ignored. */
+function recordedStepUp(value: unknown): Date | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (value instanceof Timestamp) return value.toDate();
+  return undefined;
 }

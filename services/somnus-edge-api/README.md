@@ -68,7 +68,11 @@ there is no metadata server), and `INTERNAL_TIMEOUT_MS`.
 
 1. The SPA authenticates with Firebase (Auth emulator locally) and gets an ID token.
 2. `POST /v1/sessions` with `{ idToken }`. The edge API **verifies** the
-   token (`firebase-admin`), then creates a server-side session.
+   token (`firebase-admin`), then creates a server-side session. The
+   session records `client` (`console` only when the request `Origin` is
+   exactly `CONSOLE_ORIGIN`, otherwise `app`), `amr` (`email_link`),
+   `authTime` (that verification) and `stepUpAt` (`null`). None of this
+   is returned, and none of it changes the cookie.
 3. The response sets an **HttpOnly, Secure, SameSite** cookie carrying
    only an opaque, signed session id — never the token, never any
    identity data. The ID token is discarded after verification.
@@ -95,7 +99,9 @@ stack**, Firebase-native revocation is unusable.
 
 So sessions live in a **server-side store**: the cookie carries an
 opaque session id; a Firestore document (`sessions/<id>`) holds
-`{ firebaseUid, email, createdAt, expiresAt, revokedAt }`. `revoke()`
+`{ firebaseUid, email, createdAt, expiresAt, revokedAt }`, and, on sessions
+created now, `client`, `amr`, `authTime` and `stepUpAt`. A document from
+before those fields is read as it is. `revoke()`
 writes `revokedAt` and the very next `validate()` fails — revocation is
 immediate and absolute, with no dependency on Firebase (exactly ADR
 0006's "revoking a user means revoking the session"). Edge-api has no
@@ -155,6 +161,7 @@ startup:
 | `COOKIE_SECURE` | `false` | `true` in every deployed env; deployed, `false` is refused at startup. |
 | `COOKIE_SAMESITE` | `lax` | `lax` or `strict`; deployed, `none` is refused. |
 | `COOKIE_DOMAIN` | (unset) | Deployed, setting it is refused: the cookie is host-only. |
+| `CONSOLE_ORIGIN` | `https://console.thesomnus.com` | Exact `Origin` that records a session as `console`. Unset keeps this production value, including in development and test; those may set a local origin. Not parsed as a URL. |
 | `CORS_ORIGINS` | localhost dev origins | Comma-separated Hosting origins. |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | `100` / `60000` | Global, keyed by client IP; `/health/live` counts too. Nothing in terraform, the deploy workflows or compose overrides these, so the defaults **are** the deployed limit. The Playwright stack raises `RATE_LIMIT_MAX` for itself (`scripts/e2e-stack.mjs`) because the whole suite shares one IP; `tests/e2e-rate-limit.test.ts` fails if that harness value ever stops diverging from this default. |
 | `BODY_LIMIT_BYTES` | `65536` | |
