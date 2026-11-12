@@ -26,22 +26,78 @@ const ORIGIN = "https://console.thesomnus.com";
 const RP_ID = "console.thesomnus.com";
 
 describe("CBOR reader", () => {
-  it("rejects a repeated map key and a nest deeper than 8 without throwing", () => {
-    const duplicate = Buffer.from([0xa2, 0x03, 0x26, 0x03, 0x26]);
-    expect(() => coseAlgorithm(duplicate)).not.toThrow();
-    expect(coseAlgorithm(duplicate)).toBeNull();
+  function header(major: number, value: number): Buffer {
+    if (value < 24) return Buffer.from([(major << 5) | value]);
+    if (value < 256) return Buffer.from([(major << 5) | 24, value]);
+    const encoded = Buffer.alloc(3);
+    encoded[0] = (major << 5) | 25;
+    encoded.writeUInt16BE(value, 1);
+    return encoded;
+  }
+  function text(value: string): Buffer {
+    const bytes = Buffer.from(value, "utf8");
+    return Buffer.concat([header(3, bytes.length), bytes]);
+  }
+  function map(entries: Array<[Buffer, Buffer]>): Buffer {
+    return Buffer.concat([header(5, entries.length), ...entries.flat()]);
+  }
 
+  it("rejects a repeated integer key, a repeated text key, and keys that are not integers or text", () => {
+    const negativeSeven = header(1, 6);
+    expect(
+      coseAlgorithm(
+        map([
+          [header(0, 3), negativeSeven],
+          [header(0, 3), negativeSeven],
+        ]),
+      ),
+    ).toBeNull();
+    expect(
+      coseAlgorithm(
+        map([
+          [text("alg"), header(0, 1)],
+          [text("alg"), header(0, 2)],
+        ]),
+      ),
+    ).toBeNull();
+    expect(coseAlgorithm(Buffer.from([0xa1, 0x41, 0x00, 0x01]))).toBeNull();
+    expect(coseAlgorithm(Buffer.from([0xa1, 0x81, 0x00, 0x01]))).toBeNull();
+    expect(coseAlgorithm(Buffer.from([0xa1, 0xa0, 0x01]))).toBeNull();
+    expect(coseAlgorithm(Buffer.from([0xa1, 0xf4, 0x01]))).toBeNull();
+    expect(coseAlgorithm(Buffer.from([0xa1, 0xf6, 0x01]))).toBeNull();
+    expect(coseAlgorithm(Buffer.from([0xa1, 0x18]))).toBeNull();
+  });
+
+  it("allows integer 3 beside the text 3, and reads a map of 200 keys", () => {
+    expect(
+      coseAlgorithm(
+        map([
+          [header(0, 3), header(1, 6)],
+          [text("3"), header(0, 1)],
+        ]),
+      ),
+    ).toBe(-7);
+    const entries: Array<[Buffer, Buffer]> = [];
+    for (let key = 0; key < 200; key++) {
+      entries.push([header(0, key), key === 3 ? header(1, 6) : header(0, 0)]);
+    }
+    const started = performance.now();
+    expect(coseAlgorithm(map(entries))).toBe(-7);
+    expect(performance.now() - started).toBeLessThan(50);
+  });
+
+  it("rejects a nest deeper than 8 without throwing", () => {
     const nested = (count: number) => {
       let current = Buffer.from([0x00]);
-      for (let index = 0; index < count; index++) {
-        current = Buffer.concat([Buffer.from([0x81]), current]);
-      }
-      return Buffer.concat([Buffer.from([0xa2, 0x03, 0x26, 0x00]), current]);
+      for (let index = 0; index < count; index++) current = Buffer.concat([header(4, 1), current]);
+      return map([
+        [header(0, 3), header(1, 6)],
+        [header(0, 0), current],
+      ]);
     };
     expect(coseAlgorithm(nested(7))).toBe(-7);
     expect(coseAlgorithm(nested(8))).toBeNull();
-
-    expect(() => coseAlgorithm(Buffer.from([0xff, 0x1a]))).not.toThrow();
+    expect(() => coseAlgorithm(Buffer.from([0xff]))).not.toThrow();
     expect(coseAlgorithm(Buffer.from([0xff]))).toBeNull();
     expect(extractAttestedAuthenticatorData(Buffer.alloc(0))).toBeNull();
     expect(attestedCredentialAlgorithm(Buffer.alloc(4))).toBeNull();
@@ -49,10 +105,17 @@ describe("CBOR reader", () => {
     expect(() =>
       inspectClientData(Buffer.from("{"), { type: "webauthn.get", origin: ORIGIN }),
     ).not.toThrow();
-    expect(inspectClientData(Buffer.from("{"), { type: "webauthn.get", origin: ORIGIN }).ok).toBe(
-      false,
-    );
-    expect(authenticatorDataProblem(Buffer.alloc(2), RP_ID).ok).toBe(false);
+    const attested = (tail: Buffer) => {
+      const data = Buffer.alloc(56 + tail.length);
+      data[32] = 0x45;
+      data.writeUInt16BE(1, 53);
+      data[55] = 0x01;
+      tail.copy(data, 56);
+      return data;
+    };
+    expect(attestedCredentialAlgorithm(attested(Buffer.from([0x18])))).toBeNull();
+    expect(attestedCredentialAlgorithm(attested(Buffer.from([0x00])))).toBeNull();
+    expect(attestedCredentialAlgorithm(attested(Buffer.from([0xa1, 0x03, 0x61, 0x78])))).toBeNull();
   });
 });
 
@@ -286,6 +349,12 @@ describe("inspectClientData", () => {
         expected,
       ).ok,
     ).toBe(false);
+    expect(
+      inspectClientData(
+        encoded({ type: "webauthn.get", challenge: "A", origin: ORIGIN }),
+        expected,
+      ),
+    ).toEqual({ ok: false, code: "client_data", challenge: null });
     const originType = inspectClientData(
       encoded({ type: "webauthn.get", challenge, origin: 1 }),
       expected,

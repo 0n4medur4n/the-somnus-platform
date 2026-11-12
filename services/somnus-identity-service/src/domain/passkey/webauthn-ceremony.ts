@@ -92,17 +92,6 @@ export function inspectClientData(
   clientDataJSON: Buffer,
   expected: { type: "webauthn.create" | "webauthn.get"; origin: string },
 ): ParsedClientData {
-  try {
-    return inspectClientDataUnchecked(clientDataJSON, expected);
-  } catch {
-    return { ok: false, code: "client_data", challenge: null };
-  }
-}
-
-function inspectClientDataUnchecked(
-  clientDataJSON: Buffer,
-  expected: { type: "webauthn.create" | "webauthn.get"; origin: string },
-): ParsedClientData {
   let parsed: unknown;
   try {
     parsed = JSON.parse(clientDataJSON.toString("utf8"));
@@ -139,32 +128,24 @@ function inspectClientDataUnchecked(
  * library hashes the same single string afterwards (`matchExpectedRPID`).
  */
 export function rpIdHashMatches(rpIdHash: Buffer, rpId: string): boolean {
-  try {
-    const expected = createHash("sha256").update(rpId, "utf8").digest();
-    if (rpIdHash.length !== expected.length) return false;
-    return timingSafeEqual(rpIdHash, expected);
-  } catch {
-    return false;
-  }
+  const expected = createHash("sha256").update(rpId, "utf8").digest();
+  if (rpIdHash.length !== expected.length) return false;
+  return timingSafeEqual(rpIdHash, expected);
 }
 
 export function readAuthenticatorData(authData: Buffer): AuthenticatorDataView | null {
-  try {
-    if (authData.length < 37) return null;
-    const flags = authData[32];
-    if (flags === undefined) return null;
-    return {
-      rpIdHash: Buffer.from(authData.subarray(0, 32)),
-      up: (flags & 0x01) !== 0,
-      uv: (flags & 0x04) !== 0,
-      be: (flags & 0x08) !== 0,
-      bs: (flags & 0x10) !== 0,
-      at: (flags & 0x40) !== 0,
-      signCount: authData.readUInt32BE(33),
-    };
-  } catch {
-    return null;
-  }
+  if (authData.length < 37) return null;
+  const flags = authData[32];
+  if (flags === undefined) return null;
+  return {
+    rpIdHash: Buffer.from(authData.subarray(0, 32)),
+    up: (flags & 0x01) !== 0,
+    uv: (flags & 0x04) !== 0,
+    be: (flags & 0x08) !== 0,
+    bs: (flags & 0x10) !== 0,
+    at: (flags & 0x40) !== 0,
+    signCount: authData.readUInt32BE(33),
+  };
 }
 
 export function authenticatorDataProblem(
@@ -181,41 +162,29 @@ export function authenticatorDataProblem(
 
 /** Credential id from attested credential data, when the AT flag is set. */
 export function attestedCredentialId(authData: Buffer): Buffer | null {
-  try {
-    const view = readAuthenticatorData(authData);
-    if (!view?.at || authData.length < 55) return null;
-    const credentialLength = authData.readUInt16BE(53);
-    const start = 55;
-    if (credentialLength < 1 || start + credentialLength > authData.length) return null;
-    return Buffer.from(authData.subarray(start, start + credentialLength));
-  } catch {
-    return null;
-  }
+  const view = readAuthenticatorData(authData);
+  if (!view?.at || authData.length < 55) return null;
+  const credentialLength = authData.readUInt16BE(53);
+  const start = 55;
+  if (credentialLength < 1 || start + credentialLength > authData.length) return null;
+  return Buffer.from(authData.subarray(start, start + credentialLength));
 }
 
 /** COSE alg of the credential public key inside attested authenticator data. */
 export function attestedCredentialAlgorithm(authData: Buffer): number | null {
-  try {
-    const credentialId = attestedCredentialId(authData);
-    if (!credentialId) return null;
-    const decoded = readCbor(authData, 55 + credentialId.length);
-    if (!decoded || !(decoded.value instanceof Map)) return null;
-    const algorithm = decoded.value.get(3);
-    if (typeof algorithm !== "number" || !Number.isInteger(algorithm)) return null;
-    return algorithm;
-  } catch {
-    return null;
-  }
+  const credentialId = attestedCredentialId(authData);
+  if (!credentialId) return null;
+  const decoded = readCbor(authData, 55 + credentialId.length);
+  if (!decoded || !(decoded.value instanceof Map)) return null;
+  const algorithm = decoded.value.get(3);
+  if (typeof algorithm !== "number" || !Number.isInteger(algorithm)) return null;
+  return algorithm;
 }
 
 export function attestedAaguid(authData: Buffer): Buffer | null {
-  try {
-    const view = readAuthenticatorData(authData);
-    if (!view?.at || authData.length < 53) return null;
-    return Buffer.from(authData.subarray(37, 53));
-  } catch {
-    return null;
-  }
+  const view = readAuthenticatorData(authData);
+  if (!view?.at || authData.length < 53) return null;
+  return Buffer.from(authData.subarray(37, 53));
 }
 
 /**
@@ -224,28 +193,20 @@ export function attestedAaguid(authData: Buffer): Buffer | null {
  * ignores `crossOrigin`.
  */
 export function extractAttestedAuthenticatorData(attestationObject: Buffer): Buffer | null {
-  try {
-    const decoded = readCbor(attestationObject, 0);
-    if (!decoded || !(decoded.value instanceof Map)) return null;
-    const authData = decoded.value.get("authData");
-    if (!Buffer.isBuffer(authData) || authData.length < 37) return null;
-    return authData;
-  } catch {
-    return null;
-  }
+  const decoded = readCbor(attestationObject, 0);
+  if (!decoded || !(decoded.value instanceof Map)) return null;
+  const authData = decoded.value.get("authData");
+  if (!Buffer.isBuffer(authData) || authData.length < 37) return null;
+  return authData;
 }
 
 /** COSE key parameter 3, the algorithm. Null when the key is not a map. */
 export function coseAlgorithm(publicKey: Buffer): number | null {
-  try {
-    const decoded = readCbor(publicKey, 0);
-    if (!decoded || !(decoded.value instanceof Map)) return null;
-    const algorithm = decoded.value.get(3);
-    if (typeof algorithm !== "number" || !Number.isInteger(algorithm)) return null;
-    return algorithm;
-  } catch {
-    return null;
-  }
+  const decoded = readCbor(publicKey, 0);
+  if (!decoded || !(decoded.value instanceof Map)) return null;
+  const algorithm = decoded.value.get(3);
+  if (typeof algorithm !== "number" || !Number.isInteger(algorithm)) return null;
+  return algorithm;
 }
 
 export function classifyUnconsumedChallenge(
@@ -264,23 +225,15 @@ export function classifyUnconsumedChallenge(
 }
 
 export function sameBytes(left: Buffer, right: Buffer): boolean {
-  try {
-    if (left.length !== right.length) return false;
-    return timingSafeEqual(left, right);
-  } catch {
-    return false;
-  }
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
 }
 
 function decodeBase64Url(value: string): Buffer | null {
-  try {
-    if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
-    const bytes = Buffer.from(value, "base64url");
-    if (bytes.length === 0) return null;
-    return bytes;
-  } catch {
-    return null;
-  }
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
+  const bytes = Buffer.from(value, "base64url");
+  if (bytes.length === 0) return null;
+  return bytes;
 }
 
 type CborValue =
@@ -300,85 +253,66 @@ function readCbor(
   offset: number,
   depth = 0,
 ): { value: CborValue; offset: number } | null {
-  try {
-    if (offset >= buf.length) return null;
-    const initial = buf[offset];
-    if (initial === undefined) return null;
-    const major = initial >> 5;
-    const additional = initial & 0x1f;
-    const argument = readArgument(buf, offset + 1, additional);
-    if (!argument) return null;
+  if (offset < 0 || offset >= buf.length) return null;
+  const initial = buf[offset];
+  if (initial === undefined) return null;
+  const major = initial >> 5;
+  const additional = initial & 0x1f;
+  const argument = readArgument(buf, offset + 1, additional);
+  if (!argument) return null;
 
-    if (major === 0) return { value: argument.value, offset: argument.offset };
-    if (major === 1) return { value: -1 - argument.value, offset: argument.offset };
-    if (major === 2 || major === 3) {
-      if (argument.offset + argument.value > buf.length) return null;
-      const slice = Buffer.from(buf.subarray(argument.offset, argument.offset + argument.value));
-      return {
-        value: major === 2 ? slice : slice.toString("utf8"),
-        offset: argument.offset + argument.value,
-      };
-    }
-    if ((major === 4 || major === 5) && depth >= CBOR_MAX_DEPTH) return null;
-    if (major === 4) {
-      const items: CborValue[] = [];
-      let cursor = argument.offset;
-      for (let index = 0; index < argument.value; index++) {
-        const item = readCbor(buf, cursor, depth + 1);
-        if (!item) return null;
-        items.push(item.value);
-        cursor = item.offset;
-      }
-      return { value: items, offset: cursor };
-    }
-    if (major === 5) {
-      const map = new Map<CborValue, CborValue>();
-      let cursor = argument.offset;
-      for (let index = 0; index < argument.value; index++) {
-        const key = readCbor(buf, cursor, depth + 1);
-        if (!key) return null;
-        for (const existing of map.keys()) {
-          if (cborEqual(existing, key.value)) return null;
-        }
-        const item = readCbor(buf, key.offset, depth + 1);
-        if (!item) return null;
-        map.set(key.value, item.value);
-        cursor = item.offset;
-      }
-      return { value: map, offset: cursor };
-    }
-    if (major === 7 && additional === 20) return { value: false, offset: offset + 1 };
-    if (major === 7 && additional === 21) return { value: true, offset: offset + 1 };
-    if (major === 7 && additional === 22) return { value: null, offset: offset + 1 };
-    return null;
-  } catch {
-    return null;
+  if (major === 0) return { value: argument.value, offset: argument.offset };
+  if (major === 1) return { value: -1 - argument.value, offset: argument.offset };
+  if (major === 2 || major === 3) {
+    if (argument.value < 0 || argument.offset + argument.value > buf.length) return null;
+    const slice = Buffer.from(buf.subarray(argument.offset, argument.offset + argument.value));
+    return {
+      value: major === 2 ? slice : slice.toString("utf8"),
+      offset: argument.offset + argument.value,
+    };
   }
+  if ((major === 4 || major === 5) && depth >= CBOR_MAX_DEPTH) return null;
+  if (major === 4) {
+    if (argument.value < 0) return null;
+    const items: CborValue[] = [];
+    let cursor = argument.offset;
+    for (let index = 0; index < argument.value; index++) {
+      const item = readCbor(buf, cursor, depth + 1);
+      if (!item) return null;
+      items.push(item.value);
+      cursor = item.offset;
+    }
+    return { value: items, offset: cursor };
+  }
+  if (major === 5) {
+    if (argument.value < 0) return null;
+    const seen = new Set<string>();
+    let cursor = argument.offset;
+    const map = new Map<CborValue, CborValue>();
+    for (let index = 0; index < argument.value; index++) {
+      const key = readCbor(buf, cursor, depth + 1);
+      if (!key) return null;
+      const token = mapKeyToken(key.value);
+      if (token === null || seen.has(token)) return null;
+      seen.add(token);
+      const item = readCbor(buf, key.offset, depth + 1);
+      if (!item) return null;
+      map.set(key.value, item.value);
+      cursor = item.offset;
+    }
+    return { value: map, offset: cursor };
+  }
+  if (major === 7 && additional === 20) return { value: false, offset: offset + 1 };
+  if (major === 7 && additional === 21) return { value: true, offset: offset + 1 };
+  if (major === 7 && additional === 22) return { value: null, offset: offset + 1 };
+  return null;
 }
 
-function cborEqual(left: CborValue, right: CborValue): boolean {
-  try {
-    if (Buffer.isBuffer(left) || Buffer.isBuffer(right)) {
-      if (!Buffer.isBuffer(left) || !Buffer.isBuffer(right) || left.length !== right.length) {
-        return false;
-      }
-      return timingSafeEqual(left, right);
-    }
-    if (Array.isArray(left) || Array.isArray(right)) {
-      if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length)
-        return false;
-      for (let index = 0; index < left.length; index++) {
-        const rightItem = right[index];
-        if (rightItem === undefined || !cborEqual(left[index] as CborValue, rightItem))
-          return false;
-      }
-      return true;
-    }
-    if (left instanceof Map || right instanceof Map) return false;
-    return left === right;
-  } catch {
-    return false;
-  }
+/** Integers and text are the only map keys. Anything else rejects the map. */
+function mapKeyToken(value: CborValue): string | null {
+  if (typeof value === "number" && Number.isInteger(value)) return `int:${value}`;
+  if (typeof value === "string") return `text:${value}`;
+  return null;
 }
 
 function readArgument(
@@ -386,23 +320,21 @@ function readArgument(
   offset: number,
   additional: number,
 ): { value: number; offset: number } | null {
-  try {
-    if (additional < 24) return { value: additional, offset };
-    if (additional === 24) {
-      const value = buf[offset];
-      if (value === undefined) return null;
-      return { value, offset: offset + 1 };
-    }
-    if (additional === 25) {
-      if (offset + 2 > buf.length) return null;
-      return { value: buf.readUInt16BE(offset), offset: offset + 2 };
-    }
-    if (additional === 26) {
-      if (offset + 4 > buf.length) return null;
-      return { value: buf.readUInt32BE(offset), offset: offset + 4 };
-    }
-    return null;
-  } catch {
-    return null;
+  if (offset < 0) return null;
+  if (additional < 24) return { value: additional, offset };
+  if (additional === 24) {
+    if (offset >= buf.length) return null;
+    const value = buf[offset];
+    if (value === undefined) return null;
+    return { value, offset: offset + 1 };
   }
+  if (additional === 25) {
+    if (offset + 2 > buf.length) return null;
+    return { value: buf.readUInt16BE(offset), offset: offset + 2 };
+  }
+  if (additional === 26) {
+    if (offset + 4 > buf.length) return null;
+    return { value: buf.readUInt32BE(offset), offset: offset + 4 };
+  }
+  return null;
 }

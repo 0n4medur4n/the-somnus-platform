@@ -62,6 +62,14 @@ export class PasskeyPendingLimit extends Error {
   }
 }
 
+/** The user already has an active credential, so a "first" registration is refused. */
+export class PasskeyActiveCredentialPresent extends Error {
+  constructor() {
+    super("Passkey registration refused because an active credential already exists.");
+    this.name = "PasskeyActiveCredentialPresent";
+  }
+}
+
 /** The pending-cap insert had no handle row to lock, so it did not insert. */
 export class PasskeyHandleLockUnavailable extends Error {
   constructor() {

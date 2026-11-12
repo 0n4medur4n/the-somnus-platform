@@ -13,9 +13,10 @@ import {
   verifyRegistrationResponse,
 } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
-import { makeEvent, type UUIDv7 } from "@somnus/api-contracts";
+import { EventEnvelopeSchema, makeEvent, type UUIDv7 } from "@somnus/api-contracts";
 import {
   evaluateSignCount,
+  PasskeyActiveCredentialPresent,
   PasskeyCredentialIdConflict,
   PasskeyCredentialScopeMismatch,
   PasskeyHandleLockUnavailable,
@@ -71,11 +72,13 @@ export const PASSKEY_EVENTS = {
   used: "auth.passkey.used.v1",
   failed: "auth.passkey.failed.v1",
   locked: "auth.passkey.locked.v1",
+  revoked: "auth.passkey.revoked.v1",
 } as const;
 
 const WEBAUTHN_TRANSPORTS = new Set(["ble", "hybrid", "internal", "nfc", "usb", "smart-card"]);
 const UNNAMED_PASSKEY = "";
 const STEP_UP_MAX_AGE_MS = 5 * 60 * 1000;
+const STEP_UP_USE_SKEW_MS = 10 * 1000;
 const AUDIT_PUBLISH_TIMEOUT_MS = 2_000;
 
 /** Byte caps applied to ceremony fields before any base64url decode. */
@@ -91,7 +94,7 @@ export const PASSKEY_SIZE_LIMITS = {
 /**
  * How a registration is allowed (ADR 0027 decisions 9 and 11).
  * `first` is only for an account with no active passkey. `additional`
- * requires a step-up the service itself just verified.
+ * receives a step-up fact from its caller. The database check is a second barrier.
  */
 export type PasskeyEnrollmentAuthorization =
   | { kind: "first" }
@@ -358,6 +361,7 @@ export class PasskeyWebAuthnService {
         },
         config.maxPendingCredentials,
         now,
+        authorization.kind === "first",
       );
     } catch (error) {
       if (error instanceof PasskeyPendingLimit) {
@@ -376,6 +380,9 @@ export class PasskeyWebAuthnService {
         return this.fail(correlationId, "registration", userId, credentialIdText, "user_handle");
       }
       if (error instanceof PasskeyCredentialScopeMismatch) {
+        return this.fail(correlationId, "registration", userId, credentialIdText, "enrollment");
+      }
+      if (error instanceof PasskeyActiveCredentialPresent) {
         return this.fail(correlationId, "registration", userId, credentialIdText, "enrollment");
       }
       throw error;
@@ -422,15 +429,21 @@ export class PasskeyWebAuthnService {
     const received = view.signCount;
     const nextCount = received;
     const pending = credential.activatedAt === null;
-    const wrote = pending
-      ? await this.credentials.completePendingSignIn(
+    let wrote = false;
+    let revokedCredentialIds: Buffer[] = [];
+    try {
+      if (pending) {
+        const completed = await this.credentials.completePendingSignIn(
           { userId },
           credential.credentialId,
           stored,
           nextCount,
           now,
-        )
-      : await this.credentials.recordUse(
+        );
+        wrote = completed.activated;
+        revokedCredentialIds = completed.revokedCredentialIds;
+      } else {
+        wrote = await this.credentials.recordUse(
           { userId },
           credential.credentialId,
           stored,
@@ -438,8 +451,25 @@ export class PasskeyWebAuthnService {
           laterInstant(credential.lastUsedAt, now),
           credential.lastUsedAt,
         );
+      }
+    } catch (error) {
+      if (error instanceof PasskeyHandleLockUnavailable) {
+        return this.fail(correlationId, "authentication", userId, credentialIdText, "user_handle");
+      }
+      throw error;
+    }
     if (!wrote) {
       return this.fail(correlationId, "authentication", userId, credentialIdText, "counter_race");
+    }
+    for (const revokedId of revokedCredentialIds) {
+      await this.audit({
+        eventType: PASSKEY_EVENTS.revoked,
+        correlationId,
+        purpose: "authentication",
+        userId,
+        credentialId: isoBase64URL.fromBuffer(uint8(revokedId)),
+        reason: "credential_revoked",
+      });
     }
     await this.audit({
       eventType: PASSKEY_EVENTS.used,
@@ -698,11 +728,13 @@ export class PasskeyWebAuthnService {
     }
     const account = await this.activeAccount(holder, input.purpose, input.correlationId);
     if (!account.ok) return account;
+    const rawHandle = parsed.response.userHandle;
     let presented: Buffer | null;
     try {
-      presented = parsed.response.userHandle
-        ? bytesFromBase64Url(parsed.response.userHandle)
-        : null;
+      presented =
+        typeof rawHandle === "string" && rawHandle.length > 0
+          ? bytesFromBase64Url(rawHandle)
+          : null;
     } catch {
       return this.fail(input.correlationId, input.purpose, holder, credentialIdText, "client_data");
     }
@@ -843,28 +875,42 @@ export class PasskeyWebAuthnService {
         ? { type: "passkey", id: input.credentialId }
         : { type: "passkey", id: input.purpose };
     const correlationId = input.correlationId.trim() || "passkey";
-    const published = this.events
-      .publish(
-        makeEvent({
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const work = new Promise<"ok" | "failed">((resolve) => {
+      try {
+        const event = makeEvent({
           eventType: input.eventType,
           producer: "somnus-identity-service",
           correlationId,
           subject,
           ...(input.userId ? { actor: { type: "user", id: input.userId } } : {}),
           data,
-        }),
-      )
-      .then(
-        () => "ok" as const,
-        () => "failed" as const,
-      );
-    let timer: ReturnType<typeof setTimeout> | undefined;
+        });
+        if (!EventEnvelopeSchema.safeParse(event).success) {
+          resolve("failed");
+          return;
+        }
+        Promise.resolve()
+          .then(() => this.events.publish(event))
+          .then(
+            () => resolve("ok"),
+            () => resolve("failed"),
+          );
+      } catch {
+        resolve("failed");
+      }
+    });
     const timeout = new Promise<"timeout">((resolve) => {
       timer = setTimeout(() => resolve("timeout"), AUDIT_PUBLISH_TIMEOUT_MS);
     });
-    const outcome = await Promise.race([published, timeout]);
-    if (timer !== undefined) clearTimeout(timer);
-    if (outcome !== "ok") this.logger.warn("passkey audit publish failed");
+    try {
+      const outcome = await Promise.race([work, timeout]);
+      if (outcome !== "ok") this.logger.warn("passkey audit publish failed");
+    } catch {
+      this.logger.warn("passkey audit publish failed");
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
   }
 
   private async activeCredentials(userId: UUIDv7): Promise<PasskeyCredentialRecord[]> {
@@ -875,9 +921,13 @@ export class PasskeyWebAuthnService {
   }
 
   /**
-   * `first` requires zero active credentials. `additional` requires a
-   * step-up for this user, at most five minutes old, of an active
-   * credential. Pending credentials satisfy neither rule.
+   * `first` requires zero active credentials. `additional` receives a
+   * step-up fact from the caller and checks it again against the database:
+   * the user matches, the fact is at most five minutes old and not in the
+   * future, and the named credential is active with `last_used_at` no older
+   * than five minutes plus ten seconds. A second laterInstant may put
+   * `last_used_at` slightly ahead of now; that skew is ignored. Pending
+   * credentials satisfy neither rule.
    */
   private enrollmentFailure(
     userId: UUIDv7,
@@ -900,10 +950,15 @@ export class PasskeyWebAuthnService {
     if (Number.isNaN(verifiedAt)) return "enrollment";
     const age = now.getTime() - verifiedAt;
     if (age < 0 || age > STEP_UP_MAX_AGE_MS) return "enrollment";
-    const matches = active.some(
+    const matches = active.find(
       (row) => isoBase64URL.fromBuffer(uint8(row.credentialId)) === stepUp.credentialId,
     );
-    return matches ? null : "enrollment";
+    if (!matches || matches.lastUsedAt === null) return "enrollment";
+    const usedAge = now.getTime() - matches.lastUsedAt.getTime();
+    if (usedAge < -STEP_UP_USE_SKEW_MS || usedAge > STEP_UP_MAX_AGE_MS + STEP_UP_USE_SKEW_MS) {
+      return "enrollment";
+    }
+    return null;
   }
 }
 
@@ -959,6 +1014,7 @@ function authenticationWithinLimits(parsed: AuthenticationResponseJSON): boolean
   const handle = parsed.response.userHandle;
   const handleOk =
     handle === undefined ||
+    handle === null ||
     (typeof handle === "string" && withinEncodedLimit(handle, PASSKEY_SIZE_LIMITS.userHandle));
   return (
     handleOk &&

@@ -3,6 +3,7 @@ import { count, eq, isNull } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   evaluateSignCount,
+  PasskeyActiveCredentialPresent,
   PasskeyChallengeInvalid,
   PasskeyCredentialExpiryRequired,
   PasskeyCredentialIdConflict,
@@ -719,6 +720,105 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
       expect(locked?.lockedAt?.getTime()).toBe(base + 2000);
     });
 
+    it("refuses a sign count that does not increase and writes nothing", async () => {
+      const owner = await user("sign-guard@example.com");
+      const pending = await pendingCredential(owner, 97, future());
+      await db
+        .update(passkeyCredentials)
+        .set({ signCount: 5 })
+        .where(eq(passkeyCredentials.credentialId, pending.credentialId));
+      for (const received of [0, 5, 3]) {
+        const result = await credentials.completePendingSignIn(
+          { userId: owner },
+          pending.credentialId,
+          5,
+          received,
+          new Date(),
+        );
+        expect(result.activated).toBe(false);
+        expect(result.revokedCredentialIds).toEqual([]);
+      }
+      const stillPending = await credentials.findByCredentialId(pending.credentialId);
+      expect(stillPending?.activatedAt).toBeNull();
+      expect(stillPending?.signCount).toBe(5);
+
+      expect(await credentials.activate({ userId: owner }, pending.credentialId, past())).toBe(
+        true,
+      );
+      await db
+        .update(passkeyCredentials)
+        .set({ signCount: 5 })
+        .where(eq(passkeyCredentials.credentialId, pending.credentialId));
+      const active = await credentials.findByCredentialId(pending.credentialId);
+      for (const received of [0, 5, 3]) {
+        expect(
+          await credentials.recordUse(
+            { userId: owner },
+            pending.credentialId,
+            5,
+            received,
+            new Date(),
+            active?.lastUsedAt ?? null,
+          ),
+        ).toBe(false);
+      }
+      const after = await credentials.findByCredentialId(pending.credentialId);
+      expect(after?.signCount).toBe(5);
+      expect(after?.lastUsedAt?.getTime()).toBe(active?.lastUsedAt?.getTime());
+    });
+
+    it("fails closed when the first sign-in has no handle row to lock", async () => {
+      const owner = await user("no-handle-activate@example.com");
+      const pending = await pendingCredential(owner, 98, future());
+      await expect(
+        credentials.completePendingSignIn(
+          { userId: owner },
+          pending.credentialId,
+          0,
+          1,
+          new Date(),
+        ),
+      ).rejects.toBeInstanceOf(PasskeyHandleLockUnavailable);
+      const row = await credentials.findByCredentialId(pending.credentialId);
+      expect(row?.activatedAt).toBeNull();
+      expect(row?.revokedAt).toBeNull();
+      expect(row?.signCount).toBe(0);
+    });
+
+    it("refuses a first-mode insert when an active credential is already stored", async () => {
+      const owner = await user("active-blocks-first@example.com");
+      await db.insert(passkeyUserHandles).values({
+        id: UUIDv7(),
+        userId: owner,
+        handle: bytes(32, 94),
+      });
+      const existing = await pendingCredential(owner, 95, future());
+      expect(await credentials.activate({ userId: owner }, existing.credentialId, new Date())).toBe(
+        true,
+      );
+      await expect(
+        credentials.createUnderPendingCap(
+          { userId: owner },
+          {
+            userId: owner,
+            credentialId: bytes(32, 96),
+            publicKey: bytes(64, 97),
+            coseAlgorithm: -7,
+            transports: null,
+            aaguid: null,
+            backupEligible: false,
+            backupState: false,
+            name: "",
+            pendingExpiresAt: future(),
+          },
+          3,
+          new Date(),
+          true,
+        ),
+      ).rejects.toBeInstanceOf(PasskeyActiveCredentialPresent);
+      expect(await credentials.listByUser({ userId: owner })).toHaveLength(1);
+    });
+
     it("refuses a pending-cap insert when the user has no handle row to lock", async () => {
       const owner = await user("no-handle-lock@example.com");
       await expect(
@@ -738,6 +838,7 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
           },
           3,
           new Date(),
+          false,
         ),
       ).rejects.toBeInstanceOf(PasskeyHandleLockUnavailable);
     });
@@ -763,6 +864,7 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
           },
           3,
           new Date(),
+          false,
         ),
       ).rejects.toBeInstanceOf(PasskeyCredentialScopeMismatch);
     });

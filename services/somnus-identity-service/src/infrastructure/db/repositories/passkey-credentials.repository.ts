@@ -1,7 +1,8 @@
 import { UUIDv7 } from "@somnus/api-contracts";
-import { and, count, eq, gt, inArray, isNotNull, isNull, lt } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNotNull, isNull, lt, ne } from "drizzle-orm";
 import {
   evaluateSignCount,
+  PasskeyActiveCredentialPresent,
   PasskeyCredentialExpiryRequired,
   PasskeyCredentialIdConflict,
   PasskeyCredentialScopeMismatch,
@@ -34,6 +35,12 @@ export type NewPasskeyCredential = {
 
 export type PasskeyCredentialRecord = typeof passkeyCredentials.$inferSelect;
 
+export type CompletedPendingSignIn = {
+  activated: boolean;
+  /** Other pending credential ids revoked because this was the user's first activation. */
+  revokedCredentialIds: Buffer[];
+};
+
 export interface PasskeyCredentialStore {
   create(input: NewPasskeyCredential): Promise<UUIDv7>;
   /**
@@ -46,6 +53,7 @@ export interface PasskeyCredentialStore {
     input: NewPasskeyCredential,
     maxPending: number,
     now: Date,
+    requireNoActive: boolean,
   ): Promise<UUIDv7>;
   findByCredentialId(credentialId: Buffer): Promise<PasskeyCredentialRecord | null>;
   listByUser(scope: UserScope): Promise<PasskeyCredentialRecord[]>;
@@ -63,7 +71,7 @@ export interface PasskeyCredentialStore {
     expectedSignCount: number,
     signCount: number,
     now: Date,
-  ): Promise<boolean>;
+  ): Promise<CompletedPendingSignIn>;
   /**
    * One conditional update of an active credential. The stored counter
    * and `last_used_at` must still be the values the caller read, so two
@@ -129,6 +137,15 @@ async function insertCredential(
   return id;
 }
 
+function activeCredentialSql(userId: UUIDv7) {
+  return and(
+    eq(passkeyCredentials.userId, userId),
+    isNotNull(passkeyCredentials.activatedAt),
+    isNull(passkeyCredentials.revokedAt),
+    isNull(passkeyCredentials.lockedAt),
+  );
+}
+
 function isDuplicateEntry(error: unknown): boolean {
   let current: unknown = error;
   for (let depth = 0; depth < 5; depth++) {
@@ -174,6 +191,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     input: NewPasskeyCredential,
     maxPending: number,
     now: Date,
+    requireNoActive: boolean,
   ): Promise<UUIDv7> {
     requirePendingExpiry(input.pendingExpiresAt);
     if (input.userId !== scope.userId) throw new PasskeyCredentialScopeMismatch();
@@ -185,6 +203,13 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
         .where(eq(passkeyUserHandles.userId, scope.userId))
         .for("update");
       if (locked.length === 0) throw new PasskeyHandleLockUnavailable();
+      if (requireNoActive) {
+        const active = await tx
+          .select({ total: count() })
+          .from(passkeyCredentials)
+          .where(activeCredentialSql(scope.userId));
+        if (Number(active[0]?.total ?? 0) > 0) throw new PasskeyActiveCredentialPresent();
+      }
       const rows = await tx
         .select({ total: count() })
         .from(passkeyCredentials)
@@ -304,24 +329,66 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     expectedSignCount: number,
     signCount: number,
     now: Date,
-  ): Promise<boolean> {
-    if (evaluateSignCount(expectedSignCount, signCount) !== "ok") return false;
+  ): Promise<CompletedPendingSignIn> {
+    if (evaluateSignCount(expectedSignCount, signCount) !== "ok") {
+      return { activated: false, revokedCredentialIds: [] };
+    }
     const instant = wholeSecond(now);
-    const updated = await this.db
-      .update(passkeyCredentials)
-      .set({ activatedAt: instant, lastUsedAt: instant, signCount })
-      .where(
-        and(
-          eq(passkeyCredentials.userId, scope.userId),
-          eq(passkeyCredentials.credentialId, credentialId),
-          isNull(passkeyCredentials.activatedAt),
-          isNull(passkeyCredentials.revokedAt),
-          isNull(passkeyCredentials.lockedAt),
-          gt(passkeyCredentials.pendingExpiresAt, instant),
-          eq(passkeyCredentials.signCount, expectedSignCount),
-        ),
-      );
-    return (updated[0].affectedRows ?? 0) === 1;
+    return this.db.transaction(async (tx) => {
+      const locked = await tx
+        .select({ id: passkeyUserHandles.id })
+        .from(passkeyUserHandles)
+        .where(eq(passkeyUserHandles.userId, scope.userId))
+        .for("update");
+      if (locked.length === 0) throw new PasskeyHandleLockUnavailable();
+      const active = await tx
+        .select({ total: count() })
+        .from(passkeyCredentials)
+        .where(activeCredentialSql(scope.userId));
+      const otherActive = Number(active[0]?.total ?? 0);
+      const updated = await tx
+        .update(passkeyCredentials)
+        .set({ activatedAt: instant, lastUsedAt: instant, signCount })
+        .where(
+          and(
+            eq(passkeyCredentials.userId, scope.userId),
+            eq(passkeyCredentials.credentialId, credentialId),
+            isNull(passkeyCredentials.activatedAt),
+            isNull(passkeyCredentials.revokedAt),
+            isNull(passkeyCredentials.lockedAt),
+            gt(passkeyCredentials.pendingExpiresAt, instant),
+            eq(passkeyCredentials.signCount, expectedSignCount),
+          ),
+        );
+      if ((updated[0].affectedRows ?? 0) !== 1 || otherActive > 0) {
+        return { activated: (updated[0].affectedRows ?? 0) === 1, revokedCredentialIds: [] };
+      }
+      const others = await tx
+        .select({ credentialId: passkeyCredentials.credentialId })
+        .from(passkeyCredentials)
+        .where(
+          and(
+            eq(passkeyCredentials.userId, scope.userId),
+            ne(passkeyCredentials.credentialId, credentialId),
+            isNull(passkeyCredentials.activatedAt),
+            isNull(passkeyCredentials.revokedAt),
+            isNull(passkeyCredentials.lockedAt),
+          ),
+        );
+      if (others.length === 0) return { activated: true, revokedCredentialIds: [] };
+      const revokedCredentialIds = others.map((row) => row.credentialId);
+      await tx
+        .update(passkeyCredentials)
+        .set({ revokedAt: instant })
+        .where(
+          and(
+            eq(passkeyCredentials.userId, scope.userId),
+            inArray(passkeyCredentials.credentialId, revokedCredentialIds),
+            isNull(passkeyCredentials.activatedAt),
+          ),
+        );
+      return { activated: true, revokedCredentialIds };
+    });
   }
 
   async recordUse(

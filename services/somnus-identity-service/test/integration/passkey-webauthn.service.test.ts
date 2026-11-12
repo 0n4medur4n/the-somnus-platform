@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { Logger } from "@nestjs/common";
+import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { type EventEnvelope, UUIDv7 } from "@somnus/api-contracts";
 import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -1373,21 +1374,15 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     const step = await service.stepUpOptions(enrolled.userId, "corr");
     expect(step.ok).toBe(true);
     if (!step.ok) return;
-    expect(
-      (
-        await service.verifyStepUp(
-          enrolled.userId,
-          authenticationResponse(enrolled.authenticator, {
-            origin: ORIGIN,
-            rpId: RP_ID,
-            challenge: step.options.challenge,
-            signCount: 2,
-            userHandle: null,
-          }),
-          "corr",
-        )
-      ).ok,
-    ).toBe(true);
+    const absent = authenticationResponse(enrolled.authenticator, {
+      origin: ORIGIN,
+      rpId: RP_ID,
+      challenge: step.options.challenge,
+      signCount: 2,
+      userHandle: null,
+    });
+    absent.response.userHandle = null;
+    expect((await service.verifyStepUp(enrolled.userId, absent, "corr")).ok).toBe(true);
     const mismatch = await service.stepUpOptions(enrolled.userId, "corr");
     expect(mismatch.ok).toBe(true);
     if (!mismatch.ok) return;
@@ -1439,47 +1434,350 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
     expect(events.at(-1)?.data["reason"]).toBe("challenge_rejected");
   });
 
-  it("keeps a successful ceremony when the audit publisher throws or never resolves", async () => {
-    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
-    try {
-      const throwing = new PasskeyWebAuthnService(credentials, challenges, handles, users, {
-        publish: async () => {
-          throw new Error("challenge-must-not-be-logged");
-        },
-      });
-      const thrownUser = await person("audit-throw@example.com");
-      const thrown = await startRegistration(thrownUser);
-      expect(
-        (
-          await throwing.verifyRegistration(
-            thrownUser,
-            registerResponse(thrown.authenticator, thrown.options.challenge),
-            "corr",
-            { kind: "first" },
-          )
-        ).ok,
-      ).toBe(true);
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(warn).toHaveBeenCalledWith("passkey audit publish failed");
+  it("revokes an earlier first-mode credential when the owner's credential activates", async () => {
+    const userId = await person("first-survivor@example.com");
+    const attacker = await startRegistration(userId);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(attacker.authenticator, attacker.options.challenge),
+          "corr",
+          { kind: "first" },
+        )
+      ).ok,
+    ).toBe(true);
+    const victim = await startRegistration(userId);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(victim.authenticator, victim.options.challenge),
+          "corr",
+          { kind: "first" },
+        )
+      ).ok,
+    ).toBe(true);
+    events.splice(0, events.length);
+    expect((await signIn(victim.authenticator, 1)).result.ok).toBe(true);
+    expect(events.some((event) => event.eventType === PASSKEY_EVENTS.revoked)).toBe(true);
+    expect(events.some((event) => event.data["reason"] === "credential_revoked")).toBe(true);
+    const attackerRow = await credentials.findByCredentialId(attacker.authenticator.credentialId);
+    expect(attackerRow?.revokedAt).not.toBeNull();
+    expect(attackerRow?.activatedAt).toBeNull();
+    const again = await signIn(attacker.authenticator, 1);
+    expect(again.result).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("credential_revoked");
+  });
 
-      warn.mockClear();
-      const hanging = new PasskeyWebAuthnService(credentials, challenges, handles, users, {
-        publish: () => new Promise(() => undefined),
-      });
-      const hungUser = await person("audit-hang@example.com");
-      const hung = await startRegistration(hungUser);
+  it("keeps an earlier additional pending credential when a second device activates", async () => {
+    const owner = await enroll("additional-keep@example.com");
+    expect((await signIn(owner.authenticator, 1)).result.ok).toBe(true);
+    const proof = await service.stepUpOptions(owner.userId, "corr");
+    expect(proof.ok).toBe(true);
+    if (!proof.ok) return;
+    const stepped = await service.verifyStepUp(
+      owner.userId,
+      authenticationResponse(owner.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: proof.options.challenge,
+        signCount: 2,
+      }),
+      "corr",
+    );
+    expect(stepped.ok).toBe(true);
+    if (!stepped.ok) return;
+    const authorization = {
+      kind: "additional" as const,
+      stepUp: {
+        userId: owner.userId,
+        credentialId: stepped.credentialId,
+        verifiedAt: stepped.verifiedAt,
+      },
+    };
+    const earlier = await service.registrationOptions(owner.userId, "corr", authorization);
+    expect(earlier.ok).toBe(true);
+    if (!earlier.ok) return;
+    const earlierAuthenticator = createSoftwareAuthenticator(
+      Buffer.from(earlier.options.user.id, "base64url"),
+    );
+    expect(
+      (
+        await service.verifyRegistration(
+          owner.userId,
+          registrationResponse(earlierAuthenticator, {
+            origin: ORIGIN,
+            rpId: RP_ID,
+            challenge: earlier.options.challenge,
+          }),
+          "corr",
+          authorization,
+        )
+      ).ok,
+    ).toBe(true);
+    const fresh = await service.stepUpOptions(owner.userId, "corr");
+    expect(fresh.ok).toBe(true);
+    if (!fresh.ok) return;
+    const again = await service.verifyStepUp(
+      owner.userId,
+      authenticationResponse(owner.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: fresh.options.challenge,
+        signCount: 3,
+      }),
+      "corr",
+    );
+    expect(again.ok).toBe(true);
+    if (!again.ok) return;
+    const nextAuthorization = {
+      kind: "additional" as const,
+      stepUp: {
+        userId: owner.userId,
+        credentialId: again.credentialId,
+        verifiedAt: again.verifiedAt,
+      },
+    };
+    const second = await service.registrationOptions(owner.userId, "corr", nextAuthorization);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    const secondAuthenticator = createSoftwareAuthenticator(
+      Buffer.from(second.options.user.id, "base64url"),
+    );
+    expect(
+      (
+        await service.verifyRegistration(
+          owner.userId,
+          registrationResponse(secondAuthenticator, {
+            origin: ORIGIN,
+            rpId: RP_ID,
+            challenge: second.options.challenge,
+          }),
+          "corr",
+          nextAuthorization,
+        )
+      ).ok,
+    ).toBe(true);
+    expect((await signIn(secondAuthenticator, 1)).result.ok).toBe(true);
+    const original = await credentials.findByCredentialId(owner.authenticator.credentialId);
+    const kept = await credentials.findByCredentialId(earlierAuthenticator.credentialId);
+    expect(original?.activatedAt).not.toBeNull();
+    expect(original?.revokedAt).toBeNull();
+    expect(kept?.activatedAt).toBeNull();
+    expect(kept?.revokedAt).toBeNull();
+  });
+
+  it("ends a simultaneous first registration and activation with the new credential refused or revoked", async () => {
+    const userId = await person("first-race@example.com");
+    const existing = await startRegistration(userId);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(existing.authenticator, existing.options.challenge),
+          "corr",
+          { kind: "first" },
+        )
+      ).ok,
+    ).toBe(true);
+    const options = await service.registrationOptions(userId, "corr", { kind: "first" });
+    expect(options.ok).toBe(true);
+    if (!options.ok) return;
+    const challenger = createSoftwareAuthenticator(
+      Buffer.from(options.options.user.id, "base64url"),
+    );
+    const [activated, registered] = await Promise.all([
+      signIn(existing.authenticator, 1),
+      service.verifyRegistration(
+        userId,
+        registrationResponse(challenger, {
+          origin: ORIGIN,
+          rpId: RP_ID,
+          challenge: options.options.challenge,
+        }),
+        "corr",
+        { kind: "first" },
+      ),
+    ]);
+    expect(activated.result.ok).toBe(true);
+    const winner = await credentials.findByCredentialId(existing.authenticator.credentialId);
+    const loser = await credentials.findByCredentialId(challenger.credentialId);
+    expect(winner?.activatedAt).not.toBeNull();
+    expect(winner?.revokedAt).toBeNull();
+    expect(loser?.activatedAt ?? null).toBeNull();
+    if (registered.ok) expect(loser?.revokedAt).not.toBeNull();
+    else expect(loser).toBeNull();
+  });
+
+  it("fails closed when the first sign-in has no handle row to lock", async () => {
+    const enrolled = await enroll("missing-lock@example.com");
+    const stored = await handles.findForUser({ userId: enrolled.userId });
+    expect(stored).not.toBeNull();
+    await db.delete(passkeyUserHandles).where(eq(passkeyUserHandles.userId, enrolled.userId));
+    const lookup = vi.spyOn(handles, "findForUser").mockResolvedValue(stored);
+    try {
+      const attempt = await signIn(enrolled.authenticator, 1);
+      expect(attempt.result).toEqual({ ok: false });
+      expect(events.at(-1)?.data["reason"]).toBe("user_handle");
       expect(
-        (
-          await hanging.verifyRegistration(
-            hungUser,
-            registerResponse(hung.authenticator, hung.options.challenge),
-            "corr",
-            { kind: "first" },
-          )
-        ).ok,
-      ).toBe(true);
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(warn).toHaveBeenCalledWith("passkey audit publish failed");
+        (await credentials.findByCredentialId(enrolled.authenticator.credentialId))?.activatedAt,
+      ).toBeNull();
+    } finally {
+      lookup.mockRestore();
+    }
+  });
+
+  it("refuses a first registration inside the lock when an active credential is already stored", async () => {
+    const userId = await person("lock-active@example.com");
+    const first = await startRegistration(userId);
+    const second = await startRegistration(userId);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(first.authenticator, first.options.challenge),
+          "corr",
+          { kind: "first" },
+        )
+      ).ok,
+    ).toBe(true);
+    expect((await signIn(first.authenticator, 1)).result.ok).toBe(true);
+    const real = credentials.listByUser.bind(credentials);
+    const hidden = vi.spyOn(credentials, "listByUser").mockImplementation(async (scope) => {
+      const rows = await real(scope);
+      return rows.filter((row) => row.activatedAt === null);
+    });
+    try {
+      events.splice(0, events.length);
+      expect(
+        await service.verifyRegistration(
+          userId,
+          registerResponse(second.authenticator, second.options.challenge),
+          "corr",
+          { kind: "first" },
+        ),
+      ).toEqual({ ok: false });
+      expect(events.at(-1)?.data["reason"]).toBe("enrollment");
+      expect(await credentials.findByCredentialId(second.authenticator.credentialId)).toBeNull();
+    } finally {
+      hidden.mockRestore();
+    }
+  });
+
+  it("refuses a step-up fact for a credential that was not used recently, and accepts a genuine one", async () => {
+    const owner = await enroll("stale-use@example.com");
+    expect((await signIn(owner.authenticator, 1)).result.ok).toBe(true);
+    await db
+      .update(passkeyCredentials)
+      .set({ lastUsedAt: new Date(Date.now() - 6 * 60 * 1000) })
+      .where(eq(passkeyCredentials.credentialId, owner.authenticator.credentialId));
+    expect(
+      await service.registrationOptions(owner.userId, "corr", {
+        kind: "additional",
+        stepUp: {
+          userId: owner.userId,
+          credentialId: isoBase64URL.fromBuffer(owner.authenticator.credentialId),
+          verifiedAt: new Date().toISOString(),
+        },
+      }),
+    ).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("enrollment");
+
+    const fresh = await enroll("fresh-use@example.com");
+    expect((await signIn(fresh.authenticator, 1)).result.ok).toBe(true);
+    const step = await service.stepUpOptions(fresh.userId, "corr");
+    expect(step.ok).toBe(true);
+    if (!step.ok) return;
+    const proved = await service.verifyStepUp(
+      fresh.userId,
+      authenticationResponse(fresh.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: step.options.challenge,
+        signCount: 2,
+      }),
+      "corr",
+    );
+    expect(proved.ok).toBe(true);
+    if (!proved.ok) return;
+    expect(
+      (
+        await service.registrationOptions(fresh.userId, "corr", {
+          kind: "additional",
+          stepUp: {
+            userId: fresh.userId,
+            credentialId: proved.credentialId,
+            verifiedAt: proved.verifiedAt,
+          },
+        })
+      ).ok,
+    ).toBe(true);
+  });
+
+  it("stores the public key from the attestation object when the response also carries another key", async () => {
+    const userId = await person("attestation-only@example.com");
+    const started = await startRegistration(userId);
+    const response = registerResponse(started.authenticator, started.options.challenge);
+    const extra = response.response as {
+      publicKey?: string;
+      authenticatorData?: string;
+      publicKeyAlgorithm?: number;
+    };
+    extra.publicKey = "AQIDBA";
+    extra.authenticatorData = "AQIDBA";
+    extra.publicKeyAlgorithm = -257;
+    expect((await service.verifyRegistration(userId, response, "corr", { kind: "first" })).ok).toBe(
+      true,
+    );
+    const row = await credentials.findByCredentialId(started.authenticator.credentialId);
+    expect(row?.coseAlgorithm).toBe(-7);
+    expect(
+      Buffer.compare(row?.publicKey ?? Buffer.alloc(0), started.authenticator.cosePublicKey),
+    ).toBe(0);
+  });
+
+  it("keeps the ceremony result when audit cannot publish, on success and on failure", async () => {
+    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+    const publishers = [
+      () => {
+        throw new Error("sync");
+      },
+      async () => {
+        throw new Error("rejected");
+      },
+      () => new Promise<void>(() => undefined),
+      async () => undefined,
+    ];
+    try {
+      for (const [index, publish] of publishers.entries()) {
+        warn.mockClear();
+        const local = new PasskeyWebAuthnService(credentials, challenges, handles, users, {
+          publish: publish as EventPublisher["publish"],
+        });
+        const userId = await person(`audit-${index}@example.com`);
+        const started = await startRegistration(userId);
+        const correlationId = index === 3 ? "x".repeat(80) : "corr";
+        expect(
+          (
+            await local.verifyRegistration(
+              userId,
+              registerResponse(started.authenticator, started.options.challenge),
+              correlationId,
+              { kind: "first" },
+            )
+          ).ok,
+        ).toBe(true);
+        expect(
+          await local.verifyRegistration(userId, { type: "public-key" }, correlationId, {
+            kind: "first",
+          }),
+        ).toEqual({ ok: false });
+        expect(warn.mock.calls.every((call) => call[0] === "passkey audit publish failed")).toBe(
+          true,
+        );
+        expect(warn).toHaveBeenCalled();
+      }
     } finally {
       warn.mockRestore();
     }
