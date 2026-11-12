@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { Logger } from "@nestjs/common";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
-import { type EventEnvelope, UUIDv7 } from "@somnus/api-contracts";
+import { type EventEnvelope, EventEnvelopeSchema, UUIDv7 } from "@somnus/api-contracts";
 import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import * as ceremony from "../../src/domain/passkey/webauthn-ceremony.js";
@@ -35,6 +35,15 @@ import { getTestDb, resetTables } from "./db-test-helper.js";
 const ORIGIN = "https://console.thesomnus.com";
 const RP_ID = "console.thesomnus.com";
 const AUDIT_KEYS = new Set(["purpose", "credentialId", "reason", "activated"]);
+
+function mentions(value: unknown, rejected: string): boolean {
+  if (typeof value === "string") return value.includes(rejected);
+  if (Array.isArray(value)) return value.some((item) => mentions(item, rejected));
+  if (value !== null && typeof value === "object") {
+    return Object.values(value).some((item) => mentions(item, rejected));
+  }
+  return false;
+}
 
 describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
   const db = getTestDb();
@@ -1913,6 +1922,115 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
         warn.mockRestore();
       }
     }
+  });
+
+  it("replaces a correlation id that has a newline, space, emoji, control character or 65 characters", async () => {
+    const sixtyFour = `${"a".repeat(59)}Z._:-`;
+    const cases = [
+      { id: "aa\nbb", kept: false },
+      { id: "aa bb", kept: false },
+      { id: "aa😀bb", kept: false },
+      { id: "aa\u0001bb", kept: false },
+      { id: "Z", kept: true },
+      { id: sixtyFour, kept: true },
+      { id: "a".repeat(65), kept: false },
+    ];
+    expect(sixtyFour).toHaveLength(64);
+    expect(cases[4]?.id).toHaveLength(1);
+    expect(cases[6]?.id).toHaveLength(65);
+    const outcomes: boolean[] = [];
+    for (const [index, item] of cases.entries()) {
+      const published: EventEnvelope[] = [];
+      const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      const local = new PasskeyWebAuthnService(credentials, challenges, handles, users, {
+        async publish(event) {
+          published.push(event);
+        },
+      });
+      try {
+        const userId = await person(`corr-shape-${index}@example.com`);
+        const started = await startRegistration(userId);
+        const success = await local.verifyRegistration(
+          userId,
+          registerResponse(started.authenticator, started.options.challenge),
+          item.id,
+          { kind: "first" },
+        );
+        const failure = await local.verifyRegistration(userId, { type: "public-key" }, item.id, {
+          kind: "first",
+        });
+        expect(success.ok).toBe(true);
+        expect(failure).toEqual({ ok: false });
+        outcomes.push(success.ok);
+        expect(published.length).toBeGreaterThan(0);
+        for (const event of published) {
+          if (item.kept) {
+            expect(event.correlationId).toBe(item.id);
+          } else {
+            expect(event.correlationId).toMatch(/^passkey-[0-9a-f]{32}$/);
+            expect(mentions(event, item.id)).toBe(false);
+          }
+        }
+        expect(warn.mock.calls.some((call) => mentions(call, item.id))).toBe(false);
+      } finally {
+        warn.mockRestore();
+      }
+    }
+    expect(outcomes).toEqual(cases.map(() => true));
+  });
+
+  it("publishes the registered and used events for a credential id of 1023 bytes", async () => {
+    const published: EventEnvelope[] = [];
+    const local = new PasskeyWebAuthnService(credentials, challenges, handles, users, {
+      async publish(event) {
+        published.push(event);
+      },
+    });
+    const userId = await person("cred-1023@example.com");
+    const options = await local.registrationOptions(userId, "corr", { kind: "first" });
+    expect(options.ok).toBe(true);
+    if (!options.ok) return;
+    const authenticator = createSoftwareAuthenticator(
+      Buffer.from(options.options.user.id, "base64url"),
+    );
+    authenticator.credentialId = Buffer.alloc(1023, 0x11);
+    const registered = await local.verifyRegistration(
+      userId,
+      registrationResponse(authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: options.options.challenge,
+      }),
+      "corr",
+      { kind: "first" },
+    );
+    expect(registered.ok).toBe(true);
+    const credentialIdText = isoBase64URL.fromBuffer(authenticator.credentialId);
+    expect(credentialIdText).toHaveLength(1364);
+    const registeredEvent = published.find(
+      (event) => event.eventType === PASSKEY_EVENTS.registered,
+    );
+    expect(registeredEvent?.data["credentialId"]).toBe(credentialIdText);
+    expect(EventEnvelopeSchema.safeParse(registeredEvent).success).toBe(true);
+    const signInOptions = await local.authenticationOptions("corr");
+    expect(signInOptions.ok).toBe(true);
+    if (!signInOptions.ok) return;
+    const signedIn = await local.verifyAuthentication(
+      authenticationResponse(authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: signInOptions.options.challenge,
+        signCount: 1,
+      }),
+      "corr",
+    );
+    expect(signedIn.ok).toBe(true);
+    const usedEvent = published.find((event) => event.eventType === PASSKEY_EVENTS.used);
+    expect(usedEvent?.data["credentialId"]).toBe(credentialIdText);
+    expect(EventEnvelopeSchema.safeParse(usedEvent).success).toBe(true);
+    expect(
+      (await credentials.findByCredentialId(authenticator.credentialId))?.credentialId,
+    ).toHaveLength(1023);
   });
 
   it("refuses a non-string, invalid, or empty step-up user handle, and allows null or no handle", async () => {

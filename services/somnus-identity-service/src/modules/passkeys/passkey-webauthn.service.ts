@@ -13,7 +13,12 @@ import {
   verifyRegistrationResponse,
 } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
-import { EventEnvelopeSchema, makeEvent, type UUIDv7 } from "@somnus/api-contracts";
+import {
+  type EventEnvelope,
+  EventEnvelopeSchema,
+  makeEvent,
+  type UUIDv7,
+} from "@somnus/api-contracts";
 import {
   evaluateSignCount,
   PasskeyActiveCredentialPresent,
@@ -897,6 +902,11 @@ export class PasskeyWebAuthnService {
     activated?: boolean;
   }): Promise<void> {
     const data: Record<string, string | boolean> = { purpose: input.purpose };
+    // EventEnvelopeSchema caps correlationId at 64 characters and puts no
+    // maximum on subject.id or on data values (they are z.unknown()). A
+    // 1023-byte credential id is 1364 base64url characters. The schema
+    // accepts that string, so the event keeps it. The raw id stays in the
+    // database.
     if (input.credentialId !== null) data["credentialId"] = input.credentialId;
     if (input.reason !== undefined) data["reason"] = input.reason;
     if (input.activated !== undefined) data["activated"] = input.activated;
@@ -905,19 +915,11 @@ export class PasskeyWebAuthnService {
       : input.credentialId
         ? { type: "passkey", id: input.credentialId }
         : { type: "passkey", id: input.purpose };
-    const correlationId = acceptableCorrelationId(input.correlationId);
     let timer: ReturnType<typeof setTimeout> | undefined;
     const work = new Promise<"ok" | "failed">((resolve) => {
       try {
-        const event = makeEvent({
-          eventType: input.eventType,
-          producer: "somnus-identity-service",
-          correlationId,
-          subject,
-          ...(input.userId ? { actor: { type: "user", id: input.userId } } : {}),
-          data,
-        });
-        if (!EventEnvelopeSchema.safeParse(event).success) {
+        const event = passkeyAuditEvent(input, data, subject);
+        if (!event) {
           resolve("failed");
           return;
         }
@@ -993,9 +995,39 @@ export class PasskeyWebAuthnService {
   }
 }
 
-function acceptableCorrelationId(value: string): string {
-  const trimmed = value.trim();
-  if (trimmed.length >= 1 && trimmed.length <= 64) return trimmed;
+function passkeyAuditEvent(
+  input: {
+    eventType: string;
+    correlationId: string;
+    userId: UUIDv7 | null;
+  },
+  data: Record<string, string | boolean>,
+  subject: { type: string; id: string },
+): EventEnvelope | null {
+  const callerId = /^[A-Za-z0-9._:-]{1,64}$/.test(input.correlationId) ? input.correlationId : null;
+  const first = buildPasskeyEvent(input, data, subject, callerId ?? generatedCorrelationId());
+  if (callerId !== null && EventEnvelopeSchema.safeParse(first).success) return first;
+  const rebuilt = buildPasskeyEvent(input, data, subject, generatedCorrelationId());
+  return EventEnvelopeSchema.safeParse(rebuilt).success ? rebuilt : null;
+}
+
+function buildPasskeyEvent(
+  input: { eventType: string; userId: UUIDv7 | null },
+  data: Record<string, string | boolean>,
+  subject: { type: string; id: string },
+  correlationId: string,
+): EventEnvelope {
+  return makeEvent({
+    eventType: input.eventType,
+    producer: "somnus-identity-service",
+    correlationId,
+    subject,
+    ...(input.userId ? { actor: { type: "user", id: input.userId } } : {}),
+    data,
+  });
+}
+
+function generatedCorrelationId(): string {
   return `passkey-${randomBytes(16).toString("hex")}`;
 }
 
