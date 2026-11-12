@@ -340,6 +340,10 @@ Ceremony fields are rejected with audit reason `client_data` before they are dec
 
 Registering two devices with `kind: "first"` before either is activated leaves both pending. When the first one completes its sign-in, every other pending credential of that user is revoked. The second device has to be registered again with `kind: "additional"` and a step-up.
 
+In a TiDB pessimistic transaction a plain `SELECT` is a snapshot read: it sees the version committed before the transaction started. `UPDATE`, `DELETE`, `INSERT` and `SELECT ... FOR UPDATE` are current reads, and TiDB does not support `LOCK IN SHARE MODE`. `createUnderPendingCap` and `completePendingSignIn` lock the user's handle row first, then read the active credentials, the pending credentials and the other pending credentials with `SELECT ... FOR UPDATE` and count those rows in code. A plain `SELECT` after the lock could miss a change another request committed while this one waited. A smoke test of these two transactions on TiDB is required before task 2.4 relies on them.
+
+The database check on `last_used_at` proves recent use of that credential. A normal sign-in updates it too, so the check is a second barrier and not a proof that the caller performed a step-up. An `additional` registration must complete within 5 minutes of its step-up, otherwise the step-up is repeated.
+
 ### Requirements for the routes of task 2.4
 
 The HTTP routes are not in this service. When they are added:

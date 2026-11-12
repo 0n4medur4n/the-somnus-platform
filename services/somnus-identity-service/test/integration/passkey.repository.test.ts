@@ -1,5 +1,7 @@
 import { UUIDv7 } from "@somnus/api-contracts";
 import { count, eq, isNull } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   evaluateSignCount,
@@ -11,6 +13,7 @@ import {
   PasskeyHandleLockUnavailable,
   PasskeyUserNotFound,
 } from "../../src/domain/passkey/passkey.js";
+import { loadDbConfig } from "../../src/infrastructure/db/db.config.js";
 import { AccountDeletionRepository } from "../../src/infrastructure/db/repositories/account-deletion.repository.js";
 import {
   PASSKEY_CHALLENGE_CLEANUP_LIMIT,
@@ -22,6 +25,7 @@ import {
 } from "../../src/infrastructure/db/repositories/passkey-credentials.repository.js";
 import { PasskeyUserHandlesRepository } from "../../src/infrastructure/db/repositories/passkey-user-handles.repository.js";
 import { UsersRepository } from "../../src/infrastructure/db/repositories/users.repository.js";
+import * as schema from "../../src/infrastructure/db/schema/index.js";
 import {
   passkeyChallenges,
   passkeyCredentials,
@@ -36,6 +40,21 @@ function bytes(length: number, seed: number): Buffer {
   const buffer = Buffer.alloc(length);
   for (let i = 0; i < length; i++) buffer[i] = (seed + i) & 0xff;
   return buffer;
+}
+
+function credentialSelects(queries: string[]): string[] {
+  return queries.filter((query) => {
+    const text = query.toLowerCase();
+    return text.startsWith("select") && text.includes("passkey_credentials");
+  });
+}
+
+function endsWithForUpdate(query: string): boolean {
+  return query
+    .trim()
+    .replace(/;+\s*$/, "")
+    .toLowerCase()
+    .endsWith("for update");
 }
 
 /** 0xFF, 0xFE and 0x80 are not valid UTF-8 on their own. */
@@ -736,7 +755,7 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
           new Date(),
         );
         expect(result.activated).toBe(false);
-        expect(result.revokedCredentialIds).toEqual([]);
+        expect(result.revokedCredentials).toEqual([]);
       }
       const stillPending = await credentials.findByCredentialId(pending.credentialId);
       expect(stillPending?.activatedAt).toBeNull();
@@ -867,6 +886,72 @@ describe("passkey data model (ADR 0027, task 2.1)", () => {
           false,
         ),
       ).rejects.toBeInstanceOf(PasskeyCredentialScopeMismatch);
+    });
+
+    it("reads active, pending and other-pending credentials with FOR UPDATE", async () => {
+      const queries: string[] = [];
+      const config = loadDbConfig(process.env);
+      const pool = mysql.createPool({
+        uri: config.DATABASE_URL,
+        connectionLimit: 2,
+        ...(config.DB_SSL ? { ssl: { minVersion: "TLSv1.2" as const } } : {}),
+      });
+      try {
+        const logged = drizzle(pool, {
+          schema,
+          mode: "default",
+          logger: {
+            logQuery(query: string) {
+              queries.push(query);
+            },
+          },
+        });
+        const loggedCredentials = new PasskeyCredentialsRepository(logged);
+        const owner = await user("locked-read@example.com");
+        const credentialId = bytes(32, 97);
+        await db.insert(passkeyUserHandles).values({
+          id: UUIDv7(),
+          userId: owner,
+          handle: bytes(32, 98),
+        });
+        queries.splice(0, queries.length);
+        await loggedCredentials.createUnderPendingCap(
+          { userId: owner },
+          {
+            userId: owner,
+            credentialId,
+            publicKey: bytes(64, 99),
+            coseAlgorithm: -7,
+            transports: null,
+            aaguid: null,
+            backupEligible: false,
+            backupState: false,
+            name: "",
+            pendingExpiresAt: future(),
+          },
+          3,
+          new Date(),
+          true,
+        );
+        const registered = credentialSelects(queries);
+        expect(registered.length).toBeGreaterThanOrEqual(2);
+        expect(registered.every(endsWithForUpdate)).toBe(true);
+
+        queries.splice(0, queries.length);
+        const completed = await loggedCredentials.completePendingSignIn(
+          { userId: owner },
+          credentialId,
+          0,
+          1,
+          new Date(),
+        );
+        expect(completed.activated).toBe(true);
+        const activated = credentialSelects(queries);
+        expect(activated.length).toBeGreaterThanOrEqual(2);
+        expect(activated.every(endsWithForUpdate)).toBe(true);
+      } finally {
+        await pool.end();
+      }
     });
   });
 });

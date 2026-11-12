@@ -35,10 +35,16 @@ export type NewPasskeyCredential = {
 
 export type PasskeyCredentialRecord = typeof passkeyCredentials.$inferSelect;
 
+export type RevokedPendingCredential = {
+  credentialId: Buffer;
+  /** Null when the row had no deadline. Only a future deadline is audited. */
+  pendingExpiresAt: Date | null;
+};
+
 export type CompletedPendingSignIn = {
   activated: boolean;
-  /** Other pending credential ids revoked because this was the user's first activation. */
-  revokedCredentialIds: Buffer[];
+  /** Other pending credentials revoked because this was the user's first activation. */
+  revokedCredentials: RevokedPendingCredential[];
 };
 
 export interface PasskeyCredentialStore {
@@ -182,9 +188,10 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
 
   /**
    * The cap is enforced here, not only when options are built. Registration
-   * options create the handle row; this locks that row, counts unexpired
-   * pending credentials, and inserts in the same transaction. No new column
-   * or migration: the existing handle row is the lock.
+   * options create the handle row; this locks that row first, then reads the
+   * active and pending credential ids with SELECT ... FOR UPDATE and counts
+   * them in code. A plain SELECT after the lock would be a TiDB snapshot read.
+   * No new column or migration: the existing handle row is the lock.
    */
   async createUnderPendingCap(
     scope: UserScope,
@@ -205,13 +212,14 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
       if (locked.length === 0) throw new PasskeyHandleLockUnavailable();
       if (requireNoActive) {
         const active = await tx
-          .select({ total: count() })
+          .select({ credentialId: passkeyCredentials.credentialId })
           .from(passkeyCredentials)
-          .where(activeCredentialSql(scope.userId));
-        if (Number(active[0]?.total ?? 0) > 0) throw new PasskeyActiveCredentialPresent();
+          .where(activeCredentialSql(scope.userId))
+          .for("update");
+        if (active.length > 0) throw new PasskeyActiveCredentialPresent();
       }
-      const rows = await tx
-        .select({ total: count() })
+      const pending = await tx
+        .select({ credentialId: passkeyCredentials.credentialId })
         .from(passkeyCredentials)
         .where(
           and(
@@ -221,8 +229,9 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
             isNull(passkeyCredentials.lockedAt),
             gt(passkeyCredentials.pendingExpiresAt, now),
           ),
-        );
-      if (Number(rows[0]?.total ?? 0) >= maxPending) throw new PasskeyPendingLimit();
+        )
+        .for("update");
+      if (pending.length >= maxPending) throw new PasskeyPendingLimit();
       return insertCredential(tx, input);
     });
   }
@@ -331,7 +340,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
     now: Date,
   ): Promise<CompletedPendingSignIn> {
     if (evaluateSignCount(expectedSignCount, signCount) !== "ok") {
-      return { activated: false, revokedCredentialIds: [] };
+      return { activated: false, revokedCredentials: [] };
     }
     const instant = wholeSecond(now);
     return this.db.transaction(async (tx) => {
@@ -342,10 +351,11 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
         .for("update");
       if (locked.length === 0) throw new PasskeyHandleLockUnavailable();
       const active = await tx
-        .select({ total: count() })
+        .select({ credentialId: passkeyCredentials.credentialId })
         .from(passkeyCredentials)
-        .where(activeCredentialSql(scope.userId));
-      const otherActive = Number(active[0]?.total ?? 0);
+        .where(activeCredentialSql(scope.userId))
+        .for("update");
+      const otherActive = active.length;
       const updated = await tx
         .update(passkeyCredentials)
         .set({ activatedAt: instant, lastUsedAt: instant, signCount })
@@ -361,10 +371,13 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
           ),
         );
       if ((updated[0].affectedRows ?? 0) !== 1 || otherActive > 0) {
-        return { activated: (updated[0].affectedRows ?? 0) === 1, revokedCredentialIds: [] };
+        return { activated: (updated[0].affectedRows ?? 0) === 1, revokedCredentials: [] };
       }
       const others = await tx
-        .select({ credentialId: passkeyCredentials.credentialId })
+        .select({
+          credentialId: passkeyCredentials.credentialId,
+          pendingExpiresAt: passkeyCredentials.pendingExpiresAt,
+        })
         .from(passkeyCredentials)
         .where(
           and(
@@ -374,9 +387,14 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
             isNull(passkeyCredentials.revokedAt),
             isNull(passkeyCredentials.lockedAt),
           ),
-        );
-      if (others.length === 0) return { activated: true, revokedCredentialIds: [] };
-      const revokedCredentialIds = others.map((row) => row.credentialId);
+        )
+        .for("update");
+      if (others.length === 0) return { activated: true, revokedCredentials: [] };
+      const revokedCredentials = others.map((row) => ({
+        credentialId: row.credentialId,
+        pendingExpiresAt: row.pendingExpiresAt,
+      }));
+      const revokedCredentialIds = revokedCredentials.map((row) => row.credentialId);
       await tx
         .update(passkeyCredentials)
         .set({ revokedAt: instant })
@@ -387,7 +405,7 @@ export class PasskeyCredentialsRepository implements PasskeyCredentialStore {
             isNull(passkeyCredentials.activatedAt),
           ),
         );
-      return { activated: true, revokedCredentialIds };
+      return { activated: true, revokedCredentials };
     });
   }
 

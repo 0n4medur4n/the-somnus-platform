@@ -38,7 +38,10 @@ import {
   sameBytes,
 } from "../../domain/passkey/webauthn-ceremony.js";
 import { PasskeyChallengesRepository } from "../../infrastructure/db/repositories/passkey-challenges.repository.js";
-import type { PasskeyCredentialRecord } from "../../infrastructure/db/repositories/passkey-credentials.repository.js";
+import type {
+  PasskeyCredentialRecord,
+  RevokedPendingCredential,
+} from "../../infrastructure/db/repositories/passkey-credentials.repository.js";
 import {
   PASSKEY_PENDING_CLEANUP_LIMIT,
   PasskeyCredentialsRepository,
@@ -430,7 +433,7 @@ export class PasskeyWebAuthnService {
     const nextCount = received;
     const pending = credential.activatedAt === null;
     let wrote = false;
-    let revokedCredentialIds: Buffer[] = [];
+    let revokedCredentials: RevokedPendingCredential[] = [];
     try {
       if (pending) {
         const completed = await this.credentials.completePendingSignIn(
@@ -441,7 +444,7 @@ export class PasskeyWebAuthnService {
           now,
         );
         wrote = completed.activated;
-        revokedCredentialIds = completed.revokedCredentialIds;
+        revokedCredentials = completed.revokedCredentials;
       } else {
         wrote = await this.credentials.recordUse(
           { userId },
@@ -461,16 +464,21 @@ export class PasskeyWebAuthnService {
     if (!wrote) {
       return this.fail(correlationId, "authentication", userId, credentialIdText, "counter_race");
     }
-    for (const revokedId of revokedCredentialIds) {
-      await this.audit({
-        eventType: PASSKEY_EVENTS.revoked,
-        correlationId,
-        purpose: "authentication",
-        userId,
-        credentialId: isoBase64URL.fromBuffer(uint8(revokedId)),
-        reason: "credential_revoked",
-      });
-    }
+    const stillPending = revokedCredentials.filter(
+      (row) => row.pendingExpiresAt !== null && row.pendingExpiresAt.getTime() > now.getTime(),
+    );
+    await Promise.all(
+      stillPending.map((row) =>
+        this.audit({
+          eventType: PASSKEY_EVENTS.revoked,
+          correlationId,
+          purpose: "authentication",
+          userId,
+          credentialId: isoBase64URL.fromBuffer(uint8(row.credentialId)),
+          reason: "credential_revoked",
+        }),
+      ),
+    );
     await this.audit({
       eventType: PASSKEY_EVENTS.used,
       correlationId,
@@ -729,14 +737,37 @@ export class PasskeyWebAuthnService {
     const account = await this.activeAccount(holder, input.purpose, input.correlationId);
     if (!account.ok) return account;
     const rawHandle = parsed.response.userHandle;
-    let presented: Buffer | null;
-    try {
-      presented =
+    let presented: Buffer | null = null;
+    if (input.purpose === "step_up" && rawHandle !== undefined && rawHandle !== null) {
+      const decoded =
         typeof rawHandle === "string" && rawHandle.length > 0
           ? bytesFromBase64Url(rawHandle)
           : null;
-    } catch {
-      return this.fail(input.correlationId, input.purpose, holder, credentialIdText, "client_data");
+      if (!decoded || decoded.length > PASSKEY_SIZE_LIMITS.userHandle) {
+        return this.fail(
+          input.correlationId,
+          input.purpose,
+          holder,
+          credentialIdText,
+          "client_data",
+        );
+      }
+      presented = decoded;
+    } else {
+      try {
+        presented =
+          typeof rawHandle === "string" && rawHandle.length > 0
+            ? bytesFromBase64Url(rawHandle)
+            : null;
+      } catch {
+        return this.fail(
+          input.correlationId,
+          input.purpose,
+          holder,
+          credentialIdText,
+          "client_data",
+        );
+      }
     }
     const storedHandle = await this.handles.findForUser({ userId: holder });
     if (!storedHandle) {
@@ -874,7 +905,7 @@ export class PasskeyWebAuthnService {
       : input.credentialId
         ? { type: "passkey", id: input.credentialId }
         : { type: "passkey", id: input.purpose };
-    const correlationId = input.correlationId.trim() || "passkey";
+    const correlationId = acceptableCorrelationId(input.correlationId);
     let timer: ReturnType<typeof setTimeout> | undefined;
     const work = new Promise<"ok" | "failed">((resolve) => {
       try {
@@ -960,6 +991,12 @@ export class PasskeyWebAuthnService {
     }
     return null;
   }
+}
+
+function acceptableCorrelationId(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length >= 1 && trimmed.length <= 64) return trimmed;
+  return `passkey-${randomBytes(16).toString("hex")}`;
 }
 
 function laterInstant(previous: Date | null, now: Date): Date {

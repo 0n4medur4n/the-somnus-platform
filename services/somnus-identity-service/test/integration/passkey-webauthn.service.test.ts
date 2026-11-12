@@ -1747,7 +1747,6 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
         throw new Error("rejected");
       },
       () => new Promise<void>(() => undefined),
-      async () => undefined,
     ];
     try {
       for (const [index, publish] of publishers.entries()) {
@@ -1757,7 +1756,130 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
         });
         const userId = await person(`audit-${index}@example.com`);
         const started = await startRegistration(userId);
-        const correlationId = index === 3 ? "x".repeat(80) : "corr";
+        expect(
+          (
+            await local.verifyRegistration(
+              userId,
+              registerResponse(started.authenticator, started.options.challenge),
+              "corr",
+              { kind: "first" },
+            )
+          ).ok,
+        ).toBe(true);
+        expect(
+          await local.verifyRegistration(userId, { type: "public-key" }, "corr", {
+            kind: "first",
+          }),
+        ).toEqual({ ok: false });
+        expect(warn.mock.calls.every((call) => call[0] === "passkey audit publish failed")).toBe(
+          true,
+        );
+        expect(warn).toHaveBeenCalled();
+      }
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("revokes an expired pending credential without publishing it", async () => {
+    const userId = await person("silent-revoke@example.com");
+    const owner = await startRegistration(userId);
+    const expired = await startRegistration(userId);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(owner.authenticator, owner.options.challenge),
+          "corr",
+          { kind: "first" },
+        )
+      ).ok,
+    ).toBe(true);
+    expect(
+      (
+        await service.verifyRegistration(
+          userId,
+          registerResponse(expired.authenticator, expired.options.challenge),
+          "corr",
+          { kind: "first" },
+        )
+      ).ok,
+    ).toBe(true);
+    await db
+      .update(passkeyCredentials)
+      .set({ pendingExpiresAt: new Date(Date.now() - 60_000) })
+      .where(eq(passkeyCredentials.credentialId, expired.authenticator.credentialId));
+    events.splice(0, events.length);
+    expect((await signIn(owner.authenticator, 1)).result.ok).toBe(true);
+    const row = await credentials.findByCredentialId(expired.authenticator.credentialId);
+    expect(row?.revokedAt).not.toBeNull();
+    expect(row?.activatedAt).toBeNull();
+    expect(events.some((event) => event.eventType === PASSKEY_EVENTS.revoked)).toBe(false);
+  });
+
+  it("publishes revocation events together for pending credentials that have not expired", async () => {
+    const userId = await person("live-revoke@example.com");
+    const owner = await startRegistration(userId);
+    const first = await startRegistration(userId);
+    const second = await startRegistration(userId);
+    for (const started of [owner, first, second]) {
+      expect(
+        (
+          await service.verifyRegistration(
+            userId,
+            registerResponse(started.authenticator, started.options.challenge),
+            "corr",
+            { kind: "first" },
+          )
+        ).ok,
+      ).toBe(true);
+    }
+    let current = 0;
+    let maxInFlight = 0;
+    const published: EventEnvelope[] = [];
+    const local = new PasskeyWebAuthnService(credentials, challenges, handles, users, {
+      async publish(event) {
+        if (event.eventType === PASSKEY_EVENTS.revoked) {
+          current += 1;
+          maxInFlight = Math.max(maxInFlight, current);
+          await new Promise((resolve) => setTimeout(resolve, 40));
+          current -= 1;
+        }
+        published.push(event);
+      },
+    });
+    const options = await local.authenticationOptions("corr");
+    expect(options.ok).toBe(true);
+    if (!options.ok) return;
+    const result = await local.verifyAuthentication(
+      authenticationResponse(owner.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: options.options.challenge,
+        signCount: 1,
+      }),
+      "corr",
+    );
+    expect(result.ok).toBe(true);
+    const revoked = published.filter((event) => event.eventType === PASSKEY_EVENTS.revoked);
+    expect(revoked).toHaveLength(2);
+    expect(maxInFlight).toBe(2);
+    expect(revoked.every((event) => event.data["reason"] === "credential_revoked")).toBe(true);
+  });
+
+  it("publishes a generated correlation id when the caller's id is blank or too long", async () => {
+    const rejected = ["", "   ", "x".repeat(80)];
+    for (const [index, correlationId] of rejected.entries()) {
+      const published: EventEnvelope[] = [];
+      const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      const local = new PasskeyWebAuthnService(credentials, challenges, handles, users, {
+        async publish(event) {
+          published.push(event);
+        },
+      });
+      try {
+        const userId = await person(`generated-id-${index}@example.com`);
+        const started = await startRegistration(userId);
         expect(
           (
             await local.verifyRegistration(
@@ -1773,13 +1895,83 @@ describe("passkey WebAuthn service (ADR 0027 task 2.2)", () => {
             kind: "first",
           }),
         ).toEqual({ ok: false });
+        expect(published.length).toBeGreaterThan(0);
+        for (const event of published) {
+          expect(event.correlationId).toMatch(/^passkey-[0-9a-f]{32}$/);
+          expect(event.correlationId.includes(correlationId.trim())).toBe(
+            correlationId.trim() === "",
+          );
+          expect(JSON.stringify(event).includes("x".repeat(80))).toBe(false);
+        }
         expect(warn.mock.calls.every((call) => call[0] === "passkey audit publish failed")).toBe(
           true,
         );
-        expect(warn).toHaveBeenCalled();
+        expect(warn.mock.calls.some((call) => JSON.stringify(call).includes("x".repeat(80)))).toBe(
+          false,
+        );
+      } finally {
+        warn.mockRestore();
       }
-    } finally {
-      warn.mockRestore();
     }
+  });
+
+  it("refuses a non-string, invalid, or empty step-up user handle, and allows null or no handle", async () => {
+    const enrolled = await enroll("step-handle-shape@example.com");
+    expect((await signIn(enrolled.authenticator, 1)).result.ok).toBe(true);
+    const malformed: unknown[] = [12, "not base64!!", ""];
+    for (const userHandle of malformed) {
+      const step = await service.stepUpOptions(enrolled.userId, "corr");
+      expect(step.ok).toBe(true);
+      if (!step.ok) return;
+      const response = authenticationResponse(enrolled.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: step.options.challenge,
+        signCount: 2,
+        userHandle: null,
+      });
+      (response.response as { userHandle?: unknown }).userHandle = userHandle;
+      events.splice(0, events.length);
+      expect(await service.verifyStepUp(enrolled.userId, response, "corr")).toEqual({ ok: false });
+      expect(events.at(-1)?.data["reason"]).toBe("client_data");
+    }
+    for (const [index, assign] of [
+      (response: { response: { userHandle?: string | null } }) => {
+        response.response.userHandle = null;
+      },
+      (response: { response: { userHandle?: string | null } }) => {
+        delete response.response.userHandle;
+      },
+    ].entries()) {
+      const step = await service.stepUpOptions(enrolled.userId, "corr");
+      expect(step.ok).toBe(true);
+      if (!step.ok) return;
+      const response = authenticationResponse(enrolled.authenticator, {
+        origin: ORIGIN,
+        rpId: RP_ID,
+        challenge: step.options.challenge,
+        signCount: 2 + index,
+        userHandle: null,
+      });
+      assign(response);
+      expect((await service.verifyStepUp(enrolled.userId, response, "corr")).ok).toBe(true);
+    }
+  });
+
+  it("refuses an additional registration when the step-up time is not a date", async () => {
+    const owner = await enroll("garbage-step@example.com");
+    expect((await signIn(owner.authenticator, 1)).result.ok).toBe(true);
+    events.splice(0, events.length);
+    expect(
+      await service.registrationOptions(owner.userId, "corr", {
+        kind: "additional",
+        stepUp: {
+          userId: owner.userId,
+          credentialId: isoBase64URL.fromBuffer(owner.authenticator.credentialId),
+          verifiedAt: "not-a-date",
+        },
+      }),
+    ).toEqual({ ok: false });
+    expect(events.at(-1)?.data["reason"]).toBe("enrollment");
   });
 });
