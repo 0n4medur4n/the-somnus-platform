@@ -39,8 +39,9 @@ resource "google_cloud_run_v2_service" "this" {
           cpu    = var.cpu
           memory = var.memory
         }
-        # No CPU throttling outside requests would defeat scale-to-zero
-        # cost policy (build plan §2); keep the default (throttled).
+        # Passed only when set. Null leaves the attribute unset, so the four
+        # services that do not set it stay as they are. The worker sets true.
+        cpu_idle = var.cpu_idle
       }
 
       ports {
@@ -106,6 +107,10 @@ resource "google_cloud_run_v2_service" "this" {
       # next `terraform apply` would silently roll the service back to
       # var.image (the bootstrap placeholder).
       template[0].containers[0].image,
+      # `gcloud run deploy` stamps these. They record the last client, and
+      # clearing them would not change how the service runs.
+      client,
+      client_version,
     ]
   }
 }

@@ -87,6 +87,17 @@ variable "memory" {
   default = "512Mi"
 }
 
+variable "cpu_idle" {
+  description = <<-EOT
+    True bills CPU only while a request is in flight. False bills every second
+    an instance is alive. Null leaves the attribute unset, so Terraform does
+    not change it. Only somnus-worker sets true: that is what is running.
+  EOT
+  type        = bool
+  nullable    = true
+  default     = null
+}
+
 variable "port" {
   description = "Container port. Build plan behavioral rule: services read PORT from the environment, default 8080."
   type        = number
