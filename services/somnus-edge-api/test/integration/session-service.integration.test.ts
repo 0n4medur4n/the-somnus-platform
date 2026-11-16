@@ -97,6 +97,7 @@ describe("SessionService (Firestore-backed session store)", () => {
 
   it("writes client, amr, authTime and stepUpAt once, and later writes leave them", async () => {
     const now = new Date("2026-11-12T12:00:00.000Z");
+    const authTime = new Date("2020-09-13T12:26:40.000Z");
     const created = await sessions.create({
       firebaseUid: "user-classified",
       email: "c@example.com",
@@ -104,7 +105,7 @@ describe("SessionService (Firestore-backed session store)", () => {
       now,
       client: "console",
       amr: [EMAIL_LINK_AMR],
-      authTime: now,
+      authTime,
       stepUpAt: null,
     });
     expect(created).toMatchObject({
@@ -112,7 +113,8 @@ describe("SessionService (Firestore-backed session store)", () => {
       amr: [EMAIL_LINK_AMR],
       stepUpAt: null,
     });
-    expect(created.authTime?.toISOString()).toBe(now.toISOString());
+    expect(created.authTime?.toISOString()).toBe(authTime.toISOString());
+    expect(created.createdAt.toISOString()).toBe(now.toISOString());
 
     const before = await firebase.firestore.collection("sessions").doc(created.sessionId).get();
     await sessions.validate(created.sessionId);
@@ -127,9 +129,30 @@ describe("SessionService (Firestore-backed session store)", () => {
     expect(second["amr"]).toEqual([EMAIL_LINK_AMR]);
     expect(second["stepUpAt"]).toBeNull();
     expect(second["authTime"]).toEqual(first["authTime"]);
+    expect((second["authTime"] as Timestamp).toMillis()).toBe(authTime.getTime());
     expect((second["expiresAt"] as Timestamp).toMillis()).toBe(now.getTime() + 3_600_000);
     expect(second["somnusUserId"]).toBe("018f0000-0000-7000-8000-0000000000aa");
     expect(second).not.toHaveProperty("lastSeenAt");
+  });
+
+  it("stores a step-up time when create is given one", async () => {
+    const now = new Date();
+    const stepUpAt = new Date(now.getTime() + 60_000);
+    const created = await sessions.create({
+      firebaseUid: "step-up",
+      email: null,
+      emailVerified: false,
+      ttlSeconds: 3600,
+      now,
+      client: "app",
+      amr: [EMAIL_LINK_AMR],
+      authTime: new Date("2020-01-01T00:00:00.000Z"),
+      stepUpAt,
+    });
+    expect(created.stepUpAt?.toISOString()).toBe(stepUpAt.toISOString());
+    const found = await sessions.validate(created.sessionId);
+    expect(found?.stepUpAt?.toISOString()).toBe(stepUpAt.toISOString());
+    expect(found?.emailVerified).toBe(false);
   });
 
   it("validate() accepts a document with none of the new fields and does not add them", async () => {

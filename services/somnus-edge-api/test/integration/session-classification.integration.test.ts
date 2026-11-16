@@ -5,8 +5,14 @@ import { PRODUCTION_CONSOLE_ORIGIN } from "../../src/config/edge-config.js";
 import { FirebaseService } from "../../src/infrastructure/firebase/firebase.service.js";
 import { EMAIL_LINK_AMR } from "../../src/modules/sessions/classify-session.js";
 import { SessionService } from "../../src/modules/sessions/session.service.js";
+import { authTimeFromClaim } from "../../src/modules/sessions/verified-sign-in.js";
 import { buildTestApp, type TestApp } from "../support/app.js";
-import { clearAuthEmulator, clearFirestoreEmulator, signUpTestUser } from "../support/emulator.js";
+import {
+  clearAuthEmulator,
+  clearFirestoreEmulator,
+  signUpTestUser,
+  TEST_PROJECT_ID,
+} from "../support/emulator.js";
 
 /**
  * Origin tricks first. The session is created through POST /v1/sessions, the
@@ -178,7 +184,11 @@ describe("session classification at creation", () => {
     expect(before["stepUpAt"]).toBeNull();
     expect(before).not.toHaveProperty("lastSeenAt");
     const createdAt = (before["createdAt"] as Timestamp).toMillis();
-    expect((before["authTime"] as Timestamp).toMillis()).toBe(createdAt);
+    const claim = tokenClaim(idToken, "auth_time");
+    const fromClaim = authTimeFromClaim(claim);
+    if (fromClaim === null) throw new Error("fixture token has no auth_time");
+    expect((before["authTime"] as Timestamp).toMillis()).toBe(fromClaim.getTime());
+    expect(Math.abs(createdAt - Date.now())).toBeLessThan(10_000);
     expect((before["expiresAt"] as Timestamp).toMillis() - createdAt).toBe(604_800_000);
 
     const sessions = testApp.app.get(SessionService);
@@ -202,4 +212,131 @@ describe("session classification at creation", () => {
     expect(after).not.toHaveProperty("lastSeenAt");
     expect(after["somnusUserId"]).toBe("018f0000-0000-7000-8000-0000000000aa");
   });
+
+  it("stores an old auth_time, which is not the server clock, and email_link for the password provider", async () => {
+    const { uid } = await signUpTestUser("old-auth-time@example.com");
+    await allowAuthTimesSince(uid, "1");
+    const oldSeconds = 1_600_000_000;
+    const idToken = makeIdToken({
+      sub: uid,
+      auth_time: oldSeconds,
+      sign_in_provider: "password",
+    });
+    const res = await server.inject({
+      method: "POST",
+      url: "/v1/sessions",
+      headers: { "content-type": "application/json", origin: PRODUCTION_CONSOLE_ORIGIN },
+      payload: JSON.stringify({ idToken }),
+    });
+    expect(res.statusCode).toBe(201);
+    const stored = await testApp.app
+      .get(FirebaseService)
+      .firestore.collection("sessions")
+      .doc(sessionIdOf(server, res))
+      .get();
+    const data = stored.data();
+    if (data === undefined) throw new Error("session document missing");
+    expect((data["authTime"] as Timestamp).toMillis()).toBe(oldSeconds * 1000);
+    expect((data["createdAt"] as Timestamp).toMillis()).not.toBe(oldSeconds * 1000);
+    expect(Math.abs((data["createdAt"] as Timestamp).toMillis() - Date.now())).toBeLessThan(10_000);
+    expect(data["amr"]).toEqual([EMAIL_LINK_AMR]);
+  });
+
+  it("records a provider the token names, instead of email_link", async () => {
+    const { uid } = await signUpTestUser("named-provider@example.com");
+    const idToken = makeIdToken({
+      sub: uid,
+      auth_time: Math.floor(Date.now() / 1000),
+      sign_in_provider: "google.com",
+    });
+    const res = await server.inject({
+      method: "POST",
+      url: "/v1/sessions",
+      headers: { "content-type": "application/json" },
+      payload: JSON.stringify({ idToken }),
+    });
+    expect(res.statusCode).toBe(201);
+    const stored = await testApp.app
+      .get(FirebaseService)
+      .firestore.collection("sessions")
+      .doc(sessionIdOf(server, res))
+      .get();
+    expect(stored.data()?.["amr"]).toEqual(["google.com"]);
+  });
+
+  it.each([
+    ["missing", { omitAuthTime: true }],
+    ["a string", { auth_time: "1600000000" }],
+    ["a boolean", { auth_time: true }],
+  ] as const)("refuses a token whose auth_time is %s", async (_label, claims) => {
+    const { uid } = await signUpTestUser(
+      `bad-auth-time-${_label.replaceAll(" ", "-")}@example.com`,
+    );
+    const idToken = makeIdToken({ ...claims, sub: uid });
+    const res = await server.inject({
+      method: "POST",
+      url: "/v1/sessions",
+      headers: { "content-type": "application/json" },
+      payload: JSON.stringify({ idToken }),
+    });
+    expect(res.statusCode).toBe(401);
+    const body = res.json() as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("UNAUTHENTICATED");
+    expect(body.error.message).toBe("Authentication is required.");
+    expect(JSON.stringify(body)).not.toContain("auth_time");
+    expect(res.cookies).toHaveLength(0);
+  });
 });
+
+async function allowAuthTimesSince(uid: string, validSince: string): Promise<void> {
+  const host = process.env["FIREBASE_AUTH_EMULATOR_HOST"];
+  if (!host) throw new Error("auth emulator host is unset");
+  const res = await fetch(
+    `http://${host}/identitytoolkit.googleapis.com/v1/accounts:update?key=fake-api-key`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer owner" },
+      body: JSON.stringify({ localId: uid, validSince }),
+    },
+  );
+  if (!res.ok) throw new Error(`emulator account update failed: ${res.status}`);
+}
+
+function tokenClaim(idToken: string, name: string): unknown {
+  const payload = idToken.split(".")[1];
+  if (payload === undefined) throw new Error("token has no payload");
+  const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Record<
+    string,
+    unknown
+  >;
+  return claims[name];
+}
+
+function makeIdToken(claims: {
+  sub?: string;
+  auth_time?: unknown;
+  sign_in_provider?: unknown;
+  omitAuthTime?: boolean;
+}): string {
+  const b64url = (obj: unknown) => Buffer.from(JSON.stringify(obj)).toString("base64url");
+  const nowSec = Math.floor(Date.now() / 1000);
+  const uid = claims.sub ?? "auth-time-user";
+  const payload: Record<string, unknown> = {
+    iss: `https://securetoken.google.com/${TEST_PROJECT_ID}`,
+    aud: TEST_PROJECT_ID,
+    sub: uid,
+    user_id: uid,
+    iat: nowSec,
+    exp: nowSec + 3600,
+    auth_time: nowSec,
+    email: "auth-time@example.com",
+    email_verified: true,
+    firebase: {
+      identities: { email: ["auth-time@example.com"] },
+      sign_in_provider: claims.sign_in_provider ?? "password",
+    },
+  };
+  if (claims.omitAuthTime) delete payload["auth_time"];
+  else if (claims.auth_time !== undefined) payload["auth_time"] = claims.auth_time;
+  return `${b64url({ alg: "none", typ: "JWT" })}.${b64url(payload)}.`;
+}

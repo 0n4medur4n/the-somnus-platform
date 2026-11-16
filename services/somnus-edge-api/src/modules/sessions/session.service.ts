@@ -142,8 +142,7 @@ export class SessionService {
   async validate(sessionId: string, now: Date = new Date()): Promise<SessionRecord | null> {
     const snapshot = await this.collection.doc(sessionId).get();
     if (!snapshot.exists) return null;
-    const raw = snapshot.data();
-    if (raw === undefined) return null;
+    const raw = snapshot.data() as Record<string, unknown>;
     const data = raw as SessionDoc;
     if (data.revokedAt !== null) return null;
     const expiresAt = data.expiresAt.toDate();

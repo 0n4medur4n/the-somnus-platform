@@ -70,9 +70,12 @@ there is no metadata server), and `INTERNAL_TIMEOUT_MS`.
 2. `POST /v1/sessions` with `{ idToken }`. The edge API **verifies** the
    token (`firebase-admin`), then creates a server-side session. The
    session records `client` (`console` only when the request `Origin` is
-   exactly `CONSOLE_ORIGIN`, otherwise `app`), `amr` (`email_link`),
-   `authTime` (that verification) and `stepUpAt` (`null`). None of this
-   is returned, and none of it changes the cookie.
+   exactly `CONSOLE_ORIGIN`, otherwise `app`), `amr` (`email_link`, because
+   the token's `password` provider does not name the email link and that is
+   the only sign-in this repo enables), `authTime` (the verified token's
+   `auth_time`, not the server clock) and `stepUpAt` (`null`). `createdAt`
+   stays the server clock. None of this is returned, and none of it changes
+   the cookie.
 3. The response sets an **HttpOnly, Secure, SameSite** cookie carrying
    only an opaque, signed session id — never the token, never any
    identity data. The ID token is discarded after verification.
@@ -161,7 +164,7 @@ startup:
 | `COOKIE_SECURE` | `false` | `true` in every deployed env; deployed, `false` is refused at startup. |
 | `COOKIE_SAMESITE` | `lax` | `lax` or `strict`; deployed, `none` is refused. |
 | `COOKIE_DOMAIN` | (unset) | Deployed, setting it is refused: the cookie is host-only. |
-| `CONSOLE_ORIGIN` | `https://console.thesomnus.com` | Exact `Origin` that records a session as `console`. Unset keeps this production value, including in development and test; those may set a local origin. Not parsed as a URL. |
+| `CONSOLE_ORIGIN` | `https://console.thesomnus.com` | Exact `Origin` that records a session as `console`. Unset keeps this production value. Deployed, it must be `https://host` with a lowercase host and no path, query or whitespace, or the process refuses to start. Development and test may instead use `http://localhost` with an optional port. |
 | `CORS_ORIGINS` | localhost dev origins | Comma-separated Hosting origins. |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | `100` / `60000` | Global, keyed by client IP; `/health/live` counts too. Nothing in terraform, the deploy workflows or compose overrides these, so the defaults **are** the deployed limit. The Playwright stack raises `RATE_LIMIT_MAX` for itself (`scripts/e2e-stack.mjs`) because the whole suite shares one IP; `tests/e2e-rate-limit.test.ts` fails if that harness value ever stops diverging from this default. |
 | `BODY_LIMIT_BYTES` | `65536` | |

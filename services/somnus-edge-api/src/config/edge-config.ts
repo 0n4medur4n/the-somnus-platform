@@ -21,6 +21,34 @@ export const MIN_COOKIE_SECRET_BYTES = 32;
  */
 export const PRODUCTION_CONSOLE_ORIGIN = "https://console.thesomnus.com";
 
+/**
+ * A DNS host of lowercase labels, at least two, no empty label and no
+ * leading or trailing hyphen. Compared as text: nothing is lowercased or
+ * parsed as a URL, so uppercase and a trailing dot stay rejected.
+ */
+const CLEAN_HOST =
+  "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+";
+
+function portOk(port: string | undefined): boolean {
+  if (port === undefined) return true;
+  if (!/^[1-9]\d{0,4}$/.test(port)) return false;
+  return Number(port) <= 65535;
+}
+
+/** `https://host` or `https://host:port`. No path, query, fragment, user or whitespace. */
+export function isCleanHttpsOrigin(value: string): boolean {
+  const match = new RegExp(`^https://${CLEAN_HOST}(?::(\\d{1,5}))?$`).exec(value);
+  if (!match) return false;
+  return portOk(match[1]);
+}
+
+/** `http://localhost` or `http://localhost:port`. Development and test only. */
+export function isLocalhostHttpOrigin(value: string): boolean {
+  const match = /^http:\/\/localhost(?::(\d{1,5}))?$/.exec(value);
+  if (!match) return false;
+  return portOk(match[1]);
+}
+
 /** Development defaults and placeholders that must never be a deployed secret. */
 const KNOWN_DEVELOPMENT_SECRETS: readonly string[] = [
   DEVELOPMENT_COOKIE_SECRET,
@@ -200,6 +228,15 @@ export const EdgeConfigSchema = z
         const value = config[key];
         if (value !== undefined && value.length < 16) issue(key, "must be at least 16 characters");
       }
+      if (
+        !isCleanHttpsOrigin(config.CONSOLE_ORIGIN) &&
+        !isLocalhostHttpOrigin(config.CONSOLE_ORIGIN)
+      ) {
+        issue(
+          "CONSOLE_ORIGIN",
+          "must be an https origin, or http://localhost with an optional port",
+        );
+      }
       return;
     }
 
@@ -229,6 +266,12 @@ export const EdgeConfigSchema = z
     }
     if (config.COOKIE_SAMESITE === "none") {
       issue("COOKIE_SAMESITE", "must be lax or strict unless NODE_ENV is development or test");
+    }
+    if (!isCleanHttpsOrigin(config.CONSOLE_ORIGIN)) {
+      issue(
+        "CONSOLE_ORIGIN",
+        "must be https://host, with a lowercase host and no path, query, or whitespace",
+      );
     }
   })
   .transform((config) => {
