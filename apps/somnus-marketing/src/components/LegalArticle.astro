@@ -1,0 +1,57 @@
+---
+type Block =
+  | { kind: "h2"; text: string; id?: string }
+  | { kind: "p"; text: string }
+  | { kind: "list"; items: string[] };
+
+interface Props {
+  markdown: string;
+}
+
+const { markdown } = Astro.props;
+
+const blocks: Block[] = [];
+for (const chunk of markdown.trim().split(/\n\s*\n/)) {
+  const lines = chunk
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) continue;
+  if (lines.every((line) => line.startsWith("- "))) {
+    blocks.push({ kind: "list", items: lines.map((line) => line.slice(2)) });
+    continue;
+  }
+  for (const line of lines) {
+    if (line.startsWith("## ")) {
+      const text = line.slice(3);
+      blocks.push(/cookie/i.test(text) ? { kind: "h2", text, id: "cookies" } : { kind: "h2", text });
+    } else if (line.startsWith("- ")) {
+      const last = blocks.at(-1);
+      if (last?.kind === "list") last.items.push(line.slice(2));
+      else blocks.push({ kind: "list", items: [line.slice(2)] });
+    } else {
+      blocks.push({ kind: "p", text: line });
+    }
+  }
+}
+---
+
+<div class="mt-8 flex max-w-none flex-col gap-4 text-muted">
+  {
+    blocks.map((block) =>
+      block.kind === "h2" ? (
+        <h2 id={block.id} class="font-display text-xl text-text">
+          {block.text}
+        </h2>
+      ) : block.kind === "list" ? (
+        <ul class="list-disc space-y-1 pl-5">
+          {block.items.map((item) => (
+            <li>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>{block.text}</p>
+      ),
+    )
+  }
+</div>
