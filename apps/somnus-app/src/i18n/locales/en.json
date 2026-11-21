@@ -456,7 +456,6 @@
   "funnel": {
     "title": "Sleep guidance",
     "intro": "We will ask you some questions, one at a time. You can answer “I don't know” or “I'd rather not say” whenever you need to. This is not a diagnosis.",
-    "spanishOnly": "The questions and the guidance are in Spanish, the language in which they were clinically approved.",
     "loading": "Loading…",
     "consent": {
       "anonymousHint": "If you sign in before starting, the guidance will be saved to your account."
@@ -542,6 +541,12 @@
       "caseCodeHint": "Keep it. If you ever need to ask us about this guidance, give us this number: it does not contain your name or your details."
     },
     "report": {
+      "person": {
+        "age": "Age: {{age}} years",
+        "sex": "Sex: {{sex}}",
+        "mujer": "Female",
+        "hombre": "Male"
+      },
       "mostImportant": "Most important",
       "whatYouTold": "What you told us",
       "whatYouToldNote": "This is the summary you confirmed on the last screen. If anything is not right, do the guidance again.",

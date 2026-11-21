@@ -1,4 +1,10 @@
-import type { FunnelState, MeResponse, SupportedLocale } from "@somnus/api-contracts";
+import {
+  DEFAULT_LOCALE,
+  type FunnelState,
+  isSupportedLocale,
+  type MeResponse,
+  type SupportedLocale,
+} from "@somnus/api-contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -153,7 +159,7 @@ export function FunnelAssessment({
         await edge.recordConsent("health_data_processing", CONSENT_SOURCE, legalLocale);
         await queryClient.invalidateQueries({ queryKey: CONSENT_STATUS_QUERY });
       }
-      return edge.startFunnel(staff);
+      return edge.startFunnel(staff, isSupportedLocale(locale) ? locale : DEFAULT_LOCALE);
     });
   }
 
@@ -214,9 +220,6 @@ export function FunnelAssessment({
           {t("funnel.title")}
         </h1>
         {atResult ? null : <p className="text-somnus-subtle">{t("funnel.intro")}</p>}
-        {locale !== "es" ? (
-          <p className="text-sm text-somnus-subtle">{t("funnel.spanishOnly")}</p>
-        ) : null}
       </header>
 
       {phase === "loading" ? <p role="status">{t("funnel.loading")}</p> : null}

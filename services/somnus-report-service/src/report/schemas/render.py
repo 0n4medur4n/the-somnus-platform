@@ -182,6 +182,13 @@ class FunnelReportProfessionalDTO(ContractModel):
     grounding: FunnelReportGroundingDTO | None = None
 
 
+class FunnelReportPersonDTO(ContractModel):
+    """Age and sex as the person answered them at the start (21/11/2026); None if not said."""
+
+    age: int | None = Field(ge=0, le=120)
+    sex: Literal["mujer", "hombre"] | None
+
+
 class FunnelReportDTO(ContractModel):
     """morpheo's one-page report and the professional's page, as morpheo built them."""
 
@@ -194,6 +201,7 @@ class FunnelReportDTO(ContractModel):
     limits: list[str]
     sources: list[str]
     professional: FunnelReportProfessionalDTO | None
+    person: FunnelReportPersonDTO | None = None
 
 
 class FunnelReportRequestDTO(ContractModel):

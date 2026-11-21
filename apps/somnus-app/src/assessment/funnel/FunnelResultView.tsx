@@ -1,4 +1,4 @@
-import type { FunnelReport, FunnelResult } from "@somnus/api-contracts";
+import type { FunnelReport, FunnelReportPerson, FunnelResult } from "@somnus/api-contracts";
 import { useTranslation } from "react-i18next";
 import { activeLocale } from "../../i18n/index.js";
 import { edge } from "../../lib/edge.js";
@@ -147,6 +147,26 @@ function UrgentReport({ report, texts }: { report: FunnelReport; texts: Texts })
 }
 
 /** The one-page report, block by block, in the order of the PDF. */
+/**
+ * Who the report is about, as they answered at the start: the age, then the sex
+ * (Jesús, 21/11/2026). Only what they said; nothing when they said neither.
+ */
+function PersonLine({ person }: { person: FunnelReportPerson | null }) {
+  const { t } = useTranslation();
+  if (!person) return null;
+  const parts: string[] = [];
+  if (person.age !== null) parts.push(t("funnel.report.person.age", { age: person.age }));
+  if (person.sex !== null) {
+    parts.push(t("funnel.report.person.sex", { sex: t(`funnel.report.person.${person.sex}`) }));
+  }
+  if (parts.length === 0) return null;
+  return (
+    <p className="text-sm text-somnus-subtle" data-testid="funnel-report-person">
+      {parts.join(" · ")}
+    </p>
+  );
+}
+
 function StandardReport({
   report,
   texts,
@@ -163,6 +183,7 @@ function StandardReport({
   const headline = [...report.headline, ...report.secondary];
   return (
     <div className="flex flex-col gap-5" data-testid="funnel-report">
+      <PersonLine person={report.person ?? null} />
       {headline.length > 0 ? (
         <section aria-labelledby="funnel-report-main" className="flex flex-col gap-2">
           <h3 id="funnel-report-main" className="font-semibold">

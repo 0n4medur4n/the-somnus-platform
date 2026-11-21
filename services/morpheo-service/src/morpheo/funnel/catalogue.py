@@ -29,7 +29,13 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from morpheo.funnel.artifact import FunnelArtifact, FunnelArtifactError, funnel_artifact
+from morpheo.funnel.artifact import (
+    SPANISH,
+    FunnelArtifact,
+    FunnelArtifactError,
+    Lang,
+    funnel_artifact,
+)
 from morpheo.funnel.interview import Interview
 
 CATALOGUE_FILE = Path(__file__).resolve().parents[3] / "clinical" / "morpheo_textos_v2.json"
@@ -144,7 +150,8 @@ def _validate_condition(cond: Mapping[str, Any], artifact: FunnelArtifact, where
     steps = [s for s in artifact.steps if s.id == cond["q"]]
     if not steps:
         raise FunnelArtifactError(f"{where}: unknown question {cond['q']!r}")
-    keys = {o.key for s in steps for o in s.options}
+    # A retired option still names a phrase: interviews answered before read with it.
+    keys = {o.key for s in steps for o in (*s.options, *s.retired_options)}
     named = [cond[k] for k in ("has", "is") if k in cond] + list(cond.get("in", []))
     for key in named:
         if keys and key not in keys:
@@ -245,30 +252,30 @@ def funnel_catalogue() -> Catalogue:
     return load_catalogue()
 
 
+def catalogue_for(artifact: FunnelArtifact) -> Catalogue:
+    """The catalogue in the artifact's language (Spanish, or its overlay)."""
+    if artifact.locale == SPANISH.locale:
+        return funnel_catalogue()
+    from morpheo.funnel.locales import bundle  # local: locales builds on this module
+
+    return bundle(artifact.locale).catalogue
+
+
 # --- selection ---
 
 
-_UNITS = {
-    "dias": ("día", "días"),
-    "semanas": ("semana", "semanas"),
-    "meses": ("mes", "meses"),
-    "años": ("año", "años"),
-    "horas": ("hora", "horas"),
-}
-
-
-def duration_text(value: Any) -> str | None:
+def duration_text(value: Any, lang: Lang = SPANISH) -> str | None:
     if not isinstance(value, dict):
         return None
-    singular, plural = _UNITS.get(value["unit"], (value["unit"], value["unit"]))
+    singular, plural = lang.units.get(value["unit"], (value["unit"], value["unit"]))
     amount = value["value"]
     return f"{amount} {singular if amount == 1 else plural}"
 
 
-def join(items: Sequence[str], joiner: str | None = None) -> str:
+def join(items: Sequence[str], joiner: str | None = None, conjunction: str = " y ") -> str:
     if joiner is not None:
         return joiner.join(items)
-    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " y " + items[-1]
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + conjunction + items[-1]
 
 
 class Selector:
@@ -325,7 +332,7 @@ class Selector:
             low, high = cond["between"]
             return isinstance(value, int) and low <= value <= high
         if "duration" in cond:
-            return duration_text(value) is not None
+            return duration_text(value, iv.a.lang) is not None
         if "any" in cond:
             return isinstance(value, list) and len(value) > 0
         if "unknown" in cond:
@@ -353,7 +360,8 @@ class Selector:
         question = (phrase.when or {}).get("q")
         if question is not None:
             value = self.iv.value(question)
-            text = text.replace("{n}", str(value)).replace("{duración}", duration_text(value) or "")
+            duration = duration_text(value, self.iv.a.lang) or ""
+            text = text.replace("{n}", str(value)).replace("{duración}", duration)
         for ref in _LIST_SLOT.findall(text):
             text = text.replace(f"{{list:{ref}}}", self.text(ref) or "")
         return self._resources(text)
@@ -373,7 +381,7 @@ class Selector:
         selection = self.select(list_name)
         if not selection.texts:
             return None
-        return join(selection.texts, self.c.lists[list_name].joiner)
+        return join(selection.texts, self.c.lists[list_name].joiner, self.iv.a.lang.conjunction)
 
     def placeholder(self, template: str, name: str) -> str | None:
         slot = self.c.placeholders[template][name]

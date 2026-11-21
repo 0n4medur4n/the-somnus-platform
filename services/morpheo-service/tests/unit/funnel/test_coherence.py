@@ -22,6 +22,7 @@ H4_AGAIN, I2_AGAIN = "H4@coherencia", "I2@coherencia"
 # and the AI read "no daily impact" from their words. Branch H never opens.
 CASE_3 = {
     "AGE": Answer(value=23),
+    "SEX": Answer(value="hombre"),
     "Q03": Answer(value={"value": 3, "unit": "meses"}, origin=ORIGIN_AI),
     "Q05": Answer(value=5),
     "Q08": Answer(value=["despertares"], origin=ORIGIN_AI),

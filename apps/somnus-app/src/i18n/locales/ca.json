@@ -456,7 +456,6 @@
   "funnel": {
     "title": "Orientació del son",
     "intro": "Li farem unes preguntes, una cada vegada. Pot respondre «No ho sé» o «Prefereixo no respondre» quan ho necessiti. No és un diagnòstic.",
-    "spanishOnly": "Les preguntes i l'orientació són en castellà, la llengua en què es van aprovar clínicament.",
     "loading": "S'està carregant…",
     "consent": {
       "anonymousHint": "Si inicia la sessió abans de començar, l'orientació es desarà al seu compte."
@@ -542,6 +541,12 @@
       "caseCodeHint": "Deseu-lo. Si mai ens heu de consultar res sobre aquesta orientació, indiqueu-nos aquest número: no conté el vostre nom ni les vostres dades."
     },
     "report": {
+      "person": {
+        "age": "Edat: {{age}} anys",
+        "sex": "Sexe: {{sex}}",
+        "mujer": "Dona",
+        "hombre": "Home"
+      },
       "mostImportant": "El més important",
       "whatYouTold": "El que ens ha explicat",
       "whatYouToldNote": "És el resum que va confirmar a l'última pantalla. Si alguna cosa no és correcta, torni a fer l'orientació.",

@@ -456,7 +456,6 @@
   "funnel": {
     "title": "Orientación del sueño",
     "intro": "Le haremos unas preguntas, una cada vez. Puede responder «No lo sé» o «Prefiero no responder» cuando lo necesite. No es un diagnóstico.",
-    "spanishOnly": "Las preguntas y la orientación están en español, el idioma en que se aprobaron clínicamente.",
     "loading": "Cargando…",
     "consent": {
       "anonymousHint": "Si inicia sesión antes de empezar, la orientación se guardará en su cuenta."
@@ -542,6 +541,12 @@
       "caseCodeHint": "Guárdelo. Si alguna vez necesita consultarnos algo sobre esta orientación, indíquenos este número: no contiene su nombre ni sus datos."
     },
     "report": {
+      "person": {
+        "age": "Edad: {{age}} años",
+        "sex": "Sexo: {{sex}}",
+        "mujer": "Mujer",
+        "hombre": "Hombre"
+      },
       "mostImportant": "Lo más importante",
       "whatYouTold": "Lo que nos ha contado",
       "whatYouToldNote": "Es el resumen que usted confirmó en la última pantalla. Si algo no es correcto, vuelva a hacer la orientación.",

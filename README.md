@@ -127,8 +127,9 @@ internal service client.
   price of keeping the platform cheap.
 - **Four languages.** The interface is in Spanish (default), English, Catalan
   and French; a key missing in any of them breaks continuous integration. The
-  internal console is in Spanish and English. Today the clinical interview is
-  written in Spanish.
+  internal console is in Spanish and English. The clinical interview, its
+  result and its report are in all four: Catalan from the clinical lead's own
+  edition, English and French translated (ADR 0020, amendment of 21/11/2026).
 - **Contracts are written once.** Zod is the source of truth; OpenAPI and the
   JSON schemas are generated, never written by hand.
 

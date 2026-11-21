@@ -456,7 +456,6 @@
   "funnel": {
     "title": "Orientation sur le sommeil",
     "intro": "Nous allons vous poser quelques questions, une à la fois. Vous pouvez répondre « Je ne sais pas » ou « Je préfère ne pas répondre » à tout moment. Ce n'est pas un diagnostic.",
-    "spanishOnly": "Les questions et l'orientation sont en espagnol, la langue dans laquelle elles ont été validées cliniquement.",
     "loading": "Chargement…",
     "consent": {
       "anonymousHint": "Si vous vous connectez avant de commencer, l'orientation sera enregistrée dans votre compte."
@@ -542,6 +541,12 @@
       "caseCodeHint": "Conservez-le. Si vous avez besoin de nous interroger sur cette orientation, indiquez-nous ce numéro : il ne contient ni votre nom ni vos données."
     },
     "report": {
+      "person": {
+        "age": "Âge : {{age}} ans",
+        "sex": "Sexe : {{sex}}",
+        "mujer": "Femme",
+        "hombre": "Homme"
+      },
       "mostImportant": "L'essentiel",
       "whatYouTold": "Ce que vous nous avez dit",
       "whatYouToldNote": "C'est le résumé que vous avez confirmé à l'écran précédent. Si quelque chose n'est pas correct, refaites l'orientation.",

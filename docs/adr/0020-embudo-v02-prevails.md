@@ -63,3 +63,44 @@ the path that leads to a consultation rather than to self-help), marked
   a reason to rewrite v0.2.
 - Immutable negative tests that encode L0-L4 behaviour are not deleted: each one
   gets a v2.0 equivalent before the old engine is retired.
+
+## Amendment, 2026-11-21: four languages, the sex, and R4/R6 in plain language
+
+Owner decision, 21/11/2026, on the clinical lead's request; approved for
+production the same day. Content 2.3, rules 2.2 (no rule changed).
+
+- **Catalan.** The clinical lead delivered the interview in Catalan,
+  `clinical/Morpheo_algoritmo_embudo_v02_ca.pdf` (16 pages, "Disseny clínic v0.2 ·
+  Edició en llenguatge planer", SHA-256
+  `d351f1ecdb09982464d8f1af48932d4ea709a826936033159257ae824ae6ce5c`): the same
+  flow, questions and templates as v0.2, written in Catalan plain language. It is
+  the source of the Catalan interview. Its questions and templates are used
+  word for word; the loader checks each against a transcription of the PDF.
+  Screens the edition does not write (the Q07, Q14 and H3 splits, Q13 and Q15
+  with their notes, the sex) are drafts that say why.
+- **English and French.** Translations of the approved Spanish texts, pending
+  clinical review. They are live, like Catalan.
+- **How.** One overlay per language, `clinical/i18n/morpheo_v2.<locale>.json`,
+  gives other words to the same steps, option keys, templates, phrases and
+  report sentences; steps, keys, rules and priorities are not in it and cannot
+  be. The same answers give the same result in every language (tested on every
+  vignette and on 3,000 simulated interviews). The final-text check of v0.2
+  p. 14 runs against the interview's own language. Risk terms add up: a
+  localized interview is screened for the Spanish terms and its own.
+- **The language of an interview** is the app's language when it starts,
+  stored with it (`funnel_sessions.locale`); its questions, result, report and
+  PDF stay in that language. `FUNNEL_LOCALES` (Terraform) lists the languages
+  that are on; a language taken out holds new interviews in Spanish.
+- **R4 and R6** read in Spanish as the Catalan edition writes them (p. 6). R4
+  asks about a diagnosed or followed-up heart or lung disease, stroke and
+  opioids, with five examples; «relevante», respiratory weakness, severe
+  insomnia and possible hypoventilation leave this step. R6 asks whether a home
+  overnight breathing study was normal, unclear or not valid for technical
+  reasons. The v0.2 texts stay on record (`engine.source_revisions`), and the
+  two retired R4 options still read in interviews answered before.
+- **The sex** is asked right after the age (`SEX`: «Mujer» or «Hombre», with
+  «No lo sé» and «Prefiero no responder»; DEFAULT – Jesús puede cambiarlo) and
+  appears in the final report: on the result, on the person's page, on the
+  professional's page and in the PDF, with the age. No rule reads it.
+- **AI.** The extraction of v0.2 p. 14 reads Spanish only; an interview in
+  another language asks every question (production runs without the AI).

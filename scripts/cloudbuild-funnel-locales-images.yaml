@@ -1,0 +1,29 @@
+# The three images of the four-language interview (ADR 0020, amendment of
+# 2026-11-21): report and edge accept the new optional fields first, then
+# morpheo sends them. Runtime configuration stays Terraform-owned.
+#
+# The source is `git archive` of the commit plus the private clinical submodule
+# (services/morpheo-service/clinical), which a plain archive leaves out:
+#   git archive --format=tar -o src.tar HEAD
+#   git -C services/morpheo-service/clinical archive --format=tar \
+#     --prefix=services/morpheo-service/clinical/ HEAD > clinical.tar
+#   tar --force-local -Af src.tar clinical.tar && gzip src.tar
+#   gcloud builds submit src.tar.gz --config scripts/cloudbuild-funnel-locales-images.yaml \
+#     --substitutions _REVISION=<short sha>
+steps:
+  - name: gcr.io/cloud-builders/docker
+    env: [DOCKER_BUILDKIT=1]
+    args: [build, -f, services/somnus-report-service/Dockerfile, -t, 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/somnus-report-service:${_REVISION}', .]
+  - name: gcr.io/cloud-builders/docker
+    env: [DOCKER_BUILDKIT=1]
+    args: [build, -f, services/somnus-edge-api/Dockerfile, -t, 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/somnus-edge-api:${_REVISION}', .]
+  - name: gcr.io/cloud-builders/docker
+    env: [DOCKER_BUILDKIT=1]
+    args: [build, -f, services/morpheo-service/Dockerfile, -t, 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/morpheo-service:${_REVISION}', .]
+images:
+  - 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/somnus-report-service:${_REVISION}'
+  - 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/somnus-edge-api:${_REVISION}'
+  - 'europe-west3-docker.pkg.dev/$PROJECT_ID/somnus/morpheo-service:${_REVISION}'
+timeout: 2400s
+options:
+  logging: CLOUD_LOGGING_ONLY

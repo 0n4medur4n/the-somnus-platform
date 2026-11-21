@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DriveDictationRequestSchema, DriveDictationSessionSchema } from "../drive/speech.js";
+import { LocaleSchema } from "../locale.js";
 import { FREE_TEXT_MAX_LENGTH, findIdentifyingData } from "./identifying-data.js";
 
 /**
@@ -238,6 +239,20 @@ export const FunnelResultPanelSchema = z
 export type FunnelResultPanel = z.infer<typeof FunnelResultPanelSchema>;
 
 /**
+ * Who a report is about, as they answered at the start (Jesús, 21/11/2026): the
+ * age, and the sex asked right after it. Null where they did not say. No rule
+ * reads either; the labels come from the reader's locale files.
+ */
+export const FUNNEL_SEXES = ["mujer", "hombre"] as const;
+export const FunnelReportPersonSchema = z
+  .object({
+    age: z.number().int().min(0).max(120).nullable(),
+    sex: z.enum(FUNNEL_SEXES).nullable(),
+  })
+  .strict();
+export type FunnelReportPerson = z.infer<typeof FunnelReportPersonSchema>;
+
+/**
  * The patient's report (one page) and the professional's page, built by morpheo
  * from the engine's result -- never by a model.
  * Everything the person reads is an already approved sentence or a literal v0.2
@@ -303,6 +318,11 @@ export const FunnelReportSchema = z
       })
       .strict()
       .nullable(),
+    /**
+     * Age and sex (standard layout only). Optional so this edge accepts a morpheo
+     * that does not send it yet: deploy the edge and the report service first.
+     */
+    person: FunnelReportPersonSchema.nullable().optional(),
   })
   .strict();
 export type FunnelReport = z.infer<typeof FunnelReportSchema>;
@@ -351,12 +371,24 @@ export const FunnelStateSchema = z
      * the person's own saved interview remains: it never gets a new case.
      */
     caseCode: z.string().min(1).nullable().optional(),
+    /**
+     * The language the interview is held in, fixed when it starts: its questions,
+     * result and report read in it, whatever language the app shows later.
+     * Optional so this edge accepts a morpheo that does not send it yet.
+     */
+    locale: LocaleSchema.nullable().optional(),
   })
   .strict();
 export type FunnelState = z.infer<typeof FunnelStateSchema>;
 
-/** Starts an interview. The health-data consent is required before anything is asked. */
-export const FunnelCreateRequestSchema = z.object({ consentGiven: z.literal(true) }).strict();
+/**
+ * Starts an interview. The health-data consent is required before anything is
+ * asked. `locale` is the app's language: the interview is held in it when
+ * morpheo has it enabled (FUNNEL_LOCALES), in Spanish otherwise.
+ */
+export const FunnelCreateRequestSchema = z
+  .object({ consentGiven: z.literal(true), locale: LocaleSchema.nullable().optional() })
+  .strict();
 export type FunnelCreateRequest = z.infer<typeof FunnelCreateRequestSchema>;
 
 const noIdentifyingData = (text: string) => findIdentifyingData(text).length === 0;

@@ -267,6 +267,9 @@ class FunnelSession(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False)  # open|finished|stopped|paused
     content_version: Mapped[str] = mapped_column(String(32), nullable=False)
     rules_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    # The language it is held in, fixed when it starts: questions, result and
+    # report all read in it (owner decision 2026-11-21).
+    locale: Mapped[str] = mapped_column(String(8), nullable=False, server_default="es")
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )

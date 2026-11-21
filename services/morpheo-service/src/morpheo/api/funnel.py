@@ -40,6 +40,7 @@ def get_funnel_service(session: SessionDep, request: Request) -> FunnelService:
         registry=request.app.state.instruments,
         ai=getattr(request.app.state, "ai", None),
         informe=getattr(request.app.state, "informe", None),
+        locales=getattr(request.app.state, "funnel_locales", frozenset({"es"})),
     )
 
 
@@ -90,7 +91,7 @@ def get_config(request: Request) -> FunnelConfigResponseDTO:
 def create_session(
     body: FunnelCreateRequestDTO, service: FunnelServiceDep, actor_id: OptionalActorId = None
 ) -> FunnelStateDTO:
-    return service.create(owner_id=actor_id)
+    return service.create(owner_id=actor_id, locale=body.locale)
 
 
 @router.get(

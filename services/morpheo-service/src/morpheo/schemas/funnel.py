@@ -32,6 +32,8 @@ FunnelStatus = Literal["open", "finished", "stopped", "paused"]
 FunnelInstrumentStatus = Literal["completed", "declined", "incomplete", "pending_file"]
 FunnelExtractionDecision = Literal["confirmado", "corregido", "quitado"]
 FunnelRisk = Literal["si", "no", "dudoso"]
+FunnelLocale = Literal["es", "en", "ca", "fr"]
+FunnelSex = Literal["mujer", "hombre"]
 
 
 class FunnelOptionDTO(ContractModel):
@@ -199,6 +201,14 @@ class FunnelReportProfessionalDTO(ContractModel):
     grounding: FunnelReportGroundingDTO | None = None
 
 
+class FunnelReportPersonDTO(ContractModel):
+    """Who the report is about, as they answered at the start: age and sex (SEX,
+    21/11/2026). None where they did not say. No rule reads either."""
+
+    age: int | None
+    sex: FunnelSex | None
+
+
 class FunnelReportDTO(ContractModel):
     layout: Literal["urgent", "standard"]
     headline: list[str]
@@ -209,6 +219,7 @@ class FunnelReportDTO(ContractModel):
     limits: list[str]
     sources: list[str]
     professional: FunnelReportProfessionalDTO | None
+    person: FunnelReportPersonDTO | None = None
 
 
 class FunnelResultDTO(ContractModel):
@@ -256,10 +267,16 @@ class FunnelStateDTO(ContractModel):
     # The interview's case code (ADR 0024), shown to the person with the result.
     # None once the case's retention period has ended and the interview remains.
     case_code: str | None = None
+    # The language the interview is held in; its questions, result and report
+    # read in it.
+    locale: FunnelLocale | None = None
 
 
 class FunnelCreateRequestDTO(ContractModel):
     consent_given: Literal[True]
+    # The app's language when the interview starts; Spanish when absent or not
+    # enabled (FUNNEL_LOCALES).
+    locale: FunnelLocale | None = None
 
 
 class FunnelDurationDTO(ContractModel):

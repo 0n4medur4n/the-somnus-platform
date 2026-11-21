@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # (owner and clinical lead, 19/10/2026). FUNNEL_V2_ENABLED=false rolls the
     # app back to v1 with one config change.
     funnel_v2_enabled: bool = Field(default=True, alias="FUNNEL_V2_ENABLED")
+    # The languages a v2 interview may be held in (owner decision 2026-11-21):
+    # Catalan from the clinical lead's edition, English and French translated.
+    # Production sets all four in Terraform; one config change takes a language
+    # out (an interview asked in it is then held in Spanish). Comma-separated.
+    funnel_locales: str = Field(default="es", alias="FUNNEL_LOCALES")
     # ISI, Epworth and STOP-Bang (D-34): their own switch, on (owner decision
     # 2026-10-19). Each official file is a clinical artifact
     # (clinical/instruments/); an instrument whose file has not arrived is

@@ -93,10 +93,14 @@ def test_no_instrument_section_without_a_completed_score() -> None:
     assert 'class="instruments"' not in render_funnel_html(_request())
 
 
-def test_other_languages_say_the_guidance_is_in_spanish() -> None:
-    english = render_funnel_html(_request(locale="en"))
-    assert "Sleep guidance" in english and "in Spanish" in english
-    assert 'class="language-note"' not in render_funnel_html(_request())
+def test_the_pdf_is_laid_out_in_the_interviews_language() -> None:
+    """Since 21/11/2026 an interview is held in Catalan, English or French too, and
+    the edge asks for the PDF in the interview's own language: the headings match
+    the texts, so there is no «the guidance is in Spanish» note any more."""
+    catalan = render_funnel_html(_request(locale="ca"))
+    assert "Orientació del son" in catalan and 'lang="ca"' in catalan
+    assert "castellà" not in catalan
+    assert 'class="language-note"' not in render_funnel_html(_request(locale="en"))
 
 
 def test_the_service_returns_the_pdf_with_its_versions_and_keeps_nothing() -> None:
@@ -311,3 +315,41 @@ def test_the_case_number_is_printed_when_given_and_only_then(build: Any) -> None
     with_case = render_funnel_html(build(caseCode="SOM-7K3F-Q9XA"))
     assert "Número de caso: <strong>SOM-7K3F-Q9XA</strong>" in with_case
     assert "Número de caso" not in render_funnel_html(build())
+
+
+# --- who the report is about (Jesús, 21/11/2026) ---
+
+
+@pytest.mark.parametrize(
+    ("locale", "line"),
+    [
+        ("es", "Edad: 52 años · Sexo: Hombre"),
+        ("ca", "Edat: 52 anys · Sexe: Home"),
+        ("en", "Age: 52 years · Sex: Male"),
+        ("fr", "Âge: 52 ans · Sexe: Homme"),
+    ],
+)
+def test_the_report_says_the_age_and_sex_in_its_language(locale: str, line: str) -> None:
+    report = {**REPORT, "person": {"age": 52, "sex": "hombre"}}
+    document = render_funnel_html(_request(report=report, locale=locale))
+    # On the person's page, the professional's page and the passages page.
+    assert document.count(f'<p class="report-person">{line}</p>') >= 2
+
+
+def test_only_what_the_person_said_is_printed() -> None:
+    only_sex = render_funnel_html(
+        _request(report={**REPORT, "person": {"age": None, "sex": "mujer"}})
+    )
+    assert '<p class="report-person">Sexo: Mujer</p>' in only_sex
+    nothing = render_funnel_html(_request(report={**REPORT, "person": {"age": None, "sex": None}}))
+    assert 'report-person">' not in nothing
+    # An older morpheo sends no person at all.
+    assert 'report-person">' not in render_funnel_html(_v3_request())
+
+
+def test_the_person_conforms_to_the_contract_and_refuses_another_sex() -> None:
+    schema = json.loads((SCHEMA / "FunnelReportRequest.json").read_text(encoding="utf-8"))
+    request = _request(report={**REPORT, "person": {"age": 40, "sex": "mujer"}})
+    jsonschema.validate(request.model_dump(by_alias=True, mode="json"), schema)
+    with pytest.raises(ValueError):
+        _request(report={**REPORT, "person": {"age": 40, "sex": "otro"}})
