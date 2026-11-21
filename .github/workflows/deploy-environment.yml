@@ -82,12 +82,37 @@ jobs:
         run: |
           set -euo pipefail
           image_host="${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev/${{ vars.ARTIFACTS_PROJECT_ID }}/${AR_REPOSITORY}"
+          tag="${{ inputs.image_tag }}"
+          if ! printf '%s' "$tag" | grep -Eq '^[0-9a-fA-F]{7,40}$'; then
+            echo "refusing image tag"
+            exit 1
+          fi
           for svc in $(echo '${{ inputs.services }}' | jq -r '.[]'); do
             echo "::group::deploy $svc -> ${{ inputs.environment }}"
-            gcloud run deploy "$svc" \
-              --image "${image_host}/${svc}:${{ inputs.image_tag }}" \
+            revision="$(gcloud run deploy "$svc" \
+              --image "${image_host}/${svc}:${tag}" \
               --region "$REGION" \
               --project "${{ vars.PROJECT_ID }}" \
+              --no-traffic \
+              --format='value(status.latestCreatedRevisionName)' \
+              --quiet)"
+            ready="False"
+            for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              ready="$(gcloud run revisions describe "$revision" \
+                --region "$REGION" \
+                --project "${{ vars.PROJECT_ID }}" \
+                --format=json | jq -r '.status.conditions[] | select(.type=="Ready") | .status')"
+              if [ "$ready" = "True" ]; then break; fi
+              sleep 10
+            done
+            if [ "$ready" != "True" ]; then
+              echo "revision $revision is not Ready; traffic stays on the previous revision"
+              exit 1
+            fi
+            gcloud run services update-traffic "$svc" \
+              --region "$REGION" \
+              --project "${{ vars.PROJECT_ID }}" \
+              --to-revisions "${revision}=100" \
               --quiet
             echo "::endgroup::"
           done

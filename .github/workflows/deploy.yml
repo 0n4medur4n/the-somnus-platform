@@ -1,21 +1,40 @@
-# Promotion pipeline (build plan §20 Checkpoint 13.3):
-#   PR -> CI (ci.yml) -> merge -> [this] build once -> dev -> staging (gated)
-#   -> production (gated). Only the deployables that changed build and deploy.
-#
-# This workflow builds each changed service image ONCE and promotes that exact
-# artifact through the environments; the per-environment approval gates live on
-# the GitHub Environments (staging/production have required reviewers). All auth
-# is keyless (Workload Identity Federation). The GCP + GitHub configuration this
-# expects is documented in docs/runbooks/promotion-pipeline.md -- until it is in
-# place the jobs no-op or fail fast; nothing here can touch a real project on its
-# own.
+# Promotion pipeline (build plan §20 Checkpoint 13.3, ADR 0023):
+#   PR -> CI -> merge to main -> build and push the changed images.
+#   A person then runs this workflow by hand to publish one service to one
+#   environment. The dev GitHub environment has no required reviewers, so the
+#   human action is the dispatch itself. Auth is Workload Identity Federation.
 
 name: Deploy & Promote
 
 on:
   push:
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Cloud Run service to deploy
+        required: true
+        type: choice
+        options:
+          - somnus-edge-api
+          - somnus-identity-service
+          - somnus-worker
+          - morpheo-service
+          - somnus-report-service
+      environment:
+        description: Environment that receives the revision
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - staging
+          - production
+      image_tag:
+        description: Existing image tag (commit SHA). Empty builds the selected ref.
+        required: false
+        type: string
+        default: ""
 
 # Never cancel an in-flight promotion: a half-applied deploy is worse than a queue.
 concurrency:
@@ -49,9 +68,25 @@ jobs:
         id: detect
         run: |
           set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # github.event.before is empty on a manual run, so the diff below
+            # would otherwise select every service. The person named one.
+            case "${{ inputs.service }}" in
+              somnus-edge-api|somnus-identity-service|somnus-worker|morpheo-service|somnus-report-service) ;;
+              *) echo "unknown service"; exit 1 ;;
+            esac
+            if [ -n "${{ inputs.image_tag }}" ] && ! printf '%s' "${{ inputs.image_tag }}" | grep -Eq '^[0-9a-fA-F]{7,40}$'; then
+              echo "image_tag must be a hex commit SHA"
+              exit 1
+            fi
+            services=("${{ inputs.service }}")
+            marketing=false
+            app=false
+            admin=false
+          else
           base="${{ github.event.before }}"
           if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
-            # No reliable base (first push, force-push, or manual run): rebuild all.
+            # No reliable base (first push or force-push): rebuild all.
             changed="ALL"
           else
             changed="$(git diff --name-only "$base" "${{ github.sha }}")"
@@ -84,6 +119,7 @@ jobs:
           # `app` target only, because it requires the hosting-config.json that
           # only the SPA's hosting-mode build emits (see promotion-pipeline.md).
           admin=false;     { $shared_ts || touched '^apps/somnus-admin/|^firebase\.json$|^\.github/workflows/deploy-environment\.yml$'; } && admin=true
+          fi
 
           services_json="$(jq -cn '$ARGS.positional' --args ${services[@]+"${services[@]}"})"
           any=false
@@ -110,7 +146,7 @@ jobs:
   build-push:
     name: Build + push ${{ matrix.service }}
     needs: detect
-    if: ${{ needs.detect.outputs.configured == 'true' && needs.detect.outputs.services != '[]' }}
+    if: ${{ needs.detect.outputs.configured == 'true' && needs.detect.outputs.services != '[]' && (github.event_name != 'workflow_dispatch' || inputs.image_tag == '') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -157,44 +193,19 @@ jobs:
           docker build -f "services/${{ matrix.service }}/Dockerfile" -t "$image" .
           docker push "$image"
 
-  deploy-dev:
-    name: Promote to dev
+  deploy:
+    name: Deploy ${{ inputs.service }} to ${{ inputs.environment }}
     needs: [detect, build-push]
-    if: ${{ always() && needs.detect.outputs.configured == 'true' && needs.detect.outputs.any == 'true' && needs.detect.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}
+    # A merge builds and pushes. Publishing a revision is a separate human
+    # action: the dev environment has no required reviewers, so the dispatch
+    # is the gate. One run deploys one service to one environment.
+    if: ${{ github.event_name == 'workflow_dispatch' && always() && needs.detect.outputs.configured == 'true' && needs.detect.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}
     uses: ./.github/workflows/deploy-environment.yml
     with:
-      environment: dev
+      environment: ${{ inputs.environment }}
       services: ${{ needs.detect.outputs.services }}
-      marketing: ${{ needs.detect.outputs.marketing == 'true' }}
-      app: ${{ needs.detect.outputs.app == 'true' }}
-      admin: ${{ needs.detect.outputs.admin == 'true' }}
-      image_tag: ${{ github.sha }}
-    secrets: inherit
-
-  deploy-staging:
-    name: Promote to staging
-    needs: [detect, deploy-dev]
-    if: ${{ needs.deploy-dev.result == 'success' }}
-    uses: ./.github/workflows/deploy-environment.yml
-    with:
-      environment: staging
-      services: ${{ needs.detect.outputs.services }}
-      marketing: ${{ needs.detect.outputs.marketing == 'true' }}
-      app: ${{ needs.detect.outputs.app == 'true' }}
-      admin: ${{ needs.detect.outputs.admin == 'true' }}
-      image_tag: ${{ github.sha }}
-    secrets: inherit
-
-  deploy-production:
-    name: Promote to production
-    needs: [detect, deploy-staging]
-    if: ${{ needs.deploy-staging.result == 'success' }}
-    uses: ./.github/workflows/deploy-environment.yml
-    with:
-      environment: production
-      services: ${{ needs.detect.outputs.services }}
-      marketing: ${{ needs.detect.outputs.marketing == 'true' }}
-      app: ${{ needs.detect.outputs.app == 'true' }}
-      admin: ${{ needs.detect.outputs.admin == 'true' }}
-      image_tag: ${{ github.sha }}
+      marketing: false
+      app: false
+      admin: false
+      image_tag: ${{ inputs.image_tag != '' && inputs.image_tag || github.sha }}
     secrets: inherit
