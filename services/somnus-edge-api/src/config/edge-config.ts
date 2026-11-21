@@ -14,6 +14,41 @@ export const DEVELOPMENT_COOKIE_SECRET = "dev-only-insecure-cookie-secret-change
 /** The secret a deployed service needs: at least this many bytes. */
 export const MIN_COOKIE_SECRET_BYTES = 32;
 
+/**
+ * The console origin when `CONSOLE_ORIGIN` is unset. Missing must not stop
+ * the process: development and test may set a local origin, and a deployed
+ * service that has not been given the variable still classifies against this.
+ */
+export const PRODUCTION_CONSOLE_ORIGIN = "https://console.thesomnus.com";
+
+/**
+ * A DNS host of lowercase labels, at least two, no empty label and no
+ * leading or trailing hyphen. Compared as text: nothing is lowercased or
+ * parsed as a URL, so uppercase and a trailing dot stay rejected.
+ */
+const CLEAN_HOST =
+  "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+";
+
+function portOk(port: string | undefined): boolean {
+  if (port === undefined) return true;
+  if (!/^[1-9]\d{0,4}$/.test(port)) return false;
+  return Number(port) <= 65535;
+}
+
+/** `https://host` or `https://host:port`. No path, query, fragment, user or whitespace. */
+export function isCleanHttpsOrigin(value: string): boolean {
+  const match = new RegExp(`^https://${CLEAN_HOST}(?::(\\d{1,5}))?$`).exec(value);
+  if (!match) return false;
+  return portOk(match[1]);
+}
+
+/** `http://localhost` or `http://localhost:port`. Development and test only. */
+export function isLocalhostHttpOrigin(value: string): boolean {
+  const match = /^http:\/\/localhost(?::(\d{1,5}))?$/.exec(value);
+  if (!match) return false;
+  return portOk(match[1]);
+}
+
 /** Development defaults and placeholders that must never be a deployed secret. */
 const KNOWN_DEVELOPMENT_SECRETS: readonly string[] = [
   DEVELOPMENT_COOKIE_SECRET,
@@ -96,6 +131,10 @@ export const EdgeConfigSchema = z
       .transform((v) => v === "true"),
     COOKIE_SAMESITE: z.enum(["lax", "strict", "none"]).default("lax"),
     COOKIE_DOMAIN: z.string().optional(),
+    // Compared to the request Origin with string equality (classify-session.ts).
+    // Not parsed as a URL, so a port, a trailing dot or different case stays
+    // different. Unset uses the production origin; an empty value is refused.
+    CONSOLE_ORIGIN: z.string().min(1).default(PRODUCTION_CONSOLE_ORIGIN),
 
     // CORS: the Firebase Hosting origins (build plan §5.3, extended in Addendum A
     // §A2.1 with the admin console's own site). Comma-separated. The local
@@ -189,6 +228,15 @@ export const EdgeConfigSchema = z
         const value = config[key];
         if (value !== undefined && value.length < 16) issue(key, "must be at least 16 characters");
       }
+      if (
+        !isCleanHttpsOrigin(config.CONSOLE_ORIGIN) &&
+        !isLocalhostHttpOrigin(config.CONSOLE_ORIGIN)
+      ) {
+        issue(
+          "CONSOLE_ORIGIN",
+          "must be an https origin, or http://localhost with an optional port",
+        );
+      }
       return;
     }
 
@@ -218,6 +266,12 @@ export const EdgeConfigSchema = z
     }
     if (config.COOKIE_SAMESITE === "none") {
       issue("COOKIE_SAMESITE", "must be lax or strict unless NODE_ENV is development or test");
+    }
+    if (!isCleanHttpsOrigin(config.CONSOLE_ORIGIN)) {
+      issue(
+        "CONSOLE_ORIGIN",
+        "must be https://host, with a lowercase host and no path, query, or whitespace",
+      );
     }
   })
   .transform((config) => {

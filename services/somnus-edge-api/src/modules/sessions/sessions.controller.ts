@@ -1,15 +1,17 @@
-import { Body, Controller, Delete, Get, HttpCode, Post, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { CsrfTokenResponse, SessionResponse } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
-import type { FastifyReply } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { csrfTokenFor } from "../../bootstrap/csrf-token.js";
 import { type EdgeConfig, loadEdgeConfig } from "../../config/edge-config.js";
 import { FirebaseService } from "../../infrastructure/firebase/firebase.service.js";
+import { classifySessionClient, presentedOrigin } from "./classify-session.js";
 import { CurrentSession } from "./current-session.decorator.js";
 import { SessionCreateDto } from "./session.dto.js";
 import { SessionGuard } from "./session.guard.js";
 import { type SessionRecord, SessionService } from "./session.service.js";
+import { amrFromVerifiedToken, authTimeFromClaim } from "./verified-sign-in.js";
 
 /**
  * Cookies earlier versions set, cleared on logout so a browser that still holds
@@ -42,29 +44,49 @@ export class SessionsController {
   @ApiOperation({ summary: "Exchange a Firebase ID token for a session cookie." })
   async create(
     @Body() body: SessionCreateDto,
+    @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<SessionResponse> {
     let firebaseUid: string;
     let email: string | null;
     let emailVerified: boolean;
+    let authTime: Date;
+    let amr: readonly string[];
     try {
       const decoded = await this.firebase.verifyIdToken(body.idToken);
       firebaseUid = decoded.uid;
       email = decoded.email ?? null;
       emailVerified = decoded.email_verified === true;
+      const verifiedAt = authTimeFromClaim(decoded.auth_time);
+      // Missing or not a finite number: same answer as a bad token. The
+      // server clock is not a stand-in for auth_time.
+      if (verifiedAt === null) throw new Error("auth_time");
+      authTime = verifiedAt;
+      amr = amrFromVerifiedToken(decoded.firebase?.sign_in_provider);
     } catch {
-      // Forged, malformed, expired, or wrong-project token: all one
-      // 401, no detail leaked about which.
+      // Forged, malformed, expired, wrong-project, or no usable auth_time:
+      // all one 401, no detail leaked about which.
       throw new SomnusError(ErrorCode.UNAUTHENTICATED, "Authentication is required.", {
         correlationId: "sessions",
       });
     }
 
+    // The only place a session is created. Origin is classified here, where
+    // the request is, and stored once. Referer is not consulted.
+    const now = new Date();
     const session = await this.sessions.create({
       firebaseUid,
       email,
       emailVerified,
       ttlSeconds: this.config.SESSION_TTL_SECONDS,
+      now,
+      client: classifySessionClient(
+        presentedOrigin(request.headers.origin),
+        this.config.CONSOLE_ORIGIN,
+      ),
+      amr,
+      authTime,
+      stepUpAt: null,
     });
 
     reply.setCookie(

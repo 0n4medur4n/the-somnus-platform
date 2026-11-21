@@ -5,6 +5,7 @@ import {
   DEVELOPMENT_COOKIE_SECRET,
   EdgeConfigSchema,
   loadEdgeConfig,
+  PRODUCTION_CONSOLE_ORIGIN,
 } from "../../src/config/edge-config.js";
 
 /**
@@ -205,5 +206,77 @@ describe("loadEdgeConfig at startup", () => {
 
   it("starts with a strong secret", () => {
     expect(start(deployed()).outcome).toBe("started");
+  });
+
+  it("starts when CONSOLE_ORIGIN is missing and uses the production origin", () => {
+    expect(start(deployed()).outcome).toBe("started");
+    expect(EdgeConfigSchema.parse(deployed()).CONSOLE_ORIGIN).toBe(PRODUCTION_CONSOLE_ORIGIN);
+    expect(PRODUCTION_CONSOLE_ORIGIN).toBe("https://console.thesomnus.com");
+  });
+
+  it("refuses to start when the deployed console origin is not a clean https origin", () => {
+    expect(start(deployed({ CONSOLE_ORIGIN: "http://console.thesomnus.com" })).outcome).toBe(
+      "exited",
+    );
+  });
+});
+
+describe("console origin", () => {
+  it("uses the production origin in development and test when the variable is missing", () => {
+    expect(EdgeConfigSchema.parse({ NODE_ENV: "development" }).CONSOLE_ORIGIN).toBe(
+      PRODUCTION_CONSOLE_ORIGIN,
+    );
+    expect(EdgeConfigSchema.parse({ NODE_ENV: "test" }).CONSOLE_ORIGIN).toBe(
+      PRODUCTION_CONSOLE_ORIGIN,
+    );
+  });
+
+  it("keeps a configured localhost origin exactly", () => {
+    const local = "http://localhost:5174";
+    expect(EdgeConfigSchema.parse({ NODE_ENV: "test", CONSOLE_ORIGIN: local }).CONSOLE_ORIGIN).toBe(
+      local,
+    );
+    expect(
+      EdgeConfigSchema.parse({ NODE_ENV: "development", CONSOLE_ORIGIN: "http://localhost" })
+        .CONSOLE_ORIGIN,
+    ).toBe("http://localhost");
+  });
+
+  it.each([
+    "http://console.thesomnus.com",
+    "https://console.thesomnus.com/",
+    "https://console.thesomnus.com/admin",
+    "https://console.thesomnus.com?x=1",
+    "https://console.thesomnus.com#x",
+    " https://console.thesomnus.com",
+    "https://console.thesomnus.com ",
+    "https://Console.thesomnus.com",
+    "HTTPS://console.thesomnus.com",
+    "https://user@console.thesomnus.com",
+    "http://localhost:5174",
+  ])("deployed, refuses CONSOLE_ORIGIN %j", (origin) => {
+    expect(problems(deployed({ CONSOLE_ORIGIN: origin })).join("\n")).toContain("CONSOLE_ORIGIN");
+  });
+
+  it.each([
+    "http://127.0.0.1:5174",
+    "http://localhost:5174/",
+    "http://localhost:0",
+    "http://localhost:65536",
+    "https://Console.thesomnus.com",
+    " https://console.thesomnus.com",
+  ])("development and test refuse CONSOLE_ORIGIN %j", (origin) => {
+    expect(problems({ NODE_ENV: "test", CONSOLE_ORIGIN: origin }).join("\n")).toContain(
+      "CONSOLE_ORIGIN",
+    );
+    expect(problems({ NODE_ENV: "development", CONSOLE_ORIGIN: origin }).join("\n")).toContain(
+      "CONSOLE_ORIGIN",
+    );
+  });
+
+  it("refuses an empty CONSOLE_ORIGIN", () => {
+    expect(problems({ NODE_ENV: "test", CONSOLE_ORIGIN: "" }).join("\n")).toContain(
+      "CONSOLE_ORIGIN",
+    );
   });
 });
