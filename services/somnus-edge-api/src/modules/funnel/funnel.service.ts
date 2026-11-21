@@ -231,7 +231,9 @@ export class FunnelProxyService {
       skipRetry: true,
       body: {
         sessionId,
-        locale,
+        // The interview's own language when morpheo says it (its texts are in it),
+        // so the PDF's headings match them; the app's language otherwise.
+        locale: state.locale ?? locale,
         completedAt: new Date().toISOString(),
         contentVersion: state.result.contentVersion,
         rulesVersion: state.result.rulesVersion,

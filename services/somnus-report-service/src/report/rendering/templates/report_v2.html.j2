@@ -38,9 +38,6 @@
       <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
     </header>
     <section class="guidance">
-      {% if strings.clinicalLanguage %}
-      <p class="language-note">{{ strings.clinicalLanguage }}</p>
-      {% endif %}
       {% for paragraph in request.texts %}
       <p class="paragraph" data-template="{{ paragraph.template }}">{{ paragraph.text }}</p>
       {% endfor %}

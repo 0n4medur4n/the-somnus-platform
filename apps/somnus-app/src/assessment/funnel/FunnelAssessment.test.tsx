@@ -148,7 +148,8 @@ describe("FunnelAssessment", () => {
     renderWithProviders(<FunnelAssessment />);
     expect(screen.getByRole("button", { name: es("funnel.actions.start") })).toBeDisabled();
     await startInterview(user);
-    expect(edgeMock.startFunnel).toHaveBeenCalledWith(false);
+    // The interview is held in the app's language (es here).
+    expect(edgeMock.startFunnel).toHaveBeenCalledWith(false, "es");
     expect(await screen.findByRole("heading", { name: "¿Qué edad tiene?" })).toBeVisible();
   });
 
@@ -337,6 +338,7 @@ describe("FunnelAssessment", () => {
       limits: ["No es un diagnóstico."],
       sources: [],
       professional: null,
+      person: { age: 52, sex: "hombre" as const },
     };
     edgeMock.startFunnel.mockResolvedValue(
       state({ status: "finished", step: null, result: { ...RESULT, report }, owned: true }),
@@ -344,6 +346,10 @@ describe("FunnelAssessment", () => {
     renderWithProviders(<FunnelAssessment />);
     await startInterview(user);
     expect(await screen.findByText(report.headline[0] ?? "")).toBeVisible();
+    // Jesús, 21/11/2026: the sex asked at the start appears in the report.
+    expect(screen.getByTestId("funnel-report-person")).toHaveTextContent(
+      "Edad: 52 años · Sexo: Hombre",
+    );
     expect(screen.getByText("Se despierta varias veces por la noche.")).toBeVisible();
     expect(screen.getByText(RESULT.texts[0]?.text ?? "")).toBeVisible();
     expect(screen.getByText(report.steps[0] ?? "")).toBeVisible();
@@ -491,7 +497,7 @@ describe("FunnelAssessment", () => {
     );
     renderWithProviders(<FunnelAssessment me={staff} />);
     await startInterview(user);
-    expect(edgeMock.startFunnel).toHaveBeenCalledWith(true);
+    expect(edgeMock.startFunnel).toHaveBeenCalledWith(true, "es");
     const panel = await screen.findByTestId("team-panel");
     await user.click(screen.getByText(es("funnel.panel.title")));
     expect(panel).toHaveTextContent("pendiente: archivo oficial de Jesús");

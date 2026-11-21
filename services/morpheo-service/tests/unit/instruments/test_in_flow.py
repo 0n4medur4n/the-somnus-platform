@@ -20,6 +20,7 @@ A = funnel_artifact()
 YES, NO = Answer(value="si"), Answer(value="no")
 INSOMNIA = {
     "AGE": Answer(value=45),
+    "SEX": Answer(value="mujer"),
     "Q08": Answer(value=["despertares"]),
     "Q05": Answer(value=4),
     "Q03": Answer(value={"value": 6, "unit": "meses"}),
@@ -92,6 +93,7 @@ def test_the_isi_screen_shows_the_official_instructions_and_says_why(
 def test_epworth_follows_branch_d_and_stop_bang_branch_r(registry: InstrumentRegistry) -> None:
     script = {
         "AGE": Answer(value=50),
+        "SEX": Answer(value="hombre"),
         "Q08": Answer(value=[]),
         "Q11": Answer(value="dormido_sin_querer"),
         "Q15": Answer(value=["ronca_fuerte"]),
@@ -160,7 +162,13 @@ def test_epworth_and_stop_bang_placement_is_marked_as_a_default() -> None:
 def test_a_stopped_interview_offers_no_instrument(registry: InstrumentRegistry) -> None:
     narrative = Answer(value="x", text="A veces pienso en quitarme la vida")
     keys, answers = _walk(
-        {"AGE": Answer(value=45), "Q01": narrative, "S4@exception:Q01": YES}, registry
+        {
+            "AGE": Answer(value=45),
+            "SEX": Answer(value="mujer"),
+            "Q01": narrative,
+            "S4@exception:Q01": YES,
+        },
+        registry,
     )
-    assert keys == ["AGE", "Q01", "S4@exception:Q01"]
+    assert keys == ["AGE", "SEX", "Q01", "S4@exception:Q01"]
     assert evaluate(A, answers, registry).instruments == ()

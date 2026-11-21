@@ -21,6 +21,7 @@ A = funnel_artifact()
 RISK_NO = {"S1": "no", "S4": "no", "S2": "no"}
 START = {
     "AGE": Answer(value=45),
+    "SEX": Answer(value="mujer"),
     "S1@start": Answer(value="no"),
     "S4@start": Answer(value="no"),
 }

@@ -25,7 +25,6 @@ from morpheo.funnel.catalogue import Catalogue
 _SLOT = re.compile(r"\{[^}]+\}")
 _PLACEHOLDER = re.compile(r"\[[^\]]+\]")
 _NO_DATA = re.compile(r"\[[^\]]+: sin dato\]")
-_UNITS = ("días", "día", "semanas", "semana", "meses", "mes", "años", "año", "horas", "hora")
 # Punctuation, spaces and digits (en and em dashes written as escapes).
 _RESIDUE = re.compile(r"^[\s\d.,;:()«»¿?¡!\-\u2013\u2014/\"']*$")
 EXTRA_TEMPLATES = {"T_SOMNOLENCIA": "S2_aviso"}
@@ -60,7 +59,7 @@ def _collect(artifact: FunnelArtifact, catalogue: Catalogue) -> tuple[str, ...]:
         v for k, v in artifact.engine["resources"].items() if k != "default" and isinstance(v, str)
     ]
     fragments += [lst.joiner.strip() for lst in catalogue.lists.values() if lst.joiner]
-    fragments += [" y "]
+    fragments += [artifact.lang.conjunction]
     # Longest first, so a phrase is taken whole before any shorter piece of it.
     return tuple(sorted({f.casefold() for f in fragments if f}, key=len, reverse=True))
 
@@ -70,8 +69,10 @@ def unexplained(text: str, artifact: FunnelArtifact, catalogue: Catalogue) -> st
     rest = _NO_DATA.sub(" ", text).replace("«", "").replace("»", "").casefold()
     for fragment in _fragments(artifact, catalogue):
         rest = rest.replace(fragment, " ")
-    for unit in _UNITS:
-        rest = re.sub(rf"\b{unit}\b", " ", rest)
+    # Longest first, so «días» goes before «día».
+    units = {word for pair in artifact.lang.units.values() for word in pair}
+    for unit in sorted(units, key=len, reverse=True):
+        rest = re.sub(rf"\b{re.escape(unit.casefold())}\b", " ", rest)
     return "" if _RESIDUE.match(rest) else " ".join(rest.split())
 
 

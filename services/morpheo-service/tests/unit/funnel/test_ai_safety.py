@@ -16,6 +16,7 @@ from morpheo.funnel.interview import Answer, Step, next_step
 A = funnel_artifact()
 START = {
     "AGE": Answer(value=40),
+    "SEX": Answer(value="mujer"),
     "S1@start": Answer(value="no"),
     "S4@start": Answer(value="no"),
 }

@@ -200,6 +200,8 @@ module "run_morpheo" {
     ENV          = "production"
     LOG_LEVEL    = "info"
     LOG_FORMAT   = "json"
+    # The interview in es, ca, en and fr (ADR 0020, amendment of 21/11/2026).
+    FUNNEL_LOCALES = "es,ca,en,fr"
   }
   labels = { app = "somnus", service = "morpheo", env = var.env }
 

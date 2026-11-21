@@ -346,13 +346,13 @@ def _result(
             continue
         seen.add(o.template)
         deduped.append(o)
-    from morpheo.funnel.catalogue import funnel_catalogue
+    from morpheo.funnel.catalogue import catalogue_for
     from morpheo.funnel.render import render  # local: render imports this module's types
     from morpheo.funnel.verify import verify
 
     texts, phrase_ids = render(artifact, deduped, iv, pending)
     # p. 14: the text adds no fact or advice beyond the engine's result.
-    problems = verify(artifact, funnel_catalogue(), texts, (o.template for o in deduped))
+    problems = verify(artifact, catalogue_for(artifact), texts, (o.template for o in deduped))
     if problems:
         raise FunnelArtifactError("final text beyond the engine: " + "; ".join(problems))
     return FunnelResult(

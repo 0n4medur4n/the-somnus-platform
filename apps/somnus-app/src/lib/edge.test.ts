@@ -22,10 +22,17 @@ describe("edge (typed edge-api surface)", () => {
   it("sends every step of the v2 interview to /v1/funnel, asking for the team panel only when told", () => {
     void edge.getFunnelConfig();
     expect(get).toHaveBeenCalledWith("/v1/funnel/config");
-    void edge.startFunnel(false);
-    expect(post).toHaveBeenCalledWith("/v1/funnel/sessions", { consentGiven: true });
-    void edge.startFunnel(true);
-    expect(post).toHaveBeenCalledWith("/v1/funnel/sessions?panel=1", { consentGiven: true });
+    // The interview is held in the language the app shows when it starts.
+    void edge.startFunnel(false, "ca");
+    expect(post).toHaveBeenCalledWith("/v1/funnel/sessions", {
+      consentGiven: true,
+      locale: "ca",
+    });
+    void edge.startFunnel(true, "es");
+    expect(post).toHaveBeenCalledWith("/v1/funnel/sessions?panel=1", {
+      consentGiven: true,
+      locale: "es",
+    });
     void edge.getFunnel("f 1", true);
     expect(get).toHaveBeenCalledWith("/v1/funnel/sessions/f%201?panel=1");
     const body = { key: "Q01#confirmacion", decisions: [{ id: "Q03", decision: "confirmado" }] };

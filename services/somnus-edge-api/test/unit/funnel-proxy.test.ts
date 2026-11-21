@@ -293,6 +293,49 @@ describe("FunnelProxyService", () => {
     expect(pdf.templateVersion).toBe("report_v2");
   });
 
+  it("lays the PDF out in the interview's language, not the app's", async () => {
+    const finished: FunnelState = {
+      ...state(),
+      status: "finished",
+      step: null,
+      owned: true,
+      locale: "ca",
+      result: {
+        stoppedBy: null,
+        alerts: [],
+        mainAction: "TERAPIA",
+        associatedActions: [],
+        testToConsider: null,
+        texts: [{ template: "T_INSOMNIO", text: "M’explica que…" }],
+        instruments: [],
+        instrumentsNote: null,
+        contentVersion: "2.3",
+        rulesVersion: "2.2",
+        panel: null,
+      },
+    };
+    const morpheo = makeFakeIdentityClient(() => ({ status: 200, body: finished }));
+    const identity = makeFakeIdentityClient(() => ({ status: 200, body: me([]) }));
+    const report = makeFakeIdentityClient((req) => {
+      expect(JSON.parse(req.body ?? "{}").locale).toBe("ca");
+      return {
+        status: 200,
+        body: {
+          assessmentId: "f-1",
+          templateVersion: "report_v2",
+          definitionVersion: "2.2",
+          contentVersion: "2.3",
+          locale: "ca",
+          createdAt: "2026-11-21T10:00:00+00:00",
+          pdfBase64: Buffer.from("%PDF-1.7").toString("base64"),
+        },
+      };
+    });
+    const service = serviceOf(morpheo.client, identity.client, resolver, report.client);
+    const pdf = await service.reportPdf(SESSION, "f-1", "es", "c1");
+    expect(pdf.locale).toBe("ca");
+  });
+
   it("hands the one-page report to the report service when morpheo built one", async () => {
     const report = {
       layout: "standard" as const,

@@ -14,7 +14,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from morpheo.funnel.artifact import FunnelArtifact, StepDef
-from morpheo.funnel.catalogue import Catalogue, Selector, funnel_catalogue
+from morpheo.funnel.catalogue import Catalogue, Selector, catalogue_for
 from morpheo.funnel.interview import YES, Interview
 
 if TYPE_CHECKING:
@@ -52,7 +52,7 @@ def question_text(
     Z1 carries the summary to confirm; the steps v0.2 gives only as an
     instruction (the S2 warning and safe-place question) carry their draft.
     """
-    selector = Selector(catalogue or funnel_catalogue(), iv)
+    selector = Selector(catalogue or catalogue_for(iv.a), iv)
     if definition.id in selector.c.drafts:
         return selector.draft(definition.id), selector.used
     if definition.id != "Z1":
@@ -68,7 +68,7 @@ def render(
     catalogue: Catalogue | None = None,
 ) -> tuple[list[tuple[str, str]], list[str]]:
     """The texts, in order, and the ids of the catalogue phrases they used."""
-    selector = Selector(catalogue or funnel_catalogue(), iv, pending)
+    selector = Selector(catalogue or catalogue_for(artifact), iv, pending)
     out: list[tuple[str, str]] = []
     templates = {o.template for o in orientations}
     for o in orientations:

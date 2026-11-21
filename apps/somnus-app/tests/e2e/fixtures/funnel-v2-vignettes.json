@@ -11,6 +11,13 @@
           "value": 52
         },
         {
+          "key": "SEX",
+          "kind": "ask",
+          "type": "single",
+          "value": "hombre",
+          "labels": ["Hombre"]
+        },
+        {
           "key": "Q01",
           "kind": "ask",
           "type": "free_text",
@@ -261,6 +268,13 @@
           "kind": "ask",
           "type": "number",
           "value": 50
+        },
+        {
+          "key": "SEX",
+          "kind": "ask",
+          "type": "single",
+          "value": "hombre",
+          "labels": ["Hombre"]
         },
         {
           "key": "Q01",

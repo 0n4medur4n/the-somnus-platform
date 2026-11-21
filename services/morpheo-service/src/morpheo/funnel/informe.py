@@ -27,15 +27,15 @@ from typing import Any
 
 from morpheo.clinical.loader import load_workflows
 from morpheo.funnel.artifact import FunnelArtifact
-from morpheo.funnel.catalogue import Catalogue
+from morpheo.funnel.catalogue import Catalogue, Selector
 from morpheo.funnel.display import answer_label
 from morpheo.funnel.extraction import is_ai_key
 from morpheo.funnel.interview import SAFETY, Interview
-from morpheo.funnel.render import question_text
 from morpheo.funnel.rules import FunnelResult
 
 INFORME_FILE = Path(__file__).resolve().parents[3] / "clinical" / "morpheo_informe_v3.json"
-_SENTENCE = re.compile(r"(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡])")
+# A sentence starts with a capital (Spanish, Catalan or French) or ¿ ¡.
+_SENTENCE = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-ÖØ-Þ¿¡])")
 _SLOT = re.compile(r"\{([A-Za-z_0-9]+)\}")
 _SKIP_BASES = {"PROT", "S2_aviso", "S2_seguro", "Z1"}
 ALL = "todas"
@@ -152,7 +152,7 @@ def parse(
                 raise InformeError(f"{table}: {key!r} is not a template of the artifact")
     v02 = [s for s in _strings(artifact.raw["source"]) if s]
     steps = raw["pasos"]["diario_y_revision"]
-    if not any(steps["texto"] in s for s in v02):
+    if not any(steps["texto"].casefold() in s.casefold() for s in v02):
         raise InformeError(f"pasos: {steps['texto']!r} is not literal v0.2")
     approved_phrases = [p.text for lst in catalogue.lists.values() for p in lst.phrases]
     for phrase in raw["ayuda"]["frases"]:
@@ -230,14 +230,19 @@ def _action(informe: InformeArtifact, template: str, text: str) -> tuple[str, ..
 
 
 def _summary(artifact: FunnelArtifact, catalogue: Catalogue, iv: Interview) -> str | None:
-    """What the person confirmed in Z1, from the approved phrases (no new text)."""
+    """What the person confirmed in Z1, from the approved phrases (no new text).
+
+    The summary Z1 showed, without the question around it, in any language.
+    """
     if "Z1" not in iv.answers:
         return None
-    text, _ = question_text(artifact.step("Z1"), iv, catalogue)
-    found = re.match(r"Esto es lo que he entendido:\s*(.+?)\s*¿Es correcto\?\s*$", text, re.S)
-    if found is None:
+    slots = catalogue.placeholders.get("Z1", {})
+    if not slots:
         return None
-    body = found.group(1).strip()
+    body = Selector(catalogue, iv).placeholder("Z1", next(iter(slots)))
+    if not body:
+        return None
+    body = body.strip()
     return body if body.endswith(".") else f"{body}."
 
 
@@ -263,7 +268,7 @@ def _answers(artifact: FunnelArtifact, iv: Interview) -> tuple[AnswerRow, ...]:
             AnswerRow(
                 id=base,
                 question=definition.text,
-                answer=answer_label(answer, definition, "ask"),
+                answer=answer_label(answer, definition, "ask", artifact.lang),
                 origin=_origin(answer),
             )
         )
@@ -285,7 +290,8 @@ def _safety(artifact: FunnelArtifact, iv: Interview) -> tuple[SafetyRow, ...]:
         )
         definition = artifact.step(base, "end")
         kind = "confirm" if when == WHEN_CONFIRMED else "ask"
-        rows.append(SafetyRow(definition.text, answer_label(answer, definition, kind), when))
+        label = answer_label(answer, definition, kind, artifact.lang)
+        rows.append(SafetyRow(definition.text, label, when))
     return tuple(rows)
 
 

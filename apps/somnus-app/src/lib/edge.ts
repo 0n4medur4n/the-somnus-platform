@@ -142,8 +142,15 @@ export const edge = {
   /** Which flow the app runs (v1 or v2): one config change in morpheo rolls back. */
   getFunnelConfig: (): Promise<FunnelConfigResponse> =>
     api.get<FunnelConfigResponse>("/v1/funnel/config"),
-  startFunnel: (panel: boolean): Promise<FunnelState> =>
-    api.post<FunnelState>(`/v1/funnel/sessions${panelQuery(panel)}`, { consentGiven: true }),
+  /**
+   * Starts an interview in the app's language: morpheo holds it in that language
+   * from start to report (Spanish where it does not have it).
+   */
+  startFunnel: (panel: boolean, locale: SupportedLocale): Promise<FunnelState> =>
+    api.post<FunnelState>(`/v1/funnel/sessions${panelQuery(panel)}`, {
+      consentGiven: true,
+      locale,
+    }),
   /** The signed-in person's own finished interviews (their list in Mi espacio). */
   getOwnFunnelSessions: (): Promise<FunnelOwnSessions> =>
     api.get<FunnelOwnSessions>("/v1/funnel/sessions"),

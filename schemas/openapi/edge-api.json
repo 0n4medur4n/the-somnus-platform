@@ -5907,6 +5907,17 @@
             "enum": [
               true
             ]
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en",
+              "ca",
+              "fr",
+              null
+            ],
+            "nullable": true
           }
         },
         "required": [

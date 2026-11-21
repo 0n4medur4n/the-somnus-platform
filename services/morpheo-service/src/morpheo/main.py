@@ -26,6 +26,7 @@ from morpheo.api.maintenance import router as maintenance_router
 from morpheo.api.sources import router as sources_router
 from morpheo.api.version import router as version_router
 from morpheo.funnel.informe import informe_artifact, require_approved
+from morpheo.funnel.locales import bundle, enabled_locales
 from morpheo.infrastructure.correlation import CorrelationIdMiddleware
 from morpheo.infrastructure.db import create_engine_from_url
 from morpheo.infrastructure.errors import register_exception_handlers
@@ -65,6 +66,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.ai = build_extractor(settings)
     # The one-page report: only with REPORT_V3_ENABLED, and only a signed one.
     app.state.informe = require_approved(informe_artifact()) if settings.report_v3_enabled else None
+    # The languages an interview may be held in, each loaded and checked now: an
+    # overlay that leaves a text out stops the service instead of reaching a person.
+    app.state.funnel_locales = enabled_locales(settings.funnel_locales)
+    for locale in app.state.funnel_locales:
+        bundle(locale)
 
     app.add_middleware(CorrelationIdMiddleware)
     register_exception_handlers(app)

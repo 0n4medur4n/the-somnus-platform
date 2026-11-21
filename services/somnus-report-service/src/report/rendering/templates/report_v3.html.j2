@@ -3,6 +3,12 @@
   {% set r = request.report %}
   {% set origins = {"answered": strings.originAnswered, "narrative": strings.originNarrative, "corrected": strings.originCorrected} %}
   {% set whens = {"moment": strings.whenMoment, "end": strings.whenEnd, "confirmed": strings.whenConfirmed} %}
+  {# Who the report is about, as they answered at the start (age, then sex; 21/11/2026). #}
+  {% set sexes = {"mujer": strings.sexMujer, "hombre": strings.sexHombre} %}
+  {% set person = r.person if r and r.person else none %}
+  {% set person_parts = [] %}
+  {% if person and person.age is not none %}{% set _ = person_parts.append(strings.personAge ~ ": " ~ person.age ~ " " ~ strings.personYears) %}{% endif %}
+  {% if person and person.sex %}{% set _ = person_parts.append(strings.personSex ~ ": " ~ sexes[person.sex]) %}{% endif %}
   <head>
     <meta charset="utf-8" />
     <title>{{ strings.brand }} · {{ strings.v2Title }}</title>
@@ -26,6 +32,7 @@
       .byline { margin: 1pt 0 8pt; color: #9fb0c3; font-size: 9pt; }
       h1 { font-size: 13pt; margin: 0; color: #ffffff; font-weight: normal; }
       .report-date { color: #9fb0c3; margin: 3pt 0 0; font-size: 8.5pt; }
+      .report-person { color: #9fb0c3; margin: 1pt 0 0; font-size: 8.5pt; }
       h2 { font-size: 10.5pt; color: #2f6ae0; margin: 9pt 0 3pt; padding-left: 7pt; border-left: 3pt solid #437ef7; }
       p { margin: 0 0 6pt; }
       .language-note { color: #475569; font-size: 9pt; margin: 0 0 8pt; }
@@ -79,10 +86,8 @@
       <p class="byline">{{ strings.byline }}</p>
       <h1>{{ strings.v2Title }}</h1>
       <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
+      {% if person_parts %}<p class="report-person">{{ person_parts|join(" · ") }}</p>{% endif %}
     </header>
-    {% if strings.clinicalLanguage %}
-    <p class="language-note">{{ strings.clinicalLanguage }}</p>
-    {% endif %}
 
     {% if r.layout == "urgent" %}
     <section class="urgent">
@@ -157,6 +162,7 @@
         <p class="byline">{{ strings.proByline }}</p>
         <h1>{{ strings.proTitle }}</h1>
         <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
+      {% if person_parts %}<p class="report-person">{{ person_parts|join(" · ") }}</p>{% endif %}
       </header>
 
       <h2>{{ strings.proEngine }}</h2>
@@ -210,6 +216,7 @@
         <p class="byline">{{ strings.proByline }}</p>
         <h1>{{ strings.passagesTitle }}</h1>
         <p class="report-date">{{ strings.date }}: <span class="completed-at">{{ completed_display }}</span></p>
+      {% if person_parts %}<p class="report-person">{{ person_parts|join(" · ") }}</p>{% endif %}
       </header>
       <p class="note">{{ strings.passagesNote }}</p>
       {% for passage in passages %}

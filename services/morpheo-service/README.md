@@ -51,6 +51,7 @@ fleets:
 | `LOG_FORMAT`    | `json`                                                          |
 | `DATABASE_URL`  | `mysql+pymysql://root:rootpw@127.0.0.1:3306/somnus_morpheo`     |
 | `FUNNEL_V2_ENABLED` | `false` -- Morpheo v2.0, the embudo v0.2 engine (ADR 0020)   |
+| `FUNNEL_LOCALES` | `es` -- languages an interview may be held in (`es,ca,en,fr` in production; ADR 0020, amendment of 21/11/2026). Overlays in `clinical/i18n/`, all checked at startup |
 | `INSTRUMENTS_ENABLED` | `true` -- ISI, Epworth, STOP-Bang (D-34), see below        |
 | `INSTRUMENTS_SOURCE_DIR` | unset -- `clinical/instruments/`; overridable for tests  |
 | `AI_EXTRACTION_ENABLED` | `true` -- the AI of v0.2 p. 14, see below; needs a key. **Production runs `false` and has no key (owner decision 2026-11-03)** |

@@ -405,6 +405,49 @@
                   "type": "null"
                 }
               ]
+            },
+            "person": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "age": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 120
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sex": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "mujer",
+                            "hombre"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "age",
+                    "sex"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "required": [

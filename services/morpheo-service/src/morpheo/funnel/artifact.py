@@ -14,12 +14,20 @@ never reword it. The one exception is a screen v0.2 asks for but does not write
 (Q07 «separar cada pregunta», Q14's breakdown on p. 4): its text is a draft,
 written with the PDF's own words where they suffice, and it says so (`draft`)
 so the clinical lead can review it.
+
+Two later decisions sit in `engine`, not in `source`, so the transcription stays
+exactly what v0.2 says: `source_revisions` rewords a question (each names the
+v0.2 text it replaces, checked here) and `additions` adds one v0.2 does not have
+(SEX, 21/11/2026). The same interview in Catalan, English and French is an
+overlay of this artifact (`morpheo.funnel.locales`): same steps, keys and rules,
+other words.
 """
 
 from __future__ import annotations
 
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -36,6 +44,49 @@ class FunnelArtifactError(ValueError):
 class Option:
     key: str
     label: str
+
+
+@dataclass(frozen=True)
+class Lang:
+    """The few words the engine writes itself, in the interview's language.
+
+    Answers as the person gave them («Sí», «No lo sé»), duration units and the
+    "and" that joins phrases. Everything else comes from an artifact.
+    """
+
+    locale: str
+    yes: str
+    no: str
+    unknown: str
+    prefer: str
+    same: str
+    changed: str
+    none_of_these: str
+    read: str
+    # dias -> ("día", "días"): the unit key the app sends, and how it reads.
+    units: Mapping[str, tuple[str, str]]
+    conjunction: str
+
+
+SPANISH = Lang(
+    locale="es",
+    yes="Sí",
+    no="No",
+    unknown="No lo sé",
+    prefer="Prefiero no responder",
+    same="Sigue igual",
+    changed="Ha cambiado",
+    none_of_these="Ninguna de estas",
+    read="Leído",
+    units={
+        "dias": ("día", "días"),
+        "semanas": ("semana", "semanas"),
+        "meses": ("mes", "meses"),
+        "años": ("año", "años"),
+        "horas": ("hora", "horas"),
+    },
+    conjunction=" y ",
+)
 
 
 @dataclass(frozen=True)
@@ -61,6 +112,8 @@ class StepDef:
     # Why this screen's text is not literally v0.2 (a split v0.2 asks for but
     # does not write), for the clinical lead's review; None when it is verbatim.
     draft: str | None = None
+    # Options no longer offered, kept only to read interviews answered before.
+    retired_options: tuple[Option, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -70,6 +123,11 @@ class FunnelArtifact:
     templates: dict[str, str]
     content_version: str
     rules_version: str
+    lang: Lang = SPANISH
+
+    @property
+    def locale(self) -> str:
+        return self.lang.locale
 
     @property
     def engine(self) -> dict[str, Any]:
@@ -111,13 +169,40 @@ def _source_index(source: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return index
 
 
+def _revised_index(source: dict[str, Any], engine: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """The source index with the later rewordings and additions applied."""
+    index = _source_index(source)
+    for revision in engine.get("source_revisions", []):
+        item = index.get(revision["id"])
+        if item is None:
+            raise FunnelArtifactError(f"revision {revision['id']!r}: not a v0.2 item")
+        if item["text"] != revision["v02_text"]:
+            raise FunnelArtifactError(
+                f"revision {revision['id']!r}: v02_text is not what v0.2 says"
+            )
+        if not revision.get("decided"):
+            raise FunnelArtifactError(f"revision {revision['id']!r}: who decided it?")
+        index[revision["id"]] = {**item, "text": revision["text"]}
+    for addition in engine.get("additions", []):
+        if addition["id"] in index:
+            raise FunnelArtifactError(f"addition {addition['id']!r}: v0.2 already has it")
+        if not addition.get("decided"):
+            raise FunnelArtifactError(f"addition {addition['id']!r}: who decided it?")
+        index[addition["id"]] = {
+            "id": addition["id"],
+            "text": addition["text"],
+            "note": f"{addition['note']} {addition.get('options_text', '')}".strip(),
+        }
+    return index
+
+
 def _fragment_of(fragment: str, *texts: str | None) -> bool:
     return any(text is not None and fragment in text for text in texts)
 
 
 def parse(raw: dict[str, Any]) -> FunnelArtifact:
     source, engine = raw["source"], raw["engine"]
-    index = _source_index(source)
+    index = _revised_index(source, engine)
     steps: list[StepDef] = []
     for spec in engine["steps"]:
         item = index.get(spec["source"])
@@ -139,6 +224,7 @@ def parse(raw: dict[str, Any]) -> FunnelArtifact:
             text = text[:opening] + text[opening].upper() + text[opening + 1 :]
         options = tuple(Option(o["key"], o["label"]) for o in spec.get("options", []))
         fields = tuple(Option(o["key"], o["label"]) for o in spec.get("fields", []))
+        retired = tuple(Option(o["key"], o["label"]) for o in spec.get("retired_options", []))
         for o in (*options, *fields):
             if not _fragment_of(o.label, full, note):
                 raise FunnelArtifactError(f"step {spec['id']!r}: label {o.label!r} is not verbatim")
@@ -163,6 +249,7 @@ def parse(raw: dict[str, Any]) -> FunnelArtifact:
                 unit=spec.get("unit"),
                 outcomes=dict(item.get("outcomes", {})),
                 draft=draft,
+                retired_options=retired,
             )
         )
     templates = {t["id"]: t["text"] for t in source["templates"]}

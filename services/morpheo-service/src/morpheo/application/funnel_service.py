@@ -40,6 +40,7 @@ from morpheo.funnel.interview import (
     next_step,
     special_step,
 )
+from morpheo.funnel.locales import DEFAULT_LOCALE, bundle
 from morpheo.funnel.render import question_text
 from morpheo.funnel.rules import FunnelResult, evaluate
 from morpheo.infrastructure.models import FunnelAnswer, FunnelCase, FunnelSession
@@ -66,6 +67,7 @@ from morpheo.schemas.funnel import (
     FunnelReportFlagDTO,
     FunnelReportGroundingDTO,
     FunnelReportHelpDTO,
+    FunnelReportPersonDTO,
     FunnelReportProfessionalDTO,
     FunnelReportResourceDTO,
     FunnelReportSafetyDTO,
@@ -83,6 +85,7 @@ DURATION_UNITS = ["dias", "semanas", "meses", "años"]
 SLEEP_UNITS = ["horas"]
 _TIME = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")
 _NUMBER_LIMITS = {"AGE": (0, 120), "Q05": (0, 7)}
+_SEXES = ("mujer", "hombre")
 
 
 class AnswerRejected(ValueError):
@@ -106,19 +109,39 @@ class FunnelService:
         catalogue: Catalogue | None = None,
         ai: AiExtractor | None = None,
         informe: InformeArtifact | None = None,
+        locales: frozenset[str] = frozenset({DEFAULT_LOCALE}),
     ) -> None:
         self._repo = FunnelRepository(session)
         self._cases = CaseRepository(session)
         self._registry = registry
         self._ai = ai
-        self._informe = informe
-        self._a = artifact or funnel_artifact()
-        self._c = catalogue or funnel_catalogue()
+        self._locales = locales | {DEFAULT_LOCALE}
+        # The Spanish artifacts; `_use` swaps in another language's per interview.
+        self._es = (artifact or funnel_artifact(), catalogue or funnel_catalogue(), informe)
+        self._a, self._c, self._informe = self._es
+
+    def _use(self, locale: str) -> None:
+        """Hold what follows in the interview's language (Spanish if not enabled)."""
+        if locale == DEFAULT_LOCALE or locale not in self._locales:
+            self._a, self._c, self._informe = self._es
+            return
+        localized = bundle(locale)
+        # The report goes with the language only where it is on (REPORT_V3_ENABLED).
+        informe = localized.informe if self._es[2] is not None else None
+        self._a, self._c, self._informe = localized.artifact, localized.catalogue, informe
+
+    def _locale_of(self, session: FunnelSession) -> str:
+        return session.locale if session.locale in self._locales else DEFAULT_LOCALE
 
     # --- the four moves ---
 
-    def create(self, owner_id: str | None) -> FunnelStateDTO:
-        session_id = self._repo.create(owner_id, self._a.content_version, self._a.rules_version)
+    def create(self, owner_id: str | None, locale: str | None = None) -> FunnelStateDTO:
+        """Start an interview in `locale` (the app's language), if it is enabled."""
+        held_in = locale if locale in self._locales else DEFAULT_LOCALE
+        self._use(held_in)
+        session_id = self._repo.create(
+            owner_id, self._a.content_version, self._a.rules_version, held_in
+        )
         self._cases.create(session_id, self._a.content_version, self._a.rules_version)
         state = self.state(session_id, owner_id)
         assert state is not None
@@ -135,6 +158,7 @@ class FunnelService:
         for row in self._repo.owned_by(actor_id):
             if row.status not in ("finished", "stopped", "paused"):
                 continue  # still being answered: nothing to read back yet
+            self._use(self._locale_of(row))
             answers = self._answers(row.id)
             result = evaluate(self._a, answers, self._registry)
             report = self._report(result, answers)
@@ -180,7 +204,9 @@ class FunnelService:
         value_json = None if value is None else json.dumps(value, ensure_ascii=False)
         self._repo.add_answer(session_id, step.key, value_json, absence, text)
         answers = self._answers(session_id)
-        if self._ai is not None and text is not None and step.kind == "ask":
+        # The AI reads Spanish only (its prompt and the local pseudonymiser).
+        spanish = self._a.locale == DEFAULT_LOCALE
+        if self._ai is not None and spanish and text is not None and step.kind == "ask":
             # v0.2 p. 14: extract from the person's words, and screen them for
             # risk. A failed call still leaves a record: the interview then
             # asks every question and the safety fallback.
@@ -236,6 +262,7 @@ class FunnelService:
         # does not exist.
         if session is None or (session.owner_id is not None and session.owner_id != actor_id):
             return None
+        self._use(self._locale_of(session))
         return session
 
     def _answers(self, session_id: str) -> dict[str, Answer]:
@@ -338,6 +365,7 @@ class FunnelService:
         """
         opened = unrebuilt = 0
         for session in self._repo.without_case():
+            self._use(self._locale_of(session))
             case = self._open_case_for_older(session)
             opened += 1
             if session.status == "open":
@@ -611,8 +639,23 @@ class FunnelService:
         """The one-page report, when REPORT_V3_ENABLED (and the texts are signed)."""
         if self._informe is None:
             return None
-        built = build(self._a, self._c, self._informe, Interview(self._a, answers), result)
-        return None if built is None else self._report_dto(built)
+        iv = Interview(self._a, answers)
+        built = build(self._a, self._c, self._informe, iv, result)
+        if built is None:
+            return None
+        report = self._report_dto(built)
+        if built.layout != "standard":
+            return report  # an urgent report is only the urgent message
+        return report.model_copy(update={"person": self._person(iv)})
+
+    @staticmethod
+    def _person(iv: Interview) -> FunnelReportPersonDTO:
+        """Age and sex as the person answered them at the start; None where they did not."""
+        age, sex = iv.value("AGE"), iv.value("SEX")
+        return FunnelReportPersonDTO(
+            age=age if isinstance(age, int) and not isinstance(age, bool) else None,
+            sex=sex if sex in _SEXES else None,
+        )
 
     @staticmethod
     def _report_dto(report: Informe) -> FunnelReportDTO:
@@ -696,7 +739,7 @@ class FunnelService:
                 return phrase[:1].upper() + phrase[1:]
             label = dict(extraction.Q14_TEXT_PARTS).get(name, name)
             return f"{label[:1].upper()}{label[1:]}: «{value}»"
-        return answer_label(Answer(value=value), self._a.step(item_id), "ask")
+        return answer_label(Answer(value=value), self._a.step(item_id), "ask", self._a.lang)
 
     def _extraction(self, step: Step, answers: dict[str, Answer]) -> FunnelExtractionDTO:
         record = extraction.record_of(answers.get(self._record_key(step.key)))
@@ -778,7 +821,9 @@ class FunnelService:
             question, _ = question_text(definition, iv, self._c)
             items.append(
                 FunnelHistoryItemDTO(
-                    key=key, question=question, answer=answer_label(answer, definition, kind)
+                    key=key,
+                    question=question,
+                    answer=answer_label(answer, definition, kind, self._a.lang),
                 )
             )
         return items
@@ -801,4 +846,5 @@ class FunnelService:
             history=self._history(answers, iv),
             owned=session.owner_id is not None,
             case_code=None if case is None else case.code,
+            locale=self._a.locale,
         )

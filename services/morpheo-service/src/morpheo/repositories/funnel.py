@@ -26,7 +26,9 @@ class FunnelRepository:
     def __init__(self, session: Session) -> None:
         self._s = session
 
-    def create(self, owner_id: str | None, content_version: str, rules_version: str) -> str:
+    def create(
+        self, owner_id: str | None, content_version: str, rules_version: str, locale: str = "es"
+    ) -> str:
         session_id = str(uuid.uuid4())
         self._s.add(
             FunnelSession(
@@ -36,6 +38,7 @@ class FunnelRepository:
                 status="open",
                 content_version=content_version,
                 rules_version=rules_version,
+                locale=locale,
             )
         )
         # Committed on its own, before any answer refers to it.

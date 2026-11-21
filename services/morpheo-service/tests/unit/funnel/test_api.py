@@ -78,6 +78,14 @@ def _answer(client: TestClient, state: dict[str, Any], body: dict[str, Any]) -> 
     return client.post(f"{BASE}/sessions/{state['sessionId']}/answers", json=body)
 
 
+def _adult(client: TestClient, state: dict[str, Any], age: int = 40) -> dict[str, Any]:
+    """The start: the age, then the sex (Jesús, 21/11/2026)."""
+    state = _answer(client, state, {"key": "AGE", "value": age}).json()
+    assert state["step"]["key"] == "SEX", state["step"]
+    adult: dict[str, Any] = _answer(client, state, {"key": "SEX", "value": "mujer"}).json()
+    return adult
+
+
 def _play(client: TestClient, vignette: dict[str, Any]) -> dict[str, Any]:
     """Plays a vignette over HTTP, checking at every step that the API serves
     exactly the step the engine would."""
@@ -155,7 +163,7 @@ def test_an_answer_must_fit_the_step(client: TestClient) -> None:
 
 def test_free_text_with_identifying_data_is_refused(client: TestClient) -> None:
     state = _start(client)
-    state = _answer(client, state, {"key": "AGE", "value": 40}).json()
+    state = _adult(client, state, 40)
     assert state["step"]["key"] == "Q01" and state["step"]["type"] == "free_text"
     response = _answer(
         client, state, {"key": "Q01", "value": "Duermo mal, llamadme al 612 345 678"}
@@ -167,14 +175,14 @@ def test_free_text_with_identifying_data_is_refused(client: TestClient) -> None:
 def test_after_the_age_comes_the_narrative_as_v02_orders(client: TestClient) -> None:
     """v0.2 pp. 1 and 14: AGE -> Q01-Q18; the safety block comes at the end."""
     state = _start(client)
-    state = _answer(client, state, {"key": "AGE", "value": 40}).json()
+    state = _adult(client, state, 40)
     assert state["step"]["key"] == "Q01"
     assert state["step"]["phase"] == "story"
 
 
 def test_a_risk_in_the_narrative_asks_s4_at_once_and_a_yes_stops(client: TestClient) -> None:
     state = _start(client)
-    state = _answer(client, state, {"key": "AGE", "value": 40}).json()
+    state = _adult(client, state, 40)
     text = "Duermo fatal y a veces pienso en quitarme la vida"
     state = _answer(client, state, {"key": "Q01", "value": text}).json()
     assert state["step"]["key"] == "S4@exception:Q01"
@@ -188,12 +196,12 @@ def test_a_risk_in_the_narrative_asks_s4_at_once_and_a_yes_stops(client: TestCli
 
 def test_back_undoes_the_last_answer(client: TestClient) -> None:
     state = _start(client)
-    state = _answer(client, state, {"key": "AGE", "value": 40}).json()
+    state = _adult(client, state, 40)
     state = _answer(client, state, {"key": "Q01", "value": "Me despierto mucho"}).json()
     assert state["step"]["key"] == "Q02"
     back = client.post(f"{BASE}/sessions/{state['sessionId']}/back").json()
     assert back["step"]["key"] == "Q01"
-    assert [item["key"] for item in back["history"]] == ["AGE"]
+    assert [item["key"] for item in back["history"]] == ["AGE", "SEX"]
     assert back["history"][0]["answer"] == "40 años"
 
 
@@ -238,7 +246,7 @@ def test_each_step_carries_the_team_panel(client: TestClient) -> None:
 
 def test_the_s2_warning_and_safe_place_question_are_served_as_steps(client: TestClient) -> None:
     state = _start(client)
-    state = _answer(client, state, {"key": "AGE", "value": 50}).json()
+    state = _adult(client, state, 50)
     state = _answer(
         client, state, {"key": "Q01", "value": "Soy camionero y conduzco de noche"}
     ).json()

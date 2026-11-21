@@ -290,6 +290,11 @@ module "run_morpheo" {
     LOG_LEVEL    = "info"
     LOG_FORMAT   = "json"
     SERVICE_NAME = "morpheo-service"
+    # The interview in Spanish, Catalan, English and French (owner decision
+    # 2026-11-21; ADR 0020, amendment of 21/11/2026). Each language is loaded
+    # and checked at startup; taking one out of this list holds new interviews
+    # asked in it in Spanish, with no redeploy of the image.
+    FUNNEL_LOCALES = "es,ca,en,fr"
   }
   secret_env_vars = {
     DATABASE_URL = { secret_id = "morpheo-db-url", version = "latest" }

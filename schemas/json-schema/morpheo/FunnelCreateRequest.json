@@ -5,6 +5,22 @@
     "consentGiven": {
       "type": "boolean",
       "const": true
+    },
+    "locale": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "es",
+            "en",
+            "ca",
+            "fr"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [

@@ -29,8 +29,13 @@ def _walk(script: dict[str, Answer], stop_at: str | None = None) -> list[str]:
 
 def test_after_the_age_comes_the_narrative() -> None:
     """v0.2 pp. 1 and 14: AGE -> Q01-Q18; no safety question before the story
-    (owner decision 19/10/2026, withdrawing V-02's S1/S4 after the age)."""
-    assert _walk({"AGE": ADULT}, stop_at="Q02") == ["AGE", "Q01"]
+    (owner decision 19/10/2026, withdrawing V-02's S1/S4 after the age). The sex
+    comes right after the age (Jesús, 21/11/2026)."""
+    assert _walk({"AGE": ADULT}, stop_at="Q02") == ["AGE", "SEX", "Q01"]
+
+
+def test_a_minor_is_not_asked_the_sex_either() -> None:
+    assert _walk({"AGE": Answer(value=15)}) == ["AGE"]
 
 
 def test_a_yes_to_s1_at_the_end_ends_the_interview_before_z1() -> None:
@@ -59,7 +64,7 @@ def test_unknown_age_is_clarified_once_then_stops() -> None:
 def test_a_risk_term_in_the_narrative_asks_s4_at_that_moment() -> None:
     narrative = Answer(value="x", text="A veces pienso en quitarme la vida")
     keys = _walk({"AGE": ADULT, "Q01": narrative}, stop_at="Q02")
-    assert keys == ["AGE", "Q01", "S4@exception:Q01"]
+    assert keys == ["AGE", "SEX", "Q01", "S4@exception:Q01"]
 
 
 def test_risk_terms_ignore_case_and_accents() -> None:

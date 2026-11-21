@@ -26,6 +26,9 @@ def test_every_step_text_is_a_fragment_of_its_v02_source() -> None:
     for branch in source["branches"]:
         texts.update({item["id"]: item["text"] for item in branch["items"]})
     texts.update({item["id"]: item["text"] for item in source["safety_and_close"]["items"]})
+    # Later decisions: the rewordings replace their v0.2 text, additions are new.
+    texts.update({r["id"]: r["text"] for r in artifact.engine["source_revisions"]})
+    texts.update({a["id"]: a["text"] for a in artifact.engine["additions"]})
     checked = 0
     for step in artifact.steps:
         if step.source in texts and step.draft is None:
@@ -87,7 +90,8 @@ def test_v02_is_the_active_flow_content_2_0() -> None:
     # Owner and clinical lead, 19/10/2026: the active flow until Jesús says otherwise.
     artifact = funnel_artifact()
     assert artifact.raw["meta"]["active"] is True
-    assert artifact.content_version == artifact.rules_version == "2.2"
+    # 2.3 (21/11/2026): R4 and R6 reworded, SEX added; no rule changed.
+    assert (artifact.content_version, artifact.rules_version) == ("2.3", "2.2")
     # D-07, approved by the clinical lead on 18/10/2026.
     assert artifact.engine["resources"]["EMERGENCIA"] == "112"
     # Texts v0.2 does not give are drafts in the phrase catalogue, not here.
@@ -109,11 +113,49 @@ def test_z2_asks_only_its_question_not_the_interviewers_instruction() -> None:
     assert "Explicar" not in z2.text
 
 
-def test_r4_asks_only_its_question_not_the_interviewers_condition() -> None:
-    """v0.2 p. 6: «Si hay sospecha: ¿hay enfermedad cardiopulmonar …?». «Si hay
-    sospecha:» is the interviewer's condition (the engine opens R only then)."""
-    r4 = funnel_artifact().step("R4")
-    assert r4.text == (
-        "¿Hay enfermedad cardiopulmonar relevante, ictus, opioides, debilidad respiratoria"
-        " o insomnio grave?"
+def test_r4_is_the_plain_language_question_of_21_11() -> None:
+    """Jesús, 21/11/2026 (plain-language edition, p. 6): R4 asks about a diagnosed or
+    followed-up heart or lung disease, stroke and opioids, with five examples;
+    «relevante», respiratory weakness and severe insomnia leave this step. The v0.2
+    text it replaces stays on record."""
+    artifact = funnel_artifact()
+    r4 = artifact.step("R4")
+    assert r4.text.startswith("¿Le han diagnosticado alguna enfermedad del corazón o de los")
+    assert "(tramadol, codeína, buprenorfina, fentanilo o morfina)" in r4.text
+    assert "relevante" not in r4.text and "insomnio grave" not in r4.text
+    assert [o.key for o in r4.options] == ["cardiopulmonar", "ictus", "opioides"]
+    # Retired options only read interviews answered before; they are never offered.
+    assert [o.key for o in r4.retired_options] == ["debilidad_respiratoria", "insomnio_grave"]
+    revision = next(r for r in artifact.engine["source_revisions"] if r["id"] == "R4")
+    assert revision["v02_text"].startswith("Si hay sospecha: ¿hay enfermedad cardiopulmonar")
+
+
+def test_r6_is_the_plain_language_question_of_21_11() -> None:
+    r6 = funnel_artifact().step("R6")
+    assert r6.text == (
+        "Si le han hecho un estudio respiratorio nocturno en casa, ¿le dijeron que el"
+        " resultado era normal, dudoso o no válido por problemas técnicos?"
     )
+
+
+def test_sex_is_asked_right_after_the_age() -> None:
+    artifact = funnel_artifact()
+    ids = [s.id for s in artifact.steps]
+    assert ids[:3] == ["AGE", "SEX", "Q01"]
+    sex = artifact.step("SEX")
+    assert (sex.stage, sex.type) == ("start", "single")
+    assert [(o.key, o.label) for o in sex.options] == [("mujer", "Mujer"), ("hombre", "Hombre")]
+
+
+def test_a_revision_must_name_the_v02_text_it_replaces() -> None:
+    raw = _raw()
+    raw["engine"]["source_revisions"][0]["v02_text"] = "otra cosa"
+    with pytest.raises(FunnelArtifactError, match="v02_text"):
+        parse(raw)
+
+
+def test_an_addition_cannot_reuse_a_v02_id() -> None:
+    raw = _raw()
+    raw["engine"]["additions"][0]["id"] = "Q01"
+    with pytest.raises(FunnelArtifactError, match="already has it"):
+        parse(raw)
