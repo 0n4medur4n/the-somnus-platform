@@ -78,6 +78,7 @@ describe("admin console on a brand-new session", () => {
             expiresAt: new Date(Date.now() + 3_600_000),
             revokedAt: null,
             somnusUserId: null,
+            client: "console",
           };
           ctx.switchToHttp().getRequest<{ session?: SessionRecord }>().session = fresh;
           return true;

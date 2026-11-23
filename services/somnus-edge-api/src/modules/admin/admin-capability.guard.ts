@@ -46,6 +46,14 @@ export class AdminCapabilityGuard implements CanActivate {
     }
 
     const session = requireSession(request.session, correlationId);
+    // A session written before classification has no client. That is not a
+    // console session. The body stays the generic forbidden response: no
+    // reason code and no mention of which check failed.
+    if (session.client !== "console") {
+      throw new SomnusError(ErrorCode.FORBIDDEN, "You are not allowed to perform this action.", {
+        correlationId,
+      });
+    }
     const actorId = await this.actorResolver.resolve(session, correlationId);
 
     const decision =

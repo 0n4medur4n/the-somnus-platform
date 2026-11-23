@@ -10,7 +10,7 @@ import { classifySessionClient, presentedOrigin } from "./classify-session.js";
 import { CurrentSession } from "./current-session.decorator.js";
 import { SessionCreateDto } from "./session.dto.js";
 import { SessionGuard } from "./session.guard.js";
-import { type SessionRecord, SessionService } from "./session.service.js";
+import { CONSOLE_ABSOLUTE_MS, type SessionRecord, SessionService } from "./session.service.js";
 import { amrFromVerifiedToken, authTimeFromClaim } from "./verified-sign-in.js";
 
 /**
@@ -92,7 +92,7 @@ export class SessionsController {
     reply.setCookie(
       this.config.SESSION_COOKIE_NAME,
       session.sessionId,
-      this.sessionCookieOptions(),
+      this.sessionCookieOptions(session),
     );
 
     return {
@@ -165,14 +165,16 @@ export class SessionsController {
     return csrfTokenFor(sessionId, this.config.COOKIE_SECRET);
   }
 
-  private sessionCookieOptions() {
+  private sessionCookieOptions(session: SessionRecord) {
+    const maxAge =
+      session.client === "console" ? CONSOLE_ABSOLUTE_MS / 1000 : this.config.SESSION_TTL_SECONDS;
     return {
       httpOnly: true,
       secure: this.config.COOKIE_SECURE,
       sameSite: this.config.COOKIE_SAMESITE,
       signed: true,
       path: "/",
-      maxAge: this.config.SESSION_TTL_SECONDS,
+      maxAge,
       ...(this.config.COOKIE_DOMAIN ? { domain: this.config.COOKIE_DOMAIN } : {}),
     } as const;
   }

@@ -3,7 +3,11 @@ import { Timestamp } from "firebase-admin/firestore";
 import { beforeEach, describe, expect, it } from "vitest";
 import { FirebaseService } from "../../src/infrastructure/firebase/firebase.service.js";
 import { EMAIL_LINK_AMR } from "../../src/modules/sessions/classify-session.js";
-import { SessionService } from "../../src/modules/sessions/session.service.js";
+import {
+  CONSOLE_ABSOLUTE_MS,
+  CONSOLE_IDLE_MS,
+  SessionService,
+} from "../../src/modules/sessions/session.service.js";
 import { clearFirestoreEmulator, signUpTestUser, TEST_PROJECT_ID } from "../support/emulator.js";
 
 function open(
@@ -130,9 +134,85 @@ describe("SessionService (Firestore-backed session store)", () => {
     expect(second["stepUpAt"]).toBeNull();
     expect(second["authTime"]).toEqual(first["authTime"]);
     expect((second["authTime"] as Timestamp).toMillis()).toBe(authTime.getTime());
-    expect((second["expiresAt"] as Timestamp).toMillis()).toBe(now.getTime() + 3_600_000);
+    expect((second["expiresAt"] as Timestamp).toMillis()).toBe(
+      authTime.getTime() + CONSOLE_ABSOLUTE_MS,
+    );
+    expect((second["lastSeenAt"] as Timestamp).toMillis()).toBe(now.getTime());
     expect(second["somnusUserId"]).toBe("018f0000-0000-7000-8000-0000000000aa");
-    expect(second).not.toHaveProperty("lastSeenAt");
+  });
+
+  it("ends a console session at 30 minutes idle and at 10 hours, and writes lastSeenAt once a minute", async () => {
+    const start = new Date("2026-11-23T12:00:00.000Z");
+    const created = await sessions.create({
+      firebaseUid: "console-limits",
+      email: "c@example.com",
+      ttlSeconds: 60 * 60 * 24 * 7,
+      now: start,
+      client: "console",
+      amr: [EMAIL_LINK_AMR],
+      authTime: start,
+      stepUpAt: null,
+    });
+    expect(created.expiresAt.getTime() - start.getTime()).toBe(CONSOLE_ABSOLUTE_MS);
+
+    const withinMinute = new Date(start.getTime() + 30_000);
+    expect(await sessions.validate(created.sessionId, withinMinute)).not.toBeNull();
+    const once = (
+      await firebase.firestore.collection("sessions").doc(created.sessionId).get()
+    ).data();
+    if (once === undefined) throw new Error("session document missing");
+    expect((once["lastSeenAt"] as Timestamp).toMillis()).toBe(start.getTime());
+
+    const afterMinute = new Date(start.getTime() + 60_000);
+    expect(await sessions.validate(created.sessionId, afterMinute)).not.toBeNull();
+    const twice = (
+      await firebase.firestore.collection("sessions").doc(created.sessionId).get()
+    ).data();
+    if (twice === undefined) throw new Error("session document missing");
+    expect((twice["lastSeenAt"] as Timestamp).toMillis()).toBe(afterMinute.getTime());
+
+    const idle = new Date(afterMinute.getTime() + CONSOLE_IDLE_MS);
+    expect(await sessions.validate(created.sessionId, idle)).toBeNull();
+    const afterIdle = (
+      await firebase.firestore.collection("sessions").doc(created.sessionId).get()
+    ).data();
+    if (afterIdle === undefined) throw new Error("session document missing");
+    expect((afterIdle["lastSeenAt"] as Timestamp).toMillis()).toBe(afterMinute.getTime());
+
+    const fresh = await sessions.create({
+      firebaseUid: "console-absolute",
+      email: null,
+      ttlSeconds: 60 * 60 * 24 * 7,
+      now: start,
+      client: "console",
+      amr: [EMAIL_LINK_AMR],
+      authTime: start,
+      stepUpAt: null,
+    });
+    const pastAbsolute = new Date(start.getTime() + CONSOLE_ABSOLUTE_MS);
+    expect(await sessions.validate(fresh.sessionId, pastAbsolute)).toBeNull();
+  });
+
+  it("keeps a web session for its stored expiry and does not write lastSeenAt", async () => {
+    const start = new Date("2026-11-23T12:00:00.000Z");
+    const created = await sessions.create({
+      firebaseUid: "web-limits",
+      email: null,
+      ttlSeconds: 3_600,
+      now: start,
+      client: "app",
+      amr: [EMAIL_LINK_AMR],
+      authTime: new Date(start.getTime() - CONSOLE_ABSOLUTE_MS - 1),
+      stepUpAt: null,
+    });
+    const later = new Date(start.getTime() + CONSOLE_IDLE_MS + 60_000);
+    expect(await sessions.validate(created.sessionId, later)).not.toBeNull();
+    const stored = (
+      await firebase.firestore.collection("sessions").doc(created.sessionId).get()
+    ).data();
+    if (stored === undefined) throw new Error("session document missing");
+    expect(stored).not.toHaveProperty("lastSeenAt");
+    expect((stored["expiresAt"] as Timestamp).toMillis()).toBe(start.getTime() + 3_600_000);
   });
 
   it("stores a step-up time when create is given one", async () => {

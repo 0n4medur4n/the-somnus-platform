@@ -7,6 +7,40 @@ import { type SessionClient } from "./classify-session.js";
 /** Firestore collection holding server-side sessions (build plan §9: short-lived session lookup). */
 const SESSIONS_COLLECTION = "sessions";
 
+/** Console idle limit (ADR 0027 decision 8). A web session does not use it. */
+export const CONSOLE_IDLE_MS = 30 * 60 * 1000;
+
+/** Console absolute limit, measured from `authTime`. It does not move. */
+export const CONSOLE_ABSOLUTE_MS = 10 * 60 * 60 * 1000;
+
+/**
+ * A console request newer than this does not write `lastSeenAt` again.
+ * The idle window can therefore run up to this long past the last stored
+ * sighting: one write a minute, not one write a request.
+ */
+export const LAST_SEEN_INTERVAL_MS = 60 * 1000;
+
+export type ConsoleAccess = { ok: false } | { ok: true; writeLastSeen: boolean };
+
+/**
+ * Console session still inside both limits, and whether this request should
+ * store a new `lastSeenAt`. Missing `authTime` fails closed. Missing
+ * `lastSeenAt` measures idle from `authTime` and asks for a write.
+ */
+export function consoleAccess(
+  now: Date,
+  authTime: Date | undefined,
+  lastSeenAt: Date | undefined,
+): ConsoleAccess {
+  if (authTime === undefined) return { ok: false };
+  if (now.getTime() >= authTime.getTime() + CONSOLE_ABSOLUTE_MS) return { ok: false };
+  const seen = lastSeenAt ?? authTime;
+  if (now.getTime() >= seen.getTime() + CONSOLE_IDLE_MS) return { ok: false };
+  const writeLastSeen =
+    lastSeenAt === undefined || now.getTime() - lastSeenAt.getTime() >= LAST_SEEN_INTERVAL_MS;
+  return { ok: true, writeLastSeen };
+}
+
 export type SessionRecord = {
   sessionId: string;
   firebaseUid: string;
@@ -32,6 +66,11 @@ export type SessionRecord = {
   authTime?: Date;
   /** Null until a step-up is recorded. Absent on older documents. */
   stepUpAt?: Date | null;
+  /**
+   * Last console request that was allowed to move the idle window.
+   * Absent on web sessions and on documents written before this field.
+   */
+  lastSeenAt?: Date;
 };
 
 type SessionDoc = {
@@ -46,6 +85,7 @@ type SessionDoc = {
   amr?: string[];
   authTime?: Timestamp;
   stepUpAt?: Timestamp | null;
+  lastSeenAt?: Timestamp;
 };
 
 /**
@@ -87,7 +127,11 @@ export class SessionService {
     stepUpAt: Date | null;
   }): Promise<SessionRecord> {
     const now = input.now ?? new Date();
-    const expiresAt = new Date(now.getTime() + input.ttlSeconds * 1000);
+    const ttlEnd = new Date(now.getTime() + input.ttlSeconds * 1000);
+    const absoluteEnd =
+      input.client === "console" ? new Date(input.authTime.getTime() + CONSOLE_ABSOLUTE_MS) : null;
+    const expiresAt =
+      absoluteEnd !== null && absoluteEnd.getTime() < ttlEnd.getTime() ? absoluteEnd : ttlEnd;
     const sessionId = UUIDv7();
     const amr = [...input.amr];
     const doc: SessionDoc = {
@@ -102,6 +146,7 @@ export class SessionService {
       amr,
       authTime: Timestamp.fromDate(input.authTime),
       stepUpAt: input.stepUpAt === null ? null : Timestamp.fromDate(input.stepUpAt),
+      ...(input.client === "console" ? { lastSeenAt: Timestamp.fromDate(now) } : {}),
     };
     await this.collection.doc(sessionId).set(doc);
     return {
@@ -117,6 +162,7 @@ export class SessionService {
       amr,
       authTime: input.authTime,
       stepUpAt: input.stepUpAt,
+      ...(input.client === "console" ? { lastSeenAt: now } : {}),
     };
   }
 
@@ -136,8 +182,10 @@ export class SessionService {
 
   /**
    * Returns the active session, or null if it is missing, revoked, or
-   * expired. The single Firestore read here is the per-request
-   * revocation + expiry check -- there is no cached copy to go stale.
+   * expired. A console session is also null once it has been idle for 30
+   * minutes or once `authTime` is 10 hours old. A web session is not.
+   * The only write is `lastSeenAt`, and only for a console session that
+   * is still allowed, and at most once a minute.
    */
   async validate(sessionId: string, now: Date = new Date()): Promise<SessionRecord | null> {
     const snapshot = await this.collection.doc(sessionId).get();
@@ -148,12 +196,22 @@ export class SessionService {
     const expiresAt = data.expiresAt.toDate();
     if (expiresAt.getTime() <= now.getTime()) return null;
     // Older documents have none of these. A value that is not the shape
-    // written at creation is ignored, not rejected: the session keeps
-    // working, and this read does not write the document back.
+    // written at creation is ignored. A missing `client` stays missing:
+    // it is not treated as console.
     const client = recordedClient(raw["client"]);
     const amr = recordedAmr(raw["amr"]);
     const authTime = recordedTime(raw["authTime"]);
     const stepUpAt = recordedStepUp(raw["stepUpAt"]);
+    const storedLastSeen = recordedTime(raw["lastSeenAt"]);
+    let lastSeenAt = storedLastSeen;
+    if (client === "console") {
+      const access = consoleAccess(now, authTime, storedLastSeen);
+      if (!access.ok) return null;
+      if (access.writeLastSeen) {
+        lastSeenAt = now;
+        await this.collection.doc(sessionId).update({ lastSeenAt: Timestamp.fromDate(now) });
+      }
+    }
     return {
       sessionId,
       firebaseUid: data.firebaseUid,
@@ -167,6 +225,7 @@ export class SessionService {
       ...(amr === undefined ? {} : { amr }),
       ...(authTime === undefined ? {} : { authTime }),
       ...(stepUpAt === undefined ? {} : { stepUpAt }),
+      ...(client === "console" && lastSeenAt !== undefined ? { lastSeenAt } : {}),
     };
   }
 

@@ -167,11 +167,14 @@ describe("session classification at creation", () => {
 
     const attributes = (header: string) => header.slice(header.indexOf(";"));
     const consoleCookie = setCookieHeader(consoleRes);
-    expect(attributes(consoleCookie)).toBe(attributes(setCookieHeader(appRes)));
+    const appCookie = setCookieHeader(appRes);
+    const withoutAge = (header: string) => header.replace(/Max-Age=\d+/i, "Max-Age");
+    expect(withoutAge(attributes(consoleCookie))).toBe(withoutAge(attributes(appCookie)));
     expect(consoleCookie).toMatch(/HttpOnly/i);
     expect(consoleCookie).toMatch(/SameSite=Lax/i);
     expect(consoleCookie).toMatch(/Path=\//i);
-    expect(consoleCookie).toMatch(/Max-Age=604800/i);
+    expect(consoleCookie).toMatch(/Max-Age=36000/i);
+    expect(appCookie).toMatch(/Max-Age=604800/i);
     expect(consoleCookie).not.toMatch(/Domain=/i);
     expect(consoleCookie).not.toMatch(/Secure/i);
 
@@ -182,14 +185,21 @@ describe("session classification at creation", () => {
     expect(before["client"]).toBe("console");
     expect(before["amr"]).toEqual([EMAIL_LINK_AMR]);
     expect(before["stepUpAt"]).toBeNull();
-    expect(before).not.toHaveProperty("lastSeenAt");
     const createdAt = (before["createdAt"] as Timestamp).toMillis();
+    expect((before["lastSeenAt"] as Timestamp).toMillis()).toBe(createdAt);
     const claim = tokenClaim(idToken, "auth_time");
     const fromClaim = authTimeFromClaim(claim);
     if (fromClaim === null) throw new Error("fixture token has no auth_time");
     expect((before["authTime"] as Timestamp).toMillis()).toBe(fromClaim.getTime());
     expect(Math.abs(createdAt - Date.now())).toBeLessThan(10_000);
-    expect((before["expiresAt"] as Timestamp).toMillis() - createdAt).toBe(604_800_000);
+    expect((before["expiresAt"] as Timestamp).toMillis()).toBe(fromClaim.getTime() + 36_000_000);
+    const appId = sessionIdOf(server, appRes);
+    const appDoc = (await firebase.doc(appId).get()).data();
+    if (appDoc === undefined) throw new Error("app session document missing");
+    expect(
+      (appDoc["expiresAt"] as Timestamp).toMillis() - (appDoc["createdAt"] as Timestamp).toMillis(),
+    ).toBe(604_800_000);
+    expect(appDoc).not.toHaveProperty("lastSeenAt");
 
     const sessions = testApp.app.get(SessionService);
     await sessions.validate(id);
@@ -209,7 +219,7 @@ describe("session classification at creation", () => {
     expect(after["authTime"]).toEqual(before["authTime"]);
     expect(after["stepUpAt"]).toBeNull();
     expect(after["expiresAt"]).toEqual(before["expiresAt"]);
-    expect(after).not.toHaveProperty("lastSeenAt");
+    expect(after["lastSeenAt"]).toEqual(before["lastSeenAt"]);
     expect(after["somnusUserId"]).toBe("018f0000-0000-7000-8000-0000000000aa");
   });
 
