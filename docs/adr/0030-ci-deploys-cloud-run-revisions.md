@@ -20,9 +20,10 @@ traffic by itself.
 ## Decision
 
 Two identities, both bound to the existing `github-actions` Workload
-Identity pool. The pool provider already rejects a token from any other
-repository. The new bindings also require `refs/heads/main`, so a pull
-request or any other branch of this repository cannot assume them:
+Identity pool. The provider still rejects a token from any other
+repository. Each new binding matches one mapped attribute whose value is
+this repository's id plus `refs/heads/main`, so a pull request, a tag, or
+any other branch cannot assume them:
 
 - `ci-image-builder` may write the `somnus` Artifact Registry repository.
 - `ci-run-deployer` has `roles/run.developer` on each of the five Cloud Run

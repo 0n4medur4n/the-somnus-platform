@@ -177,6 +177,11 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.repository_id"       = "assertion.repository_id"
     "attribute.repository_owner_id" = "assertion.repository_owner_id"
     "attribute.ref"                 = "assertion.ref"
+    # One value, so a principalSet can require this repository and a ref
+    # together. A principalSet matches a single attribute across the pool.
+    # attribute_condition below is unchanged: other branches of this
+    # repository can still authenticate for the hosting deployer.
+    "attribute.repository_id_ref" = "assertion.repository_id + \"/\" + assertion.ref"
   }
 
   # Matched by numeric ids, not names: a renamed or re-created repository with

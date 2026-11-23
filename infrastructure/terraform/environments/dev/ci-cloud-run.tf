@@ -84,14 +84,13 @@ resource "google_service_account_iam_member" "ci_run_deployer_actas" {
   member             = module.sa_ci_run_deployer.member
 }
 
-# The pool provider (firebase-consolidation.tf) already rejects any token whose
-# repository id or owner id is not this repository. These bindings add the
-# branch: only refs/heads/main can impersonate either account. A pull request,
-# a tag, or any other branch of this repo can still exchange an OIDC token,
-# and that token cannot assume these accounts. The hosting deployer is a
-# separate binding and is not narrowed here.
+# principalSet matches one attribute for every identity in the pool. The value
+# below is repository id and ref together, mapped as attribute.repository_id_ref.
+# Another repository's main branch does not match, and neither does any other
+# ref of this repository. The hosting binding stays on attribute.repository_id
+# and is not narrowed here.
 locals {
-  ci_main_principal = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.ref/refs/heads/main"
+  ci_main_principal = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository_id_ref/${var.github_repository_id}/refs/heads/main"
 }
 
 resource "google_service_account_iam_member" "ci_image_builder_wif" {

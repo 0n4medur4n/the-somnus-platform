@@ -17,7 +17,8 @@ characters. The service name must be one of the five services.
 - Artifact Registry repository `somnus` in `europe-west3`.
 - Workload Identity pool `github-actions` and provider `the-somnus-platform`.
   The provider rejects any other repository. The two new accounts can be
-  assumed only from `refs/heads/main`.
+  assumed only when the mapped attribute is this repository id and
+  `refs/heads/main` together.
 - `ci-hosting-deployer`, used by `ci.yml` for Firebase Hosting only.
 - GitHub environment `dev`, with no required reviewers. Staging and
   production environments are not created. The human gate is the dispatch.
