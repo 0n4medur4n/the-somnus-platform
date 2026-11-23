@@ -1,4 +1,4 @@
-# Promotion pipeline (build plan §20 Checkpoint 13.3, ADR 0023):
+# Promotion pipeline (build plan §20 Checkpoint 13.3, ADR 0030):
 #   PR -> CI -> merge to main -> build and push the changed images.
 #   A person then runs this workflow by hand to publish one service to one
 #   environment. The dev GitHub environment has no required reviewers, so the
@@ -22,14 +22,12 @@ on:
           - morpheo-service
           - somnus-report-service
       environment:
-        description: Environment that receives the revision
+        description: Environment that receives the revision. Only dev exists.
         required: true
         type: choice
         default: dev
         options:
           - dev
-          - staging
-          - production
       image_tag:
         description: Existing image tag (commit SHA). Empty builds the selected ref.
         required: false
@@ -66,36 +64,50 @@ jobs:
 
       - name: Detect changes
         id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          INPUT_SERVICE: ${{ inputs.service }}
+          INPUT_IMAGE_TAG: ${{ inputs.image_tag }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          ARTIFACTS_PROJECT_ID: ${{ vars.ARTIFACTS_PROJECT_ID }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             # github.event.before is empty on a manual run, so the diff below
             # would otherwise select every service. The person named one.
-            case "${{ inputs.service }}" in
+            if [ "$INPUT_ENVIRONMENT" != "dev" ]; then
+              echo "only the dev environment exists"
+              exit 1
+            fi
+            case "$INPUT_SERVICE" in
               somnus-edge-api|somnus-identity-service|somnus-worker|morpheo-service|somnus-report-service) ;;
               *) echo "unknown service"; exit 1 ;;
             esac
-            if [ -n "${{ inputs.image_tag }}" ] && ! printf '%s' "${{ inputs.image_tag }}" | grep -Eq '^[0-9a-fA-F]{7,40}$'; then
+            if [ -n "$INPUT_IMAGE_TAG" ] && ! printf '%s' "$INPUT_IMAGE_TAG" | grep -Eq '^[0-9a-fA-F]{7,40}$'; then
               echo "image_tag must be a hex commit SHA"
               exit 1
             fi
-            services=("${{ inputs.service }}")
+            services=("$INPUT_SERVICE")
             marketing=false
             app=false
             admin=false
           else
-          base="${{ github.event.before }}"
+          base="$EVENT_BEFORE"
           if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
             # No reliable base (first push or force-push): rebuild all.
             changed="ALL"
           else
-            changed="$(git diff --name-only "$base" "${{ github.sha }}")"
+            changed="$(git diff --name-only "$base" "$HEAD_SHA")"
           fi
           echo "changed paths:"; echo "$changed"
+          fi
 
           is_all() { [ "$changed" = "ALL" ]; }
           touched() { is_all && return 0; echo "$changed" | grep -qE "$1"; }
 
+          if [ "${EVENT_NAME:-}" != "workflow_dispatch" ]; then
           # A change to shared TS packages or the lockfile can affect every TS
           # deployable; a change to the cross-language JSON-schema artifacts can
           # affect the Python services. Conservative on purpose: over-deploying is
@@ -128,7 +140,7 @@ jobs:
           # Until the shared artifacts registry is configured (repo variable
           # ARTIFACTS_PROJECT_ID), the pipeline no-ops cleanly instead of failing
           # on missing credentials -- same pattern as ci.yml's Hosting deploy.
-          if [ -n "${{ vars.ARTIFACTS_PROJECT_ID }}" ]; then
+          if [ -n "$ARTIFACTS_PROJECT_ID" ]; then
             configured=true
           else
             configured=false
@@ -184,13 +196,20 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker "${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev" --quiet
+        env:
+          AR_HOST: ${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev
+        run: gcloud auth configure-docker "$AR_HOST" --quiet
 
       - name: Build + push image (tagged with the commit SHA)
+        env:
+          AR_HOST: ${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev
+          AR_PROJECT: ${{ vars.ARTIFACTS_PROJECT_ID }}
+          SERVICE: ${{ matrix.service }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          image="${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev/${{ vars.ARTIFACTS_PROJECT_ID }}/${AR_REPOSITORY}/${{ matrix.service }}:${{ github.sha }}"
-          docker build -f "services/${{ matrix.service }}/Dockerfile" -t "$image" .
+          image="${AR_HOST}/${AR_PROJECT}/${AR_REPOSITORY}/${SERVICE}:${HEAD_SHA}"
+          docker build -f "services/${SERVICE}/Dockerfile" -t "$image" .
           docker push "$image"
 
   deploy:
@@ -202,7 +221,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && always() && needs.detect.outputs.configured == 'true' && needs.detect.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}
     uses: ./.github/workflows/deploy-environment.yml
     with:
-      environment: ${{ inputs.environment }}
+      environment: dev
       services: ${{ needs.detect.outputs.services }}
       marketing: false
       app: false

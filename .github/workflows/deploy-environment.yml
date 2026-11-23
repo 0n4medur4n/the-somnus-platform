@@ -79,20 +79,34 @@ jobs:
       # environment's runtime + deploy service accounts have read access to it.
       - name: Deploy changed Cloud Run services
         if: ${{ inputs.services != '[]' }}
+        env:
+          AR_HOST: ${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev
+          AR_PROJECT: ${{ vars.ARTIFACTS_PROJECT_ID }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          SERVICES_JSON: ${{ inputs.services }}
+          TARGET_ENV: ${{ inputs.environment }}
+          PROJECT_ID: ${{ vars.PROJECT_ID }}
         run: |
           set -euo pipefail
-          image_host="${{ vars.ARTIFACTS_REGION }}-docker.pkg.dev/${{ vars.ARTIFACTS_PROJECT_ID }}/${AR_REPOSITORY}"
-          tag="${{ inputs.image_tag }}"
-          if ! printf '%s' "$tag" | grep -Eq '^[0-9a-fA-F]{7,40}$'; then
+          if [ "$TARGET_ENV" != "dev" ]; then
+            echo "only the dev environment exists"
+            exit 1
+          fi
+          if ! printf '%s' "$IMAGE_TAG" | grep -Eq '^[0-9a-fA-F]{7,40}$'; then
             echo "refusing image tag"
             exit 1
           fi
-          for svc in $(echo '${{ inputs.services }}' | jq -r '.[]'); do
-            echo "::group::deploy $svc -> ${{ inputs.environment }}"
+          image_host="${AR_HOST}/${AR_PROJECT}/${AR_REPOSITORY}"
+          for svc in $(printf '%s' "$SERVICES_JSON" | jq -r '.[]'); do
+            case "$svc" in
+              somnus-edge-api|somnus-identity-service|somnus-worker|morpheo-service|somnus-report-service) ;;
+              *) echo "unknown service"; exit 1 ;;
+            esac
+            echo "::group::deploy $svc -> $TARGET_ENV"
             revision="$(gcloud run deploy "$svc" \
-              --image "${image_host}/${svc}:${tag}" \
+              --image "${image_host}/${svc}:${IMAGE_TAG}" \
               --region "$REGION" \
-              --project "${{ vars.PROJECT_ID }}" \
+              --project "$PROJECT_ID" \
               --no-traffic \
               --format='value(status.latestCreatedRevisionName)' \
               --quiet)"
@@ -100,7 +114,7 @@ jobs:
             for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
               ready="$(gcloud run revisions describe "$revision" \
                 --region "$REGION" \
-                --project "${{ vars.PROJECT_ID }}" \
+                --project "$PROJECT_ID" \
                 --format=json | jq -r '.status.conditions[] | select(.type=="Ready") | .status')"
               if [ "$ready" = "True" ]; then break; fi
               sleep 10
@@ -109,10 +123,22 @@ jobs:
               echo "revision $revision is not Ready; traffic stays on the previous revision"
               exit 1
             fi
+            # --no-traffic pins the previous revision. A later plain deploy would
+            # then create a revision that receives no traffic until someone sends
+            # traffic to LATEST. Confirm this revision is still the newest, then
+            # return the service to "latest Ready revision gets 100%".
+            latest="$(gcloud run services describe "$svc" \
+              --region "$REGION" \
+              --project "$PROJECT_ID" \
+              --format='value(status.latestCreatedRevisionName)')"
+            if [ "$latest" != "$revision" ]; then
+              echo "a newer revision appeared; traffic stays on the previous revision"
+              exit 1
+            fi
             gcloud run services update-traffic "$svc" \
               --region "$REGION" \
-              --project "${{ vars.PROJECT_ID }}" \
-              --to-revisions "${revision}=100" \
+              --project "$PROJECT_ID" \
+              --to-latest \
               --quiet
             echo "::endgroup::"
           done
@@ -136,13 +162,16 @@ jobs:
 
       - name: Build + deploy the marketing frontend
         if: ${{ inputs.marketing }}
+        env:
+          MARKETING_SITE_ID: ${{ vars.MARKETING_SITE_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
         run: |
           set -euo pipefail
           pnpm --filter @somnus/marketing build
-          pnpm exec firebase target:apply hosting marketing "${{ vars.MARKETING_SITE_ID }}" \
-            --project "${{ vars.FIREBASE_PROJECT_ID }}"
+          pnpm exec firebase target:apply hosting marketing "$MARKETING_SITE_ID" \
+            --project "$FIREBASE_PROJECT_ID"
           pnpm exec firebase deploy --only hosting:marketing \
-            --project "${{ vars.FIREBASE_PROJECT_ID }}" --non-interactive
+            --project "$FIREBASE_PROJECT_ID" --non-interactive
 
       - name: Build + deploy the app frontend
         if: ${{ inputs.app }}
@@ -153,13 +182,15 @@ jobs:
           VITE_FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
           VITE_AUTH_EMULATOR_URL: ""
           HOSTING_ENVIRONMENT: ${{ inputs.environment }}
+          APP_SITE_ID: ${{ vars.APP_SITE_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
         run: |
           set -euo pipefail
           pnpm --filter @somnus/app build:hosting --mode "hosting-${HOSTING_ENVIRONMENT}"
-          pnpm exec firebase target:apply hosting app "${{ vars.APP_SITE_ID }}" \
-            --project "${{ vars.FIREBASE_PROJECT_ID }}"
+          pnpm exec firebase target:apply hosting app "$APP_SITE_ID" \
+            --project "$FIREBASE_PROJECT_ID"
           pnpm exec firebase deploy --only hosting:app \
-            --project "${{ vars.FIREBASE_PROJECT_ID }}" --non-interactive
+            --project "$FIREBASE_PROJECT_ID" --non-interactive
 
       # The admin console is a third Hosting site (Addendum A §A2.1), deployed on
       # its own cadence rather than alongside the consumer app.
@@ -182,10 +213,12 @@ jobs:
           VITE_FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
           VITE_AUTH_EMULATOR_URL: ""
           HOSTING_ENVIRONMENT: ${{ inputs.environment }}
+          ADMIN_SITE_ID: ${{ vars.ADMIN_SITE_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
         run: |
           set -euo pipefail
           pnpm --filter @somnus/admin build:hosting --mode "hosting-${HOSTING_ENVIRONMENT}"
-          pnpm exec firebase target:apply hosting admin "${{ vars.ADMIN_SITE_ID }}" \
-            --project "${{ vars.FIREBASE_PROJECT_ID }}"
+          pnpm exec firebase target:apply hosting admin "$ADMIN_SITE_ID" \
+            --project "$FIREBASE_PROJECT_ID"
           pnpm exec firebase deploy --only hosting:admin \
-            --project "${{ vars.FIREBASE_PROJECT_ID }}" --non-interactive
+            --project "$FIREBASE_PROJECT_ID" --non-interactive

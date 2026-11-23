@@ -1,4 +1,4 @@
-# Identities for the Cloud Run promotion pipeline (ADR 0023).
+# Identities for the Cloud Run promotion pipeline (ADR 0030).
 #
 # Terraform still ignores the container image. These accounts only let GitHub
 # Actions push an image and publish a Cloud Run revision. They are not Editor
@@ -46,16 +46,30 @@ resource "google_artifact_registry_repository_iam_member" "ci_run_deployer" {
   member     = module.sa_ci_run_deployer.member
 }
 
-# Deploy revisions of the existing services. run.developer cannot set IAM.
-# It is project-scoped because Cloud Run has no per-service deploy role.
-resource "google_project_iam_member" "ci_run_deployer" {
-  project = var.project_id
-  role    = "roles/run.developer"
-  member  = module.sa_ci_run_deployer.member
+# roles/run.developer on each service, not on the project. It can publish a
+# revision of these five services only. It can still point that revision at
+# any image the account can read (the somnus repository, or a public image).
+# Nothing here limits the tag to one produced by deploy.yml.
+resource "google_cloud_run_v2_service_iam_member" "ci_run_deployer" {
+  for_each = toset([
+    "somnus-edge-api",
+    "somnus-identity-service",
+    "morpheo-service",
+    "somnus-report-service",
+    "somnus-worker",
+  ])
+
+  project  = var.project_id
+  location = var.region
+  name     = each.value
+  role     = "roles/run.developer"
+  member   = module.sa_ci_run_deployer.member
 }
 
 # gcloud run deploy refuses to publish a revision unless the caller can act
-# as that revision's runtime service account. Bound to the five runtimes only.
+# as that revision's runtime service account. This role is actAs, not token
+# creation: it does not include iam.serviceAccounts.getAccessToken. Bound to
+# the five runtimes only.
 resource "google_service_account_iam_member" "ci_run_deployer_actas" {
   for_each = {
     edge     = module.sa_edge_api.name
@@ -70,16 +84,26 @@ resource "google_service_account_iam_member" "ci_run_deployer_actas" {
   member             = module.sa_ci_run_deployer.member
 }
 
+# The pool provider (firebase-consolidation.tf) already rejects any token whose
+# repository id or owner id is not this repository. These bindings add the
+# branch: only refs/heads/main can impersonate either account. A pull request,
+# a tag, or any other branch of this repo can still exchange an OIDC token,
+# and that token cannot assume these accounts. The hosting deployer is a
+# separate binding and is not narrowed here.
+locals {
+  ci_main_principal = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.ref/refs/heads/main"
+}
+
 resource "google_service_account_iam_member" "ci_image_builder_wif" {
   service_account_id = module.sa_ci_image_builder.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository_id/${var.github_repository_id}"
+  member             = local.ci_main_principal
 }
 
 resource "google_service_account_iam_member" "ci_run_deployer_wif" {
   service_account_id = module.sa_ci_run_deployer.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository_id/${var.github_repository_id}"
+  member             = local.ci_main_principal
 }
 
 output "ci_cloud_run_auth" {

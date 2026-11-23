@@ -126,7 +126,7 @@ function detect(changed: string[] | "ALL", artifactsProject = "the-somnus"): Det
   writeFileSync(outputPath, "");
 
   const changedValue = changed === "ALL" ? "ALL" : changed.join("\n");
-  const body = script.replaceAll(`\${{ vars.ARTIFACTS_PROJECT_ID }}`, artifactsProject);
+  const body = script;
   writeFileSync(
     scriptPath,
     ["set -euo pipefail", `changed=${JSON.stringify(changedValue)}`, body, ""].join("\n"),
@@ -137,6 +137,8 @@ function detect(changed: string[] | "ALL", artifactsProject = "the-somnus"): Det
     env: {
       ...process.env,
       GITHUB_OUTPUT: outputPath,
+      ARTIFACTS_PROJECT_ID: artifactsProject,
+      EVENT_NAME: "",
       PATH: `${shimDirectory ? `${shimDirectory}:` : ""}${process.env["PATH"] ?? ""}`,
     },
   });
@@ -317,32 +319,77 @@ describe("the admin flag reaches an actual deploy step", () => {
   });
 });
 
-describe("all three environments are wired the same way", () => {
-  const forwarded = `admin: \${{ needs.detect.outputs.admin == 'true' }}`;
+/**
+ * A push classifies changes and may build an image. Publishing a revision is one
+ * manual call, and only to dev. The reusable workflow still declares the admin
+ * input; this dispatch does not deploy frontends.
+ */
+describe("publishing a revision is one manual call to dev", () => {
   const invocations =
     workflow.match(/uses: \.\/\.github\/workflows\/deploy-environment\.yml/g) ?? [];
 
-  it("deploy.yml calls the reusable workflow three times", () => {
-    expect(invocations).toHaveLength(3);
+  it("deploy.yml calls the reusable workflow once", () => {
+    expect(invocations).toHaveLength(1);
   });
 
-  it("every one of them forwards the admin flag", () => {
-    // Counting is what catches "added to dev, forgotten in production".
-    expect(workflow.split(forwarded).length - 1).toBe(invocations.length);
+  it("that call runs only from a manual dispatch", () => {
+    const call = workflow.slice(workflow.indexOf("  deploy:\n"));
+    expect(call).toContain("github.event_name == 'workflow_dispatch'");
+    expect(call).toContain("marketing: false");
+    expect(call).toContain("app: false");
+    expect(call).toContain("admin: false");
   });
 
-  it("covers dev, staging and production specifically", () => {
-    for (const environment of ["dev", "staging", "production"]) {
-      const block = workflow.slice(workflow.indexOf(`      environment: ${environment}\n`));
-      const call = block.slice(0, block.indexOf("image_tag:"));
-
-      expect(call, `the ${environment} promotion does not forward the admin flag`).toContain(
-        forwarded,
-      );
-    }
+  it("the environment choice is dev and nothing else", () => {
+    const options = workflow.slice(
+      workflow.indexOf("      environment:\n"),
+      workflow.indexOf("      image_tag:"),
+    );
+    expect(options).toContain("- dev");
+    expect(options).not.toContain("- staging");
+    expect(options).not.toContain("- production");
   });
 
-  it("the detect job publishes the flag the promotion calls consume", () => {
+  it("the detect job still publishes the admin flag", () => {
     expect(workflow).toContain(`      admin: \${{ steps.detect.outputs.admin }}`);
+  });
+});
+
+describe("workflow scripts do not interpolate actions expressions", () => {
+  function runBodies(yaml: string): string[] {
+    const lines = yaml.split("\n");
+    const bodies: string[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i] ?? "";
+      const inline = line.match(/^(\s+)run:\s+(.+)$/);
+      if (inline?.[2] && !inline[2].startsWith("|") && !inline[2].startsWith(">")) {
+        bodies.push(inline[2]);
+        continue;
+      }
+      const block = line.match(/^(\s+)run:\s+\|\s*$/);
+      if (!block?.[1]) continue;
+      const indent = block[1].length;
+      const buf: string[] = [];
+      for (let j = i + 1; j < lines.length; j++) {
+        const next = lines[j] ?? "";
+        if (next.trim() === "") {
+          buf.push(next);
+          continue;
+        }
+        const lead = next.match(/^ */)?.[0].length ?? 0;
+        if (lead <= indent) break;
+        buf.push(next);
+      }
+      bodies.push(buf.join("\n"));
+    }
+    return bodies;
+  }
+
+  it("neither deploy workflow puts an expression inside a run script", () => {
+    for (const yaml of [workflow, environmentWorkflow]) {
+      for (const body of runBodies(yaml)) {
+        expect(body).not.toContain("${{");
+      }
+    }
   });
 });
