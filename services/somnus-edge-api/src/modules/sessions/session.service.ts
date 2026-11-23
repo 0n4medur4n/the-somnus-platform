@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { UUIDv7 } from "@somnus/api-contracts";
+import { ErrorCode, SomnusError } from "@somnus/errors";
 import { Timestamp } from "firebase-admin/firestore";
 import { FirebaseService } from "../../infrastructure/firebase/firebase.service.js";
 import { type SessionClient } from "./classify-session.js";
@@ -127,6 +128,17 @@ export class SessionService {
     stepUpAt: Date | null;
   }): Promise<SessionRecord> {
     const now = input.now ?? new Date();
+    // A console token whose auth_time is already 10 hours old would be stored
+    // with an expiresAt in the past and fail on its first request. Refuse
+    // before the write. The message stays the generic unauthenticated one.
+    if (
+      input.client === "console" &&
+      now.getTime() >= input.authTime.getTime() + CONSOLE_ABSOLUTE_MS
+    ) {
+      throw new SomnusError(ErrorCode.UNAUTHENTICATED, "Authentication is required.", {
+        correlationId: "sessions",
+      });
+    }
     const ttlEnd = new Date(now.getTime() + input.ttlSeconds * 1000);
     const absoluteEnd =
       input.client === "console" ? new Date(input.authTime.getTime() + CONSOLE_ABSOLUTE_MS) : null;

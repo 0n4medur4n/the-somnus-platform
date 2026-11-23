@@ -1,10 +1,14 @@
 import type { FastifyInstance, LightMyRequestResponse } from "fastify";
-import type { Timestamp } from "firebase-admin/firestore";
+import { Timestamp } from "firebase-admin/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { PRODUCTION_CONSOLE_ORIGIN } from "../../src/config/edge-config.js";
 import { FirebaseService } from "../../src/infrastructure/firebase/firebase.service.js";
 import { EMAIL_LINK_AMR } from "../../src/modules/sessions/classify-session.js";
-import { SessionService } from "../../src/modules/sessions/session.service.js";
+import {
+  CONSOLE_ABSOLUTE_MS,
+  CONSOLE_IDLE_MS,
+  SessionService,
+} from "../../src/modules/sessions/session.service.js";
 import { authTimeFromClaim } from "../../src/modules/sessions/verified-sign-in.js";
 import { buildTestApp, type TestApp } from "../support/app.js";
 import {
@@ -225,10 +229,10 @@ describe("session classification at creation", () => {
     expect(after["somnusUserId"]).toBe("018f0000-0000-7000-8000-0000000000aa");
   });
 
-  it("stores an old auth_time, which is not the server clock, and email_link for the password provider", async () => {
+  it("stores an auth_time from the last hour, which is not the server clock, and email_link for the password provider", async () => {
     const { uid } = await signUpTestUser("old-auth-time@example.com");
     await allowAuthTimesSince(uid, "1");
-    const oldSeconds = 1_600_000_000;
+    const oldSeconds = Math.floor(Date.now() / 1000) - 60 * 60;
     const idToken = makeIdToken({
       sub: uid,
       auth_time: oldSeconds,
@@ -252,6 +256,117 @@ describe("session classification at creation", () => {
     expect((data["createdAt"] as Timestamp).toMillis()).not.toBe(oldSeconds * 1000);
     expect(Math.abs((data["createdAt"] as Timestamp).toMillis() - Date.now())).toBeLessThan(10_000);
     expect(data["amr"]).toEqual([EMAIL_LINK_AMR]);
+  });
+
+  it("refuses a console sign-in whose auth_time is already 10 hours old, and writes nothing", async () => {
+    const { uid } = await signUpTestUser("born-expired@example.com");
+    await allowAuthTimesSince(uid, "1");
+    const oldSeconds = Math.floor(Date.now() / 1000) - CONSOLE_ABSOLUTE_MS / 1000;
+    const before = await testApp.app.get(FirebaseService).firestore.collection("sessions").get();
+    const res = await server.inject({
+      method: "POST",
+      url: "/v1/sessions",
+      headers: { "content-type": "application/json", origin: PRODUCTION_CONSOLE_ORIGIN },
+      payload: JSON.stringify({
+        idToken: makeIdToken({ sub: uid, auth_time: oldSeconds }),
+      }),
+    });
+    expect(res.statusCode).toBe(401);
+    const body = res.json() as { error: { code: string; message: string; details: object } };
+    expect(body.error.code).toBe("UNAUTHENTICATED");
+    expect(body.error.message).toBe("Authentication is required.");
+    expect(body.error.details).toEqual({});
+    expect(JSON.stringify(body)).not.toContain("console");
+    expect(JSON.stringify(body)).not.toContain("auth_time");
+    expect(res.cookies).toHaveLength(0);
+    const after = await testApp.app.get(FirebaseService).firestore.collection("sessions").get();
+    expect(after.size).toBe(before.size);
+  });
+
+  it("still stores an ancient auth_time for an app sign-in", async () => {
+    const { uid } = await signUpTestUser("ancient-app@example.com");
+    await allowAuthTimesSince(uid, "1");
+    const oldSeconds = 1_600_000_000;
+    const res = await server.inject({
+      method: "POST",
+      url: "/v1/sessions",
+      headers: { "content-type": "application/json" },
+      payload: JSON.stringify({
+        idToken: makeIdToken({ sub: uid, auth_time: oldSeconds }),
+      }),
+    });
+    expect(res.statusCode).toBe(201);
+    const stored = await testApp.app
+      .get(FirebaseService)
+      .firestore.collection("sessions")
+      .doc(sessionIdOf(server, res))
+      .get();
+    const data = stored.data();
+    if (data === undefined) throw new Error("app session document missing");
+    expect((data["authTime"] as Timestamp).toMillis()).toBe(oldSeconds * 1000);
+    expect(data["client"]).toBe("app");
+  });
+
+  it("answers 401 when a console session has been idle for 30 minutes", async () => {
+    const { idToken } = await signUpTestUser("idle-http@example.com");
+    const created = await server.inject({
+      method: "POST",
+      url: "/v1/sessions",
+      headers: { "content-type": "application/json", origin: PRODUCTION_CONSOLE_ORIGIN },
+      payload: JSON.stringify({ idToken }),
+    });
+    expect(created.statusCode).toBe(201);
+    const id = sessionIdOf(server, created);
+    const now = Date.now();
+    await testApp.app
+      .get(FirebaseService)
+      .firestore.collection("sessions")
+      .doc(id)
+      .update({
+        lastSeenAt: Timestamp.fromMillis(now - CONSOLE_IDLE_MS),
+        authTime: Timestamp.fromMillis(now),
+        expiresAt: Timestamp.fromMillis(now + 60 * 60 * 1000),
+      });
+    const me = await server.inject({
+      method: "GET",
+      url: "/admin/v1/me",
+      headers: { cookie: `__session=${encodeURIComponent(signedCookie(created))}` },
+    });
+    expect(me.statusCode).toBe(401);
+    const body = me.json() as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("UNAUTHENTICATED");
+    expect(body.error.message).toBe("Authentication is required.");
+  });
+
+  it("answers 401 when a console session reaches 10 hours after auth_time", async () => {
+    const { idToken } = await signUpTestUser("absolute-http@example.com");
+    const created = await server.inject({
+      method: "POST",
+      url: "/v1/sessions",
+      headers: { "content-type": "application/json", origin: PRODUCTION_CONSOLE_ORIGIN },
+      payload: JSON.stringify({ idToken }),
+    });
+    expect(created.statusCode).toBe(201);
+    const id = sessionIdOf(server, created);
+    const now = Date.now();
+    await testApp.app
+      .get(FirebaseService)
+      .firestore.collection("sessions")
+      .doc(id)
+      .update({
+        authTime: Timestamp.fromMillis(now - CONSOLE_ABSOLUTE_MS),
+        lastSeenAt: Timestamp.fromMillis(now),
+        expiresAt: Timestamp.fromMillis(now + 60 * 60 * 1000),
+      });
+    const me = await server.inject({
+      method: "GET",
+      url: "/admin/v1/me",
+      headers: { cookie: `__session=${encodeURIComponent(signedCookie(created))}` },
+    });
+    expect(me.statusCode).toBe(401);
+    const body = me.json() as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("UNAUTHENTICATED");
+    expect(body.error.message).toBe("Authentication is required.");
   });
 
   it("records a provider the token names, instead of email_link", async () => {
