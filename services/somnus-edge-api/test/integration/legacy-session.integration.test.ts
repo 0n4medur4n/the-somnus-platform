@@ -167,12 +167,12 @@ describe("a session document with none of the new fields", () => {
       url: "/admin/v1/me",
       headers: { cookie },
     });
-    expect(me.statusCode).toBe(403);
+    expect(me.statusCode).toBe(401);
     const body = me.json() as {
       error: { code: string; message: string; details: Record<string, unknown> };
     };
-    expect(body.error.code).toBe("FORBIDDEN");
-    expect(body.error.message).toBe("You are not allowed to perform this action.");
+    expect(body.error.code).toBe("UNAUTHENTICATED");
+    expect(body.error.message).toBe("Authentication is required.");
     expect(body.error.details).toEqual({});
     expect(JSON.stringify(body)).not.toContain("console");
     expect(JSON.stringify(body)).not.toContain("client");

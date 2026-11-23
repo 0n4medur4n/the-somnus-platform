@@ -57,7 +57,7 @@ function proxy(over: Partial<AdminProxyService>): AdminProxyService {
 
 describe("AdminCapabilityGuard admits only a console session", () => {
   it.each(["app" as const, undefined])(
-    "refuses client %s with a generic forbidden error and does not ask identity",
+    "refuses client %s with a generic unauthenticated error and does not ask identity",
     async (client) => {
       const checkCapability = vi.fn();
       const hasAnyInternalRole = vi.fn();
@@ -73,7 +73,8 @@ describe("AdminCapabilityGuard admits only a console session", () => {
       );
 
       await expect(guard.canActivate(context)).rejects.toMatchObject({
-        code: "FORBIDDEN",
+        code: "UNAUTHENTICATED",
+        message: "Authentication is required.",
         details: {},
       });
       expect(checkCapability).not.toHaveBeenCalled();
