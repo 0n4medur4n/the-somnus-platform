@@ -33,6 +33,7 @@ the consequences.
 | 0025 | Account deletion leaves no sign-in data behind; no third-party AI reads patient text | Accepted | §13, §15 |
 | 0026 | Dictation of Morpheo free-text answers through AssemblyAI (EU) | Accepted | §14, ADR 0019, ADR 0025 |
 | 0027 | Passkeys for the admin console | Accepted | §10, §11, §21 |
+| 0030 | CI deploys Cloud Run revisions; Terraform does not | Accepted | Checkpoint 13.3, §21 |
 
 ## Convention
 
