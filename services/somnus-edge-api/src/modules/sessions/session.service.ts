@@ -15,8 +15,8 @@ export const CONSOLE_ABSOLUTE_MS = 10 * 60 * 60 * 1000;
 
 /**
  * A console request newer than this does not write `lastSeenAt` again.
- * The idle window can therefore run up to this long past the last stored
- * sighting: one write a minute, not one write a request.
+ * The idle deadline stays on the older mark, so the session can end up to
+ * this long before 30 minutes have passed since the last real request.
  */
 export const LAST_SEEN_INTERVAL_MS = 60 * 1000;
 
