@@ -144,7 +144,8 @@ export class SessionsController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
     if (session) await this.sessions.revoke(session.sessionId);
-    reply.clearCookie(this.config.SESSION_COOKIE_NAME, this.clearCookieOptions());
+    const sameSite = session?.client === "console" ? "strict" : this.config.COOKIE_SAMESITE;
+    reply.clearCookie(this.config.SESSION_COOKIE_NAME, this.clearCookieOptions(true, sameSite));
     for (const name of LEGACY_COOKIES) {
       if (name !== this.config.SESSION_COOKIE_NAME) {
         reply.clearCookie(name, this.clearCookieOptions(name !== "somnus_csrf"));
@@ -171,7 +172,7 @@ export class SessionsController {
     return {
       httpOnly: true,
       secure: this.config.COOKIE_SECURE,
-      sameSite: this.config.COOKIE_SAMESITE,
+      sameSite: session.client === "console" ? "strict" : this.config.COOKIE_SAMESITE,
       signed: true,
       path: "/",
       maxAge,
@@ -179,11 +180,14 @@ export class SessionsController {
     } as const;
   }
 
-  private clearCookieOptions(httpOnly = true) {
+  private clearCookieOptions(
+    httpOnly = true,
+    sameSite: EdgeConfig["COOKIE_SAMESITE"] = this.config.COOKIE_SAMESITE,
+  ) {
     return {
       httpOnly,
       secure: this.config.COOKIE_SECURE,
-      sameSite: this.config.COOKIE_SAMESITE,
+      sameSite,
       path: "/",
       ...(this.config.COOKIE_DOMAIN ? { domain: this.config.COOKIE_DOMAIN } : {}),
     } as const;

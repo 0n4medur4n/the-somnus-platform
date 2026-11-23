@@ -168,10 +168,12 @@ describe("session classification at creation", () => {
     const attributes = (header: string) => header.slice(header.indexOf(";"));
     const consoleCookie = setCookieHeader(consoleRes);
     const appCookie = setCookieHeader(appRes);
-    const withoutAge = (header: string) => header.replace(/Max-Age=\d+/i, "Max-Age");
-    expect(withoutAge(attributes(consoleCookie))).toBe(withoutAge(attributes(appCookie)));
+    const shared = (header: string) =>
+      header.replace(/Max-Age=\d+/i, "Max-Age").replace(/SameSite=\w+/i, "SameSite");
+    expect(shared(attributes(consoleCookie))).toBe(shared(attributes(appCookie)));
     expect(consoleCookie).toMatch(/HttpOnly/i);
-    expect(consoleCookie).toMatch(/SameSite=Lax/i);
+    expect(consoleCookie).toMatch(/SameSite=Strict/i);
+    expect(appCookie).toMatch(/SameSite=Lax/i);
     expect(consoleCookie).toMatch(/Path=\//i);
     expect(consoleCookie).toMatch(/Max-Age=36000/i);
     expect(appCookie).toMatch(/Max-Age=604800/i);

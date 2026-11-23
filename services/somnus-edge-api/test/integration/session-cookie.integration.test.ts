@@ -1,5 +1,6 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { PRODUCTION_CONSOLE_ORIGIN } from "../../src/config/edge-config.js";
 import { buildTestApp, type TestApp } from "../support/app.js";
 import { clearAuthEmulator, clearFirestoreEmulator, signUpTestUser } from "../support/emulator.js";
 
@@ -70,12 +71,15 @@ describe("session cookie as deployed", () => {
     return app;
   }
 
-  async function login(app: TestApp, email: string) {
+  async function login(app: TestApp, email: string, origin?: string) {
     const { idToken } = await signUpTestUser(email);
     const res = await app.server.inject({
       method: "POST",
       url: "/v1/sessions",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(origin === undefined ? {} : { origin }),
+      },
       payload: JSON.stringify({ idToken }),
     });
     expect(res.statusCode).toBe(201);
@@ -121,6 +125,49 @@ describe("session cookie as deployed", () => {
       const { header } = await login(app, "name@example.com");
       expect(header.startsWith("__session=")).toBe(true);
       expect(header).not.toMatch(/^__Host-/);
+    });
+
+    it("a console sign-in sets SameSite=Strict, and the next admin call still carries the cookie", async () => {
+      const app = await boot(production());
+      const { header, value } = await login(
+        app,
+        "console-strict@example.com",
+        PRODUCTION_CONSOLE_ORIGIN,
+      );
+      expect(header).toMatch(/;\s*SameSite=Strict/i);
+      const csrfRes = await csrf(app, value);
+      expect(csrfRes.statusCode).toBe(200);
+      const admin = await app.server.inject({
+        method: "GET",
+        url: "/admin/v1/me",
+        headers: {
+          cookie: `__session=${encodeURIComponent(value)}`,
+          origin: PRODUCTION_CONSOLE_ORIGIN,
+        },
+      });
+      expect(admin.statusCode).not.toBe(401);
+    });
+
+    it("logging out of a console session clears that cookie with SameSite=Strict", async () => {
+      const app = await boot(production());
+      const { value, csrfToken } = await login(
+        app,
+        "console-logout@example.com",
+        PRODUCTION_CONSOLE_ORIGIN,
+      );
+      const res = await app.server.inject({
+        method: "DELETE",
+        url: "/v1/sessions/current",
+        headers: {
+          cookie: `__session=${encodeURIComponent(value)}`,
+          origin: PRODUCTION_CONSOLE_ORIGIN,
+          "x-csrf-token": csrfToken,
+        },
+      });
+      expect(res.statusCode).toBe(204);
+      const own = setCookies(res).find((c) => c.startsWith("__session="));
+      expect(own).toMatch(/Expires=Thu, 01 Jan 1970/i);
+      expect(own).toMatch(/;\s*SameSite=Strict/i);
     });
 
     it("follows COOKIE_SAMESITE (strict is possible, none is refused at startup)", async () => {
