@@ -4,6 +4,7 @@ import { Icon } from "../../components/ui/Icon.js";
 import { Menu, type MenuItem } from "../../components/ui/ui.js";
 import { type SaveOutcome, saveBlob } from "../documents/DocumentEditor.js";
 import { fileNameFor } from "../documents/doc-format.js";
+import { isSessionExpiredError } from "../session-error.js";
 import { SessionExpiredNotice } from "../ui/SessionExpiredNotice.js";
 import { leaveWarningActive, useDraftHold, usePendingSaveRetry } from "../unsaved.js";
 import { SHEET_EXPORTS, type SheetExport, sheetsToXlsx, sheetToCsv } from "./convert.js";
@@ -51,8 +52,8 @@ export function SheetEditor({
       const sheets = await frame.current.snapshot();
       const outcome = await onSave(titleRef.current.trim() || t("drive.sheet.untitled"), sheets);
       setStatus(outcome === "saved" ? "saved" : outcome);
-    } catch {
-      setStatus("error");
+    } catch (error) {
+      setStatus(isSessionExpiredError(error) ? "expired" : "error");
     } finally {
       saving.current = false;
     }

@@ -163,8 +163,10 @@ export function DocumentEditor({
         "aria-label": t("drive.doc.body"),
       },
     },
-    onUpdate: ({ editor: e }) => {
-      setStatus((s) => (s === "conflict" ? s : "dirty"));
+    onUpdate: ({ editor: e, transaction }) => {
+      // A mark refresh (notes, proofreading) is not an edit. Treating it as one
+      // would wipe an expired or failed save the moment those marks arrive.
+      if (transaction.docChanged) setStatus((s) => (s === "conflict" ? s : "dirty"));
       setBlocks(docBlocks(e.state.doc).map((block) => block.text));
     },
     // The note about to be written goes on the block the caret is in.
