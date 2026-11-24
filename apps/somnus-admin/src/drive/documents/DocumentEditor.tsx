@@ -9,6 +9,8 @@ import { NotesPanel } from "../notes/NotesPanel.js";
 import { docBlocks, NoteMarks, noteMarksKey } from "../notes/note-marks.js";
 import { blockOf, type DriveNote, type NoteAnchor, phraseAnchor } from "../notes/notes-format.js";
 import type { NotesBinding } from "../notes/use-notes.js";
+import { SessionExpiredNotice } from "../ui/SessionExpiredNotice.js";
+import { leaveWarningActive, useDraftHold, usePendingSaveRetry } from "../unsaved.js";
 import { DocStats } from "./DocStats.js";
 import { ColorPicker, PasswordDialog } from "./DocumentTools.js";
 import { documentCode } from "./doc-code.js";
@@ -35,8 +37,8 @@ import { Proofreading } from "./proofreading.js";
 import { blockText, ReadingMark } from "./read-aloud.js";
 import { langOf, type VoiceBinding, VoiceControls, VoiceLanguage } from "./VoiceTools.js";
 
-export type SaveOutcome = "saved" | "conflict" | "error";
-type Status = "saved" | "dirty" | "saving" | "error" | "conflict";
+export type SaveOutcome = "saved" | "conflict" | "error" | "expired";
+type Status = "saved" | "dirty" | "saving" | "error" | "conflict" | "expired";
 
 /** A document's own password: whether it has one, and setting or removing it. */
 export type PasswordBinding = {
@@ -265,7 +267,7 @@ export function DocumentEditor({
       }
     };
     const onLeave = (event: BeforeUnloadEvent) => {
-      if (status === "dirty" || status === "saving") event.preventDefault();
+      if (leaveWarningActive(status)) event.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("beforeunload", onLeave);
@@ -274,6 +276,9 @@ export function DocumentEditor({
       window.removeEventListener("beforeunload", onLeave);
     };
   }, [save, status]);
+
+  useDraftHold(status !== "saved");
+  usePendingSaveRetry(status, () => void save());
 
   async function exportAs(format: ExportFormat, filePassword?: string) {
     if (!editor) return;
@@ -500,6 +505,11 @@ export function DocumentEditor({
         >
           {t("drive.doc.conflict")}
         </p>
+      ) : null}
+      {status === "expired" ? (
+        <div className="mx-auto mt-4 max-w-3xl">
+          <SessionExpiredNotice onRetry={() => void save()} />
+        </div>
       ) : null}
       {status === "error" ? (
         <p

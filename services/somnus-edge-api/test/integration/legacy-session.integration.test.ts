@@ -167,24 +167,27 @@ describe("a session document with none of the new fields", () => {
       url: "/admin/v1/me",
       headers: { cookie },
     });
-    expect(me.statusCode).toBe(200);
-    expect(me.json()).toEqual({
-      user: { id: ACTOR, email: "legacy@example.com", locale: "es", status: "active" },
-      roleKeys: ["platform_super_admin"],
-      capabilities: ["admin_roles_assign"],
-    });
+    expect(me.statusCode).toBe(401);
+    const body = me.json() as {
+      error: { code: string; message: string; details: Record<string, unknown> };
+    };
+    expect(body.error.code).toBe("UNAUTHENTICATED");
+    expect(body.error.message).toBe("Authentication is required.");
+    expect(body.error.details).toEqual({});
+    expect(JSON.stringify(body)).not.toContain("console");
+    expect(JSON.stringify(body)).not.toContain("client");
 
-    expect(await keysOf(sessionId)).toEqual([...LEGACY_KEYS, "somnusUserId"]);
+    expect(await keysOf(sessionId)).toEqual(LEGACY_KEYS);
     const stored = await app
       .get(FirebaseService)
       .firestore.collection("sessions")
       .doc(sessionId)
       .get();
-    expect(stored.data()?.["somnusUserId"]).toBe(ACTOR);
     expect(stored.data()).not.toHaveProperty("client");
     expect(stored.data()).not.toHaveProperty("amr");
     expect(stored.data()).not.toHaveProperty("authTime");
     expect(stored.data()).not.toHaveProperty("stepUpAt");
     expect(stored.data()).not.toHaveProperty("lastSeenAt");
+    expect(stored.data()).not.toHaveProperty("somnusUserId");
   });
 });

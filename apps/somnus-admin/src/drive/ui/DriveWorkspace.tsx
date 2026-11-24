@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
+import { onConsoleSession } from "../../auth/session-channel.js";
 import { Button } from "../../components/Button.js";
 import { Field } from "../../components/Field.js";
 import { Icon, type IconName } from "../../components/ui/Icon.js";
@@ -63,6 +64,7 @@ import {
   SHEET_MIME,
   type StoredSheet,
 } from "../sheets/sheet-format.js";
+import { holdUnsaved } from "../unsaved.js";
 import { AppearanceDialog, ItemGlyph, tint } from "./appearance-ui.js";
 import { ChangePassphrase, OwnFingerprint } from "./DriveAccess.js";
 import { DriveGuideContent } from "./DriveGuide.js";
@@ -123,7 +125,18 @@ type Dialog =
 
 type Side = { kind: "none" } | { kind: "people" } | { kind: "details"; item: DriveItem };
 
-type Upload = { id: string; name: string; done: number; total: number; error?: string };
+type Upload = {
+  id: string;
+  name: string;
+  done: number;
+  total: number;
+  error?: string;
+  /** Set when a block upload or its commit came back 401. The bytes stay in memory. */
+  expired?: boolean;
+  bytes?: Uint8Array;
+  mime?: string;
+  parentId?: string;
+};
 
 /**
  * The open Drive, laid out like a drive: folders on the left, the current
@@ -327,32 +340,93 @@ export function DriveWorkspace({
   visible.sort(byFolderThenName);
   const trashedCount = view?.items.filter((i) => i.node.trashedAt).length ?? 0;
 
+  async function sendUpload(item: {
+    id: string;
+    name: string;
+    bytes: Uint8Array;
+    mime: string;
+    parentId: string;
+  }) {
+    if (!view) return;
+    setUploads((u) =>
+      u.map((x): Upload => {
+        if (x.id !== item.id) return x;
+        const { error: _error, ...rest } = x;
+        return { ...rest, expired: false, done: 0, total: 1 };
+      }),
+    );
+    try {
+      await session.writeFile(view, {
+        parentId: item.parentId,
+        name: item.name,
+        mime: item.mime,
+        bytes: item.bytes,
+        onProgress: (done, total) =>
+          setUploads((u) => u.map((x) => (x.id === item.id ? { ...x, done, total } : x))),
+      });
+      setTimeout(() => setUploads((u) => u.filter((x) => x.id !== item.id)), 2500);
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        setUploads((u) =>
+          u.map((x): Upload => {
+            if (x.id !== item.id) return x;
+            const { error: _error, ...rest } = x;
+            return {
+              ...rest,
+              expired: true,
+              bytes: item.bytes,
+              mime: item.mime,
+              parentId: item.parentId,
+            };
+          }),
+        );
+        return;
+      }
+      setUploads((u) =>
+        u.map((x) => (x.id === item.id ? { ...x, error: t("drive.uploadFailed") } : x)),
+      );
+    }
+  }
+
   async function upload(files: FileList | File[]) {
     if (!view || !current) return;
     for (const file of Array.from(files)) {
       const id = crypto.randomUUID();
-      setUploads((u) => [...u, { id, name: file.name, done: 0, total: 1 }]);
       const bytes = new Uint8Array(await file.arrayBuffer());
-      const ok = await run(() =>
-        session.writeFile(view, {
-          parentId: current,
-          name: file.name,
-          mime: file.type || "application/octet-stream",
-          bytes,
-          onProgress: (done, total) =>
-            setUploads((u) => u.map((x) => (x.id === id ? { ...x, done, total } : x))),
-        }),
-      );
-      if (ok === null) {
-        setUploads((u) =>
-          u.map((x) => (x.id === id ? { ...x, error: t("drive.uploadFailed") } : x)),
-        );
-        break;
-      }
-      setTimeout(() => setUploads((u) => u.filter((x) => x.id !== id)), 2500);
+      const mime = file.type || "application/octet-stream";
+      setUploads((u) => [
+        ...u,
+        { id, name: file.name, done: 0, total: 1, bytes, mime, parentId: current },
+      ]);
+      await sendUpload({ id, name: file.name, bytes, mime, parentId: current });
     }
-    await reload();
+    await reload().catch(() => undefined);
   }
+
+  const uploadsRef = useRef(uploads);
+  uploadsRef.current = uploads;
+  const sendUploadRef = useRef(sendUpload);
+  sendUploadRef.current = sendUpload;
+  useEffect(() => {
+    if (!uploads.some((item) => item.expired)) return;
+    return holdUnsaved();
+  }, [uploads]);
+  useEffect(
+    () =>
+      onConsoleSession(() => {
+        for (const item of uploadsRef.current) {
+          if (!item.expired || !item.bytes || !item.mime || !item.parentId) continue;
+          void sendUploadRef.current({
+            id: item.id,
+            name: item.name,
+            bytes: item.bytes,
+            mime: item.mime,
+            parentId: item.parentId,
+          });
+        }
+      }),
+    [],
+  );
 
   async function open(item: DriveItem) {
     if (!view) return;
@@ -551,6 +625,7 @@ export function DriveWorkspace({
         bytes,
       });
     } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) return "expired";
       return error instanceof ApiRequestError && error.status === 409 ? "conflict" : "error";
     }
     await reload();
@@ -1273,7 +1348,27 @@ export function DriveWorkspace({
                   />
                   <span className="min-w-0 flex-1 truncate text-somnus-text">{u.name}</span>
                 </div>
-                {u.error ? (
+                {u.expired ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-somnus-danger">{t("drive.sessionExpired")}</span>
+                    <button
+                      type="button"
+                      className="self-start text-xs font-medium text-somnus-text underline"
+                      onClick={() => {
+                        if (!u.bytes || !u.mime || !u.parentId) return;
+                        void sendUpload({
+                          id: u.id,
+                          name: u.name,
+                          bytes: u.bytes,
+                          mime: u.mime,
+                          parentId: u.parentId,
+                        });
+                      }}
+                    >
+                      {t("drive.sessionExpiredRetry")}
+                    </button>
+                  </div>
+                ) : u.error ? (
                   <span className="text-xs text-somnus-danger">{u.error}</span>
                 ) : (
                   <div className="h-1.5 rounded-full bg-white/[0.06]">

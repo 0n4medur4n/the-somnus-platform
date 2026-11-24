@@ -45,6 +45,7 @@ const SESSION: SessionRecord = {
   expiresAt: new Date(Date.now() + 3_600_000),
   revokedAt: null,
   somnusUserId: ACTOR,
+  client: "console",
 };
 
 const CASE = {

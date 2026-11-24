@@ -42,6 +42,11 @@ export function isCleanHttpsOrigin(value: string): boolean {
   return portOk(match[1]);
 }
 
+/** True when the origin text names a port, including the default 443. */
+export function hasExplicitPort(value: string): boolean {
+  return /^https:\/\/[^/:?]+:\d{1,5}$/.test(value);
+}
+
 /** `http://localhost` or `http://localhost:port`. Development and test only. */
 export function isLocalhostHttpOrigin(value: string): boolean {
   const match = /^http:\/\/localhost(?::(\d{1,5}))?$/.exec(value);
@@ -272,6 +277,8 @@ export const EdgeConfigSchema = z
         "CONSOLE_ORIGIN",
         "must be https://host, with a lowercase host and no path, query, or whitespace",
       );
+    } else if (hasExplicitPort(config.CONSOLE_ORIGIN)) {
+      issue("CONSOLE_ORIGIN", "must not include an explicit port");
     }
   })
   .transform((config) => {

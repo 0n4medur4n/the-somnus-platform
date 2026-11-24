@@ -4,11 +4,13 @@ import { Icon } from "../../components/ui/Icon.js";
 import { Menu, type MenuItem } from "../../components/ui/ui.js";
 import { type SaveOutcome, saveBlob } from "../documents/DocumentEditor.js";
 import { fileNameFor } from "../documents/doc-format.js";
+import { SessionExpiredNotice } from "../ui/SessionExpiredNotice.js";
+import { leaveWarningActive, useDraftHold, usePendingSaveRetry } from "../unsaved.js";
 import { SHEET_EXPORTS, type SheetExport, sheetsToXlsx, sheetToCsv } from "./convert.js";
 import { SheetFrame, type SheetFrameHandle } from "./SheetFrame.js";
 import type { StoredSheet } from "./sheet-format.js";
 
-type Status = "saved" | "dirty" | "saving" | "error" | "conflict";
+type Status = "saved" | "dirty" | "saving" | "error" | "conflict" | "expired";
 
 /** Quiet time after the last edit before the workbook saves itself. */
 const AUTOSAVE_MS = 2500;
@@ -74,7 +76,7 @@ export function SheetEditor({
       }
     };
     const onLeave = (event: BeforeUnloadEvent) => {
-      if (status === "dirty" || status === "saving") event.preventDefault();
+      if (leaveWarningActive(status)) event.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("beforeunload", onLeave);
@@ -83,6 +85,9 @@ export function SheetEditor({
       window.removeEventListener("beforeunload", onLeave);
     };
   }, [save, status]);
+
+  useDraftHold(status !== "saved");
+  usePendingSaveRetry(status, () => void save());
 
   async function exportAs(format: SheetExport) {
     if (!frame.current) return;
@@ -183,6 +188,7 @@ export function SheetEditor({
           {t("drive.doc.conflict")}
         </p>
       ) : null}
+      {status === "expired" ? <SessionExpiredNotice onRetry={() => void save()} /> : null}
       {status === "error" ? (
         <p
           role="alert"

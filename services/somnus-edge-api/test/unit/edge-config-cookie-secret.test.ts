@@ -254,6 +254,8 @@ describe("console origin", () => {
     "HTTPS://console.thesomnus.com",
     "https://user@console.thesomnus.com",
     "http://localhost:5174",
+    "https://console.thesomnus.com:443",
+    "https://console.thesomnus.com:8443",
   ])("deployed, refuses CONSOLE_ORIGIN %j", (origin) => {
     expect(problems(deployed({ CONSOLE_ORIGIN: origin })).join("\n")).toContain("CONSOLE_ORIGIN");
   });

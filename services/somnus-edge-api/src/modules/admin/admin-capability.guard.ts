@@ -46,6 +46,15 @@ export class AdminCapabilityGuard implements CanActivate {
     }
 
     const session = requireSession(request.session, correlationId);
+    // A session written before classification has no client. That is not a
+    // console session. The answer is the generic unauthenticated response, so
+    // the console shows its sign-in screen. No reason code, and no mention of
+    // which check failed.
+    if (session.client !== "console") {
+      throw new SomnusError(ErrorCode.UNAUTHENTICATED, "Authentication is required.", {
+        correlationId,
+      });
+    }
     const actorId = await this.actorResolver.resolve(session, correlationId);
 
     const decision =

@@ -667,6 +667,8 @@
     "create": "Create",
     "uploads": "Encrypted uploads",
     "uploadFailed": "Could not upload.",
+    "sessionExpired": "The session expired. Sign in again in another tab and come back to this one without closing it. Your text is still here.",
+    "sessionExpiredRetry": "Retry save",
     "dropToUpload": "Drop to encrypt and upload to {{folder}}",
     "inFolder": "in {{folder}}",
     "actionsFor": "Actions for {{name}}",
@@ -707,6 +709,7 @@
         "dirty": "Unsaved changes",
         "saving": "Saving…",
         "error": "Not saved",
+        "expired": "Session expired",
         "conflict": "Version conflict"
       },
       "conflict": "Someone else saved a newer version of this document. Export your text if you need it and reopen the document.",

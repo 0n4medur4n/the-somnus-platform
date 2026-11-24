@@ -667,6 +667,8 @@
     "create": "Crear",
     "uploads": "Subidas cifradas",
     "uploadFailed": "No se ha podido subir.",
+    "sessionExpired": "La sesión ha caducado. Vuelve a entrar en otra pestaña y regresa a esta sin cerrarla. El texto sigue aquí.",
+    "sessionExpiredRetry": "Reintentar el guardado",
     "dropToUpload": "Suelta para cifrar y subir a {{folder}}",
     "inFolder": "en {{folder}}",
     "actionsFor": "Acciones de {{name}}",
@@ -707,6 +709,7 @@
         "dirty": "Cambios sin guardar",
         "saving": "Guardando…",
         "error": "No se ha guardado",
+        "expired": "Sesión caducada",
         "conflict": "Conflicto de versiones"
       },
       "conflict": "Otra persona ha guardado una versión más reciente de este documento. Exporta tu texto si lo necesitas y vuelve a abrir el documento.",

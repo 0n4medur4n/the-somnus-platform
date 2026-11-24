@@ -4,13 +4,14 @@ import type { CsrfTokenResponse, SessionResponse } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { csrfTokenFor } from "../../bootstrap/csrf-token.js";
+import { correlationOf } from "../../common/composition.util.js";
 import { type EdgeConfig, loadEdgeConfig } from "../../config/edge-config.js";
 import { FirebaseService } from "../../infrastructure/firebase/firebase.service.js";
 import { classifySessionClient, presentedOrigin } from "./classify-session.js";
 import { CurrentSession } from "./current-session.decorator.js";
 import { SessionCreateDto } from "./session.dto.js";
 import { SessionGuard } from "./session.guard.js";
-import { type SessionRecord, SessionService } from "./session.service.js";
+import { CONSOLE_ABSOLUTE_MS, type SessionRecord, SessionService } from "./session.service.js";
 import { amrFromVerifiedToken, authTimeFromClaim } from "./verified-sign-in.js";
 
 /**
@@ -44,7 +45,7 @@ export class SessionsController {
   @ApiOperation({ summary: "Exchange a Firebase ID token for a session cookie." })
   async create(
     @Body() body: SessionCreateDto,
-    @Req() request: FastifyRequest,
+    @Req() request: FastifyRequest & { correlationId?: string },
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<SessionResponse> {
     let firebaseUid: string;
@@ -67,7 +68,7 @@ export class SessionsController {
       // Forged, malformed, expired, wrong-project, or no usable auth_time:
       // all one 401, no detail leaked about which.
       throw new SomnusError(ErrorCode.UNAUTHENTICATED, "Authentication is required.", {
-        correlationId: "sessions",
+        correlationId: correlationOf(request.correlationId),
       });
     }
 
@@ -87,12 +88,13 @@ export class SessionsController {
       amr,
       authTime,
       stepUpAt: null,
+      correlationId: correlationOf(request.correlationId),
     });
 
     reply.setCookie(
       this.config.SESSION_COOKIE_NAME,
       session.sessionId,
-      this.sessionCookieOptions(),
+      this.sessionCookieOptions(session),
     );
 
     return {
@@ -144,7 +146,8 @@ export class SessionsController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
     if (session) await this.sessions.revoke(session.sessionId);
-    reply.clearCookie(this.config.SESSION_COOKIE_NAME, this.clearCookieOptions());
+    const sameSite = session?.client === "console" ? "strict" : this.config.COOKIE_SAMESITE;
+    reply.clearCookie(this.config.SESSION_COOKIE_NAME, this.clearCookieOptions(true, sameSite));
     for (const name of LEGACY_COOKIES) {
       if (name !== this.config.SESSION_COOKIE_NAME) {
         reply.clearCookie(name, this.clearCookieOptions(name !== "somnus_csrf"));
@@ -165,23 +168,28 @@ export class SessionsController {
     return csrfTokenFor(sessionId, this.config.COOKIE_SECRET);
   }
 
-  private sessionCookieOptions() {
+  private sessionCookieOptions(session: SessionRecord) {
+    const maxAge =
+      session.client === "console" ? CONSOLE_ABSOLUTE_MS / 1000 : this.config.SESSION_TTL_SECONDS;
     return {
       httpOnly: true,
       secure: this.config.COOKIE_SECURE,
-      sameSite: this.config.COOKIE_SAMESITE,
+      sameSite: session.client === "console" ? "strict" : this.config.COOKIE_SAMESITE,
       signed: true,
       path: "/",
-      maxAge: this.config.SESSION_TTL_SECONDS,
+      maxAge,
       ...(this.config.COOKIE_DOMAIN ? { domain: this.config.COOKIE_DOMAIN } : {}),
     } as const;
   }
 
-  private clearCookieOptions(httpOnly = true) {
+  private clearCookieOptions(
+    httpOnly = true,
+    sameSite: EdgeConfig["COOKIE_SAMESITE"] = this.config.COOKIE_SAMESITE,
+  ) {
     return {
       httpOnly,
       secure: this.config.COOKIE_SECURE,
-      sameSite: this.config.COOKIE_SAMESITE,
+      sameSite,
       path: "/",
       ...(this.config.COOKIE_DOMAIN ? { domain: this.config.COOKIE_DOMAIN } : {}),
     } as const;

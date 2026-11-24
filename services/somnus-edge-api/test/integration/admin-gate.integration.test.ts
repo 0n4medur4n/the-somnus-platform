@@ -53,6 +53,7 @@ const SESSION: SessionRecord = {
   expiresAt: new Date(Date.now() + 3_600_000),
   revokedAt: null,
   somnusUserId: ACTOR,
+  client: "console",
 };
 
 const EXTERNAL_ROLES = ROLE_KEYS.filter((key) => !INTERNAL_ROLE_KEYS.has(key));

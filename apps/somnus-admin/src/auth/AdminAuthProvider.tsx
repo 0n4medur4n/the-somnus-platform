@@ -1,8 +1,15 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { driveHasUnsaved } from "../drive/unsaved.js";
 import { ApiRequestError } from "../lib/api.js";
 import { edge } from "../lib/edge.js";
 import { AdminAuthContext, type AdminAuthState } from "./AdminAuthContext.js";
 import { firebaseSignOut } from "./firebase-auth.js";
+import {
+  confirmSessionBeforeTyping,
+  hiddenLongEnough,
+  SESSION_RECHECK_TIMEOUT_MS,
+  withDeadline,
+} from "./session-recheck.js";
 
 /** True (and the state set) when the signed-in address has a staff invitation. */
 async function pendingInvitation(setState: (state: AdminAuthState) => void): Promise<boolean> {
@@ -19,6 +26,7 @@ async function pendingInvitation(setState: (state: AdminAuthState) => void): Pro
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AdminAuthState>({ status: "loading" });
+  const [blocking, setBlocking] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -65,9 +73,35 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
+  // A tab that was hidden for a long idle asks once, before the next keystroke.
+  // Unsaved Drive text stays mounted: the sign-in screen would drop it.
+  useEffect(() => {
+    let hiddenAt: number | null = null;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+        return;
+      }
+      if (!hiddenLongEnough(hiddenAt, Date.now())) return;
+      hiddenAt = null;
+      const unsaved = driveHasUnsaved();
+      if (!unsaved) setBlocking(true);
+      void confirmSessionBeforeTyping({
+        unsaved,
+        me: () => withDeadline(() => edge.adminMe(), SESSION_RECHECK_TIMEOUT_MS),
+        onUnauthenticated: () => setState({ status: "unauthenticated" }),
+      }).finally(() => setBlocking(false));
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
   return (
     <AdminAuthContext.Provider value={{ state, refresh, logout }}>
-      {children}
+      <div className="contents" inert={blocking ? true : undefined}>
+        {children}
+      </div>
+      {blocking ? <div className="fixed inset-0 z-[80]" aria-busy="true" /> : null}
     </AdminAuthContext.Provider>
   );
 }

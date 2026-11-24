@@ -21,7 +21,11 @@ import type { SessionRecord } from "../../src/modules/sessions/session.service.j
  */
 
 const ACTOR = "018f0000-0000-7000-8000-000000000abc";
-const SESSION = { sessionId: "s1", somnusUserId: ACTOR } as unknown as SessionRecord;
+const SESSION = {
+  sessionId: "s1",
+  somnusUserId: ACTOR,
+  client: "console",
+} as unknown as SessionRecord;
 
 function contextWith(meta: AdminRouteMeta | undefined, session: SessionRecord | undefined) {
   const reflector = {
@@ -50,6 +54,34 @@ function proxy(over: Partial<AdminProxyService>): AdminProxyService {
     ...over,
   } as unknown as AdminProxyService;
 }
+
+describe("AdminCapabilityGuard admits only a console session", () => {
+  it.each(["app" as const, undefined])(
+    "refuses client %s with a generic unauthenticated error and does not ask identity",
+    async (client) => {
+      const checkCapability = vi.fn();
+      const hasAnyInternalRole = vi.fn();
+      const session = { ...SESSION, client } as SessionRecord;
+      const { reflector, context } = contextWith(
+        { capability: "admin_users_read", eventType: "admin.user.read.v1", entity: "user" },
+        session,
+      );
+      const guard = new AdminCapabilityGuard(
+        reflector,
+        proxy({ checkCapability, hasAnyInternalRole }),
+        resolver,
+      );
+
+      await expect(guard.canActivate(context)).rejects.toMatchObject({
+        code: "UNAUTHENTICATED",
+        message: "Authentication is required.",
+        details: {},
+      });
+      expect(checkCapability).not.toHaveBeenCalled();
+      expect(hasAnyInternalRole).not.toHaveBeenCalled();
+    },
+  );
+});
 
 describe("AdminCapabilityGuard fails closed", () => {
   it("refuses a handler that declares no capability at all", async () => {

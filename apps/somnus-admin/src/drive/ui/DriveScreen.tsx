@@ -1,17 +1,20 @@
 import type { DriveAccount } from "@somnus/api-contracts";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { confirmSessionBeforeTyping, DRIVE_IDLE_LOCK_MS } from "../../auth/session-recheck.js";
+import { useAdminAuth } from "../../auth/useAdminAuth.js";
 import { Icon } from "../../components/ui/Icon.js";
 import { LoadingRegion, Skeleton, SkeletonLines } from "../../components/ui/Skeleton.js";
 import { ApiRequestError } from "../../lib/api.js";
 import { edge } from "../../lib/edge.js";
 import { DriveSession } from "../drive-session.js";
+import { driveHasUnsaved } from "../unsaved.js";
 import { DriveSetup, DriveUnlock, type Opened, RecoveryKit } from "./DriveAccess.js";
 import { DriveWorkspace } from "./DriveWorkspace.js";
 import { Notice } from "./drive-ui.js";
 
 /** Idle time after which the Drive forgets its keys. */
-export const DRIVE_IDLE_LOCK_MS = 15 * 60 * 1000;
+export { DRIVE_IDLE_LOCK_MS };
 
 type Phase =
   | { kind: "loading" }
@@ -28,8 +31,10 @@ type Phase =
  */
 export function DriveScreen({ fullScreen = false }: { fullScreen?: boolean } = {}) {
   const { t } = useTranslation();
+  const { refresh } = useAdminAuth();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const sessionRef = useRef<DriveSession | null>(null);
+  const idleLock = useRef(false);
 
   const load = useCallback(async (notice: string | null = null) => {
     try {
@@ -50,6 +55,7 @@ export function DriveScreen({ fullScreen = false }: { fullScreen?: boolean } = {
 
   const lock = useCallback(
     (notice: string | null = null) => {
+      idleLock.current = notice !== null;
       sessionRef.current?.close();
       sessionRef.current = null;
       void load(notice);
@@ -70,10 +76,20 @@ export function DriveScreen({ fullScreen = false }: { fullScreen?: boolean } = {
   const isOpen = phase.kind === "open" || phase.kind === "recoveryKit";
   useEffect(() => {
     if (!isOpen) return;
-    let timer = window.setTimeout(() => lock(t("drive.locked")), DRIVE_IDLE_LOCK_MS);
+    const arm = () => {
+      timer = window.setTimeout(() => {
+        if (driveHasUnsaved()) {
+          arm();
+          return;
+        }
+        lock(t("drive.locked"));
+      }, DRIVE_IDLE_LOCK_MS);
+    };
+    let timer = 0;
+    arm();
     const reset = () => {
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => lock(t("drive.locked")), DRIVE_IDLE_LOCK_MS);
+      arm();
     };
     const events = ["pointerdown", "keydown"] as const;
     for (const name of events) window.addEventListener(name, reset);
@@ -84,6 +100,18 @@ export function DriveScreen({ fullScreen = false }: { fullScreen?: boolean } = {
   }, [isOpen, lock, t]);
 
   async function opened(result: Opened) {
+    const fromIdle = idleLock.current;
+    idleLock.current = false;
+    if (fromIdle) {
+      const allowed = await confirmSessionBeforeTyping({
+        unsaved: driveHasUnsaved(),
+        me: () => edge.adminMe(),
+        onUnauthenticated: () => {
+          void refresh();
+        },
+      });
+      if (!allowed) return;
+    }
     const session = await DriveSession.open(edge.drive, result.account, result.me);
     sessionRef.current = session;
     setPhase(

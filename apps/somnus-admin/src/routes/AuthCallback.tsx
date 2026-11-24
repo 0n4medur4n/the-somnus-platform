@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { z } from "zod";
 import { completeEmailLinkSignIn, isEmailLink, storedEmail } from "../auth/firebase-auth.js";
+import { announceConsoleSession } from "../auth/session-channel.js";
 import { useAdminAuth } from "../auth/useAdminAuth.js";
 import { Button } from "../components/Button.js";
 import { ErrorSummary, type FieldError } from "../components/ErrorSummary.js";
@@ -73,6 +74,7 @@ export function AuthCallback() {
       try {
         const idToken = await completeEmailLinkSignIn(email, window.location.href);
         await edge.createSession(idToken);
+        announceConsoleSession();
         redeemed.current = true;
         await refresh();
       } catch (error) {
