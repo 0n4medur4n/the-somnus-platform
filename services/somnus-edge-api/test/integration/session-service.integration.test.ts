@@ -101,11 +101,11 @@ describe("SessionService (Firestore-backed session store)", () => {
 
   it("writes client, amr, authTime and stepUpAt once, and later writes leave them", async () => {
     const now = new Date("2026-11-12T12:00:00.000Z");
-    const authTime = new Date("2020-09-13T12:26:40.000Z");
+    const authTime = new Date(now.getTime() - 60 * 60 * 1000);
     const created = await sessions.create({
       firebaseUid: "user-classified",
       email: "c@example.com",
-      ttlSeconds: 3600,
+      ttlSeconds: 60 * 60 * 24 * 7,
       now,
       client: "console",
       amr: [EMAIL_LINK_AMR],

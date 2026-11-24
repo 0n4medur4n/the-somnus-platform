@@ -126,6 +126,8 @@ export class SessionService {
     amr: readonly string[];
     authTime: Date;
     stepUpAt: Date | null;
+    /** The request's correlation id, when this create is serving an HTTP call. */
+    correlationId?: string;
   }): Promise<SessionRecord> {
     const now = input.now ?? new Date();
     // A console token whose auth_time is already 10 hours old would be stored
@@ -136,7 +138,7 @@ export class SessionService {
       now.getTime() >= input.authTime.getTime() + CONSOLE_ABSOLUTE_MS
     ) {
       throw new SomnusError(ErrorCode.UNAUTHENTICATED, "Authentication is required.", {
-        correlationId: "sessions",
+        correlationId: input.correlationId ?? "sessions",
       });
     }
     const ttlEnd = new Date(now.getTime() + input.ttlSeconds * 1000);

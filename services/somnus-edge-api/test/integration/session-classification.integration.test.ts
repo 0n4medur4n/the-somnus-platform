@@ -266,13 +266,20 @@ describe("session classification at creation", () => {
     const res = await server.inject({
       method: "POST",
       url: "/v1/sessions",
-      headers: { "content-type": "application/json", origin: PRODUCTION_CONSOLE_ORIGIN },
+      headers: {
+        "content-type": "application/json",
+        origin: PRODUCTION_CONSOLE_ORIGIN,
+        "x-correlation-id": "born-expired-check",
+      },
       payload: JSON.stringify({
         idToken: makeIdToken({ sub: uid, auth_time: oldSeconds }),
       }),
     });
     expect(res.statusCode).toBe(401);
-    const body = res.json() as { error: { code: string; message: string; details: object } };
+    const body = res.json() as {
+      error: { code: string; message: string; details: object; correlationId: string };
+    };
+    expect(body.error.correlationId).toBe("born-expired-check");
     expect(body.error.code).toBe("UNAUTHENTICATED");
     expect(body.error.message).toBe("Authentication is required.");
     expect(body.error.details).toEqual({});

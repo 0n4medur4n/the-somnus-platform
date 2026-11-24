@@ -4,6 +4,7 @@ import type { CsrfTokenResponse, SessionResponse } from "@somnus/api-contracts";
 import { ErrorCode, SomnusError } from "@somnus/errors";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { csrfTokenFor } from "../../bootstrap/csrf-token.js";
+import { correlationOf } from "../../common/composition.util.js";
 import { type EdgeConfig, loadEdgeConfig } from "../../config/edge-config.js";
 import { FirebaseService } from "../../infrastructure/firebase/firebase.service.js";
 import { classifySessionClient, presentedOrigin } from "./classify-session.js";
@@ -44,7 +45,7 @@ export class SessionsController {
   @ApiOperation({ summary: "Exchange a Firebase ID token for a session cookie." })
   async create(
     @Body() body: SessionCreateDto,
-    @Req() request: FastifyRequest,
+    @Req() request: FastifyRequest & { correlationId?: string },
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<SessionResponse> {
     let firebaseUid: string;
@@ -67,7 +68,7 @@ export class SessionsController {
       // Forged, malformed, expired, wrong-project, or no usable auth_time:
       // all one 401, no detail leaked about which.
       throw new SomnusError(ErrorCode.UNAUTHENTICATED, "Authentication is required.", {
-        correlationId: "sessions",
+        correlationId: correlationOf(request.correlationId),
       });
     }
 
@@ -87,6 +88,7 @@ export class SessionsController {
       amr,
       authTime,
       stepUpAt: null,
+      correlationId: correlationOf(request.correlationId),
     });
 
     reply.setCookie(
