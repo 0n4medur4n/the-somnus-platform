@@ -4,7 +4,12 @@ import { ApiRequestError } from "../lib/api.js";
 import { edge } from "../lib/edge.js";
 import { AdminAuthContext, type AdminAuthState } from "./AdminAuthContext.js";
 import { firebaseSignOut } from "./firebase-auth.js";
-import { confirmSessionBeforeTyping, hiddenLongEnough } from "./session-recheck.js";
+import {
+  confirmSessionBeforeTyping,
+  hiddenLongEnough,
+  SESSION_RECHECK_TIMEOUT_MS,
+  withDeadline,
+} from "./session-recheck.js";
 
 /** True (and the state set) when the signed-in address has a staff invitation. */
 async function pendingInvitation(setState: (state: AdminAuthState) => void): Promise<boolean> {
@@ -83,7 +88,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       if (!unsaved) setBlocking(true);
       void confirmSessionBeforeTyping({
         unsaved,
-        me: () => edge.adminMe(),
+        me: () => withDeadline(() => edge.adminMe(), SESSION_RECHECK_TIMEOUT_MS),
         onUnauthenticated: () => setState({ status: "unauthenticated" }),
       }).finally(() => setBlocking(false));
     };
@@ -93,7 +98,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AdminAuthContext.Provider value={{ state, refresh, logout }}>
-      <div inert={blocking ? true : undefined}>{children}</div>
+      <div className="contents" inert={blocking ? true : undefined}>
+        {children}
+      </div>
       {blocking ? <div className="fixed inset-0 z-[80]" aria-busy="true" /> : null}
     </AdminAuthContext.Provider>
   );

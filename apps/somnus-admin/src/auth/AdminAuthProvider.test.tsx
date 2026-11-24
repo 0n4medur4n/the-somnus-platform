@@ -1,7 +1,7 @@
 import type { AdminMeResponse } from "@somnus/api-contracts";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "../lib/api.js";
 
 const mocks = vi.hoisted(() => ({
@@ -16,6 +16,7 @@ vi.mock("./firebase-auth.js", () => ({ firebaseSignOut: mocks.firebaseSignOut })
 
 const { AdminAuthProvider } = await import("./AdminAuthProvider.js");
 const { useAdminAuth } = await import("./useAdminAuth.js");
+const { DRIVE_IDLE_LOCK_MS, SESSION_RECHECK_TIMEOUT_MS } = await import("./session-recheck.js");
 
 function Probe() {
   const { state, logout } = useAdminAuth();
@@ -184,6 +185,93 @@ describe("AdminAuthProvider maps the server's answer to a gate state", () => {
         expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated"),
       );
     });
+  });
+});
+
+function contentsWrapper(container: HTMLElement): HTMLElement {
+  const node = container.querySelector(".contents");
+  if (!(node instanceof HTMLElement)) throw new Error("contents wrapper missing");
+  return node;
+}
+
+function setVisibility(state: "hidden" | "visible") {
+  Object.defineProperty(document, "visibilityState", {
+    configurable: true,
+    get: () => state,
+  });
+  document.dispatchEvent(new Event("visibilitychange"));
+}
+
+describe("the session recheck does not freeze the console", () => {
+  beforeEach(() => {
+    mocks.adminMe.mockReset();
+    mocks.logout.mockReset();
+    mocks.firebaseSignOut.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    setVisibility("visible");
+  });
+
+  async function authorizedShell() {
+    mocks.adminMe.mockResolvedValue(ME);
+    const view = render(
+      <AdminAuthProvider>
+        <Probe />
+      </AdminAuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authorized"));
+    return view;
+  }
+
+  async function returnAfterLongIdle() {
+    setVisibility("hidden");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(DRIVE_IDLE_LOCK_MS);
+    });
+    await act(async () => {
+      setVisibility("visible");
+    });
+  }
+
+  it("uses a contents wrapper and sets inert only while the recheck is blocking", async () => {
+    const { container } = await authorizedShell();
+    const shell = contentsWrapper(container);
+    expect(shell).toHaveClass("contents");
+    expect(shell).not.toHaveAttribute("inert");
+
+    let answer: ((value: AdminMeResponse) => void) | undefined;
+    mocks.adminMe.mockImplementation(
+      () =>
+        new Promise<AdminMeResponse>((resolve) => {
+          answer = resolve;
+        }),
+    );
+    vi.useFakeTimers();
+    await returnAfterLongIdle();
+
+    expect(contentsWrapper(container)).toHaveAttribute("inert");
+    await act(async () => {
+      answer?.(ME);
+    });
+    expect(contentsWrapper(container)).toHaveClass("contents");
+    expect(contentsWrapper(container)).not.toHaveAttribute("inert");
+    expect(screen.getByTestId("status")).toHaveTextContent("authorized");
+  });
+
+  it("stops blocking after 5 seconds when the recheck does not answer", async () => {
+    const { container } = await authorizedShell();
+    mocks.adminMe.mockImplementation(() => new Promise(() => undefined));
+    vi.useFakeTimers();
+    await returnAfterLongIdle();
+    expect(contentsWrapper(container)).toHaveAttribute("inert");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SESSION_RECHECK_TIMEOUT_MS);
+    });
+    expect(contentsWrapper(container)).not.toHaveAttribute("inert");
+    expect(screen.getByTestId("status")).toHaveTextContent("authorized");
   });
 });
 
