@@ -39,8 +39,9 @@ resource "google_cloud_run_v2_service" "this" {
           cpu    = var.cpu
           memory = var.memory
         }
-        # Passed only when set. Null leaves the attribute unset, so the four
-        # services that do not set it stay as they are. The worker sets true.
+        # Stated explicitly, never omitted: with `resources.limits` declared on
+        # google_cloud_run_v2_service, omitting cpu_idle results in CPU always
+        # allocated (instance-based billing), which defeats build plan §2.
         cpu_idle = var.cpu_idle
       }
 

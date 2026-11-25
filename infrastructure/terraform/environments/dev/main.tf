@@ -392,8 +392,6 @@ module "run_worker" {
   # ADR 0008's private-ingress intent stays UNMET pending the connectivity
   # decision noted there.
   ingress = "INGRESS_TRAFFIC_ALL"
-  # CPU is billed only during requests. This is the live cost setting.
-  cpu_idle = true
   env_vars = {
     LOG_LEVEL            = "info"
     SERVICE_NAME         = "somnus-worker"
