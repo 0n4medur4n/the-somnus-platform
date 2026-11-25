@@ -204,9 +204,9 @@ class FunnelService:
         value_json = None if value is None else json.dumps(value, ensure_ascii=False)
         self._repo.add_answer(session_id, step.key, value_json, absence, text)
         answers = self._answers(session_id)
-        # The AI reads Spanish only (its prompt and the local pseudonymiser).
-        spanish = self._a.locale == DEFAULT_LOCALE
-        if self._ai is not None and spanish and text is not None and step.kind == "ask":
+        # The AI is on in every language (owner decision 2026-11-25): the prompt
+        # carries the interview's own questions; names are pseudonymised first.
+        if self._ai is not None and text is not None and step.kind == "ask":
             # v0.2 p. 14: extract from the person's words, and screen them for
             # risk. A failed call still leaves a record: the interview then
             # asks every question and the safety fallback.
@@ -489,7 +489,7 @@ class FunnelService:
     def _definition_for(self, key: str) -> tuple[StepDef | None, str]:
         """The step definition behind an answer key, and the kind it was asked as."""
         if extraction.is_decision_key(key):
-            return confirm_step("core"), CONFIRM_KIND
+            return confirm_step("core", self._a.lang), CONFIRM_KIND
         if extraction.is_ai_key(key):
             return None, "ask"
         base = key.split("@")[0]
@@ -715,11 +715,8 @@ class FunnelService:
 
     def _item_question(self, item_id: str) -> str:
         if item_id.startswith("Q14."):
-            # v0.2's whole Q14 (the screens break it down, p. 4).
-            q14: str = next(
-                q["text"] for q in self._a.raw["source"]["questions"] if q["id"] == "Q14"
-            )
-            return q14
+            # v0.2's whole Q14 (the screens break it down, p. 4), in its language.
+            return self._a.lang.q14_question
         return self._a.step(item_id).text
 
     def _item_label(self, item_id: str, value: Any) -> str:
@@ -737,7 +734,7 @@ class FunnelService:
                     name,
                 )
                 return phrase[:1].upper() + phrase[1:]
-            label = dict(extraction.Q14_TEXT_PARTS).get(name, name)
+            label = self._a.lang.q14_parts.get(name, name)
             return f"{label[:1].upper()}{label[1:]}: «{value}»"
         return answer_label(Answer(value=value), self._a.step(item_id), "ask", self._a.lang)
 

@@ -106,6 +106,8 @@ def _lang(locale: str, ui: Mapping[str, Any]) -> Lang:
     units = {key: (pair[0], pair[1]) for key, pair in ui["units"].items()}
     if set(units) != set(SPANISH.units):
         raise FunnelArtifactError(f"{locale}: ui.units must name {sorted(SPANISH.units)}")
+    if set(ui["q14_parts"]) != set(SPANISH.q14_parts):
+        raise FunnelArtifactError(f"{locale}: ui.q14_parts must name {sorted(SPANISH.q14_parts)}")
     return Lang(
         locale=locale,
         yes=ui["yes"],
@@ -118,6 +120,10 @@ def _lang(locale: str, ui: Mapping[str, Any]) -> Lang:
         read=ui["read"],
         units=units,
         conjunction=ui["conjunction"],
+        confirm_text=ui["confirm_text"],
+        confirm_question=ui["confirm_question"],
+        q14_question=ui["q14_question"],
+        q14_parts=dict(ui["q14_parts"]),
     )
 
 

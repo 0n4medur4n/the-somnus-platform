@@ -202,6 +202,8 @@ module "run_morpheo" {
     LOG_FORMAT   = "json"
     # The interview in es, ca, en and fr (ADR 0020, amendment of 21/11/2026).
     FUNNEL_LOCALES = "es,ca,en,fr"
+    # Always on (ADR 0031); this environment must also mount OPENAI_API_KEY.
+    AI_EXTRACTION_ENABLED = "true"
   }
   labels = { app = "somnus", service = "morpheo", env = var.env }
 

@@ -66,6 +66,13 @@ class Lang:
     # dias -> ("día", "días"): the unit key the app sends, and how it reads.
     units: Mapping[str, tuple[str, str]]
     conjunction: str
+    # The AI's confirmation screen (v0.2 p. 14): its title and closing question,
+    # and how a proposal from the narrative for Q14 reads (the whole question and
+    # the name of each text part).
+    confirm_text: str
+    confirm_question: str
+    q14_question: str
+    q14_parts: Mapping[str, str]
 
 
 SPANISH = Lang(
@@ -86,6 +93,18 @@ SPANISH = Lang(
         "horas": ("hora", "horas"),
     },
     conjunction=" y ",
+    # The owner's wording for the screen (19/10/2026 instruction).
+    confirm_text="Por lo que nos ha contado, entendemos:",
+    confirm_question="¿Es correcto?",
+    # v0.2 p. 4, word for word, and the parts of its note.
+    q14_question="¿Hay alguna molestia, enfermedad o tratamiento que influya en su descanso?",
+    q14_parts={
+        "molestias": "molestias",
+        "enfermedades": "enfermedades",
+        "tratamientos": "tratamientos y cambios",
+        "consumo": "sustancias/cantidad/hora",
+        "ayudas_probadas": "ayudas ya probadas",
+    },
 )
 
 

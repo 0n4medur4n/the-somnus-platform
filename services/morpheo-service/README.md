@@ -54,7 +54,7 @@ fleets:
 | `FUNNEL_LOCALES` | `es` -- languages an interview may be held in (`es,ca,en,fr` in production; ADR 0020, amendment of 21/11/2026). Overlays in `clinical/i18n/`, all checked at startup |
 | `INSTRUMENTS_ENABLED` | `true` -- ISI, Epworth, STOP-Bang (D-34), see below        |
 | `INSTRUMENTS_SOURCE_DIR` | unset -- `clinical/instruments/`; overridable for tests  |
-| `AI_EXTRACTION_ENABLED` | `true` -- the AI of v0.2 p. 14, see below; needs a key. **Production runs `false` and has no key (owner decision 2026-11-03)** |
+| `AI_EXTRACTION_ENABLED` | `true` -- the AI of v0.2 p. 14, see below; needs a key. **Always on in production, in every language, with `OPENAI_API_KEY` mounted (ADR 0031, owner decision 2026-11-25)** |
 | `OPENAI_API_KEY` | empty -- no key, no model calls (every question is asked)     |
 | `OPENAI_BASE_URL` | `https://api.openai.com/v1` (US); EU: `https://eu.api.openai.com/v1` |
 | `AI_EXTRACTION_MODEL` | `gpt-6-luna`                                             |

@@ -295,10 +295,13 @@ module "run_morpheo" {
     # and checked at startup; taking one out of this list holds new interviews
     # asked in it in Spanish, with no redeploy of the image.
     FUNNEL_LOCALES = "es,ca,en,fr"
+    # The AI of v0.2 p. 14 is always on, in every language (ADR 0031, owner
+    # decision 2026-11-25): set here, not left to a code default.
+    AI_EXTRACTION_ENABLED = "true"
   }
   secret_env_vars = {
     DATABASE_URL = { secret_id = "morpheo-db-url", version = "latest" }
-    # Extraction is on by the code default (AI_EXTRACTION_ENABLED is unset).
+    # The key the AI needs (always on: AI_EXTRACTION_ENABLED above, ADR 0031).
     # The OpenAI endpoint is the code default. The same key report uses.
     OPENAI_API_KEY = { secret_id = "OPENAI_API_KEY", version = "latest" }
   }
@@ -652,8 +655,8 @@ resource "google_secret_manager_secret_iam_member" "report_openai_api_key" {
   member    = module.sa_report.member
 }
 
-# Morpheo reads the same key. Extraction is on by the code default
-# (AI_EXTRACTION_ENABLED is unset). The OpenAI endpoint is the code default.
+# Morpheo reads the same key: its AI is always on (AI_EXTRACTION_ENABLED = "true"
+# on the service, ADR 0031). The OpenAI endpoint is the code default.
 resource "google_secret_manager_secret_iam_member" "morpheo_openai_api_key" {
   project   = var.project_id
   secret_id = data.google_secret_manager_secret.openai_api_key.secret_id

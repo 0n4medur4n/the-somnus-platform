@@ -1,6 +1,6 @@
 # ADR 0025 — Account deletion leaves no sign-in data behind, and no third-party AI reads patient text
 
-- Status: Accepted (owner decisions, 2026-11-03)
+- Status: Accepted (owner decisions, 2026-11-03); decision 3 superseded by ADR 0031 (2026-11-25)
 - Date: 2026-11-03
 - Decides: §13 (retention and erasure), §15 (AI), the privacy policy v4 and the health-data consent v3
 
@@ -29,7 +29,7 @@ nothing is shared with third parties. The owner decided not to pay for any AI.
    documents after `expiresAt` and the sign-in-link throttle after `lastSentAt`.
    The delivery log is purged daily at 90 days (`NOTIFICATION_LOG_RETENTION_DAYS`,
    scheduler job `cleanup-notification-log`, 04:00 Madrid).
-3. **Morpheo's AI is off.** `AI_EXTRACTION_ENABLED=false`, and the `OPENAI_API_KEY`
+3. **Morpheo's AI is off.** *(Superseded by ADR 0031, 2026-11-25: never applied in production, where the AI stayed on; the owner decided it is always on.)* `AI_EXTRACTION_ENABLED=false`, and the `OPENAI_API_KEY`
    is no longer mounted in Morpheo, so flipping the flag alone would send nothing.
    The interview asks every question. The EU-only guard stays in the code for the
    day the AI comes back, and bringing it back needs a new decision and new texts.
