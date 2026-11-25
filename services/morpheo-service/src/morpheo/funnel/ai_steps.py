@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 
-from morpheo.funnel.artifact import FunnelArtifact, StepDef
+from morpheo.funnel.artifact import SPANISH, FunnelArtifact, Lang, StepDef
 from morpheo.funnel.extraction import (
     DECISION,
     RECORD,
@@ -34,14 +34,17 @@ from morpheo.funnel.extraction import (
 from morpheo.funnel.instruments import DEFAULT_MARK
 from morpheo.funnel.interview import Answer, Interview, Step
 
-# The owner's wording for the screen (19/10/2026 instruction).
-CONFIRM_TEXT = "Por lo que nos ha contado, entendemos:"
-CONFIRM_QUESTION = "¿Es correcto?"
+# The owner's wording for the screen (19/10/2026 instruction), in Spanish; each
+# language says it in its own words (`Lang`).
+CONFIRM_TEXT = SPANISH.confirm_text
+CONFIRM_QUESTION = SPANISH.confirm_question
 CONFIRM_KIND = "confirm_extraction"
 
 
-def confirm_step(stage: str) -> StepDef:
-    return StepDef("IA_CONFIRMAR", "p. 14", stage, CONFIRM_KIND, CONFIRM_TEXT, CONFIRM_QUESTION)
+def confirm_step(stage: str, lang: Lang = SPANISH) -> StepDef:
+    return StepDef(
+        "IA_CONFIRMAR", "p. 14", stage, CONFIRM_KIND, lang.confirm_text, lang.confirm_question
+    )
 
 
 def fallback_source(answers: Mapping[str, Answer]) -> str | None:
@@ -94,7 +97,7 @@ def pending(
         stage = iv._first(source.split("@")[0])
         return Step(
             source + DECISION,
-            confirm_step(stage.stage if stage is not None else "core"),
+            confirm_step(stage.stage if stage is not None else "core", artifact.lang),
             CONFIRM_KIND,
             "p. 14: confirmar lo extraído del relato antes de usarlo",
         )

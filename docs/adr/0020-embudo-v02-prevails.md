@@ -102,7 +102,7 @@ production the same day. Content 2.3, rules 2.2 (no rule changed).
   «No lo sé» and «Prefiero no responder»; DEFAULT – Jesús puede cambiarlo) and
   appears in the final report: on the result, on the person's page, on the
   professional's page and in the PDF, with the age. No rule reads it.
-- **AI.** The extraction of v0.2 p. 14 reads Spanish only; an interview in
+- **AI.** *(Changed by ADR 0031, 2026-11-25: the AI is on in every language.)* The extraction of v0.2 p. 14 reads Spanish only; an interview in
   another language asks every question (production runs without the AI).
 
 ## Amendment, 2026-11-24: follow-up where no orientation is sustained
