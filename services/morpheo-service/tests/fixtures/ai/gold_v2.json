@@ -1,5 +1,5 @@
 {
- "note": "Gold labels for the AI extraction (v0.2 p. 14), hand-annotated test data: for each synthetic text, only what it states explicitly, in the model's output encoding, each item with its exact words. Nothing inferred: «Vivo solo» is not «duerme solo», «tramadol» is not «opioides», «casi todas las noches» is not a number. Q02, Q04, Q10 and Q14's text parts are never extracted; Q07 and Q14 are split screens (Q07a-d, Q14a-e) (owner decision 2026-10-19). Texts: every free text the 12 vignettes send in narrative mode, and the 28 synthetic narratives of the 2026-10-18 pseudonymisation proposal. Risk labels: «si» where the text points at S1/S4/S2, «dudoso» where an idiom could (V-11 Q10), else «no». Used by the quality harness (precision/recall per field) and, until `python -m morpheo.ai.record` is run with a key, as the stand-in recordings.",
+ "note": "Gold labels for the AI extraction (v0.2 p. 14), hand-annotated test data: for each synthetic text, only what it states explicitly, in the model's output encoding, each item with its exact words. Nothing inferred: «Vivo solo» is not «duerme solo», «tramadol» is not «opioides», «casi todas las noches» is not a number. Q02, Q04, Q10 and Q14's text parts are never extracted; Q07 and Q14 are split screens (Q07a-d, Q14a-e) (owner decision 2026-10-19). Texts: every free text the 17 vignettes send in narrative mode, and the 28 synthetic narratives of the 2026-10-18 pseudonymisation proposal. Risk labels: «si» where the text points at S1/S4/S2, «dudoso» where an idiom could (V-11 Q10), else «no». Used by the quality harness (precision/recall per field) and, until `python -m morpheo.ai.record` is run with a key, as the stand-in recordings.",
  "texts": [
   {
    "set": "FT-1",
@@ -1431,6 +1431,322 @@
    "set": "relato-28",
    "source": "Q01",
    "text": "Mi teléfono es 973 44 55 66. Desde que nació mi segundo hijo, Marc, no he vuelto a dormir bien.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-1",
+   "source": "Q01",
+   "text": "Me despierto varias veces cada noche y creo que duermo unas cinco horas.",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "despertares"
+     ],
+     "evidence": "Me despierto varias veces cada noche"
+    },
+    {
+     "id": "Q09",
+     "value": {
+      "amount": 5,
+      "unit": "horas"
+     },
+     "evidence": "duermo unas cinco horas"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-1",
+   "source": "Q02",
+   "text": "Descansar mejor y levantarme con más energía",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-1",
+   "source": "Q06",
+   "text": "Me acuesto a la hora de siempre y la noche pasa como siempre",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-1",
+   "source": "Q10",
+   "text": "Me noto cansada y algo lenta, pero hago mi vida normal",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-1",
+   "source": "Z2",
+   "text": "Saber qué puedo hacer y cuándo consultar",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-2",
+   "source": "Q01",
+   "text": "Duermo unas cinco horas y por el día estoy cansada, aunque por la noche duermo de un tirón.",
+   "items": [
+    {
+     "id": "Q09",
+     "value": {
+      "amount": 5,
+      "unit": "horas"
+     },
+     "evidence": "Duermo unas cinco horas"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-2",
+   "source": "Q02",
+   "text": "Descansar mejor y levantarme con más energía",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-2",
+   "source": "Q06",
+   "text": "Me acuesto a la hora de siempre y la noche pasa como siempre",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-2",
+   "source": "Q10",
+   "text": "Por la tarde me noto cansada aunque llego a todo",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "C3-2",
+   "source": "Z2",
+   "text": "Saber qué puedo hacer y cuándo consultar",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RB-1",
+   "source": "Q01",
+   "text": "Tardo bastante en dormirme, pero luego duermo bien y de día estoy bien.",
+   "items": [
+    {
+     "id": "Q08",
+     "value": [
+      "dormirse"
+     ],
+     "evidence": "Tardo bastante en dormirme"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RB-1",
+   "source": "Q02",
+   "text": "Descansar mejor y levantarme con más energía",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RB-1",
+   "source": "Q06",
+   "text": "Me acuesto a la hora de siempre y la noche pasa como siempre",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RB-1",
+   "source": "Q10",
+   "text": "De día estoy bien, solo me molesta tardar en dormirme",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RB-1",
+   "source": "Z2",
+   "text": "Saber qué puedo hacer y cuándo consultar",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RC-1",
+   "source": "Q01",
+   "text": "Por la noche noto una molestia en las piernas que mejora si me muevo.",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RC-1",
+   "source": "Q02",
+   "text": "Descansar mejor y levantarme con más energía",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RC-1",
+   "source": "Q06",
+   "text": "Me acuesto a la hora de siempre y la noche pasa como siempre",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RC-1",
+   "source": "Q10",
+   "text": "Algunas mañanas me levanto con las piernas cansadas",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RC-1",
+   "source": "Z2",
+   "text": "Saber qué puedo hacer y cuándo consultar",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RD-1",
+   "source": "Q01",
+   "text": "Mi pareja dice que ronco fuerte, pero yo duermo bien y de día estoy bien.",
+   "items": [
+    {
+     "id": "Q15",
+     "value": [
+      "ronca_fuerte"
+     ],
+     "evidence": "Mi pareja dice que ronco fuerte"
+    }
+   ],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RD-1",
+   "source": "Q02",
+   "text": "Descansar mejor y levantarme con más energía",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RD-1",
+   "source": "Q06",
+   "text": "Me acuesto a la hora de siempre y la noche pasa como siempre",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RD-1",
+   "source": "Q10",
+   "text": "De día me encuentro bien",
+   "items": [],
+   "risk": {
+    "S1": "no",
+    "S4": "no",
+    "S2": "no"
+   }
+  },
+  {
+   "set": "RD-1",
+   "source": "Z2",
+   "text": "Saber qué puedo hacer y cuándo consultar",
    "items": [],
    "risk": {
     "S1": "no",
