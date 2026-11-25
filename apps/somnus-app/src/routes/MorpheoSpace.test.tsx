@@ -27,9 +27,6 @@ const edge = vi.hoisted(() => ({
   recordConsent: vi.fn(),
 }));
 vi.mock("../lib/edge.js", () => ({ edge }));
-vi.mock("../config/env.js", () => ({
-  env: { VITE_ADMIN_CONSOLE_URL: "https://console.example.com" },
-}));
 
 const { Assessment } = await import("./Assessment.js");
 const { MorpheoHome, OWN_ASSESSMENTS_QUERY } = await import("./MorpheoHome.js");
@@ -482,12 +479,12 @@ describe("MorpheoLayout", () => {
     expect(navLinks()).toEqual([t("nav.mySpace"), t("nav.newAssessment"), t("nav.myProfile")]);
   });
 
-  it("adds the admin console for platform staff, in a new tab", () => {
+  it("shows platform staff no way into the admin console either", () => {
+    // Owner decision 2026-11-21: the console is reached only at its own site.
     renderWithProviders(<MorpheoLayout>content</MorpheoLayout>, {
       auth: authFor({ internalRoles: ["platform_super_admin"] }),
     });
-    const link = screen.getByRole("link", { name: new RegExp(t("nav.console")) });
-    expect(link).toHaveAttribute("href", "https://console.example.com");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    expect(navLinks()).toEqual([t("nav.mySpace"), t("nav.newAssessment"), t("nav.myProfile")]);
+    expect(document.querySelector('a[href*="console"]')).toBeNull();
   });
 });

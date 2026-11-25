@@ -10,7 +10,6 @@
     "skipToContent": "Vés al contingut",
     "language": "Idioma",
     "menu": "Menú principal",
-    "opensInNewTab": "s'obre en una pestanya nova",
     "theme": "Aparença",
     "themes": {
       "dark": "Fosc",
@@ -28,8 +27,7 @@
     "invitations": "Invitacions",
     "mySpace": "El meu espai",
     "newAssessment": "Nova avaluació",
-    "myProfile": "El meu perfil",
-    "console": "Consola d'administració"
+    "myProfile": "El meu perfil"
   },
   "login": {
     "title": "Inicia la sessió",

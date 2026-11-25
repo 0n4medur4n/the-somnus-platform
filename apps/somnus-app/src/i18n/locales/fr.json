@@ -10,7 +10,6 @@
     "skipToContent": "Aller au contenu",
     "language": "Langue",
     "menu": "Menu principal",
-    "opensInNewTab": "s'ouvre dans un nouvel onglet",
     "theme": "Apparence",
     "themes": {
       "dark": "Sombre",
@@ -28,8 +27,7 @@
     "invitations": "Invitations",
     "mySpace": "Mon espace",
     "newAssessment": "Nouvelle évaluation",
-    "myProfile": "Mon profil",
-    "console": "Console d'administration"
+    "myProfile": "Mon profil"
   },
   "login": {
     "title": "Se connecter",
