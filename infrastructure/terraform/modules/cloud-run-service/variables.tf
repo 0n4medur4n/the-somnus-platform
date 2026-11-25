@@ -89,13 +89,22 @@ variable "memory" {
 
 variable "cpu_idle" {
   description = <<-EOT
-    True bills CPU only while a request is in flight. False bills every second
-    an instance is alive. Null leaves the attribute unset, so Terraform does
-    not change it. Only somnus-worker sets true: that is what is running.
+    True: CPU and memory are billed only while a request is in flight or the
+    instance is starting (request-based billing). False: every second an
+    instance stays alive is billed, idle time included, which defeats the
+    min-instances = 0 cost policy (build plan §2) -- e.g. the edge-api warm
+    ping keeps one instance billed ~17.5 h/day and hourly cleanup jobs keep
+    morpheo billed ~6.5 h/day. Must always be true unless a new decision
+    explicitly authorizes instance-based billing.
   EOT
   type        = bool
-  nullable    = true
-  default     = null
+  nullable    = false
+  default     = true
+
+  validation {
+    condition     = var.cpu_idle == true
+    error_message = "Build plan §2: cpu_idle must be true (request-based CPU billing) for every Cloud Run service so idle instances are not billed."
+  }
 }
 
 variable "port" {

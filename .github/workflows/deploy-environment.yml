@@ -107,6 +107,8 @@ jobs:
               --image "${image_host}/${svc}:${IMAGE_TAG}" \
               --region "$REGION" \
               --project "$PROJECT_ID" \
+              --cpu-throttling \
+              --min-instances=0 \
               --no-traffic \
               --format='value(status.latestCreatedRevisionName)' \
               --quiet)"

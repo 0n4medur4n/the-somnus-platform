@@ -11,14 +11,15 @@ resource "google_artifact_registry_repository" "docker" {
 
   cleanup_policy_dry_run = false
 
-  # Keep the 10 most recent tagged versions per image; untagged images
-  # older than 7 days are removed. Keeps registry storage cost bounded
-  # without deleting anything a rollback might need.
+  # Keep the 5 most recent versions per image for instant rollbacks, and delete
+  # older tagged and untagged images after 7 days. In Artifact Registry, KEEP
+  # policies always take precedence over DELETE policies; without a DELETE rule
+  # covering TAGGED versions, CI-pushed commit-SHA tags accumulate indefinitely.
   cleanup_policies {
     id     = "keep-recent-tagged"
     action = "KEEP"
     most_recent_versions {
-      keep_count = 10
+      keep_count = 5
     }
   }
 
@@ -27,6 +28,15 @@ resource "google_artifact_registry_repository" "docker" {
     action = "DELETE"
     condition {
       tag_state  = "UNTAGGED"
+      older_than = "604800s" # 7 days
+    }
+  }
+
+  cleanup_policies {
+    id     = "delete-old-tagged"
+    action = "DELETE"
+    condition {
+      tag_state  = "TAGGED"
       older_than = "604800s" # 7 days
     }
   }
