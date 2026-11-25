@@ -260,6 +260,16 @@ export function DriveWorkspace({
     };
   }, [shareParam]);
 
+  /** Puts a freshly opened share on screen, including details already open. Does not navigate. */
+  function showOpenedShare(opened: DriveFolderView) {
+    setView(opened);
+    setSide((s) => {
+      if (s.kind !== "details") return s;
+      const fresh = opened.items.find((i) => i.node.id === s.item.node.id);
+      return fresh ? { kind: "details", item: fresh } : { kind: "none" };
+    });
+  }
+
   async function reload() {
     if (!view) return;
     const opened = await run(() => session.openShare(view.shareId));
@@ -269,16 +279,7 @@ export function DriveWorkspace({
       void refreshShares();
       return;
     }
-    setView(opened);
-    // Details shown for an item that changed must show the new version.
-    setSide((s) =>
-      s.kind === "details"
-        ? (() => {
-            const fresh = opened.items.find((i) => i.node.id === s.item.node.id);
-            return fresh ? { kind: "details", item: fresh } : { kind: "none" };
-          })()
-        : s,
-    );
+    showOpenedShare(opened);
   }
 
   function goHome() {
@@ -634,13 +635,18 @@ export function DriveWorkspace({
         mime,
         bytes,
       });
-      const opened = await session.openShare(view.shareId);
-      setView(opened);
-      return "saved";
     } catch (error) {
       if (isSessionExpiredError(error)) return "expired";
       return error instanceof ApiRequestError && error.status === 409 ? "conflict" : "error";
     }
+    // The bytes are already committed. A failed re-read must stay "saved":
+    // reporting it would invite another revision, and reload() would leave the editor.
+    try {
+      showOpenedShare(await session.openShare(view.shareId));
+    } catch {
+      // Keep the view from before this save. The details panel updates on the next reload.
+    }
+    return "saved";
   }
 
   async function saveDocument(

@@ -173,7 +173,10 @@ function answerSnapshots(frame: HTMLIFrameElement) {
   });
 }
 
-async function openEditor(user: ReturnType<typeof userEvent.setup>, kind: "document" | "sheet") {
+async function reachNewDocument(
+  user: ReturnType<typeof userEvent.setup>,
+  kind: "document" | "sheet",
+) {
   renderWithProviders(<DriveScreen />);
   await user.type(
     await screen.findByLabelText(t("drive.setup.passphrase"), {}, { timeout: 5000 }),
@@ -189,7 +192,9 @@ async function openEditor(user: ReturnType<typeof userEvent.setup>, kind: "docum
   await user.type(screen.getByLabelText(t("drive.shares.newName")), "Protocolos");
   await user.click(screen.getByRole("button", { name: t("drive.shares.create") }));
   await user.click(
-    (await screen.findAllByRole("button", { name: /Protocolos/ }))[0] as HTMLElement,
+    (
+      await screen.findAllByRole("button", { name: /Protocolos/ }, { timeout: 15_000 })
+    )[0] as HTMLElement,
   );
   await user.click(await screen.findByRole("button", { name: t("drive.new") }));
   await user.click(
@@ -199,7 +204,16 @@ async function openEditor(user: ReturnType<typeof userEvent.setup>, kind: "docum
   );
 
   if (kind === "document") {
-    const title = await screen.findByLabelText(t("drive.doc.title"), {}, { timeout: 20_000 });
+    await screen.findByLabelText(t("drive.doc.title"), {}, { timeout: 20_000 });
+    return;
+  }
+  await screen.findByLabelText(t("drive.sheet.title"), {}, { timeout: 20_000 });
+}
+
+async function openEditor(user: ReturnType<typeof userEvent.setup>, kind: "document" | "sheet") {
+  await reachNewDocument(user, kind);
+  if (kind === "document") {
+    const title = screen.getByLabelText(t("drive.doc.title"));
     await user.clear(title);
     await user.type(title, DOC_TITLE);
     const body = screen.getByLabelText(t("drive.doc.body"));
@@ -207,10 +221,40 @@ async function openEditor(user: ReturnType<typeof userEvent.setup>, kind: "docum
     await user.keyboard(DOC_TEXT);
     return;
   }
-
-  const title = await screen.findByLabelText(t("drive.sheet.title"), {}, { timeout: 20_000 });
+  const title = screen.getByLabelText(t("drive.sheet.title"));
   await user.clear(title);
   await user.type(title, SHEET_TITLE);
+}
+
+/** The nth share() after this point fails once. Call 1 is the save's read; call 2 is the refresh. */
+function failShareCall(call: number, status: number) {
+  const edge = holder.edge as unknown as {
+    share: (...args: never[]) => Promise<unknown>;
+  };
+  const original = edge.share;
+  let seen = 0;
+  edge.share = async (...args: never[]) => {
+    seen += 1;
+    if (seen === call) {
+      throw new ApiRequestError(
+        status,
+        status === 401 ? "UNAUTHENTICATED" : "INTERNAL",
+        "refresh failed",
+      );
+    }
+    return original(...args);
+  };
+  return () => {
+    edge.share = original;
+  };
+}
+
+function detailVersions(): string[] {
+  return screen.getAllByText(t("drive.detailsFields.version")).map((node) => {
+    const value = node.parentElement?.querySelector("dd")?.textContent;
+    if (!value) throw new Error("version value missing");
+    return value;
+  });
 }
 
 function typedTextIsStillThere(kind: "document" | "sheet") {
@@ -300,5 +344,71 @@ describe("a Drive save whose first live request finds the session gone", () => {
     expect(screen.queryByText(t("drive.sessionExpired"))).toBeNull();
     typedTextIsStillThere("document");
     restore();
+  }, 90_000);
+});
+
+describe("a Drive save whose folder refresh fails after the file is stored", () => {
+  const user = () => userEvent.setup({ delay: null });
+
+  async function savedDespiteRefresh(status: number) {
+    const typing = user();
+    await openEditor(typing, "document");
+    const restore = failShareCall(2, status);
+    await saveNow(typing, "document");
+    await waitFor(
+      () => {
+        expect(screen.getByRole("status")).toHaveTextContent(t("drive.doc.status.saved"));
+      },
+      { timeout: 20_000 },
+    );
+    expect(screen.queryByText(t("drive.sessionExpired"))).toBeNull();
+    expect(screen.queryByText(t("drive.doc.saveFailed"))).toBeNull();
+    typedTextIsStillThere("document");
+    restore();
+  }
+
+  it("stays saved when the refresh after the write is a 401", async () => {
+    await savedDespiteRefresh(401);
+  }, 90_000);
+
+  it("stays saved when the refresh after the write is a 500", async () => {
+    await savedDespiteRefresh(500);
+  }, 90_000);
+
+  it("shows the new version in the details panel that was already open", async () => {
+    const typing = user();
+    await reachNewDocument(typing, "document");
+    await typing.click(screen.getByRole("button", { name: t("drive.doc.back") }));
+    const untitled = t("drive.doc.untitled");
+    const listed = `${t("drive.folder.kind.document")}: ${untitled}`;
+    await screen.findByRole("button", { name: listed }, { timeout: 15_000 });
+    await typing.click(
+      screen.getByRole("button", { name: t("drive.actionsFor", { name: untitled }) }),
+    );
+    await typing.click(screen.getByRole("menuitem", { name: t("drive.details") }));
+    const before = detailVersions();
+    expect(new Set(before).size).toBe(1);
+    const next = String(Number(before[0]) + 1);
+
+    await typing.click(screen.getByRole("button", { name: listed }));
+    const title = await screen.findByLabelText(t("drive.doc.title"), {}, { timeout: 20_000 });
+    await typing.clear(title);
+    await typing.type(title, DOC_TITLE);
+    screen.getByLabelText(t("drive.doc.body")).focus();
+    await typing.keyboard(DOC_TEXT);
+    await saveNow(typing, "document");
+    await waitFor(
+      () => {
+        expect(screen.getByRole("status")).toHaveTextContent(t("drive.doc.status.saved"));
+      },
+      { timeout: 20_000 },
+    );
+    await typing.click(screen.getByRole("button", { name: t("drive.doc.back") }));
+    await screen.findAllByRole("heading", { name: t("drive.details") }, { timeout: 15_000 });
+    expect(detailVersions()).toEqual(before.map(() => next));
+    const panels = screen.getAllByRole("heading", { name: t("drive.details") }).map((heading) => {
+      return heading.closest("aside, [role='dialog']")?.textContent ?? "";
+    });
+    expect(panels.every((text) => text.includes(DOC_TITLE))).toBe(true);
   }, 90_000);
 });
