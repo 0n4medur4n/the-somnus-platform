@@ -253,6 +253,14 @@ def parse(raw: dict[str, Any]) -> FunnelArtifact:
             )
         )
     templates = {t["id"]: t["text"] for t in source["templates"]}
+    # Texts the clinical lead wrote later for outcomes v0.2 leaves without one
+    # (24/11/2026: SEGUIMIENTO). Each says who decided it; none replaces a v0.2 one.
+    for addition in engine.get("template_additions", []):
+        if addition["id"] in templates:
+            raise FunnelArtifactError(f"template {addition['id']!r}: v0.2 already has it")
+        if not addition.get("decided"):
+            raise FunnelArtifactError(f"template {addition['id']!r}: who decided it?")
+        templates[addition["id"]] = addition["text"]
     # V-16 (p. 11): T_INSOMNIO's extra sentence, said only "si no hay otras
     # señales", lives quoted inside its guidance.
     guidance = next(t["guidance"] for t in source["templates"] if t["id"] == "T_INSOMNIO")

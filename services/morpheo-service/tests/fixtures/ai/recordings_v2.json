@@ -4,6 +4,19 @@
   "model": "stand-in",
   "prompt_version": "extraccion-v2.2-1",
   "recordings": {
+    "0237250d498dc3208c42d98a8b2f10c7589b68bc3fd0e5a0a7f3fcd5c88a53c3": {
+      "set": "RD-1",
+      "source": "Q06",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
     "0fa0b7e0b3e1ff62629ba064d70ce506040bfc96ffbe1ef6c5e1e677e53d6715": {
       "set": "FT-3",
       "source": "Q06",
@@ -162,6 +175,35 @@
       "model": "stand-in",
       "output": {
         "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "264bd83361639565f9af8b9d6e3990a6511655e7b5ada4e12e21e747d81a47d8": {
+      "set": "C3-1",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q08",
+            "value": [
+              "despertares"
+            ],
+            "evidence": "Me despierto varias veces cada noche"
+          },
+          {
+            "id": "Q09",
+            "value": {
+              "amount": 5,
+              "unit": "horas"
+            },
+            "evidence": "duermo unas cinco horas"
+          }
+        ],
         "risk": {
           "S1": "no",
           "S4": "no",
@@ -333,6 +375,28 @@
         }
       }
     },
+    "42ba416a10b4a85b56e37e81da4387ba00a198dbf813d2b77a3534e2e8f4b601": {
+      "set": "C3-2",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q09",
+            "value": {
+              "amount": 5,
+              "unit": "horas"
+            },
+            "evidence": "Duermo unas cinco horas"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
     "4763d210fa92f6dbad714b9bdc60dd5e3ef10aca5ab90413e1d7cdf3c0af524a": {
       "set": "relato-22",
       "source": "Q01",
@@ -485,6 +549,19 @@
         }
       }
     },
+    "56b32c0b14dd024e57ffb498df52809ef766c785201f774afa0772c563a4aed0": {
+      "set": "RD-1",
+      "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
     "56b6fa827c4c1518a150ee0a671a55ee530af6b2f9ebeb7c0bb80ba1158ee53c": {
       "set": "relato-24",
       "source": "Q01",
@@ -507,6 +584,19 @@
     "57fc8853380b86b670f66020bb58e6c914d8aa50fb785299aa14c4616e1b89b0": {
       "set": "FT-8",
       "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "59950e7d66f2a4fcad251d8e94421fc21e6ed791de12caef4576773ad2bcaa1d": {
+      "set": "RC-1",
+      "source": "Q10",
       "model": "stand-in",
       "output": {
         "items": [],
@@ -662,6 +752,40 @@
         }
       }
     },
+    "70eb473b5dc10ed3c37501b2a034a1abfa25746a4618b8a60b2b1d680be31abb": {
+      "set": "RD-1",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q15",
+            "value": [
+              "ronca_fuerte"
+            ],
+            "evidence": "Mi pareja dice que ronco fuerte"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "72758c50e9df22703bac4012c6930ef409d7246cdd1a1e406563159276cb9e02": {
+      "set": "RD-1",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
     "742491c746d1a2e7db715d59310910ac7bb0c386f2d1a2b4e1de76f206fcf1a8": {
       "set": "relato-09",
       "source": "Q01",
@@ -771,6 +895,19 @@
     "87410ad7b3067cd10e306d2dc65f9a9547666997c8ecfa55345d64fa45487474": {
       "set": "FT-6",
       "source": "Z2",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "8852a395009552d8b79b6bfd0d63b2dff4df7d52e64b141826464fd3b05c6cfe": {
+      "set": "C3-1",
+      "source": "Q10",
       "model": "stand-in",
       "output": {
         "items": [],
@@ -1006,6 +1143,32 @@
             "evidence": "Tomo tramadol"
           }
         ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "a694d9531ad3bb68ab27a2634e67116f4105825b1141966c533b920c691f0c55": {
+      "set": "C3-2",
+      "source": "Q10",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "a6ee56c4a9221bc95daf6a4bdbcd949cd04649f4414932998eb163a8d3d11dee": {
+      "set": "RD-1",
+      "source": "Q02",
+      "model": "stand-in",
+      "output": {
+        "items": [],
         "risk": {
           "S1": "no",
           "S4": "no",
@@ -1485,6 +1648,27 @@
         }
       }
     },
+    "de93e328b3cc9ec6233ed5ef2d0a41c2189d88c53ac65eb64c30516312ddcb2a": {
+      "set": "RB-1",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [
+          {
+            "id": "Q08",
+            "value": [
+              "dormirse"
+            ],
+            "evidence": "Tardo bastante en dormirme"
+          }
+        ],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
     "e1d346b32f7a9a9eb26bd86115578fb3d1007cd07b3d130fb9cf4e81b11b660d": {
       "set": "relato-12",
       "source": "Q01",
@@ -1619,6 +1803,32 @@
     "f19a5c5791cec53fc4418dcce8caf823ce2a3d775df595ac2b1085ff7c0dab44": {
       "set": "FT-1",
       "source": "Q04",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "f9d7f0c42760a1b63c84932910c06e74ac2d09d636248033906b6d81977b3cc4": {
+      "set": "RC-1",
+      "source": "Q01",
+      "model": "stand-in",
+      "output": {
+        "items": [],
+        "risk": {
+          "S1": "no",
+          "S4": "no",
+          "S2": "no"
+        }
+      }
+    },
+    "ffc2f4d8128548e003cd7457b0c771542c3b5aa5ed33c8282d896c5e6e1da2ca": {
+      "set": "RB-1",
+      "source": "Q10",
       "model": "stand-in",
       "output": {
         "items": [],

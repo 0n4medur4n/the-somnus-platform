@@ -20,8 +20,10 @@ def _vignette(vignette_id: str) -> dict[str, Any]:
     return next(v for v in VIGNETTES if v["id"] == vignette_id)
 
 
-def test_there_are_twelve_drafts_marked_for_the_clinical_lead() -> None:
-    assert len(VIGNETTES) == 12
+def test_there_are_seventeen_drafts_marked_for_the_clinical_lead() -> None:
+    # Twelve from v0.2 and the limit cases; five from Jesús's answers of 24/11/2026.
+    assert len(VIGNETTES) == 17
+    assert [v["id"] for v in VIGNETTES[12:]] == ["C3-1", "C3-2", "RB-1", "RC-1", "RD-1"]
     assert all(v["status"] == DRAFT for v in VIGNETTES)
     assert [v["id"] for v in VIGNETTES[:8]] == [f"FT-{n}" for n in range(1, 9)]
 

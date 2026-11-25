@@ -290,6 +290,58 @@ def _evaluate(artifact: FunnelArtifact, answers: Mapping[str, Answer]) -> Funnel
     if opportunity:
         orient("HABITOS", "T_HABITOS", "R06", "oportunidad insuficiente (I1 = No o H4 = Sí)")
 
+    # --- R09: follow-up (Jesús, 24/11/2026) ---
+    # A difficulty that asks for support and follow-up, not for a clinical label:
+    # neither a sustained orientation nor missing information. Each output is the
+    # clinical lead's own text (engine.template_additions).
+    q08 = v("Q08")
+    # Recorrido D (p. 6): isolated loud snoring opens a review of risks; it is not
+    # dismissed because R05 did not fire, and it never means a study by itself.
+    if (
+        "ronca_fuerte" in q15_list
+        and not breathing
+        and not any(o.rule == "R05" for o in orientations)
+    ):
+        orient(
+            "SEGUIMIENTO",
+            "T_RONQUIDO",
+            "R09",
+            "ronquido fuerte aislado: revisar frecuencia, síntomas y riesgos (p. 6)",
+        )
+    # Caso 3 y recorrido B (p. 5): a difficulty at night the person says does not
+    # affect them much. Their «No» to I2 is respected (asked again only when the AI
+    # gave it, C-02); no therapy and no habits are assigned for it.
+    sustained = {o.category for o in orientations}
+    if (
+        iv.branch_open("I")
+        and v("I1") == YES
+        and v("I2") == NO
+        and not sustained & {"TERAPIA", "HABITOS"}
+    ):
+        detailed = (
+            v("Q11") == "cansancio"
+            and isinstance(v("Q09"), dict)
+            and isinstance(q08, list)
+            and len(q08) > 0
+        )
+        orient(
+            "SEGUIMIENTO",
+            "T_SIN_IMPACTO_CANSANCIO" if detailed else "T_SIN_IMPACTO",
+            "R09",
+            "I1 = Sí, I2 = No: sin impacto importante; apoyo y seguimiento (p. 5)",
+        )
+    # Recorrido A: tiredness by day with no difficulty at night (Q08 = ninguna).
+    # Not insomnia and not sleepiness: its cause is not for this interview to say.
+    if (
+        v("Q11") == "cansancio"
+        and q08 == []
+        and not iv.branch_open("I")
+        and {o.category for o in orientations} <= {"SEGUIMIENTO"}
+    ):
+        orient(
+            "SEGUIMIENTO", "T_CANSANCIO", "R09", "cansancio sin dificultad nocturna (Q08 = ninguna)"
+        )
+
     # --- R02 at close: safety unknown (D-08) and missing data ---
     for question in SAFETY:
         if s(question) is None:

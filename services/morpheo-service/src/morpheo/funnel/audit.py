@@ -100,8 +100,10 @@ def _answer(seed: int, step: Step, p: Persona) -> Answer:
     elif d.type == "multi":
         value = [o.key for o in d.options if rng.random() < yes]
     elif d.id == "Q11":
-        # Two of its three options mean falling asleep unwillingly: not an even choice.
-        value = rng.choice(["dormido_sin_querer", "ambas"]) if rng.random() < yes else "cansancio"
+        # Two of its options mean falling asleep unwillingly: not an even choice. Q11
+        # also offers «ninguna» (no daytime symptom), which a person may choose.
+        sleepy = rng.random() < yes
+        value = rng.choice(["dormido_sin_querer", "ambas"] if sleepy else ["cansancio", "ninguna"])
     elif d.type == "single":
         value = rng.choice([o.key for o in d.options])
     elif d.type == "number":
@@ -340,9 +342,10 @@ def report(before: Tally, after: Tally) -> str:
             f"{_pct(after.ignored[f.id], after.signalled[f.id])} |"
         )
     lines += ["", "## Observaciones de diseño", "",
-              "- Q11 no tiene opción «ninguna»: quien no tiene síntomas de día solo puede elegir "
-              "«cansancio» o «No lo sé», y dos de sus tres opciones llevan a D1 = Sí y a "
-              "EVALUACION_PRIORITARIA.",
+              "- Q11 ofrece «Ninguna de estas» (sin síntomas de día); «dormido sin querer» y "
+              "«ambas» llevan a D1 = Sí y a EVALUACION_PRIORITARIA.",
+              "- SEGUIMIENTO (Jesús, 24/11/2026) es una salida con texto propio: no cuenta "
+              "como «sin orientación».",
               "- Q09 (horas de sueño) no interviene en ninguna regla de v0.2."]  # fmt: skip
     lines += ["", "## Preguntas repetidas por coherencia (con comprobaciones)", ""]
     for key, count in sorted(after.rechecked.items()):

@@ -1257,6 +1257,7 @@
       "INFORMACION_INSUFICIENTE": "Información insuficiente",
       "TERAPIA": "Terapia",
       "HABITOS": "Hábitos",
+      "SEGUIMIENTO": "Seguimiento",
       "SIN_ORIENTACION": "Sin orientación"
     },
     "template": {
@@ -1272,7 +1273,11 @@
       "T_RECIENTE": "Problema reciente",
       "T_INCOMPLETO": "Información incompleta",
       "T_SEGURIDAD": "Entrevista interrumpida por seguridad",
-      "T_SIN_ORIENTACION": "Sin orientación"
+      "T_SIN_ORIENTACION": "Sin orientación",
+      "T_SIN_IMPACTO_CANSANCIO": "Dificultad sin impacto, con cansancio",
+      "T_SIN_IMPACTO": "Dificultad sin impacto",
+      "T_CANSANCIO": "Cansancio sin dificultad nocturna",
+      "T_RONQUIDO": "Ronquido aislado"
     }
   }
 }

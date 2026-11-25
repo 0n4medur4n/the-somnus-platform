@@ -1257,6 +1257,7 @@
       "INFORMACION_INSUFICIENTE": "Not enough information",
       "TERAPIA": "Therapy",
       "HABITOS": "Habits",
+      "SEGUIMIENTO": "Follow-up",
       "SIN_ORIENTACION": "No guidance"
     },
     "template": {
@@ -1272,7 +1273,11 @@
       "T_RECIENTE": "Recent problem",
       "T_INCOMPLETO": "Incomplete information",
       "T_SEGURIDAD": "Interview stopped for safety",
-      "T_SIN_ORIENTACION": "No guidance"
+      "T_SIN_ORIENTACION": "No guidance",
+      "T_SIN_IMPACTO_CANSANCIO": "Difficulty without impact, with tiredness",
+      "T_SIN_IMPACTO": "Difficulty without impact",
+      "T_CANSANCIO": "Tiredness without night difficulty",
+      "T_RONQUIDO": "Isolated snoring"
     }
   }
 }

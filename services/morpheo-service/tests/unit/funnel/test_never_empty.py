@@ -81,7 +81,8 @@ def test_a_finished_adult_interview_always_has_a_text(seed: int) -> None:
 def test_some_random_interviews_reach_the_fallback() -> None:
     # Otherwise the walk above would not be testing the case that was empty.
     mains = {evaluate(A, _walk(seed)).accion_principal for seed in range(WALKS)}
-    assert "SIN_ORIENTACION" in mains
+    # Since 24/11/2026 most of them get a follow-up text of their own (SEGUIMIENTO).
+    assert {"SIN_ORIENTACION", "SEGUIMIENTO"} & mains
     assert len(mains) > 2
 
 
@@ -90,13 +91,14 @@ def test_every_vignette_has_a_text(vignette: dict[str, Any]) -> None:
     assert run_vignette(vignette, A).result.texts
 
 
-def test_case_3_without_h4_gets_the_fallback_not_nothing() -> None:
-    # The live test of 30/10/2026: FT-3, with H4 not "Sí".
+def test_case_3_without_h4_gets_a_text_not_nothing() -> None:
+    # The live test of 30/10/2026: FT-3, with H4 not "Sí". No difficulty at night and
+    # tiredness by day: since 24/11/2026 Jesús's own text for it (recorrido A).
     case = next(v for v in load_vignettes() if v["id"] == "FT-3")
     case = case | {"answers": case["answers"] | {"H4": "no"}}
     result = run_vignette(case, A).result
-    assert result.accion_principal == "SIN_ORIENTACION"
-    assert [t for t, _ in result.texts] == ["T_SIN_ORIENTACION"]
+    assert result.accion_principal == "SEGUIMIENTO"
+    assert [t for t, _ in result.texts] == ["T_CANSANCIO"]
 
 
 def test_only_a_minor_ends_without_text() -> None:

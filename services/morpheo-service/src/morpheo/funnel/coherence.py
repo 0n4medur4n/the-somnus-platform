@@ -29,8 +29,9 @@ COHERENCE = "@coherencia"
 _HOURS = {"horas": 1, "dias": 24, "semanas": 24 * 7, "meses": 24 * 30.4, "años": 24 * 365}
 # The checks run before the closing questions, so the safety questions are still
 # "missing" here; that alone says nothing. A core answer that is missing does: the
-# person will be told the information is not enough.
-_NOT_ORIENTING = {"INFORMACION_INSUFICIENTE", "SIN_ORIENTACION"}
+# person will be told the information is not enough. A follow-up (SEGUIMIENTO,
+# 24/11/2026) is not an orientation either: H4 may still explain the short sleep.
+_NOT_ORIENTING = {"INFORMACION_INSUFICIENTE", "SIN_ORIENTACION", "SEGUIMIENTO"}
 
 
 @dataclass(frozen=True)
@@ -68,17 +69,11 @@ def _short_sleep_with_time(iv: Interview, config: Mapping[str, Any]) -> bool:
     )
 
 
-def _no_impact_from_the_ai_despite_daytime_symptoms(
-    iv: Interview, _config: Mapping[str, Any]
-) -> bool:
+def _no_impact_from_the_ai(iv: Interview, _config: Mapping[str, Any]) -> bool:
+    # Jesús, 24/11/2026: the impact is asked directly whenever the «No» comes from
+    # the AI's reading of the narrative, whatever else the person said by day.
     i2 = iv.answer("I2")
-    return (
-        iv.branch_open("I")
-        and i2 is not None
-        and i2.origin == ORIGIN_AI
-        and i2.value == NO
-        and (iv.value("Q11") is not None or iv.value("Q12") == YES)
-    )
+    return iv.branch_open("I") and i2 is not None and i2.origin == ORIGIN_AI and i2.value == NO
 
 
 CHECKS = (
@@ -92,9 +87,9 @@ CHECKS = (
     Check(
         "C-02",
         "I2",
-        "La IA propuso «No» a I2 (sin impacto en el día) y la persona refiere síntomas "
-        "diurnos (Q11) o siestas (Q12 = Sí): I2 se pregunta directamente.",
-        _no_impact_from_the_ai_despite_daytime_symptoms,
+        "La IA propuso «No» a I2 (sin impacto en el día): I2 se pregunta directamente; "
+        "si la persona mantiene el «No», se respeta.",
+        _no_impact_from_the_ai,
     ),
 )
 

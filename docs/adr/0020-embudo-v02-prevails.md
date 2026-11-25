@@ -104,3 +104,21 @@ production the same day. Content 2.3, rules 2.2 (no rule changed).
   professional's page and in the PDF, with the age. No rule reads it.
 - **AI.** The extraction of v0.2 p. 14 reads Spanish only; an interview in
   another language asks every question (production runs without the AI).
+
+## Amendment, 2026-11-24: follow-up where no orientation is sustained
+
+The clinical lead's answers of 24/11/2026 to the coherence review (31/10/2026).
+Content 2.4, rules 2.3.
+
+- Interviews that ended in SIN_ORIENTACION are told apart instead of being made
+  to fit a clinical category: a new category, **SEGUIMIENTO** (rule R09), closes
+  a difficulty without a sustained orientation with his own texts: no impact
+  after a night difficulty (caso 3 and recorrido B), tiredness without a night
+  difficulty (A) and isolated loud snoring (D). They never assign therapy,
+  habits or a study. SIN_ORIENTACION stays for what is left.
+- C-02 asks I2 again whenever the AI gave the «No»; the person's own «No» is
+  respected. P2 is reworded by him («alguna de estas situaciones»).
+- His texts are added to the artifact (`engine.template_additions`), not to the
+  v0.2 transcription; each names who decided it. In ca, en and fr they are
+  translations pending review.
+
