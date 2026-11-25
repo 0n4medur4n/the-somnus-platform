@@ -134,7 +134,11 @@ def test_short_sleep_with_time_is_not_asked_of_someone_already_oriented() -> Non
 
 @pytest.mark.parametrize("vignette", load_vignettes(), ids=lambda v: v["id"])
 def test_no_written_case_needs_a_question_asked_again(vignette: dict[str, Any]) -> None:
-    assert not [s.key for s in run_vignette(vignette, A).asked if "@coherencia" in s.key]
+    # Only a case written to test a check asks again (C3-1 and C3-2: the live case 3,
+    # where C-01 asks H4), and it says so.
+    expected = {k for k in vignette["expected"].get("asked_include", []) if "@coherencia" in k}
+    asked = {s.key for s in run_vignette(vignette, A).asked if "@coherencia" in s.key}
+    assert asked == expected
 
 
 def test_six_hours_is_inside_the_proposed_limit_and_the_limit_is_the_artifacts() -> None:
