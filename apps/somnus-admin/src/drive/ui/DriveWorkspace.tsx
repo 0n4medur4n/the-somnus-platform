@@ -55,6 +55,7 @@ import type {
   DriveShareEntry,
 } from "../drive-session.js";
 import { useNotes } from "../notes/use-notes.js";
+import { isSessionExpiredError } from "../session-error.js";
 import { csvToSheets, isSheetFile, isXlsx, xlsxToSheets } from "../sheets/convert.js";
 import { SheetEditor } from "../sheets/SheetEditor.js";
 import {
@@ -259,6 +260,16 @@ export function DriveWorkspace({
     };
   }, [shareParam]);
 
+  /** Puts a freshly opened share on screen, including details already open. Does not navigate. */
+  function showOpenedShare(opened: DriveFolderView) {
+    setView(opened);
+    setSide((s) => {
+      if (s.kind !== "details") return s;
+      const fresh = opened.items.find((i) => i.node.id === s.item.node.id);
+      return fresh ? { kind: "details", item: fresh } : { kind: "none" };
+    });
+  }
+
   async function reload() {
     if (!view) return;
     const opened = await run(() => session.openShare(view.shareId));
@@ -268,16 +279,7 @@ export function DriveWorkspace({
       void refreshShares();
       return;
     }
-    setView(opened);
-    // Details shown for an item that changed must show the new version.
-    setSide((s) =>
-      s.kind === "details"
-        ? (() => {
-            const fresh = opened.items.find((i) => i.node.id === s.item.node.id);
-            return fresh ? { kind: "details", item: fresh } : { kind: "none" };
-          })()
-        : s,
-    );
+    showOpenedShare(opened);
   }
 
   function goHome() {
@@ -346,8 +348,8 @@ export function DriveWorkspace({
     bytes: Uint8Array;
     mime: string;
     parentId: string;
-  }) {
-    if (!view) return;
+  }): Promise<boolean> {
+    if (!view) return false;
     setUploads((u) =>
       u.map((x): Upload => {
         if (x.id !== item.id) return x;
@@ -366,7 +368,7 @@ export function DriveWorkspace({
       });
       setTimeout(() => setUploads((u) => u.filter((x) => x.id !== item.id)), 2500);
     } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 401) {
+      if (isSessionExpiredError(error)) {
         setUploads((u) =>
           u.map((x): Upload => {
             if (x.id !== item.id) return x;
@@ -380,16 +382,18 @@ export function DriveWorkspace({
             };
           }),
         );
-        return;
+        return true;
       }
       setUploads((u) =>
         u.map((x) => (x.id === item.id ? { ...x, error: t("drive.uploadFailed") } : x)),
       );
     }
+    return false;
   }
 
   async function upload(files: FileList | File[]) {
     if (!view || !current) return;
+    let sessionGone = false;
     for (const file of Array.from(files)) {
       const id = crypto.randomUUID();
       const bytes = new Uint8Array(await file.arrayBuffer());
@@ -398,9 +402,13 @@ export function DriveWorkspace({
         ...u,
         { id, name: file.name, done: 0, total: 1, bytes, mime, parentId: current },
       ]);
-      await sendUpload({ id, name: file.name, bytes, mime, parentId: current });
+      if (await sendUpload({ id, name: file.name, bytes, mime, parentId: current })) {
+        sessionGone = true;
+      }
     }
-    await reload().catch(() => undefined);
+    // A 401 already kept the bytes on the upload. Reloading the folder treats
+    // that same 401 as "this folder is gone" and would leave the page.
+    if (!sessionGone) await reload().catch(() => undefined);
   }
 
   const uploadsRef = useRef(uploads);
@@ -613,10 +621,13 @@ export function DriveWorkspace({
     bytes: Uint8Array,
   ): Promise<SaveOutcome> {
     if (!view || !doc) return "error";
-    const fresh = await session.openShare(view.shareId).catch(() => null);
-    const item = fresh?.items.find((i) => i.node.id === doc.id);
-    if (!fresh || !item) return "error";
     try {
+      // The share read is the first request of a save. A 401 here is the same
+      // expired session as one from the upload or the commit; it must not become
+      // a generic failure, and it must not close the editor.
+      const fresh = await session.openShare(view.shareId);
+      const item = fresh.items.find((i) => i.node.id === doc.id);
+      if (!item) return "error";
       await session.writeFile(fresh, {
         parentId: item.node.parentId ?? fresh.rootId,
         existing: item,
@@ -625,10 +636,16 @@ export function DriveWorkspace({
         bytes,
       });
     } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 401) return "expired";
+      if (isSessionExpiredError(error)) return "expired";
       return error instanceof ApiRequestError && error.status === 409 ? "conflict" : "error";
     }
-    await reload();
+    // The bytes are already committed. A failed re-read must stay "saved":
+    // reporting it would invite another revision, and reload() would leave the editor.
+    try {
+      showOpenedShare(await session.openShare(view.shareId));
+    } catch {
+      // Keep the view from before this save. The details panel updates on the next reload.
+    }
     return "saved";
   }
 

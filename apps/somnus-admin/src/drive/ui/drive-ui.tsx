@@ -4,12 +4,14 @@ import { useTranslation } from "react-i18next";
 import { ApiRequestError } from "../../lib/api.js";
 import { DriveCryptoError } from "../crypto.js";
 import { DriveSessionError, type Trust } from "../drive-session.js";
+import { isSessionExpiredError } from "../session-error.js";
 
 /** Turns anything the Drive can throw into a sentence for the person using it. */
 export function driveErrorMessage(t: TFunction, error: unknown): string {
   if (error instanceof DriveCryptoError) return t(`drive.problem.${error.failure}`);
   if (error instanceof DriveSessionError) return t(`drive.errors.${error.reason}`);
   if (error instanceof ApiRequestError) {
+    if (isSessionExpiredError(error)) return t("drive.sessionExpired");
     if (error.reason && t(`drive.errors.${error.reason}`, { defaultValue: "" }) !== "") {
       return t(`drive.errors.${error.reason}`);
     }
