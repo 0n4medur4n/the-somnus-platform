@@ -43,8 +43,6 @@ export const AppEnvSchema = z.object({
   VITE_FIREBASE_AUTH_DOMAIN: z.string().min(1),
   VITE_FIREBASE_PROJECT_ID: z.string().min(1),
   VITE_AUTH_EMULATOR_URL: z.url().optional(),
-  /** The admin console, linked for platform staff only. Unset: no link is shown. */
-  VITE_ADMIN_CONSOLE_URL: z.url().optional(),
   /**
    * Who emails the sign-in link. `somnus`: edge-api, from The Somnus's own
    * domain (it reaches the inbox, and the link carries only a one-time code).
@@ -56,7 +54,6 @@ export const AppEnvSchema = z.object({
 
 export const HostingEnvSchema = AppEnvSchema.extend({
   VITE_EDGE_API_URL: z.union([z.literal(SAME_ORIGIN), z.url().refine(isPlainHttpsUrl)]),
-  VITE_ADMIN_CONSOLE_URL: z.url().refine(isPlainHttpsUrl).optional(),
   VITE_FIREBASE_API_KEY: z.string().regex(/^AIza[\w-]{35}$/),
   VITE_FIREBASE_AUTH_DOMAIN: z.string().regex(/^[a-z0-9-]+\.firebaseapp\.com$/),
   VITE_FIREBASE_PROJECT_ID: z.string().regex(/^[a-z][a-z0-9-]+$/),

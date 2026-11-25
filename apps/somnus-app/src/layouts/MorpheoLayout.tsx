@@ -1,14 +1,12 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router";
-import { accountViewOf } from "../auth/account-view.js";
 import { useAuth } from "../auth/useAuth.js";
 import { Avatar } from "../components/Avatar.js";
 import { type Brand, BrandLogo } from "../components/BrandLogo.js";
 import { Button } from "../components/Button.js";
 import { LanguageSwitcher } from "../components/LanguageSwitcher.js";
 import { ThemeSwitcher } from "../components/ThemeSwitcher.js";
-import { env } from "../config/env.js";
 
 const NAV: ReadonlyArray<{ to: string; key: string; end: boolean }> = [
   { to: "/app", key: "nav.mySpace", end: true },
@@ -39,7 +37,6 @@ export function MorpheoLayout({
   const { t } = useTranslation();
   const { state, logout } = useAuth();
   const me = state.status === "authenticated" ? state.me : null;
-  const consoleUrl = me && accountViewOf(me).isStaff ? env.VITE_ADMIN_CONSOLE_URL : undefined;
 
   return (
     <div className="min-h-dvh">
@@ -68,20 +65,6 @@ export function MorpheoLayout({
                 </NavLink>
               </li>
             ))}
-            {consoleUrl ? (
-              <li>
-                <a
-                  href={consoleUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkClass({ isActive: false })}
-                >
-                  {t("nav.console")}
-                  <span className="sr-only"> ({t("common.opensInNewTab")})</span>
-                  <span aria-hidden="true">&nbsp;↗</span>
-                </a>
-              </li>
-            ) : null}
           </ul>
         </nav>
       </header>

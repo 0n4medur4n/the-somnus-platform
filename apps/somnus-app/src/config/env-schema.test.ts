@@ -23,23 +23,19 @@ describe("Hosting configuration", () => {
     { VITE_FIREBASE_API_KEY: "demo-api-key" },
     { VITE_FIREBASE_AUTH_DOMAIN: "another-project.firebaseapp.com" },
     { VITE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099" },
-    { VITE_ADMIN_CONSOLE_URL: "http://console.example.com" },
-    { VITE_ADMIN_CONSOLE_URL: "https://console.example.com/?next=x" },
-    { VITE_ADMIN_CONSOLE_URL: "not a url" },
   ])("rejects invalid deployed configuration %o", (override) => {
     expect(HostingEnvSchema.safeParse({ ...valid, ...override }).success).toBe(false);
   });
 });
 
-describe("admin console link", () => {
-  it("is optional, and accepted as a plain https URL", () => {
-    expect(HostingEnvSchema.safeParse(valid).success).toBe(true);
-    expect(
-      HostingEnvSchema.safeParse({
-        ...valid,
-        VITE_ADMIN_CONSOLE_URL: "https://console.example.com",
-      }).success,
-    ).toBe(true);
+describe("admin console", () => {
+  it("is not configured in the app: the console is reached only at its own site", () => {
+    // Owner decision 2026-11-21: app.thesomnus.com carries no way into the console.
+    const parsed = HostingEnvSchema.parse({
+      ...valid,
+      VITE_ADMIN_CONSOLE_URL: "https://console.example.com",
+    });
+    expect(parsed).not.toHaveProperty("VITE_ADMIN_CONSOLE_URL");
   });
 });
 
